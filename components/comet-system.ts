@@ -2,7 +2,11 @@ import * as THREE from 'three';
 import { comets, cometActivity } from '../lib/comets';
 import { eccentricPosition, orbitPosition } from '../lib/solar';
 
-export function createCometSystem(scene: THREE.Scene, labelLayer: HTMLElement) {
+export function createCometSystem(
+  scene: THREE.Scene,
+  labelLayer: HTMLElement,
+  onSelect?: (id: string) => void,
+) {
   const group = new THREE.Group();
   group.name = 'comet-system';
   scene.add(group);
@@ -39,6 +43,13 @@ export function createCometSystem(scene: THREE.Scene, labelLayer: HTMLElement) {
   );
   group.add(head);
   head.name = 'comet-head';
+  const nucleus = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.24, 1),
+    new THREE.MeshStandardMaterial({ color: '#8c847b', roughness: 1 }),
+  );
+  nucleus.scale.set(1.5, 0.85, 1);
+  nucleus.name = 'comet-nucleus';
+  group.add(nucleus);
   const tailGeometry = new THREE.ConeGeometry(1.2, 8, 24, 1, true);
   tailGeometry.rotateZ(Math.PI);
   tailGeometry.translate(0, 4, 0);
@@ -54,8 +65,8 @@ export function createCometSystem(scene: THREE.Scene, labelLayer: HTMLElement) {
   );
   group.add(tail);
   tail.name = 'ion-tail';
-  const label = document.createElement('span');
-  label.className = 'comet-label';
+  const label = document.createElement('button');
+  label.className = 'planet-label comet-label';
   labelLayer.appendChild(label);
   const position = new THREE.Vector3(),
     center = new THREE.Vector3(),
@@ -87,6 +98,10 @@ export function createCometSystem(scene: THREE.Scene, labelLayer: HTMLElement) {
       position.set(...orbitPosition(comet, days - startDay, 'distance'));
       center.set(-comet.au * comet.e * 3.1, 0, 0);
       head.position.copy(position);
+      nucleus.position.copy(position);
+      nucleus.rotation.y = (days - startDay) * 2;
+      nucleus.userData.id = comet.id;
+      label.onclick = () => onSelect?.(comet.id);
       tail.position.copy(position);
       const activity = cometActivity(position.length() / 3.1);
       tail.visible = activity > 0;

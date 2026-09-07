@@ -24,6 +24,7 @@ import {
 import SolarScene from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import { comets } from '@/lib/comets';
+import { orbitingMoons } from '@/lib/moon-orbits';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -68,12 +69,26 @@ export default function Home() {
     [details, setDetails] = useState(false),
     [fullscreen, setFullscreen] = useState(false),
     [notice, setNotice] = useState('');
-  const body = bodies.find((b) => b.id === selected);
+  const selectedMoon = orbitingMoons.find((m) => m.id === selected);
+  const body = bodies.find(
+    (b) => b.id === (selectedMoon?.parentId ?? selected),
+  );
   const activeRegion = regions.find((r) => r.id === region)!;
   const activeComet = comets.find((c) => c.id === cometId)!;
   const select = useCallback((id: string) => {
+    if (comets.some((c) => c.id === id)) {
+      setTab('comets');
+      setCometId(id);
+      setCometClose(true);
+      setSelected(null);
+      setScale('distance');
+      setReset((v) => v + 1);
+      return;
+    }
     setTab('explore');
     setSelected(id);
+    if (orbitingMoons.some((m) => m.id === id || m.parentId === id))
+      setSpeed(1);
     setReset((v) => v + 1);
   }, []);
   const home = useCallback(() => {
@@ -131,7 +146,8 @@ export default function Home() {
     setCometId(id);
     setSelected(null);
     setScale('distance');
-    setCometClose(false);
+    setCometClose(true);
+    setSpeed(2);
     setCometRestart((v) => v + 1);
     setReset((v) => v + 1);
     setTop(false);
@@ -282,7 +298,15 @@ export default function Home() {
           </span>
           <p>{body.fact}</p>
         </div>
-        <MoonGuide bodyId={body.id} />
+        {selectedMoon && (
+          <div className="did-you-know">
+            <span>正在跟随 · {selectedMoon.name}</span>
+            <p>
+              绕{body.name}公转约 {selectedMoon.period} 天。可调慢时间观察运动。
+            </p>
+          </div>
+        )}
+        <MoonGuide bodyId={body.id} selected={selected} onSelect={select} />
         <a
           className="source"
           href={`https://science.nasa.gov/${body.source}/`}
@@ -461,7 +485,7 @@ export default function Home() {
             ? bodies.map((b, i) => (
                 <button
                   key={b.id}
-                  className={`body-option ${selected === b.id ? 'active' : ''}`}
+                  className={`body-option ${body?.id === b.id ? 'active' : ''}`}
                   onClick={() => select(b.id)}
                 >
                   <span className="body-number">
@@ -553,7 +577,7 @@ export default function Home() {
             {tab === 'comets'
               ? `${cometClose ? '正在跟随' : '轨道全景'} · ${activeComet.name}`
               : body
-                ? `正在跟随 · ${body.name}`
+                ? `正在跟随 · ${selectedMoon?.name ?? body.name}`
                 : tab === 'structure'
                   ? activeRegion.name
                   : '太阳系全景'}
@@ -718,7 +742,8 @@ export default function Home() {
               以开普勒椭圆轨道演示公转，保留近似周期、偏心率与轨道倾角；自转按近似恒星日推进。初始相位是教学布局，不代表当前真实星历。高速时自转可能发生视觉混叠，可调低流速观察。
             </p>
             <p>
-              演示模式压缩轨道间距并放大天体。月球轨道与土星环为示意；未逐一建模全部卫星、矮行星和小天体。外围结构使用独立示意尺度。它不是航天导航或天象预报工具。
+              演示模式压缩轨道间距并放大天体。19
+              颗代表性卫星按近似周期绕母星运行，轨道平面、间距和表面配色为示意；未纳入全部卫星，也未模拟冥王星与冥卫一相互绕质心的运动。外围结构使用独立示意尺度。它不是航天导航或天象预报工具。
             </p>
             <p>
               知识来源：

@@ -5,6 +5,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bodies, orbitPosition, type ScaleMode } from '@/lib/solar';
 import { comets } from '@/lib/comets';
 import { createCometSystem } from './comet-system';
+import { createMoonSystem } from './moon-system';
+import { orbitingMoons, moonSystemExtent } from '@/lib/moon-orbits';
 export type SceneState = {
   speed: number;
   paused: boolean;
@@ -90,7 +92,9 @@ export default function SolarScene({
     const labelLayer = document.createElement('div');
     labelLayer.className = 'scene-labels';
     container.appendChild(labelLayer);
-    const cometSystem = createCometSystem(scene, labelLayer);
+    const cometSystem = createCometSystem(scene, labelLayer, (id) =>
+      latest.current.onSelect(id),
+    );
     for (const body of bodies) {
       const root = new THREE.Group();
       scene.add(root);
@@ -189,11 +193,14 @@ export default function SolarScene({
       labelLayer.appendChild(label);
       labels.set(body.id, label);
     }
-    const moon = new THREE.Mesh(
-      new THREE.SphereGeometry(0.26, 24, 16),
-      new THREE.MeshStandardMaterial({ map: load('moon'), roughness: 1 }),
+    const moonSystem = createMoonSystem(
+      scene,
+      roots,
+      meshes,
+      labelLayer,
+      (id) => latest.current.onSelect(id),
+      load('moon'),
     );
-    scene.add(moon);
     // Seeded distributions are conceptual populations, not measured asteroid positions.
     let seed = 71;
     const rand = () => {
@@ -375,19 +382,7 @@ export default function SolarScene({
         const line = orbitLines.get(body.id);
         if (line) line.visible = s.orbits;
       }
-      const earth = roots.get('earth')!.position;
-      const mr = s.scale === 'distance' ? 0.65 : 2;
-      moon.position
-        .copy(earth)
-        .add(
-          new THREE.Vector3(
-            Math.cos((days / 27.322) * Math.PI * 2) * mr,
-            0,
-            -Math.sin((days / 27.322) * Math.PI * 2) * mr,
-          ),
-        );
-      moon.rotation.y = (days / 27.322) * Math.PI * 2;
-      moon.scale.setScalar(s.scale === 'distance' ? 0.32 : 1);
+      moonSystem.update(days, s.scale, s.selected, s.orbits);
       belt.visible = s.belts && s.scale === 'illustrated';
       kuiper.visible = s.belts && s.scale === 'illustrated';
       scattered.visible = s.belts && s.view >= 350 && s.scale === 'illustrated';
@@ -405,13 +400,20 @@ export default function SolarScene({
         cometKey !== lastComet
       ) {
         const body = bodies.find((b) => b.id === s.selected);
+        const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
         targetDistance = comet
           ? s.cometClose
             ? 22 / Math.min(1, Math.max(0.5, camera.aspect))
             : Math.max(35, comet.au * 3.1 * 3.4) / Math.min(1, camera.aspect)
-          : body
-            ? body.size * (s.scale === 'distance' ? 0.32 : 1) * 9 + 3
-            : s.view;
+          : selectedMoon
+            ? 5 / Math.min(1, camera.aspect)
+            : body
+              ? Math.max(
+                  body.size * (s.scale === 'distance' ? 0.32 : 1) * 9 + 3,
+                  (moonSystemExtent(body.id, s.scale) * 2.8) /
+                    Math.min(1, camera.aspect),
+                )
+              : s.view;
         transition = 1;
         following = null;
         lastSelected = s.selected;
@@ -457,6 +459,7 @@ export default function SolarScene({
       scene.getObjectByName('sun-glow')?.quaternion.copy(camera.quaternion);
       renderer.render(scene, camera);
       cometSystem.project(camera, width, height, s.labels);
+      moonSystem.project(camera, width, height, s.selected, s.labels);
       for (const body of bodies) {
         const label = labels.get(body.id)!;
         projected.copy(roots.get(body.id)!.position);

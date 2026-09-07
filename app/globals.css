@@ -691,7 +691,7 @@ button:disabled {
   font-size: 12px;
   white-space: nowrap;
   text-shadow: 0 1px 8px #000;
-  pointer-events: none;
+  pointer-events: auto;
 }
 .comet-label[hidden] {
   display: none;

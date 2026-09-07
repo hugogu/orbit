@@ -21,7 +21,7 @@ Import the repository with its root directory unchanged. `vercel.json` selects t
 
 ## Model limitations
 
-Planet detail panels include expandable guides to 19 representative moons (including Charon); Mercury and Venus explicitly have no known moons. These are educational selections, not current satellite censuses. NASA references accompany each entry. Only Earth's Moon is animated in the planet scene.
+Planet detail panels include expandable guides to 19 representative moons (including Charon); Mercury and Venus explicitly have no known moons. All 19 are selectable 3D bodies orbiting their moving parents, with approximate periods from JPL mean elements. Selecting a planet frames its satellite system; selecting a moon follows it. Shared playback controls drive planets, moons and the selected comet. Surface colors, sizes, spacing and orbital planes are schematic; Charon is modeled relative to Pluto, without mutual barycentric motion. NASA references accompany each entry. These are educational selections, not current satellite censuses.
 
 The Comets tab includes Halley, Encke, 67P, and Hale–Bopp. It shares playback controls, offers orbit overview and follow views, and can restart a perihelion demonstration. Rounded JPL SBDB elements retrieved on 2026-09-07 drive fixed Kepler ellipses; periods depend on the osculating epoch, especially for Hale–Bopp. Initial phases and orbital longitudes are schematic, not current ephemerides. The enlarged nucleus marker and antisolar ion tail are illustrative; tail activity fades with distance. The solver uses bracketed Newton iteration for high eccentricities, and paths sample eccentric anomaly.
 

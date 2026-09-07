@@ -1,4 +1,5 @@
 import { moonSystems } from '@/lib/moons';
+import { orbitingMoons } from '@/lib/moon-orbits';
 import {
   Accordion,
   AccordionItem,
@@ -6,7 +7,15 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 
-export default function MoonGuide({ bodyId }: { bodyId: string }) {
+export default function MoonGuide({
+  bodyId,
+  selected,
+  onSelect,
+}: {
+  bodyId: string;
+  selected: string | null;
+  onSelect: (id: string) => void;
+}) {
   const system = moonSystems[bodyId];
   if (!system) return null;
   return (
@@ -16,7 +25,17 @@ export default function MoonGuide({ bodyId }: { bodyId: string }) {
         <span>{system.moons.length ? '代表性成员' : '没有已知卫星'}</span>
       </h3>
       <p>{system.summary}</p>
-      <Accordion key={bodyId}>
+      {system.moons.length > 0 && (
+        <button className="secondary-action" onClick={() => onSelect(bodyId)}>
+          查看整个卫星系统
+        </button>
+      )}
+      <Accordion
+        key={`${bodyId}/${selected}`}
+        defaultValue={orbitingMoons
+          .filter((m) => m.id === selected)
+          .map((m) => m.en)}
+      >
         {system.moons.map((moon) => (
           <AccordionItem key={moon.en} value={moon.en}>
             <AccordionTrigger>
@@ -29,6 +48,12 @@ export default function MoonGuide({ bodyId }: { bodyId: string }) {
             </AccordionTrigger>
             <AccordionContent>
               <p>{moon.description}</p>
+              <button
+                className="secondary-action"
+                onClick={() => onSelect(`moon-${moon.en.toLowerCase()}`)}
+              >
+                跟随{moon.name}运行
+              </button>
               <a
                 className="source"
                 href={`https://science.nasa.gov/${moon.source}/`}
@@ -43,7 +68,7 @@ export default function MoonGuide({ bodyId }: { bodyId: string }) {
       </Accordion>
       {system.moons.length > 0 && (
         <p className="little-note">
-          点击名称展开资料。此处为精选介绍；三维场景目前仅演示月球绕行。
+          这些卫星均在三维场景中绕行，使用底部控件调速或暂停。大小、间距和表面配色为教学示意，公转周期采用近似值。
         </p>
       )}
     </section>
