@@ -8,6 +8,8 @@ A Chinese-language interactive 3D solar-system learning observatory built with T
 - Asteroid belt, Kuiper belt, scattered disk, heliosphere, and hypothesized Oort cloud.
 - Date-driven positions and axial orientation, follow camera, top view, scale and visibility controls.
 - UTC date/time selection (1700–2200), observer coordinates, local daily sunrise/sunset, next global solar/lunar eclipses and next locally visible solar eclipse.
+- A visible “现在” button restores the device's current time and real-time playback. “使用当前位置” requests browser location permission and fills WGS84 coordinates; denial/timeouts preserve manual input. Coordinates stay in the page. UTC offset is initially inferred from the device timezone on the query date, not reverse-geocoded from coordinates; the user can correct it. Elevation remains manual.
+- Expanded physical facts include mass, density, equatorial gravity, escape velocity, diameter, approximate orbital eccentricity/inclination and rotation direction, with JPL/NASA sources.
 - Eight time presets from real time to ten years per second, plus pause.
 - Mouse drag/orbit, wheel/zoom, right drag/pan. Touch: one finger/orbit, pinch/zoom, two fingers/pan.
 - Keyboard: WASD/arrows pan, +/- zoom, Space pause, R overview, Esc stop following.

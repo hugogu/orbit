@@ -13,6 +13,8 @@ import {
   validTime,
 } from '../lib/simulation-time';
 import type { SkyEvent, SkyQuery, SkyResults } from '../lib/sky-events';
+import { currentLocation } from '../lib/geolocation';
+import { LocateFixed } from 'lucide-react';
 // Vite generates the default constructor; it is not an export of the worker source.
 // oxlint-disable-next-line import/default
 import AstronomyWorker from '../workers/astronomy.worker?worker';
@@ -39,7 +41,10 @@ export default function AstronomyPanel({
       data: SkyResults;
     } | null>(null),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [locating, setLocating] = useState(false),
+    [locationMessage, setLocationMessage] = useState('');
+  const locationRequest = useRef(0);
   const worker = useRef<Worker | null>(null),
     opened = useRef(false);
   useEffect(() => {
@@ -59,19 +64,61 @@ export default function AstronomyPanel({
       });
     }
     if (!open) {
+      locationRequest.current++;
       worker.current?.terminate();
       worker.current = null;
-      queueMicrotask(() => setBusy(false));
+      queueMicrotask(() => {
+        setBusy(false);
+        setLocating(false);
+      });
     }
     opened.current = open;
   }, [open, time, offset]);
-  useEffect(() => () => worker.current?.terminate(), []);
+  useEffect(
+    () => () => {
+      worker.current?.terminate();
+      locationRequest.current++;
+    },
+    [],
+  );
   function clearResults() {
+    locationRequest.current++;
+    setLocating(false);
     worker.current?.terminate();
     worker.current = null;
     setBusy(false);
     setResult(null);
     setError('');
+  }
+  async function locate() {
+    clearResults();
+    setLocationMessage('');
+    setLocating(true);
+    const request = ++locationRequest.current;
+    try {
+      const fix = await currentLocation(
+        navigator.geolocation,
+        window.isSecureContext,
+      );
+      if (request !== locationRequest.current) return;
+      setLatitude(fix.latitude.toFixed(5));
+      setLongitude(fix.longitude.toFixed(5));
+      const localDate = new Date((day || date.slice(0, 10)) + 'T12:00:00');
+      if (Number.isFinite(localDate.getTime()))
+        setOffset(String(-localDate.getTimezoneOffset() / 60));
+      setLocationMessage(
+        `已定位，精度约 ±${Math.ceil(fix.accuracy)} 米。时差按设备时区 ${Intl.DateTimeFormat().resolvedOptions().timeZone} 的所选日期填写，请核对；海拔保留手动值。`,
+      );
+    } catch (error) {
+      if (request === locationRequest.current)
+        setLocationMessage(
+          error instanceof Error
+            ? error.message
+            : '定位失败，请手动填写经纬度。',
+        );
+    } finally {
+      if (request === locationRequest.current) setLocating(false);
+    }
   }
   function seek(ms: number, live = false) {
     if (!validTime(ms)) {
@@ -210,6 +257,16 @@ export default function AstronomyPanel({
           <p className="wide little-note">
             支持 1700—2200 年。所有天体共享此时间；切换目标保留模拟进度。
           </p>
+          <button
+            className="secondary-action wide location-button"
+            onClick={locating ? clearResults : locate}
+          >
+            <LocateFixed size={16} />
+            {locating ? '正在定位… 点击取消' : '使用当前位置'}
+          </button>
+          {locationMessage && (
+            <output className="wide little-note">{locationMessage}</output>
+          )}
           <label>
             纬度（北正南负）
             <input
@@ -220,6 +277,7 @@ export default function AstronomyPanel({
               value={latitude}
               onChange={(e) => {
                 setLatitude(e.target.value);
+                setLocationMessage('');
                 clearResults();
               }}
             />
@@ -234,6 +292,7 @@ export default function AstronomyPanel({
               value={longitude}
               onChange={(e) => {
                 setLongitude(e.target.value);
+                setLocationMessage('');
                 clearResults();
               }}
             />
@@ -279,7 +338,8 @@ export default function AstronomyPanel({
             />
           </label>
           <p className="wide little-note">
-            默认地点北京。时差请包含当日夏令时；查询结果统一使用此固定时差。日出日落未考虑山脉、建筑和实际天气。
+            初始地点为北京，可定位或手动修改。经纬度采用
+            WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；日出日落未考虑山脉、建筑和实际天气。
           </p>
           <button
             className="primary-action wide"

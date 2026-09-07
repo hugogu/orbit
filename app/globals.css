@@ -564,6 +564,63 @@ button:disabled {
   color: #8390a2;
   display: block;
 }
+.now-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 10px;
+  color: #e3cda4;
+  border: 1px solid #d9c49a30;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .timeline .now-button {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    padding: 7px;
+  }
+  .timeline .simulation-clock {
+    grid-column: 1/3;
+    grid-row: 3;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+  }
+  .timeline .simulation-clock > span {
+    margin: 0;
+  }
+  .observatory .catalog {
+    bottom: 235px;
+  }
+}
+.physical-facts {
+  margin: 20px 0;
+  border-top: 1px solid #ffffff15;
+  border-bottom: 1px solid #ffffff15;
+  padding: 14px 0;
+}
+.physical-facts summary {
+  color: #dfc99f;
+  cursor: pointer;
+  font-size: 14px;
+}
+.physical-facts .facts {
+  margin: 16px 0;
+  padding: 0;
+}
+.physical-facts .facts strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
 .astronomy-button {
   display: flex;
   align-items: center;

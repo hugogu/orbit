@@ -1,0 +1,72 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { currentLocation } from '../lib/geolocation.ts';
+import { bodies } from '../lib/solar.ts';
+import { extraFacts, physicalParameters } from '../lib/physical-facts.ts';
+
+void test('geolocation uses the granted device coordinates without map offsets or fabricated altitude', async () => {
+  const geo: Pick<Geolocation, 'getCurrentPosition'> = {
+    getCurrentPosition(success) {
+      success({
+        coords: {
+          latitude: 31.2304,
+          longitude: 121.4737,
+          accuracy: 23.4,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+        },
+        timestamp: Date.now(),
+      } as GeolocationPosition);
+    },
+  };
+  assert.deepEqual(await currentLocation(geo, true), {
+    latitude: 31.2304,
+    longitude: 121.4737,
+    accuracy: 23.4,
+  });
+});
+void test('denial, timeout, unsupported browsers and bad coordinates remain explicit errors', async () => {
+  await assert.rejects(currentLocation(undefined, true), /不支持/);
+  await assert.rejects(currentLocation(undefined, false), /HTTPS/);
+  for (const [code, message] of [
+    [1, /权限被拒绝/],
+    [2, /无法获取/],
+    [3, /超时/],
+  ] as const) {
+    const geo: Pick<Geolocation, 'getCurrentPosition'> = {
+      getCurrentPosition(_success, error) {
+        error!({ code } as GeolocationPositionError);
+      },
+    };
+    await assert.rejects(currentLocation(geo, true), message);
+  }
+  const broken: Pick<Geolocation, 'getCurrentPosition'> = {
+    getCurrentPosition(success) {
+      success({
+        coords: { latitude: NaN, longitude: 10, accuracy: 5 },
+      } as GeolocationPosition);
+    },
+  };
+  await assert.rejects(currentLocation(broken, true), /无效位置/);
+});
+void test('physical data covers each body and preserves mass, radius, density and gravity unit consistency', () => {
+  for (const b of bodies) {
+    const facts = extraFacts(b);
+    assert.ok(facts.length >= 4);
+    assert.equal(new Set(facts.map((f) => f.label)).size, facts.length);
+    assert.ok(facts.every((f) => f.value && !/NaN|undefined/.test(f.value)));
+    if (b.id === 'sun') continue;
+    const p = physicalParameters[b.id],
+      radius = b.radius * 1000;
+    const density = p.mass / ((4 / 3) * Math.PI * radius ** 3) / 1000;
+    assert.ok(Math.abs(density / p.density - 1) < 0.01, b.id + ' density');
+    const gravity = (6.6743e-11 * p.mass) / radius ** 2;
+    assert.ok(Math.abs(gravity / p.gravity - 1) < 0.1, b.id + ' gravity');
+    assert.ok(
+      Math.abs(Math.sqrt(2 * gravity * radius) / 1000 / p.escape - 1) < 0.05,
+      b.id + ' escape',
+    );
+  }
+});

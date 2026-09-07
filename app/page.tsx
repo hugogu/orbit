@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import SolarScene from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
+import PhysicalFacts from '@/components/physical-facts';
 import AstronomyPanel from '@/components/astronomy-panel';
 import { comets, cometPerihelion } from '@/lib/comets';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
@@ -318,6 +319,7 @@ export default function Home() {
           </p>
         </div>
       )}
+      <PhysicalFacts body={body} />
       <MoonGuide bodyId={body.id} selected={selected} onSelect={select} />
       <a
         className="source"
@@ -612,15 +614,13 @@ export default function Home() {
             <small>{time ? utcLabel(time).slice(11) : '—'}</small>
           </div>
           <button
-            className="icon-button reset-speed"
-            aria-label="恢复默认速度"
-            title="恢复默认速度"
-            onClick={() => {
-              setSpeed(0);
-              setPaused(false);
-            }}
+            className="now-button"
+            aria-label="回到当前时间并实时运行"
+            title="回到当前时间并实时运行"
+            onClick={() => seekTime(Date.now(), true)}
           >
-            <RotateCcw size={18} />
+            <RotateCcw size={16} />
+            现在
           </button>
         </section>
         <footer className="footer">
