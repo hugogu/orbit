@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bodies, orbitPosition, type ScaleMode } from '@/lib/solar';
+import { comets } from '@/lib/comets';
+import { createCometSystem } from './comet-system';
 export type SceneState = {
   speed: number;
   paused: boolean;
@@ -14,6 +16,9 @@ export type SceneState = {
   view: number;
   reset: number;
   top: boolean;
+  cometId: string | null;
+  cometClose: boolean;
+  cometRestart: number;
 };
 export default function SolarScene({
   state,
@@ -58,13 +63,13 @@ export default function SolarScene({
     );
     renderer.domElement.tabIndex = 0;
     const scene = new THREE.Scene(),
-      camera = new THREE.PerspectiveCamera(47, 1, 0.05, 6000);
+      camera = new THREE.PerspectiveCamera(47, 1, 0.05, 20000);
     camera.position.set(0, 115, 170);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.065;
     controls.minDistance = 1;
-    controls.maxDistance = 650;
+    controls.maxDistance = 10000;
     controls.maxPolarAngle = Math.PI * 0.97;
     controls.enablePan = true;
     scene.add(new THREE.AmbientLight(0x8098c4, 0.65));
@@ -85,6 +90,7 @@ export default function SolarScene({
     const labelLayer = document.createElement('div');
     labelLayer.className = 'scene-labels';
     container.appendChild(labelLayer);
+    const cometSystem = createCometSystem(scene, labelLayer);
     for (const body of bodies) {
       const root = new THREE.Group();
       scene.add(root);
@@ -319,6 +325,7 @@ export default function SolarScene({
       lastSelected: string | null | undefined = undefined,
       lastScale = '',
       lastTop = false,
+      lastComet = '',
       transition = 0;
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
@@ -387,25 +394,40 @@ export default function SolarScene({
       oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
       heliosphere.visible =
         s.belts && s.view >= 400 && s.scale === 'illustrated';
+      cometSystem.update(s.cometId, s.cometRestart, days, s.orbits);
+      const comet = comets.find((c) => c.id === s.cometId);
+      const cometKey = `${s.cometId}/${s.cometClose}/${s.cometRestart}`;
       if (
         s.selected !== lastSelected ||
         s.reset !== lastReset ||
         s.view !== lastView ||
-        s.top !== lastTop
+        s.top !== lastTop ||
+        cometKey !== lastComet
       ) {
         const body = bodies.find((b) => b.id === s.selected);
-        targetDistance = body
-          ? body.size * (s.scale === 'distance' ? 0.32 : 1) * 9 + 3
-          : s.view;
+        targetDistance = comet
+          ? s.cometClose
+            ? 22 / Math.min(1, Math.max(0.5, camera.aspect))
+            : Math.max(35, comet.au * 3.1 * 3.4) / Math.min(1, camera.aspect)
+          : body
+            ? body.size * (s.scale === 'distance' ? 0.32 : 1) * 9 + 3
+            : s.view;
         transition = 1;
         following = null;
         lastSelected = s.selected;
         lastReset = s.reset;
         lastView = s.view;
         lastTop = s.top;
+        lastComet = cometKey;
       }
       newTarget.copy(
-        s.selected ? roots.get(s.selected)!.position : new THREE.Vector3(),
+        comet
+          ? s.cometClose
+            ? cometSystem.position
+            : cometSystem.center
+          : s.selected
+            ? roots.get(s.selected)!.position
+            : new THREE.Vector3(),
       );
       if (transition > 0) {
         controls.target.lerp(newTarget, 0.07);
@@ -423,7 +445,7 @@ export default function SolarScene({
         camera.position.lerp(desired, 0.055);
         transition -= dt * 0.5;
         if (transition <= 0) following = newTarget.clone();
-      } else if (s.selected) {
+      } else if (s.selected || (comet && s.cometClose)) {
         if (following) {
           const delta = newTarget.clone().sub(following);
           camera.position.add(delta);
@@ -434,6 +456,7 @@ export default function SolarScene({
       controls.update();
       scene.getObjectByName('sun-glow')?.quaternion.copy(camera.quaternion);
       renderer.render(scene, camera);
+      cometSystem.project(camera, width, height, s.labels);
       for (const body of bodies) {
         const label = labels.get(body.id)!;
         projected.copy(roots.get(body.id)!.position);

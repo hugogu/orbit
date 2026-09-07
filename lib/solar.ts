@@ -310,24 +310,43 @@ export const regions = [
   },
 ];
 export type ScaleMode = 'illustrated' | 'distance';
-export function orbitPosition(
-  body: Body,
-  days: number,
+export type OrbitalElements = Pick<
+  Body,
+  'au' | 'e' | 'inc' | 'period' | 'phase' | 'distance'
+>;
+export function eccentricPosition(
+  body: OrbitalElements,
+  eccentric: number,
   mode: ScaleMode = 'illustrated',
 ): [number, number, number] {
-  if (!body.period) return [0, 0, 0];
-  const mean =
-    (body.phase + (days / body.period) * Math.PI * 2) % (Math.PI * 2);
-  let eccentric = mean;
-  for (let i = 0; i < 10; i++)
-    eccentric -=
-      (eccentric - body.e * Math.sin(eccentric) - mean) /
-      (1 - body.e * Math.cos(eccentric));
   const a = mode === 'distance' ? body.au * 3.1 : body.distance;
   const x = a * (Math.cos(eccentric) - body.e),
     z = a * Math.sqrt(1 - body.e ** 2) * Math.sin(eccentric),
     inc = (body.inc * Math.PI) / 180;
   return [x, z * Math.sin(inc), -z * Math.cos(inc)];
+}
+export function orbitPosition(
+  body: OrbitalElements,
+  days: number,
+  mode: ScaleMode = 'illustrated',
+): [number, number, number] {
+  if (!body.period) return [0, 0, 0];
+  const tau = Math.PI * 2;
+  const raw = body.phase + ((days % body.period) / body.period) * tau;
+  const mean = ((((raw + Math.PI) % tau) + tau) % tau) - Math.PI;
+  // Bracketed Newton iteration stays stable at a comet's very eccentric perihelion.
+  let low = -Math.PI,
+    high = Math.PI,
+    eccentric = mean;
+  for (let i = 0; i < 60; i++) {
+    const residual = eccentric - body.e * Math.sin(eccentric) - mean;
+    if (Math.abs(residual) < 1e-13) break;
+    if (residual > 0) high = eccentric;
+    else low = eccentric;
+    const next = eccentric - residual / (1 - body.e * Math.cos(eccentric));
+    eccentric = next > low && next < high ? next : (low + high) / 2;
+  }
+  return eccentricPosition(body, eccentric, mode);
 }
 export const speeds = [1 / 86400, 0.1, 1, 10, 30, 100, 365, 3650];
 export function speedLabel(speed: number) {

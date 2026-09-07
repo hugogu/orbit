@@ -19,8 +19,11 @@ import {
   Plus,
   Info,
   X,
+  Sparkles as CometIcon,
 } from 'lucide-react';
 import SolarScene from '@/components/solar-scene';
+import MoonGuide from '@/components/moon-guide';
+import { comets } from '@/lib/comets';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,6 +59,9 @@ export default function Home() {
     [top, setTop] = useState(false),
     [days, setDays] = useState(0),
     [tab, setTab] = useState('explore'),
+    [cometId, setCometId] = useState('halley'),
+    [cometClose, setCometClose] = useState(false),
+    [cometRestart, setCometRestart] = useState(0),
     [region, setRegion] = useState('inner'),
     [help, setHelp] = useState(false),
     [settings, setSettings] = useState(false),
@@ -64,7 +70,9 @@ export default function Home() {
     [notice, setNotice] = useState('');
   const body = bodies.find((b) => b.id === selected);
   const activeRegion = regions.find((r) => r.id === region)!;
+  const activeComet = comets.find((c) => c.id === cometId)!;
   const select = useCallback((id: string) => {
+    setTab('explore');
     setSelected(id);
     setReset((v) => v + 1);
   }, []);
@@ -74,6 +82,7 @@ export default function Home() {
     setView(205);
     setReset((v) => v + 1);
     setTop(false);
+    setScale('illustrated');
   }, []);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -117,6 +126,16 @@ export default function Home() {
     setScale('illustrated');
     setBelts(true);
   }
+  function selectComet(id: string) {
+    setTab('comets');
+    setCometId(id);
+    setSelected(null);
+    setScale('distance');
+    setCometClose(false);
+    setCometRestart((v) => v + 1);
+    setReset((v) => v + 1);
+    setTop(false);
+  }
   useEffect(
     () =>
       registerObservatoryTools({
@@ -129,105 +148,189 @@ export default function Home() {
       }),
     [select],
   );
-  const readout = body ? (
-    <>
-      <div className="eyebrow">天体档案 / {body.en}</div>
-      <div className="detail-heading">
-        <h2>{body.name}</h2>
-        <span className="type-chip">{body.type}</span>
-      </div>
-      <p className="description">{body.description}</p>
-      <div className="facts">
-        <div>
-          <span>平均半径</span>
-          <strong>
-            {body.radius.toLocaleString()} <small>km</small>
-          </strong>
+  const readout =
+    tab === 'comets' ? (
+      <>
+        <div className="eyebrow">彗星档案 / {activeComet.en}</div>
+        <h2 className="region-heading">{activeComet.name}</h2>
+        <p className="description">{activeComet.description}</p>
+        <div className="facts">
+          <div>
+            <span>模型公转周期</span>
+            <strong>
+              {(activeComet.period / 365.256).toLocaleString('zh-CN', {
+                maximumFractionDigits: 1,
+              })}{' '}
+              <small>年</small>
+            </strong>
+          </div>
+          <div>
+            <span>轨道倾角</span>
+            <strong>
+              {activeComet.inc} <small>°</small>
+            </strong>
+          </div>
+          <div>
+            <span>模型近日点</span>
+            <strong>
+              {(activeComet.au * (1 - activeComet.e)).toFixed(2)}{' '}
+              <small>AU</small>
+            </strong>
+          </div>
+          <div>
+            <span>模型远日点</span>
+            <strong>
+              {(activeComet.au * (1 + activeComet.e)).toFixed(2)}{' '}
+              <small>AU</small>
+            </strong>
+          </div>
         </div>
-        <div>
-          <span>平均日距</span>
-          <strong>
-            {body.au || '—'} <small>{body.au ? 'AU' : ''}</small>
-          </strong>
+        <div className="comet-actions">
+          <button
+            className="primary-action"
+            onClick={() => setCometClose((v) => !v)}
+          >
+            {cometClose ? '查看完整轨道' : '跟随彗星观察'}{' '}
+            <LocateFixed size={16} />
+          </button>
+          <button
+            className="secondary-action"
+            onClick={() => {
+              setCometRestart((v) => v + 1);
+              setCometClose(true);
+              setSpeed(2);
+              setPaused(false);
+            }}
+          >
+            从近日点演示 <RotateCcw size={15} />
+          </button>
         </div>
-        <div>
-          <span>公转周期</span>
-          <strong>
-            {body.period
-              ? body.period > 1000
-                ? (body.period / 365.256).toFixed(1)
-                : body.period.toFixed(1)
-              : '—'}{' '}
-            <small>
-              {body.period ? (body.period > 1000 ? '年' : '天') : ''}
-            </small>
-          </strong>
+        <div className="did-you-know">
+          <span>
+            <CometIcon size={15} /> 来自深空的访客
+          </span>
+          <p>{activeComet.fact}</p>
         </div>
-        <div>
-          <span>自转周期</span>
-          <strong>
-            {Math.abs(body.day).toFixed(2)} <small>天</small>
-          </strong>
-        </div>
-      </div>
-      <div className="did-you-know">
-        <span>
-          <Plus size={14} /> 你知道吗
-        </span>
-        <p>{body.fact}</p>
-      </div>
-      <div className="satellites">
-        <span>天然卫星</span>
-        <p>{body.moons}</p>
-      </div>
-      <a
-        className="source"
-        href={`https://science.nasa.gov/${body.source}/`}
-        target="_blank"
-        rel="noreferrer"
-      >
-        在 NASA 继续探索 <ArrowUpRight size={15} />
-      </a>
-    </>
-  ) : (
-    <>
-      <div className="eyebrow">我们的宇宙坐标</div>
-      <h2 className="overview-title">
-        太阳系<span>THE SOLAR SYSTEM</span>
-      </h2>
-      <p className="description">
-        一颗恒星，八颗行星，和无数等待探索的世界。
-        <br />
-        从这里，认识我们的宇宙家园。
-      </p>
-      <div className="overview-stats">
-        <div>
-          <strong>
-            46<small> 亿年</small>
-          </strong>
-          <span>约形成于</span>
-        </div>
-        <div>
-          <strong>
-            8<small> 颗</small>
-          </strong>
-          <span>行星</span>
-        </div>
-      </div>
-      <div className="did-you-know">
-        <span>
-          <Orbit size={15} /> 引力，让一切相连
-        </span>
-        <p>
-          越靠近太阳，行星公转越快。调快时间，观察水星与海王星截然不同的节奏。
+        <p className="description">
+          靠近太阳时，冰升华产生彗发与彗尾。图中的蓝色离子尾示意指向背离太阳的方向，并会随远离太阳而淡去；真实尘埃尾通常弯曲。
         </p>
-      </div>
-      <button className="primary-action" onClick={() => select('earth')}>
-        从地球出发 <ArrowUpRight size={17} />
-      </button>
-      <div className="little-note">点击天体或选择名称，即可抵近观察。</div>
-    </>
-  );
+        <p className="little-note">
+          选择时从示意近日点开始，使用底部速度控制。轨道按 AU
+          比例显示，彗核与彗尾放大；固定轨道参数与方位仅用于教学，并非当前星空或回归预报。
+        </p>
+        <a
+          className="source"
+          href={`https://science.nasa.gov/solar-system/comets/${activeComet.source}/`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          在 NASA 继续探索 <ArrowUpRight size={15} />
+        </a>
+        <a
+          className="source"
+          href="https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html"
+          target="_blank"
+          rel="noreferrer"
+        >
+          轨道参数：JPL 小天体数据库 <ArrowUpRight size={15} />
+        </a>
+      </>
+    ) : body ? (
+      <>
+        <div className="eyebrow">天体档案 / {body.en}</div>
+        <div className="detail-heading">
+          <h2>{body.name}</h2>
+          <span className="type-chip">{body.type}</span>
+        </div>
+        <p className="description">{body.description}</p>
+        <div className="facts">
+          <div>
+            <span>平均半径</span>
+            <strong>
+              {body.radius.toLocaleString()} <small>km</small>
+            </strong>
+          </div>
+          <div>
+            <span>平均日距</span>
+            <strong>
+              {body.au || '—'} <small>{body.au ? 'AU' : ''}</small>
+            </strong>
+          </div>
+          <div>
+            <span>公转周期</span>
+            <strong>
+              {body.period
+                ? body.period > 1000
+                  ? (body.period / 365.256).toFixed(1)
+                  : body.period.toFixed(1)
+                : '—'}{' '}
+              <small>
+                {body.period ? (body.period > 1000 ? '年' : '天') : ''}
+              </small>
+            </strong>
+          </div>
+          <div>
+            <span>自转周期</span>
+            <strong>
+              {Math.abs(body.day).toFixed(2)} <small>天</small>
+            </strong>
+          </div>
+        </div>
+        <div className="did-you-know">
+          <span>
+            <Plus size={14} /> 你知道吗
+          </span>
+          <p>{body.fact}</p>
+        </div>
+        <MoonGuide bodyId={body.id} />
+        <a
+          className="source"
+          href={`https://science.nasa.gov/${body.source}/`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          在 NASA 继续探索 <ArrowUpRight size={15} />
+        </a>
+      </>
+    ) : (
+      <>
+        <div className="eyebrow">我们的宇宙坐标</div>
+        <h2 className="overview-title">
+          太阳系<span>THE SOLAR SYSTEM</span>
+        </h2>
+        <p className="description">
+          一颗恒星，八颗行星，和无数等待探索的世界。
+          <br />
+          从这里，认识我们的宇宙家园。
+        </p>
+        <div className="overview-stats">
+          <div>
+            <strong>
+              46<small> 亿年</small>
+            </strong>
+            <span>约形成于</span>
+          </div>
+          <div>
+            <strong>
+              8<small> 颗</small>
+            </strong>
+            <span>行星</span>
+          </div>
+        </div>
+        <div className="did-you-know">
+          <span>
+            <Orbit size={15} /> 引力，让一切相连
+          </span>
+          <p>
+            越靠近太阳，行星公转越快。调快时间，观察水星与海王星截然不同的节奏。
+          </p>
+        </div>
+        <button className="primary-action" onClick={() => select('earth')}>
+          从地球出发 <ArrowUpRight size={17} />
+        </button>
+        <div className="little-note">点击天体或选择名称，即可抵近观察。</div>
+      </>
+    );
   return (
     <main className="observatory">
       <SolarScene
@@ -242,6 +345,9 @@ export default function Home() {
           view,
           reset,
           top,
+          cometId: tab === 'comets' ? cometId : null,
+          cometClose,
+          cometRestart,
         }}
         onSelect={select}
         onTime={setDays}
@@ -263,6 +369,7 @@ export default function Home() {
           onValueChange={(v) => {
             setTab(String(v));
             if (v === 'structure') goRegion(region);
+            else if (v === 'comets') selectComet(cometId);
             else home();
           }}
         >
@@ -270,6 +377,10 @@ export default function Home() {
             <TabsTrigger value="explore">
               <Globe2 />
               自由探索
+            </TabsTrigger>
+            <TabsTrigger value="comets">
+              <CometIcon />
+              彗星
             </TabsTrigger>
             <TabsTrigger value="structure">
               <Layers3 />
@@ -308,55 +419,89 @@ export default function Home() {
       </div>
       <section
         className="catalog glass"
-        aria-label={tab === 'explore' ? '选择天体' : '选择太阳系区域'}
+        aria-label={
+          tab === 'comets'
+            ? '选择彗星'
+            : tab === 'explore'
+              ? '选择天体'
+              : '选择太阳系区域'
+        }
       >
         <div className="catalog-title">
-          {tab === 'explore' ? '天体导航' : '由内向外'}
-          <span>{tab === 'explore' ? '01 — 10' : '01 — 07'}</span>
+          {tab === 'comets'
+            ? '深空访客'
+            : tab === 'explore'
+              ? '天体导航'
+              : '由内向外'}
+          <span>
+            {tab === 'comets'
+              ? '01 — 04'
+              : tab === 'explore'
+                ? '01 — 10'
+                : '01 — 07'}
+          </span>
         </div>
-        {tab === 'explore'
-          ? bodies.map((b, i) => (
+        {tab === 'comets'
+          ? comets.map((c, i) => (
               <button
-                key={b.id}
-                className={`body-option ${selected === b.id ? 'active' : ''}`}
-                onClick={() => select(b.id)}
+                key={c.id}
+                className={`body-option ${cometId === c.id ? 'active' : ''}`}
+                onClick={() => selectComet(c.id)}
               >
-                <span className="body-number">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span
-                  className="planet-dot"
-                  style={{
-                    background: b.color,
-                    boxShadow: `0 0 12px ${b.color}25`,
-                  }}
-                />
+                <span className="body-number">0{i + 1}</span>
+                <CometIcon size={18} color={c.color} />
                 <span>
-                  {b.name}
-                  <small>{b.en}</small>
+                  {c.name}
+                  <small>{c.en.split(' / ')[0]}</small>
                 </span>
                 <ChevronRight size={14} />
               </button>
             ))
-          : regions.map((r, i) => (
-              <button
-                key={r.id}
-                className={`region-option ${region === r.id ? 'active' : ''}`}
-                onClick={() => goRegion(r.id)}
-              >
-                <span className="body-number">0{i + 1}</span>
-                <span>
-                  {r.name}
-                  <small>{r.range}</small>
-                </span>
-                <ChevronRight size={14} />
-              </button>
-            ))}
+          : tab === 'explore'
+            ? bodies.map((b, i) => (
+                <button
+                  key={b.id}
+                  className={`body-option ${selected === b.id ? 'active' : ''}`}
+                  onClick={() => select(b.id)}
+                >
+                  <span className="body-number">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className="planet-dot"
+                    style={{
+                      background: b.color,
+                      boxShadow: `0 0 12px ${b.color}25`,
+                    }}
+                  />
+                  <span>
+                    {b.name}
+                    <small>{b.en}</small>
+                  </span>
+                  <ChevronRight size={14} />
+                </button>
+              ))
+            : regions.map((r, i) => (
+                <button
+                  key={r.id}
+                  className={`region-option ${region === r.id ? 'active' : ''}`}
+                  onClick={() => goRegion(r.id)}
+                >
+                  <span className="body-number">0{i + 1}</span>
+                  <span>
+                    {r.name}
+                    <small>{r.range}</small>
+                  </span>
+                  <ChevronRight size={14} />
+                </button>
+              ))}
         <div className="catalog-footer">
           <span className="tiny-cross">+</span>
-          {tab === 'explore'
-            ? '点击天体，开启近距离观察'
-            : '距离单位 AU ≈ 1.496 亿公里'}
+          {tab === 'comets'
+            ? '选择彗星，比较回归的节奏'
+            : tab === 'explore'
+              ? '点击天体，开启近距离观察'
+              : '距离单位 AU ≈ 1.496 亿公里'}
         </div>
       </section>
       <aside className="info-panel glass">
@@ -405,11 +550,13 @@ export default function Home() {
         <div className="scene-meta">
           <span>
             <i />
-            {body
-              ? `正在跟随 · ${body.name}`
-              : tab === 'structure'
-                ? activeRegion.name
-                : '太阳系全景'}
+            {tab === 'comets'
+              ? `${cometClose ? '正在跟随' : '轨道全景'} · ${activeComet.name}`
+              : body
+                ? `正在跟随 · ${body.name}`
+                : tab === 'structure'
+                  ? activeRegion.name
+                  : '太阳系全景'}
           </span>
           <span>
             {scale === 'distance'
@@ -519,8 +666,8 @@ export default function Home() {
               id="scale"
               checked={scale === 'distance'}
               onCheckedChange={(v) => {
-                setScale(v ? 'distance' : 'illustrated');
                 home();
+                setScale(v ? 'distance' : 'illustrated');
               }}
             />
           </div>
@@ -637,7 +784,13 @@ export default function Home() {
       </Dialog>
       <Sheet open={details} onOpenChange={setDetails}>
         <SheetContent side="bottom" className="mobile-details">
-          <SheetTitle>{body ? body.name : '太阳系知识'}</SheetTitle>
+          <SheetTitle>
+            {tab === 'comets'
+              ? activeComet.name
+              : body
+                ? body.name
+                : '太阳系知识'}
+          </SheetTitle>
           <SheetDescription>探索天体的特征与运行规律。</SheetDescription>
           {tab === 'structure' && !body ? (
             <>

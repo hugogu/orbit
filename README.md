@@ -21,6 +21,10 @@ Import the repository with its root directory unchanged. `vercel.json` selects t
 
 ## Model limitations
 
+Planet detail panels include expandable guides to 19 representative moons (including Charon); Mercury and Venus explicitly have no known moons. These are educational selections, not current satellite censuses. NASA references accompany each entry. Only Earth's Moon is animated in the planet scene.
+
+The Comets tab includes Halley, Encke, 67P, and Hale–Bopp. It shares playback controls, offers orbit overview and follow views, and can restart a perihelion demonstration. Rounded JPL SBDB elements retrieved on 2026-09-07 drive fixed Kepler ellipses; periods depend on the osculating epoch, especially for Hale–Bopp. Initial phases and orbital longitudes are schematic, not current ephemerides. The enlarged nucleus marker and antisolar ion tail are illustrative; tail activity fades with distance. The solver uses bracketed Newton iteration for high eccentricities, and paths sample eccentric anomaly.
+
 Initial orbital phases are pedagogical, not an ephemeris for today's date. Orbital elements and rotational periods are approximate; no N-body integration or orbital precession. Illustrated mode compresses distances and enlarges bodies independently. Distance mode preserves orbital semimajor axis proportions while enlarging bodies. Outer populations use independent schematic scales; their individual orbits are not catalogued measurements. Moon distance/size and rings are illustrated. Not all satellites, dwarf planets or small bodies are individually rendered. High time speeds can cause apparent rotational aliasing.
 
 ## Sources and credits
@@ -34,4 +38,4 @@ Initial orbital phases are pedagogical, not an ephemeris for today's date. Orbit
 
 ## Verification
 
-Eight automated tests check prograde orientation, closed orbits, apsides, distance scaling, long-running finite positions, real-time units, state actions and invalid input isolation. Browser checks cover desktop and phone breakpoints, body selection/follow, time slider, pause, region navigation, visibility/scale switches, mobile knowledge sheet, and both WebMCP action contracts. Browser responsive checks are not physical-device performance certification.
+Twelve automated tests cover planet and comet orbital invariants, high-eccentricity stability, retrograde motion, satellite coverage, comet scene selection/reset/visibility, antisolar tails, and application action contracts. Both the Sites build and Vercel static export are checked. The original planet experience was browser-tested at desktop and phone breakpoints; the new moon panels and comet controls still need a browser pass because the host was locked during this change. Browser responsive checks are not physical-device performance certification.
