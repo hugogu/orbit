@@ -1,0 +1,49 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { bodies, orbitPosition, speeds } from '../lib/solar.ts';
+const earth = bodies.find((b) => b.id === 'earth')!;
+void test('every orbit closes after exactly one orbital period', () => {
+  for (const b of bodies.filter((b) => b.period)) {
+    for (const mode of ['illustrated', 'distance'] as const) {
+      const a = orbitPosition(b, 0, mode),
+        c = orbitPosition(b, b.period, mode);
+      assert.ok(Math.hypot(...a.map((v, i) => v - c[i])) < 1e-8, b.id);
+    }
+  }
+});
+void test('Kepler solution respects perihelion and aphelion distances', () => {
+  for (const b of bodies.filter((b) => b.period)) {
+    const peri = (-b.phase / (2 * Math.PI)) * b.period;
+    assert.ok(
+      Math.abs(Math.hypot(...orbitPosition(b, peri)) - b.distance * (1 - b.e)) <
+        1e-8,
+    );
+    assert.ok(
+      Math.abs(
+        Math.hypot(...orbitPosition(b, peri + b.period / 2)) -
+          b.distance * (1 + b.e),
+      ) < 1e-8,
+    );
+  }
+});
+void test('distance mode uses AU consistently', () => {
+  for (const b of bodies.filter((b) => b.period)) {
+    const p = orbitPosition(b, 70, 'distance'),
+      q = orbitPosition(b, 70);
+    assert.ok(
+      Math.abs(
+        Math.hypot(...p) / Math.hypot(...q) - (b.au * 3.1) / b.distance,
+      ) < 1e-8,
+    );
+  }
+});
+void test('sun stays at focus; real time preset advances one second per second', () => {
+  assert.deepEqual(orbitPosition(bodies[0], 999), [0, 0, 0]);
+  assert.equal(speeds[0] * 86400, 1);
+  assert.equal(speeds[7], 3650);
+});
+void test('orbital position changes and stays finite even after long integration', () => {
+  assert.notDeepEqual(orbitPosition(earth, 0), orbitPosition(earth, 50));
+  for (const b of bodies)
+    assert.ok(orbitPosition(b, 1e9).every(Number.isFinite));
+});
