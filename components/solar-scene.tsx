@@ -2,7 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { bodies, orbitPosition, type ScaleMode } from '@/lib/solar';
+import { bodies, type ScaleMode } from '@/lib/solar';
+import { planetPosition, bodyOrientation } from '@/lib/ephemeris';
+import { DAY_MS, J2000_MS, advanceTime } from '@/lib/simulation-time';
 import { comets } from '@/lib/comets';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
@@ -20,7 +22,7 @@ export type SceneState = {
   top: boolean;
   cometId: string | null;
   cometClose: boolean;
-  cometRestart: number;
+  epoch: number | null;
 };
 export default function SolarScene({
   state,
@@ -323,7 +325,8 @@ export default function SolarScene({
     const observer = new ResizeObserver(resize);
     observer.observe(container);
     resize();
-    let days = 0,
+    let time = Date.now(),
+      epoch: number | null = null,
       previous = performance.now(),
       frame = 0,
       lastReport = 0,
@@ -349,8 +352,14 @@ export default function SolarScene({
         dt = Math.min((now - previous) / 1000, 0.08);
       previous = now;
       if (document.hidden) return;
-      if (!s.paused) days += dt * s.speed;
-      if (s.scale !== lastScale) {
+      const seek = s.epoch !== epoch;
+      if (seek) {
+        epoch = s.epoch;
+        time = s.epoch ?? Date.now();
+      }
+      time = advanceTime(time, dt, s.speed, s.paused);
+      const days = (time - J2000_MS) / DAY_MS;
+      if (s.scale !== lastScale || seek) {
         lastScale = s.scale;
         for (const body of bodies) {
           const line = orbitLines.get(body.id);
@@ -359,10 +368,9 @@ export default function SolarScene({
               { length: 257 },
               (_, i) =>
                 new THREE.Vector3(
-                  ...orbitPosition(
+                  ...planetPosition(
                     body,
-                    (((i / 256) * Math.PI * 2 - body.phase) / (Math.PI * 2)) *
-                      body.period,
+                    days + (i / 256) * body.period,
                     s.scale,
                   ),
                 ),
@@ -374,11 +382,13 @@ export default function SolarScene({
       }
       for (const body of bodies) {
         const root = roots.get(body.id)!;
-        root.position.set(...orbitPosition(body, days, s.scale));
+        root.position.set(...planetPosition(body, days, s.scale));
         root.scale.setScalar(
           s.scale === 'distance' ? (body.id === 'sun' ? 0.09 : 0.32) : 1,
         );
-        meshes.get(body.id)!.rotation.y = (days / body.day) * Math.PI * 2;
+        meshes
+          .get(body.id)!
+          .parent!.quaternion.copy(bodyOrientation(body.id, days));
         const line = orbitLines.get(body.id);
         if (line) line.visible = s.orbits;
       }
@@ -389,9 +399,9 @@ export default function SolarScene({
       oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
       heliosphere.visible =
         s.belts && s.view >= 400 && s.scale === 'illustrated';
-      cometSystem.update(s.cometId, s.cometRestart, days, s.orbits);
+      cometSystem.update(s.cometId, days, s.orbits);
       const comet = comets.find((c) => c.id === s.cometId);
-      const cometKey = `${s.cometId}/${s.cometClose}/${s.cometRestart}`;
+      const cometKey = `${s.cometId}/${s.cometClose}`;
       if (
         s.selected !== lastSelected ||
         s.reset !== lastReset ||
@@ -428,7 +438,7 @@ export default function SolarScene({
             ? cometSystem.position
             : cometSystem.center
           : s.selected
-            ? roots.get(s.selected)!.position
+            ? (roots.get(s.selected)?.position ?? new THREE.Vector3())
             : new THREE.Vector3(),
       );
       if (transition > 0) {
@@ -476,7 +486,7 @@ export default function SolarScene({
         label.classList.toggle('selected', body.id === s.selected);
       }
       if (now - lastReport > 350) {
-        latest.current.onTime(days);
+        latest.current.onTime(time);
         lastReport = now;
       }
     };

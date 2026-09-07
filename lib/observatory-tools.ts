@@ -1,4 +1,7 @@
 import { bodies, speeds } from './solar';
+import { comets } from './comets';
+import { orbitingMoons } from './moon-orbits';
+const catalog = [...bodies, ...orbitingMoons, ...comets];
 export interface ObservatoryActions {
   focus: (id: string) => void;
   simulation: (speedIndex: number, paused: boolean) => void;
@@ -12,14 +15,14 @@ export function observatoryTools(actions: ObservatoryActions) {
         'Select and follow a solar-system body; show its educational facts.',
       inputSchema: {
         type: 'object',
-        properties: { id: { type: 'string', enum: bodies.map((b) => b.id) } },
+        properties: { id: { type: 'string', enum: catalog.map((b) => b.id) } },
         required: ['id'],
         additionalProperties: false,
       },
       annotations: { readOnlyHint: false, untrustedContentHint: false },
       execute(input: unknown) {
         const value = input as { id?: string };
-        const body = bodies.find((b) => b.id === value?.id);
+        const body = catalog.find((b) => b.id === value?.id);
         if (!body) throw new Error('Unknown solar-system body');
         actions.focus(body.id);
         return { selected: body.id, name: body.name };

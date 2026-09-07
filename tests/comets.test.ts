@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { comets, cometActivity } from '../lib/comets.ts';
+import {
+  comets,
+  cometActivity,
+  cometPerihelion,
+  cometElements,
+} from '../lib/comets.ts';
+import { J2000_MS, DAY_MS } from '../lib/simulation-time.ts';
 import { bodies, eccentricPosition, orbitPosition } from '../lib/solar.ts';
 import { moonSystems } from '../lib/moons.ts';
 import { createCometSystem } from '../components/comet-system.ts';
@@ -66,7 +72,7 @@ void test('Halley is retrograde and speeds up near perihelion', () => {
   assert.ok(Math.abs(ratio - (1 + c.e) / (1 - c.e)) < 0.001);
 });
 
-void test('comet scene integrates selection, motion, restart, orbit visibility and antisolar tail', () => {
+void test('comet scene preserves the absolute date across selections and keeps its tail antisolar', () => {
   const original = globalThis.document;
   const label = { className: '', hidden: false, style: {}, textContent: '' };
   Object.defineProperty(globalThis, 'document', {
@@ -78,7 +84,8 @@ void test('comet scene integrates selection, motion, restart, orbit visibility a
     const system = createCometSystem(scene, {
       appendChild() {},
     } as unknown as HTMLElement);
-    system.update('halley', 0, 100, true);
+    const peri = (cometPerihelion(comets[0], 0) - J2000_MS) / DAY_MS;
+    system.update('halley', peri, true);
     const initial = system.position.clone();
     const group = scene.getObjectByName('comet-system')!;
     assert.equal(
@@ -91,17 +98,18 @@ void test('comet scene integrates selection, motion, restart, orbit visibility a
       tail.quaternion,
     );
     assert.ok(direction.dot(initial.clone().normalize()) > 0.99999);
-    system.update('halley', 0, 200, false);
+    system.update('halley', peri + 100, false);
     assert.ok(system.position.distanceTo(initial) > 0.1);
     assert.equal(
       group.children.filter((c) => c instanceof THREE.Line && c.visible).length,
       0,
     );
-    system.update('halley', 1, 200, true);
+    system.update('encke', peri + 100, true);
+    system.update('halley', peri, true);
     assert.ok(system.position.distanceTo(initial) < 1e-10);
-    system.update('halley', 1, 200 + comets[0].period / 2, true);
+    system.update('halley', peri + cometElements(comets[0]).period / 2, true);
     assert.equal(tail.visible, false);
-    system.update(null, 1, 300, true);
+    system.update(null, peri, true);
     assert.equal(group.visible, false);
     assert.equal(label.hidden, true);
   } finally {

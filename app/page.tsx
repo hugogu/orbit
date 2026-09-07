@@ -18,12 +18,15 @@ import {
   SlidersHorizontal,
   Plus,
   Info,
+  CalendarDays,
   X,
   Sparkles as CometIcon,
 } from 'lucide-react';
 import SolarScene from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
-import { comets } from '@/lib/comets';
+import AstronomyPanel from '@/components/astronomy-panel';
+import { comets, cometPerihelion } from '@/lib/comets';
+import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -50,7 +53,7 @@ import {
 export default function Home() {
   const [selected, setSelected] = useState<string | null>(null),
     [paused, setPaused] = useState(false),
-    [speed, setSpeed] = useState(3),
+    [speed, setSpeed] = useState(0),
     [orbits, setOrbits] = useState(true),
     [labels, setLabels] = useState(true),
     [belts, setBelts] = useState(true),
@@ -58,11 +61,12 @@ export default function Home() {
     [view, setView] = useState(205),
     [reset, setReset] = useState(0),
     [top, setTop] = useState(false),
-    [days, setDays] = useState(0),
+    [time, setTime] = useState<number | null>(null),
+    [epoch, setEpoch] = useState<number | null>(null),
+    [astronomy, setAstronomy] = useState(false),
     [tab, setTab] = useState('explore'),
     [cometId, setCometId] = useState('halley'),
     [cometClose, setCometClose] = useState(false),
-    [cometRestart, setCometRestart] = useState(0),
     [region, setRegion] = useState('inner'),
     [help, setHelp] = useState(false),
     [settings, setSettings] = useState(false),
@@ -75,20 +79,32 @@ export default function Home() {
   );
   const activeRegion = regions.find((r) => r.id === region)!;
   const activeComet = comets.find((c) => c.id === cometId)!;
+  const isComet = selected === cometId;
+  useEffect(() => {
+    queueMicrotask(() => {
+      const now = Date.now();
+      setEpoch(now);
+      setTime(now);
+    });
+  }, []);
+  function seekTime(ms: number, live = false) {
+    setEpoch(ms);
+    setTime(ms);
+    setPaused(!live);
+    if (live) setSpeed(0);
+  }
   const select = useCallback((id: string) => {
     if (comets.some((c) => c.id === id)) {
-      setTab('comets');
+      setTab('explore');
       setCometId(id);
       setCometClose(true);
-      setSelected(null);
+      setSelected(id);
       setScale('distance');
       setReset((v) => v + 1);
       return;
     }
     setTab('explore');
     setSelected(id);
-    if (orbitingMoons.some((m) => m.id === id || m.parentId === id))
-      setSpeed(1);
     setReset((v) => v + 1);
   }, []);
   const home = useCallback(() => {
@@ -141,17 +157,6 @@ export default function Home() {
     setScale('illustrated');
     setBelts(true);
   }
-  function selectComet(id: string) {
-    setTab('comets');
-    setCometId(id);
-    setSelected(null);
-    setScale('distance');
-    setCometClose(true);
-    setSpeed(2);
-    setCometRestart((v) => v + 1);
-    setReset((v) => v + 1);
-    setTop(false);
-  }
   useEffect(
     () =>
       registerObservatoryTools({
@@ -164,197 +169,204 @@ export default function Home() {
       }),
     [select],
   );
-  const readout =
-    tab === 'comets' ? (
-      <>
-        <div className="eyebrow">彗星档案 / {activeComet.en}</div>
-        <h2 className="region-heading">{activeComet.name}</h2>
-        <p className="description">{activeComet.description}</p>
-        <div className="facts">
-          <div>
-            <span>模型公转周期</span>
-            <strong>
-              {(activeComet.period / 365.256).toLocaleString('zh-CN', {
-                maximumFractionDigits: 1,
-              })}{' '}
-              <small>年</small>
-            </strong>
-          </div>
-          <div>
-            <span>轨道倾角</span>
-            <strong>
-              {activeComet.inc} <small>°</small>
-            </strong>
-          </div>
-          <div>
-            <span>模型近日点</span>
-            <strong>
-              {(activeComet.au * (1 - activeComet.e)).toFixed(2)}{' '}
-              <small>AU</small>
-            </strong>
-          </div>
-          <div>
-            <span>模型远日点</span>
-            <strong>
-              {(activeComet.au * (1 + activeComet.e)).toFixed(2)}{' '}
-              <small>AU</small>
-            </strong>
-          </div>
+  const readout = isComet ? (
+    <>
+      <div className="eyebrow">彗星档案 / {activeComet.en}</div>
+      <h2 className="region-heading">{activeComet.name}</h2>
+      <p className="description">{activeComet.description}</p>
+      <div className="facts">
+        <div>
+          <span>模型公转周期</span>
+          <strong>
+            {(activeComet.period / 365.256).toLocaleString('zh-CN', {
+              maximumFractionDigits: 1,
+            })}{' '}
+            <small>年</small>
+          </strong>
         </div>
-        <div className="comet-actions">
-          <button
-            className="primary-action"
-            onClick={() => setCometClose((v) => !v)}
-          >
-            {cometClose ? '查看完整轨道' : '跟随彗星观察'}{' '}
-            <LocateFixed size={16} />
-          </button>
-          <button
-            className="secondary-action"
-            onClick={() => {
-              setCometRestart((v) => v + 1);
-              setCometClose(true);
-              setSpeed(2);
-              setPaused(false);
-            }}
-          >
-            从近日点演示 <RotateCcw size={15} />
-          </button>
+        <div>
+          <span>轨道倾角</span>
+          <strong>
+            {activeComet.inc} <small>°</small>
+          </strong>
         </div>
-        <div className="did-you-know">
-          <span>
-            <CometIcon size={15} /> 来自深空的访客
-          </span>
-          <p>{activeComet.fact}</p>
+        <div>
+          <span>模型近日点</span>
+          <strong>
+            {(activeComet.au * (1 - activeComet.e)).toFixed(2)}{' '}
+            <small>AU</small>
+          </strong>
         </div>
-        <p className="description">
-          靠近太阳时，冰升华产生彗发与彗尾。图中的蓝色离子尾示意指向背离太阳的方向，并会随远离太阳而淡去；真实尘埃尾通常弯曲。
-        </p>
-        <p className="little-note">
-          选择时从示意近日点开始，使用底部速度控制。轨道按 AU
-          比例显示，彗核与彗尾放大；固定轨道参数与方位仅用于教学，并非当前星空或回归预报。
-        </p>
-        <a
-          className="source"
-          href={`https://science.nasa.gov/solar-system/comets/${activeComet.source}/`}
-          target="_blank"
-          rel="noreferrer"
+        <div>
+          <span>模型远日点</span>
+          <strong>
+            {(activeComet.au * (1 + activeComet.e)).toFixed(2)}{' '}
+            <small>AU</small>
+          </strong>
+        </div>
+      </div>
+      <div className="comet-actions">
+        <button
+          className="primary-action"
+          onClick={() => setCometClose((v) => !v)}
         >
-          在 NASA 继续探索 <ArrowUpRight size={15} />
-        </a>
-        <a
-          className="source"
-          href="https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html"
-          target="_blank"
-          rel="noreferrer"
+          {cometClose ? '查看完整轨道' : '跟随彗星观察'}{' '}
+          <LocateFixed size={16} />
+        </button>
+        <button
+          className="secondary-action"
+          onClick={() => {
+            const peri = cometPerihelion(
+              activeComet,
+              ((time ?? Date.now()) - J2000_MS) / DAY_MS,
+            );
+            if (!validTime(peri)) {
+              setNotice('下一次模型近日点超出 1700—2200 年范围。');
+              return;
+            }
+            seekTime(peri);
+            setCometClose(true);
+            setSpeed(2);
+          }}
         >
-          轨道参数：JPL 小天体数据库 <ArrowUpRight size={15} />
-        </a>
-      </>
-    ) : body ? (
-      <>
-        <div className="eyebrow">天体档案 / {body.en}</div>
-        <div className="detail-heading">
-          <h2>{body.name}</h2>
-          <span className="type-chip">{body.type}</span>
+          跳到模型下一次近日点 <CalendarDays size={15} />
+        </button>
+      </div>
+      <div className="did-you-know">
+        <span>
+          <CometIcon size={15} /> 来自深空的访客
+        </span>
+        <p>{activeComet.fact}</p>
+      </div>
+      <p className="description">
+        靠近太阳时，冰升华产生彗发与彗尾。图中的蓝色离子尾示意指向背离太阳的方向，并会随远离太阳而淡去；真实尘埃尾通常弯曲。
+      </p>
+      <p className="little-note">
+        位置由共享日期与 JPL
+        带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。轨道按
+        AU 比例显示，彗核、旋转与彗尾为示意。
+      </p>
+      <a
+        className="source"
+        href={`https://science.nasa.gov/solar-system/comets/${activeComet.source}/`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        在 NASA 继续探索 <ArrowUpRight size={15} />
+      </a>
+      <a
+        className="source"
+        href="https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html"
+        target="_blank"
+        rel="noreferrer"
+      >
+        轨道参数：JPL 小天体数据库 <ArrowUpRight size={15} />
+      </a>
+    </>
+  ) : body ? (
+    <>
+      <div className="eyebrow">天体档案 / {body.en}</div>
+      <div className="detail-heading">
+        <h2>{body.name}</h2>
+        <span className="type-chip">{body.type}</span>
+      </div>
+      <p className="description">{body.description}</p>
+      <div className="facts">
+        <div>
+          <span>平均半径</span>
+          <strong>
+            {body.radius.toLocaleString()} <small>km</small>
+          </strong>
         </div>
-        <p className="description">{body.description}</p>
-        <div className="facts">
-          <div>
-            <span>平均半径</span>
-            <strong>
-              {body.radius.toLocaleString()} <small>km</small>
-            </strong>
-          </div>
-          <div>
-            <span>平均日距</span>
-            <strong>
-              {body.au || '—'} <small>{body.au ? 'AU' : ''}</small>
-            </strong>
-          </div>
-          <div>
-            <span>公转周期</span>
-            <strong>
-              {body.period
-                ? body.period > 1000
-                  ? (body.period / 365.256).toFixed(1)
-                  : body.period.toFixed(1)
-                : '—'}{' '}
-              <small>
-                {body.period ? (body.period > 1000 ? '年' : '天') : ''}
-              </small>
-            </strong>
-          </div>
-          <div>
-            <span>自转周期</span>
-            <strong>
-              {Math.abs(body.day).toFixed(2)} <small>天</small>
-            </strong>
-          </div>
+        <div>
+          <span>平均日距</span>
+          <strong>
+            {body.au || '—'} <small>{body.au ? 'AU' : ''}</small>
+          </strong>
         </div>
+        <div>
+          <span>公转周期</span>
+          <strong>
+            {body.period
+              ? body.period > 1000
+                ? (body.period / 365.256).toFixed(1)
+                : body.period.toFixed(1)
+              : '—'}{' '}
+            <small>
+              {body.period ? (body.period > 1000 ? '年' : '天') : ''}
+            </small>
+          </strong>
+        </div>
+        <div>
+          <span>自转周期</span>
+          <strong>
+            {Math.abs(body.day).toFixed(2)} <small>天</small>
+          </strong>
+        </div>
+      </div>
+      <div className="did-you-know">
+        <span>
+          <Plus size={14} /> 你知道吗
+        </span>
+        <p>{body.fact}</p>
+      </div>
+      {selectedMoon && (
         <div className="did-you-know">
-          <span>
-            <Plus size={14} /> 你知道吗
-          </span>
-          <p>{body.fact}</p>
-        </div>
-        {selectedMoon && (
-          <div className="did-you-know">
-            <span>正在跟随 · {selectedMoon.name}</span>
-            <p>
-              绕{body.name}公转约 {selectedMoon.period} 天。可调慢时间观察运动。
-            </p>
-          </div>
-        )}
-        <MoonGuide bodyId={body.id} selected={selected} onSelect={select} />
-        <a
-          className="source"
-          href={`https://science.nasa.gov/${body.source}/`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          在 NASA 继续探索 <ArrowUpRight size={15} />
-        </a>
-      </>
-    ) : (
-      <>
-        <div className="eyebrow">我们的宇宙坐标</div>
-        <h2 className="overview-title">
-          太阳系<span>THE SOLAR SYSTEM</span>
-        </h2>
-        <p className="description">
-          一颗恒星，八颗行星，和无数等待探索的世界。
-          <br />
-          从这里，认识我们的宇宙家园。
-        </p>
-        <div className="overview-stats">
-          <div>
-            <strong>
-              46<small> 亿年</small>
-            </strong>
-            <span>约形成于</span>
-          </div>
-          <div>
-            <strong>
-              8<small> 颗</small>
-            </strong>
-            <span>行星</span>
-          </div>
-        </div>
-        <div className="did-you-know">
-          <span>
-            <Orbit size={15} /> 引力，让一切相连
-          </span>
+          <span>正在跟随 · {selectedMoon.name}</span>
           <p>
-            越靠近太阳，行星公转越快。调快时间，观察水星与海王星截然不同的节奏。
+            绕{body.name}公转约 {selectedMoon.period} 天。可调慢时间观察运动。
           </p>
         </div>
-        <button className="primary-action" onClick={() => select('earth')}>
-          从地球出发 <ArrowUpRight size={17} />
-        </button>
-        <div className="little-note">点击天体或选择名称，即可抵近观察。</div>
-      </>
-    );
+      )}
+      <MoonGuide bodyId={body.id} selected={selected} onSelect={select} />
+      <a
+        className="source"
+        href={`https://science.nasa.gov/${body.source}/`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        在 NASA 继续探索 <ArrowUpRight size={15} />
+      </a>
+    </>
+  ) : (
+    <>
+      <div className="eyebrow">我们的宇宙坐标</div>
+      <h2 className="overview-title">
+        太阳系<span>THE SOLAR SYSTEM</span>
+      </h2>
+      <p className="description">
+        一颗恒星，八颗行星，和无数等待探索的世界。
+        <br />
+        从这里，认识我们的宇宙家园。
+      </p>
+      <div className="overview-stats">
+        <div>
+          <strong>
+            46<small> 亿年</small>
+          </strong>
+          <span>约形成于</span>
+        </div>
+        <div>
+          <strong>
+            8<small> 颗</small>
+          </strong>
+          <span>行星</span>
+        </div>
+      </div>
+      <div className="did-you-know">
+        <span>
+          <Orbit size={15} /> 引力，让一切相连
+        </span>
+        <p>
+          越靠近太阳，行星公转越快。调快时间，观察水星与海王星截然不同的节奏。
+        </p>
+      </div>
+      <button className="primary-action" onClick={() => select('earth')}>
+        从地球出发 <ArrowUpRight size={17} />
+      </button>
+      <div className="little-note">点击天体或选择名称，即可抵近观察。</div>
+    </>
+  );
   return (
     <main className="observatory">
       <SolarScene
@@ -369,12 +381,12 @@ export default function Home() {
           view,
           reset,
           top,
-          cometId: tab === 'comets' ? cometId : null,
+          cometId: isComet ? cometId : null,
           cometClose,
-          cometRestart,
+          epoch,
         }}
         onSelect={select}
-        onTime={setDays}
+        onTime={setTime}
       />
       <div className="vignette" />
       <header className="topbar">
@@ -393,7 +405,6 @@ export default function Home() {
           onValueChange={(v) => {
             setTab(String(v));
             if (v === 'structure') goRegion(region);
-            else if (v === 'comets') selectComet(cometId);
             else home();
           }}
         >
@@ -402,10 +413,6 @@ export default function Home() {
               <Globe2 />
               自由探索
             </TabsTrigger>
-            <TabsTrigger value="comets">
-              <CometIcon />
-              彗星
-            </TabsTrigger>
             <TabsTrigger value="structure">
               <Layers3 />
               太阳系结构
@@ -413,9 +420,16 @@ export default function Home() {
           </TabsList>
         </Tabs>
         <div className="header-actions">
+          <button
+            className="astronomy-button"
+            onClick={() => setAstronomy(true)}
+          >
+            <CalendarDays size={18} />
+            日期与天象
+          </button>
           <span className="live">
             <i />
-            实时演算
+            {paused ? '模拟暂停' : '按日期演算'}
           </span>
           <button
             className="icon-button"
@@ -443,89 +457,55 @@ export default function Home() {
       </div>
       <section
         className="catalog glass"
-        aria-label={
-          tab === 'comets'
-            ? '选择彗星'
-            : tab === 'explore'
-              ? '选择天体'
-              : '选择太阳系区域'
-        }
+        aria-label={tab === 'explore' ? '选择天体' : '选择太阳系区域'}
       >
         <div className="catalog-title">
-          {tab === 'comets'
-            ? '深空访客'
-            : tab === 'explore'
-              ? '天体导航'
-              : '由内向外'}
-          <span>
-            {tab === 'comets'
-              ? '01 — 04'
-              : tab === 'explore'
-                ? '01 — 10'
-                : '01 — 07'}
-          </span>
+          {tab === 'explore' ? '天体导航' : '由内向外'}
+          <span>{tab === 'explore' ? '01 — 14' : '01 — 07'}</span>
         </div>
-        {tab === 'comets'
-          ? comets.map((c, i) => (
+        {tab === 'explore'
+          ? [...bodies, ...comets].map((b, i) => (
               <button
-                key={c.id}
-                className={`body-option ${cometId === c.id ? 'active' : ''}`}
-                onClick={() => selectComet(c.id)}
+                key={b.id}
+                className={`body-option ${(body?.id ?? selected) === b.id ? 'active' : ''}`}
+                onClick={() => select(b.id)}
               >
-                <span className="body-number">0{i + 1}</span>
-                <CometIcon size={18} color={c.color} />
+                <span className="body-number">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span
+                  className="planet-dot"
+                  style={{
+                    background: b.color,
+                    boxShadow: `0 0 12px ${b.color}25`,
+                  }}
+                />
                 <span>
-                  {c.name}
-                  <small>{c.en.split(' / ')[0]}</small>
+                  {b.name}
+                  <small>{b.en.split(' / ')[0]}</small>
                 </span>
                 <ChevronRight size={14} />
               </button>
             ))
-          : tab === 'explore'
-            ? bodies.map((b, i) => (
-                <button
-                  key={b.id}
-                  className={`body-option ${body?.id === b.id ? 'active' : ''}`}
-                  onClick={() => select(b.id)}
-                >
-                  <span className="body-number">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span
-                    className="planet-dot"
-                    style={{
-                      background: b.color,
-                      boxShadow: `0 0 12px ${b.color}25`,
-                    }}
-                  />
-                  <span>
-                    {b.name}
-                    <small>{b.en}</small>
-                  </span>
-                  <ChevronRight size={14} />
-                </button>
-              ))
-            : regions.map((r, i) => (
-                <button
-                  key={r.id}
-                  className={`region-option ${region === r.id ? 'active' : ''}`}
-                  onClick={() => goRegion(r.id)}
-                >
-                  <span className="body-number">0{i + 1}</span>
-                  <span>
-                    {r.name}
-                    <small>{r.range}</small>
-                  </span>
-                  <ChevronRight size={14} />
-                </button>
-              ))}
+          : regions.map((r, i) => (
+              <button
+                key={r.id}
+                className={`region-option ${region === r.id ? 'active' : ''}`}
+                onClick={() => goRegion(r.id)}
+              >
+                <span className="body-number">0{i + 1}</span>
+                <span>
+                  {r.name}
+                  <small>{r.range}</small>
+                </span>
+                <ChevronRight size={14} />
+              </button>
+            ))}
         <div className="catalog-footer">
           <span className="tiny-cross">+</span>
-          {tab === 'comets'
-            ? '选择彗星，比较回归的节奏'
-            : tab === 'explore'
-              ? '点击天体，开启近距离观察'
-              : '距离单位 AU ≈ 1.496 亿公里'}
+          {tab === 'explore'
+            ? '点击天体，开启近距离观察'
+            : '距离单位 AU ≈ 1.496 亿公里'}
         </div>
       </section>
       <aside className="info-panel glass">
@@ -574,7 +554,7 @@ export default function Home() {
         <div className="scene-meta">
           <span>
             <i />
-            {tab === 'comets'
+            {isComet
               ? `${cometClose ? '正在跟随' : '轨道全景'} · ${activeComet.name}`
               : body
                 ? `正在跟随 · ${selectedMoon?.name ?? body.name}`
@@ -627,18 +607,16 @@ export default function Home() {
             </div>
           </div>
           <div className="simulation-clock">
-            <span>模拟已流逝</span>
-            <strong>
-              {days.toLocaleString('zh-CN', { maximumFractionDigits: 1 })}
-              <small> 天</small>
-            </strong>
+            <span>模拟日期 · UTC</span>
+            <strong>{time ? utcLabel(time).slice(0, 10) : '正在同步'}</strong>
+            <small>{time ? utcLabel(time).slice(11) : '—'}</small>
           </div>
           <button
             className="icon-button reset-speed"
             aria-label="恢复默认速度"
             title="恢复默认速度"
             onClick={() => {
-              setSpeed(3);
+              setSpeed(0);
               setPaused(false);
             }}
           >
@@ -668,6 +646,12 @@ export default function Home() {
           </button>
         </output>
       )}
+      <AstronomyPanel
+        open={astronomy}
+        onOpenChange={setAstronomy}
+        time={time ?? J2000_MS}
+        onSeek={seekTime}
+      />
       <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent className="orbit-dialog">
           <DialogTitle>观测设置</DialogTitle>
@@ -739,11 +723,15 @@ export default function Home() {
           <div className="model-explainer">
             <h3>理解模型</h3>
             <p>
-              以开普勒椭圆轨道演示公转，保留近似周期、偏心率与轨道倾角；自转按近似恒星日推进。初始相位是教学布局，不代表当前真实星历。高速时自转可能发生视觉混叠，可调低流速观察。
+              太阳、八大行星、冥王星和月球的位置由 Astronomy Engine 按 UTC
+              日期计算，以固定 J2000
+              黄道坐标显示几何位置，不含光行时。自转轴和本初子午线使用天文模型；地球采用地球定向转换。纹理经度未全部校准，云层纹理不代表实时天气。高速时自转会出现视觉混叠。
             </p>
             <p>
-              演示模式压缩轨道间距并放大天体。19
-              颗代表性卫星按近似周期绕母星运行，轨道平面、间距和表面配色为示意；未纳入全部卫星，也未模拟冥王星与冥卫一相互绕质心的运动。外围结构使用独立示意尺度。它不是航天导航或天象预报工具。
+              演示模式压缩轨道间距，所有模式均放大天体和卫星间距。月球及四颗伽利略卫星使用含摄动的模型，其余
+              14 颗卫星用 JPL
+              固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用
+              JPL 带历元的二体轨道，远离历元时误差增大。
             </p>
             <p>
               知识来源：
@@ -780,11 +768,11 @@ export default function Home() {
               </a>
               、
               <a
-                href="https://ssd.jpl.nasa.gov/planets/approx_pos.html"
+                href="https://github.com/cosinekitty/astronomy"
                 target="_blank"
                 rel="noreferrer"
               >
-                开普勒轨道
+                Astronomy Engine
               </a>
               。纹理：
               <a
@@ -810,11 +798,7 @@ export default function Home() {
       <Sheet open={details} onOpenChange={setDetails}>
         <SheetContent side="bottom" className="mobile-details">
           <SheetTitle>
-            {tab === 'comets'
-              ? activeComet.name
-              : body
-                ? body.name
-                : '太阳系知识'}
+            {isComet ? activeComet.name : body ? body.name : '太阳系知识'}
           </SheetTitle>
           <SheetDescription>探索天体的特征与运行规律。</SheetDescription>
           {tab === 'structure' && !body ? (

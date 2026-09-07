@@ -1,6 +1,10 @@
 import * as THREE from 'three';
-import { comets, cometActivity } from '../lib/comets';
-import { eccentricPosition, orbitPosition } from '../lib/solar';
+import {
+  comets,
+  cometActivity,
+  cometPosition,
+  cometOrbitPoint,
+} from '../lib/comets';
 
 export function createCometSystem(
   scene: THREE.Scene,
@@ -15,9 +19,7 @@ export function createCometSystem(
     const points = Array.from(
       { length: 513 },
       (_, i) =>
-        new THREE.Vector3(
-          ...eccentricPosition(comet, (i / 512) * Math.PI * 2, 'distance'),
-        ),
+        new THREE.Vector3(...cometOrbitPoint(comet, (i / 512) * Math.PI * 2)),
     );
     const line = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(points),
@@ -73,33 +75,28 @@ export function createCometSystem(
     projected = new THREE.Vector3(),
     north = new THREE.Vector3(0, 1, 0),
     direction = new THREE.Vector3();
-  let previous = '',
-    startDay = 0;
   return {
     position,
     center,
-    update(id: string | null, restart: number, days: number, orbits: boolean) {
+    update(id: string | null, days: number, orbits: boolean) {
       const index = comets.findIndex((c) => c.id === id),
         comet = comets[index];
       group.visible = !!comet;
       if (!comet) {
         label.hidden = true;
-        previous = '';
         return;
-      }
-      const key = `${id}/${restart}`;
-      if (key !== previous) {
-        previous = key;
-        startDay = days;
       }
       paths.forEach((path, i) => {
         path.visible = i === index && orbits;
       });
-      position.set(...orbitPosition(comet, days - startDay, 'distance'));
-      center.set(-comet.au * comet.e * 3.1, 0, 0);
+      position.set(...cometPosition(comet, days));
+      center
+        .set(...cometOrbitPoint(comet, 0))
+        .add(new THREE.Vector3(...cometOrbitPoint(comet, Math.PI)))
+        .multiplyScalar(0.5);
       head.position.copy(position);
       nucleus.position.copy(position);
-      nucleus.rotation.y = (days - startDay) * 2;
+      nucleus.rotation.y = days * 2;
       nucleus.userData.id = comet.id;
       label.onclick = () => onSelect?.(comet.id);
       tail.position.copy(position);

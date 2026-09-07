@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { orbitingMoons, moonOffset } from '../lib/moon-orbits';
+import { orbitingMoons } from '../lib/moon-orbits';
+import { datedMoonOffset } from '../lib/satellite-elements';
+import { bodyOrientation } from '../lib/ephemeris';
 import type { ScaleMode } from '../lib/solar';
 
 export function createMoonSystem(
@@ -48,7 +50,8 @@ export function createMoonSystem(
     layer.appendChild(label);
     return { moon, root, mesh, path, label };
   });
-  let lastScale = '';
+  let lastScale = '',
+    lastPathDay = NaN;
   const projected = new THREE.Vector3();
   return {
     update(
@@ -63,21 +66,23 @@ export function createMoonSystem(
         const parent = roots.get(moon.parentId)!;
         root.position
           .copy(parent.position)
-          .add(new THREE.Vector3(...moonOffset(moon, days, scale)));
+          .add(new THREE.Vector3(...datedMoonOffset(moon, days, scale)));
         root.scale.setScalar(scale === 'distance' ? 0.32 : 1);
-        mesh.rotation.y = (days / moon.period) * Math.PI * 2;
+        if (moon.en === 'Moon')
+          mesh.quaternion.copy(bodyOrientation(moon.id, days));
+        else mesh.lookAt(parent.position); // Synchronous orientation is schematic for these surfaces.
         path.position.copy(parent.position);
         path.visible = orbits && parentId === moon.parentId;
-        if (lastScale !== scale) {
+        if (
+          lastScale !== scale ||
+          !Number.isFinite(lastPathDay) ||
+          Math.abs(days - lastPathDay) > 30
+        ) {
           const points = Array.from(
             { length: 257 },
             (_, i) =>
               new THREE.Vector3(
-                ...moonOffset(
-                  moon,
-                  (i / 256 - moon.phase / (2 * Math.PI)) * moon.period,
-                  scale,
-                ),
+                ...datedMoonOffset(moon, days + (i / 256) * moon.period, scale),
               ),
           );
           path.geometry.dispose();
@@ -85,6 +90,8 @@ export function createMoonSystem(
         }
       }
       lastScale = scale;
+      if (!Number.isFinite(lastPathDay) || Math.abs(days - lastPathDay) > 30)
+        lastPathDay = days;
     },
     project(
       camera: THREE.Camera,

@@ -1,4 +1,10 @@
-import type { OrbitalElements } from './solar';
+import { AstroTime } from 'astronomy-engine';
+import { Vector3 } from 'three';
+import {
+  orbitPosition,
+  eccentricPosition,
+  type OrbitalElements,
+} from './solar';
 
 export type Comet = OrbitalElements & {
   id: string;
@@ -11,7 +17,7 @@ export type Comet = OrbitalElements & {
 };
 
 // Rounded JPL SBDB osculating elements retrieved 2026-09-07.
-// These fixed teaching ellipses omit planetary perturbations and real epochs.
+// The epoch-aware solutions below retain the full precision SBDB snapshot.
 export const comets: Comet[] = [
   {
     id: 'halley',
@@ -78,6 +84,76 @@ export const comets: Comet[] = [
     source: 'c-1995-o1-hale-bopp',
   },
 ];
+
+// epoch JD(TDB), a(AU), e, i/node/peri/M(degrees), period(days).
+// https://ssd-api.jpl.nasa.gov/sbdb.api?full-prec=true&sstr=1P (and 2P, 67P, C/1995 O1).
+const solutions: Record<string, number[]> = {
+  halley: [
+    2439875.5, 17.92863504856923, 0.9679359956953211, 162.1905300439129,
+    59.09894720612437, 112.2414314637764, 274.3823371366792, 27728.04608790421,
+  ],
+  encke: [
+    2459897.5, 2.219666462919362, 0.8474743598998141, 11.38392682811341,
+    334.1444955507088, 187.1788051568751, 257.9773631508835, 1207.897291208371,
+  ],
+  '67p': [
+    2457305.5, 3.462249490129549, 0.6409081308996354, 7.040294937543767,
+    50.13557377155012, 12.79824970228189, 8.859927425218402, 2353.076067903661,
+  ],
+  'hale-bopp': [
+    2459837.5, 177.4333839117583, 0.9949810027633206, 89.28759424740302,
+    282.7334213961641, 130.4146670659176, 3.878386339423241, 863279.5034870314,
+  ],
+};
+export function cometElements(comet: Comet) {
+  const [epoch, au, e, inc, node, peri, mean, period] = solutions[comet.id];
+  return {
+    epoch,
+    au,
+    e,
+    inc,
+    node,
+    peri,
+    mean,
+    period,
+    phase: (mean * Math.PI) / 180,
+    distance: au * 3.1,
+  };
+}
+function orientComet(comet: Comet, p: number[]): [number, number, number] {
+  const { inc, node, peri } = cometElements(comet),
+    deg = Math.PI / 180;
+  const v = new Vector3(p[0], -p[2], 0)
+    .applyAxisAngle(new Vector3(0, 0, 1), peri * deg)
+    .applyAxisAngle(new Vector3(1, 0, 0), inc * deg)
+    .applyAxisAngle(new Vector3(0, 0, 1), node * deg);
+  return [v.x, v.z, -v.y];
+}
+export function cometPosition(comet: Comet, days: number) {
+  const elements = cometElements(comet);
+  return orientComet(
+    comet,
+    orbitPosition(
+      { ...elements, inc: 0 },
+      new AstroTime(days).tt - (elements.epoch - 2451545),
+      'distance',
+    ),
+  );
+}
+export function cometOrbitPoint(comet: Comet, anomaly: number) {
+  return orientComet(
+    comet,
+    eccentricPosition({ ...cometElements(comet), inc: 0 }, anomaly, 'distance'),
+  );
+}
+export function cometPerihelion(comet: Comet, days: number) {
+  const e = cometElements(comet),
+    tt = new AstroTime(days).tt;
+  const first = e.epoch - 2451545 - (e.mean / 360) * e.period;
+  return AstroTime.FromTerrestrialTime(
+    first + Math.ceil((tt - first) / e.period) * e.period,
+  ).date.getTime();
+}
 
 export function cometActivity(distanceAU: number) {
   return Math.max(0, Math.min(1, (4 - distanceAU) / 3));
