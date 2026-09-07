@@ -30,4 +30,4 @@ Initial orbital phases are pedagogical, not an ephemeris for today's date. Orbit
 
 ## Verification
 
-Seven automated tests check closed orbits, apsides, distance scaling, long-running finite positions, real-time units, state actions and invalid input isolation. Browser checks cover desktop and phone breakpoints, body selection/follow, time slider, pause, region navigation, visibility/scale switches, mobile knowledge sheet, and both WebMCP action contracts. Browser responsive checks are not physical-device performance certification.
+Eight automated tests check prograde orientation, closed orbits, apsides, distance scaling, long-running finite positions, real-time units, state actions and invalid input isolation. Browser checks cover desktop and phone breakpoints, body selection/follow, time slider, pause, region navigation, visibility/scale switches, mobile knowledge sheet, and both WebMCP action contracts. Browser responsive checks are not physical-device performance certification.

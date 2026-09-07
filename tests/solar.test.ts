@@ -47,3 +47,10 @@ void test('orbital position changes and stays finite even after long integration
   for (const b of bodies)
     assert.ok(orbitPosition(b, 1e9).every(Number.isFinite));
 });
+
+void test('prograde orbits have northward angular momentum, matching axial rotation', () => {
+  const p = orbitPosition(earth, 0);
+  const q = orbitPosition(earth, 0.01);
+  const angularMomentumY = p[2] * q[0] - p[0] * q[2];
+  assert.ok(angularMomentumY > 0);
+});

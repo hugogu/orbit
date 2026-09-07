@@ -376,7 +376,7 @@ export default function SolarScene({
           new THREE.Vector3(
             Math.cos((days / 27.322) * Math.PI * 2) * mr,
             0,
-            Math.sin((days / 27.322) * Math.PI * 2) * mr,
+            -Math.sin((days / 27.322) * Math.PI * 2) * mr,
           ),
         );
       moon.rotation.y = (days / 27.322) * Math.PI * 2;

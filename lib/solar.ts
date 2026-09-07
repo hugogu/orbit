@@ -327,7 +327,7 @@ export function orbitPosition(
   const x = a * (Math.cos(eccentric) - body.e),
     z = a * Math.sqrt(1 - body.e ** 2) * Math.sin(eccentric),
     inc = (body.inc * Math.PI) / 180;
-  return [x, z * Math.sin(inc), z * Math.cos(inc)];
+  return [x, z * Math.sin(inc), -z * Math.cos(inc)];
 }
 export const speeds = [1 / 86400, 0.1, 1, 10, 30, 100, 365, 3650];
 export function speedLabel(speed: number) {
