@@ -15,6 +15,10 @@ A Chinese-language interactive 3D solar-system learning observatory built with T
 
 `npm install`, `npm run dev`, `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`.
 
+## Vercel deployment
+
+Import the repository with its root directory unchanged. `vercel.json` selects the static build and `dist/client` output automatically. `npm run build:vercel` enables Vinext static export and omits the Sites/Cloudflare Worker plugins. The output must include `dist/client/index.html`; publishing the normal Worker output as static files causes a root-page 404. Default `npm run build` continues to target Sites.
+
 ## Model limitations
 
 Initial orbital phases are pedagogical, not an ephemeris for today's date. Orbital elements and rotational periods are approximate; no N-body integration or orbital precession. Illustrated mode compresses distances and enlarges bodies independently. Distance mode preserves orbital semimajor axis proportions while enlarging bodies. Outer populations use independent schematic scales; their individual orbits are not catalogued measurements. Moon distance/size and rings are illustrated. Not all satellites, dwarf planets or small bodies are individually rendered. High time speeds can cause apparent rotational aliasing.
