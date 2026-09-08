@@ -8,7 +8,7 @@ import { moonVectorKm } from './satellite-elements';
 export const SUN_RADIUS_KM = 695700;
 export const AU_KM = 149597870.7;
 // Rounded mean radii (km), JPL satellite physical parameters. Spherical approximation.
-const moonRadii: Record<string, number> = {
+export const moonRadii: Record<string, number> = {
   Moon: 1737.4,
   Phobos: 11.1,
   Deimos: 6.2,

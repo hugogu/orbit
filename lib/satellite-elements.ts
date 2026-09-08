@@ -45,10 +45,14 @@ const preciseAxes: Record<string, number> = {
 };
 
 export function moonVectorKm(moon: OrbitingMoon, days: number): Vector3 {
-  const semimajor = preciseAxes[moon.en] ?? elements[moon.en][0];
+  const semimajor = moonSemimajorKm(moon);
   return new Vector3(
     ...datedMoonOffset(moon, days, 'illustrated'),
   ).multiplyScalar(semimajor / moon.distance);
+}
+
+export function moonSemimajorKm(moon: OrbitingMoon) {
+  return preciseAxes[moon.en] ?? elements[moon.en][0];
 }
 
 export function datedMoonOffset(

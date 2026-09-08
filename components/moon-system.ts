@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { orbitingMoons } from '../lib/moon-orbits';
-import { datedMoonOffset } from '../lib/satellite-elements';
+import { displayRadius, moonDisplayOffset } from '../lib/display-scale';
 import { bodyOrientation } from '../lib/ephemeris';
 import type { ScaleMode } from '../lib/solar';
 
@@ -51,6 +51,7 @@ export function createMoonSystem(
     return { moon, root, mesh, path, label };
   });
   let lastScale = '',
+    lastRealSizes = false,
     lastPathDay = NaN;
   const projected = new THREE.Vector3();
   return {
@@ -59,6 +60,7 @@ export function createMoonSystem(
       scale: ScaleMode,
       selected: string | null,
       orbits: boolean,
+      realSizes = false,
     ) {
       const parentId =
         orbitingMoons.find((m) => m.id === selected)?.parentId ?? selected;
@@ -66,8 +68,10 @@ export function createMoonSystem(
         const parent = roots.get(moon.parentId)!;
         root.position
           .copy(parent.position)
-          .add(new THREE.Vector3(...datedMoonOffset(moon, days, scale)));
-        root.scale.setScalar(scale === 'distance' ? 0.32 : 1);
+          .add(moonDisplayOffset(moon, days, scale, realSizes));
+        root.scale.setScalar(
+          displayRadius(moon.id, scale, realSizes) / moon.size,
+        );
         if (moon.en === 'Moon')
           mesh.quaternion.copy(bodyOrientation(moon.id, days));
         else mesh.lookAt(parent.position); // Synchronous orientation is schematic for these surfaces.
@@ -75,21 +79,24 @@ export function createMoonSystem(
         path.visible = orbits && parentId === moon.parentId;
         if (
           lastScale !== scale ||
+          lastRealSizes !== realSizes ||
           !Number.isFinite(lastPathDay) ||
           Math.abs(days - lastPathDay) > 30
         ) {
-          const points = Array.from(
-            { length: 257 },
-            (_, i) =>
-              new THREE.Vector3(
-                ...datedMoonOffset(moon, days + (i / 256) * moon.period, scale),
-              ),
+          const points = Array.from({ length: 257 }, (_, i) =>
+            moonDisplayOffset(
+              moon,
+              days + (i / 256) * moon.period,
+              scale,
+              realSizes,
+            ),
           );
           path.geometry.dispose();
           path.geometry = new THREE.BufferGeometry().setFromPoints(points);
         }
       }
       lastScale = scale;
+      lastRealSizes = realSizes;
       if (!Number.isFinite(lastPathDay) || Math.abs(days - lastPathDay) > 30)
         lastPathDay = days;
     },
@@ -103,7 +110,9 @@ export function createMoonSystem(
       const parentId =
         orbitingMoons.find((m) => m.id === selected)?.parentId ?? selected;
       for (const { moon, root, label } of entries) {
-        projected.copy(root.position).project(camera);
+        projected.copy(root.position);
+        projected.y += moon.size * root.scale.x * 1.1;
+        projected.project(camera);
         label.style.display =
           labels &&
           parentId === moon.parentId &&

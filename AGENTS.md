@@ -1,7 +1,7 @@
 # ORBIT solar observatory
 
 - Preserve the Sites project identifier and scaffold. Three.js scene is in `components/solar-scene.tsx`; educational parameters and Kepler solver are in `lib/solar.ts`.
-- The simulation clock is UTC (1700–2200). Astronomy Engine drives Sun/planet/Pluto/Moon positions and orientation plus Galilean satellite positions. Other satellites use fixed JPL mean elements; comets use epoch-aware two-body snapshots. Never describe those approximate trajectories as precision ephemerides. Body sizes, satellite distances and outer particles remain schematic; sky events are calculated separately from rendering.
+- The simulation clock is UTC (1700–2200). Astronomy Engine drives Sun/planet/Pluto/Moon positions and orientation plus Galilean satellite positions. Other satellites use fixed JPL mean elements; comets use epoch-aware two-body snapshots. Never describe those approximate trajectories as precision ephemerides. Display sizes and distances are independently configurable; both real switches share a physical scale through `lib/display-scale.ts`. Outer particles and comet nuclei remain schematic; sky events are calculated separately from rendering.
 - Run `npm test`, `npm run lint`, `npx tsc --noEmit`, and `npm run build` before publishing changes.
 - In macOS sandboxed sessions, networking and preview listeners may require approved elevated execution. Use `node --import tsx --test` instead of the tsx CLI to avoid its unnecessary IPC socket.
 - Lint excludes unmodified vendored `components/ui` and the scaffold's mobile hook; application files remain fully checked.

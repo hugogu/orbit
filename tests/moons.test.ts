@@ -9,6 +9,7 @@ import {
   moonSystemExtent,
 } from '../lib/moon-orbits.ts';
 import { createMoonSystem } from '../components/moon-system.ts';
+import { displayRadius, moonDisplayOffset } from '../lib/display-scale';
 
 void test('every published moon has a unique orbit and stays outside its parent', () => {
   assert.equal(
@@ -121,6 +122,27 @@ void test('rendered moon entities move with their parents, remain pickable and r
     assert.equal(selected, 'moon-io');
     system.update(0.1, 'distance', 'moon-io', false);
     assert.equal(scene.getObjectByName('moon-io-orbit')!.visible, false);
+    assert.equal(io.scale.x, 0.32);
+    const orbitBefore = (scene.getObjectByName('moon-io-orbit') as THREE.Line)
+      .geometry;
+    system.update(0.1, 'distance', 'moon-io', true, true);
+    const profile = orbitingMoons.find((m) => m.id === 'moon-io')!;
+    assert.ok(
+      Math.abs(
+        io.scale.x * profile.size - displayRadius(profile.id, 'distance', true),
+      ) < 1e-12,
+    );
+    assert.ok(
+      io.position
+        .clone()
+        .sub(roots.get('jupiter')!.position)
+        .distanceTo(moonDisplayOffset(profile, 0.1, 'distance', true)) < 1e-12,
+    );
+    assert.notEqual(
+      (scene.getObjectByName('moon-io-orbit') as THREE.Line).geometry,
+      orbitBefore,
+    );
+    system.update(0.1, 'distance', 'moon-io', true, false);
     assert.equal(io.scale.x, 0.32);
   } finally {
     if (descriptor) Object.defineProperty(globalThis, 'document', descriptor);

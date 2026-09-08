@@ -277,6 +277,95 @@ button:disabled {
   max-height: calc(100dvh - 390px);
   overflow-y: auto;
 }
+.body-branch-row {
+  display: flex;
+  align-items: center;
+}
+.body-branch-row .body-option {
+  flex: 1;
+  min-width: 0;
+}
+.body-branch-row .body-option > span:last-child {
+  flex: 1;
+  text-align: left;
+}
+.moon-expander {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 38px;
+  min-height: 44px;
+  color: #8f9cab;
+  font-size: 11px;
+  border-radius: 6px;
+}
+.moon-expander:hover {
+  color: #e2c78e;
+  background: #ffffff09;
+}
+.moon-children {
+  margin: 0 0 8px 27px;
+  padding-left: 10px;
+  border-left: 1px solid #b7c7db25;
+  list-style: none;
+}
+.moon-children button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  text-align: left;
+  font-size: 13px;
+  border-radius: 6px;
+}
+.moon-children small {
+  display: block;
+  color: #8290a3;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+}
+.moon-children button.active,
+.moon-children button:hover {
+  background: #dfc58f12;
+  color: #e2c78e;
+}
+.mobile-body-picker {
+  display: none;
+}
+.navigation-sheet {
+  padding: 24px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  background: #0c111a;
+  color: #d5dbe3;
+}
+@media (max-width: 600px) {
+  .desktop-body-tree {
+    display: none;
+  }
+  .mobile-body-picker {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 36px;
+    color: #dfc58f;
+  }
+  .navigation-sheet .body-option {
+    width: 100%;
+    min-height: 48px;
+  }
+  .navigation-sheet .body-option small {
+    display: block;
+  }
+  .navigation-sheet .body-option > span:last-child {
+    font-size: 14px;
+  }
+}
 .catalog-title {
   padding: 0 8px 14px;
   display: flex;
@@ -325,7 +414,7 @@ button:disabled {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.body-option > span:nth-last-child(2),
+.body-option > span:last-child,
 .region-option > span:nth-last-child(2) {
   font-size: 14px;
   flex: 1;
@@ -1339,7 +1428,7 @@ button:disabled {
     min-height: 35px;
     gap: 7px;
   }
-  .body-option > span:nth-last-child(2),
+  .body-option > span:last-child,
   .region-option > span:nth-last-child(2) {
     font-size: 12px;
   }

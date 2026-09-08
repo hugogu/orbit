@@ -8,7 +8,8 @@ import { DAY_MS, J2000_MS, advanceTime } from '@/lib/simulation-time';
 import { comets } from '@/lib/comets';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
-import { orbitingMoons, moonSystemExtent } from '@/lib/moon-orbits';
+import { orbitingMoons } from '@/lib/moon-orbits';
+import { displayRadius, displaySystemExtent } from '@/lib/display-scale';
 import { createTextureManager } from './texture-manager';
 import { createEclipseSystem } from './eclipse-system';
 import type { TextureQuality } from '@/lib/texture-quality';
@@ -30,6 +31,9 @@ export type SceneState = {
   shadows: boolean;
   shadowGuides: boolean;
   eclipseView: boolean;
+  galaxy: boolean;
+  realSizes: boolean;
+  systemView: boolean;
 };
 export default function SolarScene({
   state,
@@ -99,11 +103,14 @@ export default function SolarScene({
         material.map = texture;
         material.needsUpdate = true;
       });
+    let galaxyTexture: THREE.Texture | null = null;
+    const emptySky = new THREE.Color(0x020408);
     textureManager.register('stars_milky_way', (texture) => {
       texture.mapping = THREE.EquirectangularReflectionMapping;
-      scene.background = texture;
+      galaxyTexture = texture;
     });
-    scene.backgroundIntensity = 0.6;
+    scene.backgroundIntensity = 0.16;
+    scene.backgroundRotation.x = -0.55;
     const roots = new Map<string, THREE.Group>(),
       meshes = new Map<string, THREE.Mesh>(),
       orbitLines = new Map<string, THREE.Line>(),
@@ -222,6 +229,9 @@ export default function SolarScene({
       'moon',
     );
     const eclipseSystem = createEclipseSystem(meshes);
+    textureManager.register('earth_nightmap', (texture) =>
+      eclipseSystem.setEarthNightMap(texture),
+    );
     // Seeded distributions are conceptual populations, not measured asteroid positions.
     let seed = 71;
     const rand = () => {
@@ -353,6 +363,8 @@ export default function SolarScene({
       lastSelected: string | null | undefined = undefined,
       lastScale = '',
       lastCameraScale = '',
+      lastRealSizes = false,
+      lastSystemView = false,
       lastCameraAspect = 0,
       lastTop = false,
       lastComet = '',
@@ -390,7 +402,9 @@ export default function SolarScene({
         selectedMoonTexture ?? focusBody?.texture ?? null,
         compactScreen.matches,
         !!connection?.saveData,
+        s.galaxy,
       );
+      scene.background = s.galaxy ? (galaxyTexture ?? emptySky) : emptySky;
       const seek = s.epoch !== epoch;
       if (seek) {
         epoch = s.epoch;
@@ -423,7 +437,7 @@ export default function SolarScene({
         const root = roots.get(body.id)!;
         root.position.set(...planetPosition(body, days, s.scale));
         root.scale.setScalar(
-          s.scale === 'distance' ? (body.id === 'sun' ? 0.09 : 0.32) : 1,
+          displayRadius(body.id, s.scale, s.realSizes) / body.size,
         );
         meshes
           .get(body.id)!
@@ -431,7 +445,7 @@ export default function SolarScene({
         const line = orbitLines.get(body.id);
         if (line) line.visible = s.orbits;
       }
-      moonSystem.update(days, s.scale, s.selected, s.orbits);
+      moonSystem.update(days, s.scale, s.selected, s.orbits, s.realSizes);
       eclipseSystem.update(days, s.selected, s.shadows, s.shadowGuides);
       belt.visible = s.belts && s.scale === 'illustrated';
       kuiper.visible = s.belts && s.scale === 'illustrated';
@@ -448,6 +462,8 @@ export default function SolarScene({
         s.view !== lastView ||
         s.top !== lastTop ||
         s.scale !== lastCameraScale ||
+        s.realSizes !== lastRealSizes ||
+        s.systemView !== lastSystemView ||
         camera.aspect !== lastCameraAspect ||
         cometKey !== lastComet
       ) {
@@ -462,19 +478,26 @@ export default function SolarScene({
             : body
               ? Math.max(
                   body.size * (s.scale === 'distance' ? 0.32 : 1) * 9 + 3,
-                  (moonSystemExtent(body.id, s.scale) * 2.8) /
+                  (displaySystemExtent(body.id, s.scale, s.realSizes) * 2.8) /
                     Math.min(1, camera.aspect),
                 )
               : s.view;
-        if (s.eclipseView && s.selected) {
-          const radius =
-            bodies.find((b) => b.id === s.selected)?.size ??
-            orbitingMoons.find((m) => m.id === s.selected)?.size ??
-            1;
-          targetDistance =
-            (radius * (s.scale === 'distance' ? 0.32 : 1) * 5) /
-            Math.min(1, camera.aspect);
+        const radius = s.selected
+          ? displayRadius(s.selected, s.scale, s.realSizes)
+          : 1;
+        if ((s.eclipseView || s.realSizes) && (body || selectedMoon)) {
+          targetDistance = (radius * 6) / Math.min(1, camera.aspect);
+          if (s.systemView && body)
+            targetDistance = Math.max(
+              targetDistance,
+              (displaySystemExtent(body.id, s.scale, s.realSizes) * 2.8) /
+                Math.min(1, camera.aspect),
+            );
         }
+        controls.minDistance = s.realSizes && s.selected ? radius * 1.2 : 1;
+        camera.near =
+          s.realSizes && s.selected ? Math.max(1e-10, radius * 0.01) : 0.05;
+        camera.updateProjectionMatrix();
         transition = 1;
         following = null;
         lastSelected = s.selected;
@@ -482,6 +505,8 @@ export default function SolarScene({
         lastView = s.view;
         lastTop = s.top;
         lastCameraScale = s.scale;
+        lastRealSizes = s.realSizes;
+        lastSystemView = s.systemView;
         lastCameraAspect = camera.aspect;
         lastComet = cometKey;
       }
@@ -504,7 +529,11 @@ export default function SolarScene({
                   .focusDirection(s.selected)
                   .multiplyScalar(targetDistance)
               : s.top
-                ? new THREE.Vector3(0.001, targetDistance, 0.001)
+                ? new THREE.Vector3(
+                    targetDistance * 0.0001,
+                    targetDistance,
+                    targetDistance * 0.0001,
+                  )
                 : new THREE.Vector3(
                     0,
                     targetDistance * 0.52,
@@ -513,7 +542,11 @@ export default function SolarScene({
           );
         camera.position.lerp(desired, 0.055);
         transition -= dt * 0.5;
-        if (transition <= 0) following = newTarget.clone();
+        if (transition <= 0) {
+          camera.position.copy(desired);
+          controls.target.copy(newTarget);
+          following = newTarget.clone();
+        }
       } else if (s.selected || (comet && s.cometClose)) {
         if (following) {
           const delta = newTarget.clone().sub(following);
@@ -530,7 +563,7 @@ export default function SolarScene({
       for (const body of bodies) {
         const label = labels.get(body.id)!;
         projected.copy(roots.get(body.id)!.position);
-        projected.y += body.size * (s.scale === 'distance' ? 0.32 : 1) + 0.9;
+        projected.y += displayRadius(body.id, s.scale, s.realSizes) * 1.2;
         projected.project(camera);
         const show =
           s.labels &&

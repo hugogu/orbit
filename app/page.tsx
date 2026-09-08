@@ -22,6 +22,9 @@ import {
 } from 'lucide-react';
 import SolarScene from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
+import MoonDetails from '@/components/moon-details';
+import BodyNavigation from '@/components/body-navigation';
+import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
 import CuriosityCard from '@/components/curiosity-card';
 import { pickCuriosities } from '@/lib/curiosities';
@@ -86,6 +89,9 @@ export default function Home() {
     [shadows, setShadows] = useState(true),
     [shadowGuides, setShadowGuides] = useState(true),
     [eclipseView, setEclipseView] = useState(false),
+    [galaxy, setGalaxy] = useState(true),
+    [realSizes, setRealSizes] = useState(false),
+    [systemView, setSystemView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
     [details, setDetails] = useState(false),
@@ -106,6 +112,8 @@ export default function Home() {
       try {
         const saved = localStorage.getItem('orbit-texture-quality');
         if (isTextureQuality(saved)) setTextureQuality(saved);
+        setGalaxy(localStorage.getItem('orbit-galaxy') !== 'false');
+        setRealSizes(localStorage.getItem('orbit-real-sizes') === 'true');
       } catch {
         /* Storage can be disabled in private contexts. */
       }
@@ -134,6 +142,9 @@ export default function Home() {
     if (live) setEclipseView(false);
   }
   const select = useCallback((id: string) => {
+    if (window.location.hash !== `#${id}`)
+      window.history.pushState(null, '', `#${id}`);
+    setSystemView(false);
     setEclipseView(false);
     if (comets.some((c) => c.id === id)) {
       setTab('explore');
@@ -149,6 +160,13 @@ export default function Home() {
     setReset((v) => v + 1);
   }, []);
   const home = useCallback(() => {
+    if (window.location.hash)
+      window.history.pushState(
+        null,
+        '',
+        window.location.pathname + window.location.search,
+      );
+    setSystemView(false);
     setEclipseView(false);
     setTab('explore');
     setSelected(null);
@@ -157,6 +175,20 @@ export default function Home() {
     setTop(false);
     setScale('illustrated');
   }, []);
+  useEffect(() => {
+    const restore = () => {
+      const id = bodyFromHash(window.location.hash);
+      if (id) select(id);
+      else home();
+    };
+    queueMicrotask(restore);
+    window.addEventListener('hashchange', restore);
+    window.addEventListener('popstate', restore);
+    return () => {
+      window.removeEventListener('hashchange', restore);
+      window.removeEventListener('popstate', restore);
+    };
+  }, [select, home]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (
@@ -304,6 +336,12 @@ export default function Home() {
         轨道参数：JPL 小天体数据库 <ArrowUpRight size={15} />
       </a>
     </>
+  ) : selectedMoon ? (
+    <MoonDetails
+      moon={selectedMoon}
+      curiosityIndex={curiosityPicks[selectedMoon.id]}
+      onSelect={select}
+    />
   ) : body ? (
     <>
       <div className="eyebrow">天体档案 / {body.en}</div>
@@ -346,20 +384,18 @@ export default function Home() {
         </div>
       </div>
       <CuriosityCard
-        id={selectedMoon?.id ?? body.id}
-        index={curiosityPicks[selectedMoon?.id ?? body.id]}
-        name={selectedMoon?.name ?? body.name}
+        id={body.id}
+        index={curiosityPicks[body.id]}
+        name={body.name}
       />
-      {selectedMoon && (
-        <div className="did-you-know">
-          <span>正在跟随 · {selectedMoon.name}</span>
-          <p>
-            绕{body.name}公转约 {selectedMoon.period} 天。可调慢时间观察运动。
-          </p>
-        </div>
-      )}
       <PhysicalFacts body={body} />
-      <MoonGuide bodyId={body.id} selected={selected} onSelect={select} />
+      <MoonGuide
+        bodyId={body.id}
+        onSelect={(id) => {
+          select(id);
+          setSystemView(true);
+        }}
+      />
       <a
         className="source"
         href={`https://science.nasa.gov/${body.source}/`}
@@ -429,6 +465,9 @@ export default function Home() {
           shadows,
           shadowGuides,
           eclipseView,
+          galaxy,
+          realSizes,
+          systemView,
         }}
         onSelect={select}
         onTime={setTime}
@@ -509,44 +548,24 @@ export default function Home() {
           {tab === 'explore' ? '天体导航' : '由内向外'}
           <span>{tab === 'explore' ? '01 — 14' : '01 — 07'}</span>
         </div>
-        {tab === 'explore'
-          ? [...bodies, ...comets].map((b, i) => (
-              <button
-                key={b.id}
-                className={`body-option ${(body?.id ?? selected) === b.id ? 'active' : ''}`}
-                onClick={() => select(b.id)}
-              >
-                <span className="body-number">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span
-                  className="planet-dot"
-                  style={{
-                    background: b.color,
-                    boxShadow: `0 0 12px ${b.color}25`,
-                  }}
-                />
-                <span>
-                  {b.name}
-                  <small>{b.en.split(' / ')[0]}</small>
-                </span>
-                <ChevronRight size={14} />
-              </button>
-            ))
-          : regions.map((r, i) => (
-              <button
-                key={r.id}
-                className={`region-option ${region === r.id ? 'active' : ''}`}
-                onClick={() => goRegion(r.id)}
-              >
-                <span className="body-number">0{i + 1}</span>
-                <span>
-                  {r.name}
-                  <small>{r.range}</small>
-                </span>
-                <ChevronRight size={14} />
-              </button>
-            ))}
+        {tab === 'explore' ? (
+          <BodyNavigation selected={selected} onSelect={select} />
+        ) : (
+          regions.map((r, i) => (
+            <button
+              key={r.id}
+              className={`region-option ${region === r.id ? 'active' : ''}`}
+              onClick={() => goRegion(r.id)}
+            >
+              <span className="body-number">0{i + 1}</span>
+              <span>
+                {r.name}
+                <small>{r.range}</small>
+              </span>
+              <ChevronRight size={14} />
+            </button>
+          ))
+        )}
         <div className="catalog-footer">
           <span className="tiny-cross">+</span>
           {tab === 'explore'
@@ -617,9 +636,13 @@ export default function Home() {
                   : '太阳系全景'}
           </span>
           <span>
-            {scale === 'distance'
-              ? '距离按比例 · 天体已放大'
-              : '演示比例 · 距离与天体大小已调整'}
+            {realSizes
+              ? scale === 'distance'
+                ? '大小与距离采用同一比例'
+                : '天体大小按真实比例 · 距离示意'
+              : scale === 'distance'
+                ? '距离按比例 · 天体已放大'
+                : '演示比例 · 距离与天体大小已调整'}
           </span>
           <button className="mobile-info" onClick={() => setDetails(true)}>
             <Info size={16} />
@@ -717,6 +740,42 @@ export default function Home() {
           <DialogTitle>观测设置</DialogTitle>
           <DialogDescription>调整你的太空观测视图。</DialogDescription>
           <div className="setting-row">
+            <label htmlFor="galaxy">银河背景</label>
+            <Switch
+              id="galaxy"
+              checked={galaxy}
+              onCheckedChange={(v) => {
+                setGalaxy(v);
+                try {
+                  localStorage.setItem('orbit-galaxy', String(v));
+                } catch {
+                  /* Optional preference. */
+                }
+              }}
+            />
+          </div>
+          <p className="model-note">
+            低亮度银河全景，保留暗色太空背景，避免掩盖天体。
+          </p>
+          <div className="setting-row">
+            <label htmlFor="real-sizes">天体按真实大小比例</label>
+            <Switch
+              id="real-sizes"
+              checked={realSizes}
+              onCheckedChange={(v) => {
+                setRealSizes(v);
+                try {
+                  localStorage.setItem('orbit-real-sizes', String(v));
+                } catch {
+                  /* Optional preference. */
+                }
+              }}
+            />
+          </div>
+          <p className="model-note">
+            太阳、行星与卫星按平均半径缩放。同时开启真实距离时，卫星间距也使用同一尺度。全景中的小天体可能难以看见，请通过导航靠近。彗核、彗尾和光晕仍为示意。
+          </p>
+          <div className="setting-row">
             <label htmlFor="shadows">动态食影</label>
             <Switch
               id="shadows"
@@ -792,13 +851,12 @@ export default function Home() {
               id="scale"
               checked={scale === 'distance'}
               onCheckedChange={(v) => {
-                home();
                 setScale(v ? 'distance' : 'illustrated');
               }}
             />
           </div>
           <p className="model-note">
-            真实距离模式保留轨道半长轴的比例；为保持可见，天体尺寸仍被放大。外围粒子层在此模式下隐藏。
+            真实距离模式保留行星轨道半长轴的比例；未开启真实大小时，天体和卫星间距仍为教学示意。外围粒子层在此模式下隐藏。
           </p>
         </DialogContent>
       </Dialog>
@@ -846,7 +904,7 @@ export default function Home() {
               黄道坐标显示几何位置，不含光行时。自转轴和本初子午线使用天文模型；地球采用地球定向转换。纹理经度未全部校准，云层纹理不代表实时天气。高速时自转会出现视觉混叠。
             </p>
             <p>
-              演示模式压缩轨道间距，所有模式均放大天体和卫星间距。月球及四颗伽利略卫星使用含摄动的模型，其余
+              大小与距离可分别设置；同时开启真实大小和真实距离时，两者采用统一尺度。彗核、彗尾和光晕仍为示意。月球及四颗伽利略卫星使用含摄动的模型，其余
               14 颗卫星用 JPL
               固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用
               JPL 带历元的二体轨道，远离历元时误差增大。
@@ -925,7 +983,9 @@ export default function Home() {
       <Sheet open={details} onOpenChange={setDetails}>
         <SheetContent side="bottom" className="mobile-details">
           <SheetTitle>
-            {isComet ? activeComet.name : body ? body.name : '太阳系知识'}
+            {isComet
+              ? activeComet.name
+              : (selectedMoon?.name ?? body?.name ?? '太阳系知识')}
           </SheetTitle>
           <SheetDescription>探索天体的特征与运行规律。</SheetDescription>
           {tab === 'structure' && !body ? (
