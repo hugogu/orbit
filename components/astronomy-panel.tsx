@@ -24,11 +24,13 @@ export default function AstronomyPanel({
   onOpenChange,
   time,
   onSeek,
+  onEclipse,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   time: number;
   onSeek: (ms: number, live?: boolean) => void;
+  onEclipse: (ms: number, kind: 'solar' | 'lunar') => void;
 }) {
   const [date, setDate] = useState(''),
     [day, setDay] = useState('');
@@ -180,7 +182,12 @@ export default function AstronomyPanel({
     ms == null
       ? '当天无此事件'
       : utcLabel(ms + (result?.query.utcOffset ?? 0) * 3600000).slice(0, 16);
-  const eventCard = (title: string, event: SkyEvent | null, local = false) => (
+  const eventCard = (
+    title: string,
+    event: SkyEvent | null,
+    local = false,
+    kind: 'solar' | 'lunar' = 'solar',
+  ) => (
     <article className="sky-event">
       <span>{title}</span>
       {event ? (
@@ -210,8 +217,14 @@ export default function AstronomyPanel({
               {event.altitude.toFixed(1)}°）；其他阶段是否可见需另看月出月落。
             </p>
           )}
-          <button className="secondary-action" onClick={() => seek(event.peak)}>
-            跳到食甚时刻
+          <button
+            className="secondary-action"
+            onClick={() => {
+              onEclipse(event.peak, kind);
+              onOpenChange(false);
+            }}
+          >
+            观察食甚阴影
           </button>
         </>
       ) : (
@@ -390,7 +403,7 @@ export default function AstronomyPanel({
               result.data.localSolar,
               true,
             )}
-            {eventCard('全球下一次月食', result.data.lunar)}
+            {eventCard('全球下一次月食', result.data.lunar, false, 'lunar')}
           </section>
         )}
         <p className="little-note">
@@ -402,7 +415,8 @@ export default function AstronomyPanel({
           >
             Astronomy Engine
           </a>{' '}
-          独立计算。三维天体和卫星距离经过放大，不能用画面重叠判断日月食。未来与历史
+          独立计算。“观察食甚阴影”会聚焦地球或月球，暂停于食甚；点击播放可按 1
+          分钟/秒观察影区移动。表面食影按物理尺度计算，三维天体间距仍有放大，不能用画面重叠判断日月食。未来与历史
           UTC 受地球自转预测误差影响。
         </p>
       </DialogContent>

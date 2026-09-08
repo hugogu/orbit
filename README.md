@@ -12,7 +12,8 @@ A Chinese-language interactive 3D solar-system learning observatory built with T
 - Expanded physical facts include mass, density, equatorial gravity, escape velocity, diameter, approximate orbital eccentricity/inclination and rotation direction, with JPL/NASA sources.
 - Texture quality: automatic, standard 2K, or ultra (up to 8K). Automatic uses 2K on compact/touch devices and data-saving connections. Higher-resolution maps load only for the followed body and the Milky Way background, respecting the GPU texture-size limit; previous maps are disposed after replacement. Preferences are saved locally, and failed high-resolution loads fall back to 2K.
 - Each of the 33 selectable bodies has 30 sourced curiosity cards, combining individual facts/calculated comparisons with clearly labeled shared astronomy lessons. Each page visit selects an item per body and excludes its previous selection when local storage is available. Switching bodies within a visit preserves selections.
-- Eight time presets from real time to ten years per second, plus pause.
+- Nine time presets from real time to ten years per second, including one minute per second for eclipses, plus pause.
+- Finite-Sun surface shadows on planets and representative satellites, with live umbra/penumbra/antumbra boundaries on the followed body. Eclipse result buttons focus Earth or Moon at maximum and select slow playback. Display settings separately control shading and guides.
 - Mouse drag/orbit, wheel/zoom, right drag/pan. Touch: one finger/orbit, pinch/zoom, two fingers/pan.
 - Keyboard: WASD/arrows pan, +/- zoom, Space pause, R overview, Esc stop following.
 
@@ -36,6 +37,8 @@ Illustrated mode compresses heliocentric distances and enlarges bodies independe
 
 Sky events are computed independently in a Web Worker. Sunrise/set searches use local midnight and the supplied fixed UTC offset (the user includes daylight saving), the solar upper limb and standard atmospheric refraction. Terrain and actual weather are omitted. Eclipse searches start at the selected simulation time; global results do not imply local visibility. The local solar search excludes events entirely below the horizon. Lunar results report Moon altitude at maximum, not visibility throughout every phase. Results beyond 2200 are omitted. Historical/future UTC has uncertainty from Earth rotation predictions.
 
+Shadows use physical heliocentric vectors and radii, then map onto enlarged meshes; they do not use shadow maps of the distorted display geometry. The Sun is a uniform disc and receivers/occulters are spheres (Earth uses equatorial radius). Atmospheric refraction, limb darkening, terrain and rings/comets are omitted. Moon totality retains a neutral 3.5% illustrative floor, not a prediction of red color. Up to six candidate occulters are tested per fragment; overlapping penumbrae use their maximum obscuration, not a full multi-disc union. Rotationally calibrated receivers also show the active caster's previous 90-minute shadow-axis track, sampled every two minutes and refreshed each simulated minute. Noncentral partial eclipses need not have an axis track; outlines are instantaneous boundaries, not predictions of exact contact times. Ephemeris and schematic-rotation limitations above also apply to shadows. Globe texture longitude registration is not a cartographic guarantee.
+
 ## Sources and credits
 
 - [NASA solar system](https://science.nasa.gov/solar-system/planets/)
@@ -45,6 +48,8 @@ Sky events are computed independently in a Web Worker. Sunrise/set searches use 
 - [JPL Keplerian elements](https://ssd.jpl.nasa.gov/planets/approx_pos.html)
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) (MIT)
 - [JPL satellite mean elements](https://ssd.jpl.nasa.gov/sats/elem/)
+- [JPL satellite physical parameters](https://ssd.jpl.nasa.gov/sats/phys_par/)
+- [NASA solar eclipse geometry](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
 - [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
 - Textures: [Solar System Scope](https://www.solarsystemscope.com/textures/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source imagery includes enhanced colors and illustrative unmapped terrain.
 - Source files are used without pixel edits. Actual dimensions are recorded in `public/textures/source-manifest.json`: Earth, Mercury, Mars, Moon and Milky Way are 8192 pixels wide; Sun, Jupiter, Saturn and Venus are 4096 despite some source filenames saying 8K. Uranus/Neptune remain 2K; Pluto and other moons retain schematic materials. The galaxy panorama is an immersive background, not a calibrated live sky chart for the observer's location.

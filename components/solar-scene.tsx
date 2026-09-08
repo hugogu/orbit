@@ -10,6 +10,7 @@ import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
 import { orbitingMoons, moonSystemExtent } from '@/lib/moon-orbits';
 import { createTextureManager } from './texture-manager';
+import { createEclipseSystem } from './eclipse-system';
 import type { TextureQuality } from '@/lib/texture-quality';
 export type SceneState = {
   speed: number;
@@ -26,6 +27,9 @@ export type SceneState = {
   cometClose: boolean;
   epoch: number | null;
   textureQuality: TextureQuality;
+  shadows: boolean;
+  shadowGuides: boolean;
+  eclipseView: boolean;
 };
 export default function SolarScene({
   state,
@@ -217,6 +221,7 @@ export default function SolarScene({
       meshes.get('moon-moon')!.material as THREE.MeshStandardMaterial,
       'moon',
     );
+    const eclipseSystem = createEclipseSystem(meshes);
     // Seeded distributions are conceptual populations, not measured asteroid positions.
     let seed = 71;
     const rand = () => {
@@ -347,6 +352,8 @@ export default function SolarScene({
       lastView = -1,
       lastSelected: string | null | undefined = undefined,
       lastScale = '',
+      lastCameraScale = '',
+      lastCameraAspect = 0,
       lastTop = false,
       lastComet = '',
       transition = 0;
@@ -425,6 +432,7 @@ export default function SolarScene({
         if (line) line.visible = s.orbits;
       }
       moonSystem.update(days, s.scale, s.selected, s.orbits);
+      eclipseSystem.update(days, s.selected, s.shadows, s.shadowGuides);
       belt.visible = s.belts && s.scale === 'illustrated';
       kuiper.visible = s.belts && s.scale === 'illustrated';
       scattered.visible = s.belts && s.view >= 350 && s.scale === 'illustrated';
@@ -439,6 +447,8 @@ export default function SolarScene({
         s.reset !== lastReset ||
         s.view !== lastView ||
         s.top !== lastTop ||
+        s.scale !== lastCameraScale ||
+        camera.aspect !== lastCameraAspect ||
         cometKey !== lastComet
       ) {
         const body = bodies.find((b) => b.id === s.selected);
@@ -456,12 +466,23 @@ export default function SolarScene({
                     Math.min(1, camera.aspect),
                 )
               : s.view;
+        if (s.eclipseView && s.selected) {
+          const radius =
+            bodies.find((b) => b.id === s.selected)?.size ??
+            orbitingMoons.find((m) => m.id === s.selected)?.size ??
+            1;
+          targetDistance =
+            (radius * (s.scale === 'distance' ? 0.32 : 1) * 5) /
+            Math.min(1, camera.aspect);
+        }
         transition = 1;
         following = null;
         lastSelected = s.selected;
         lastReset = s.reset;
         lastView = s.view;
         lastTop = s.top;
+        lastCameraScale = s.scale;
+        lastCameraAspect = camera.aspect;
         lastComet = cometKey;
       }
       newTarget.copy(
@@ -478,13 +499,17 @@ export default function SolarScene({
         desired
           .copy(newTarget)
           .add(
-            s.top
-              ? new THREE.Vector3(0.001, targetDistance, 0.001)
-              : new THREE.Vector3(
-                  0,
-                  targetDistance * 0.52,
-                  targetDistance * 0.85,
-                ),
+            s.eclipseView && s.selected
+              ? eclipseSystem
+                  .focusDirection(s.selected)
+                  .multiplyScalar(targetDistance)
+              : s.top
+                ? new THREE.Vector3(0.001, targetDistance, 0.001)
+                : new THREE.Vector3(
+                    0,
+                    targetDistance * 0.52,
+                    targetDistance * 0.85,
+                  ),
           );
         camera.position.lerp(desired, 0.055);
         transition -= dt * 0.5;
@@ -533,6 +558,7 @@ export default function SolarScene({
       observer.disconnect();
       window.removeEventListener('keydown', onKey);
       controls.dispose();
+      eclipseSystem.dispose();
       scene.traverse((o) => {
         if (
           o instanceof THREE.Mesh ||

@@ -44,6 +44,13 @@ const preciseAxes: Record<string, number> = {
   Callisto: 1882700,
 };
 
+export function moonVectorKm(moon: OrbitingMoon, days: number): Vector3 {
+  const semimajor = preciseAxes[moon.en] ?? elements[moon.en][0];
+  return new Vector3(
+    ...datedMoonOffset(moon, days, 'illustrated'),
+  ).multiplyScalar(semimajor / moon.distance);
+}
+
 export function datedMoonOffset(
   moon: OrbitingMoon,
   days: number,

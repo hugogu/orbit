@@ -940,12 +940,45 @@ button:disabled {
   border-color: #d9c49a;
 }
 .orbit-dialog {
+  max-height: 88dvh;
+  overflow-y: auto;
   max-width: 420px !important;
   border: 1px solid #ffffff15;
   background: #101620 !important;
   padding: 28px !important;
   border-radius: 14px !important;
   line-height: 1.8;
+}
+.shadow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 6px 0 6px 230px;
+  color: #93a3b4;
+  font-size: 12px;
+}
+@media (max-width: 800px) {
+  .shadow-legend {
+    padding-left: 0;
+  }
+}
+@media (max-width: 600px) {
+  .observatory:has(.shadow-legend) .catalog {
+    bottom: 295px;
+  }
+}
+.shadow-legend .umbra-key {
+  color: #98c9ff;
+}
+.shadow-legend .penumbra-key {
+  color: #f1ca7e;
+}
+.shadow-legend .antumbra-key {
+  color: #e99cff;
+}
+.shadow-legend span:not(:last-child)::before {
+  content: '●';
+  margin-right: 5px;
 }
 .orbit-dialog [data-slot='dialog-title'] {
   font-size: 21px;

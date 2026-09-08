@@ -83,6 +83,9 @@ export default function Home() {
     [region, setRegion] = useState('inner'),
     [help, setHelp] = useState(false),
     [settings, setSettings] = useState(false),
+    [shadows, setShadows] = useState(true),
+    [shadowGuides, setShadowGuides] = useState(true),
+    [eclipseView, setEclipseView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
     [details, setDetails] = useState(false),
@@ -128,8 +131,10 @@ export default function Home() {
     setTime(ms);
     setPaused(!live);
     if (live) setSpeed(0);
+    if (live) setEclipseView(false);
   }
   const select = useCallback((id: string) => {
+    setEclipseView(false);
     if (comets.some((c) => c.id === id)) {
       setTab('explore');
       setCometId(id);
@@ -144,6 +149,7 @@ export default function Home() {
     setReset((v) => v + 1);
   }, []);
   const home = useCallback(() => {
+    setEclipseView(false);
     setTab('explore');
     setSelected(null);
     setView(205);
@@ -262,7 +268,7 @@ export default function Home() {
             }
             seekTime(peri);
             setCometClose(true);
-            setSpeed(2);
+            setSpeed(3);
           }}
         >
           跳到模型下一次近日点 <CalendarDays size={15} />
@@ -420,6 +426,9 @@ export default function Home() {
           cometClose,
           epoch,
           textureQuality,
+          shadows,
+          shadowGuides,
+          eclipseView,
         }}
         onSelect={select}
         onTime={setTime}
@@ -588,6 +597,14 @@ export default function Home() {
         </button>
       </div>
       <div className="bottom-area">
+        {shadows && shadowGuides && body && (
+          <div className="shadow-legend" aria-label="食影图例">
+            <span className="umbra-key">本影</span>
+            <span className="penumbra-key">半影</span>
+            <span className="antumbra-key">伪本影（环食）</span>
+            <span>细线：过去 90 分钟影轴轨迹</span>
+          </div>
+        )}
         <div className="scene-meta">
           <span>
             <i />
@@ -631,7 +648,7 @@ export default function Home() {
             <Slider
               aria-label="时间流速"
               min={0}
-              max={7}
+              max={speeds.length - 1}
               step={1}
               value={[speed]}
               onValueChange={(v) => setSpeed(Array.isArray(v) ? v[0] : v)}
@@ -686,11 +703,40 @@ export default function Home() {
         onOpenChange={setAstronomy}
         time={time ?? J2000_MS}
         onSeek={seekTime}
+        onEclipse={(ms, kind) => {
+          seekTime(ms);
+          select(kind === 'solar' ? 'earth' : 'moon-moon');
+          setShadows(true);
+          setShadowGuides(true);
+          setEclipseView(true);
+          setSpeed(1);
+        }}
       />
       <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent className="orbit-dialog">
           <DialogTitle>观测设置</DialogTitle>
           <DialogDescription>调整你的太空观测视图。</DialogDescription>
+          <div className="setting-row">
+            <label htmlFor="shadows">动态食影</label>
+            <Switch
+              id="shadows"
+              checked={shadows}
+              onCheckedChange={setShadows}
+            />
+          </div>
+          <div className="setting-row">
+            <label htmlFor="shadow-guides">食影轮廓与轨迹</label>
+            <Switch
+              id="shadow-guides"
+              checked={shadowGuides}
+              onCheckedChange={setShadowGuides}
+              disabled={!shadows}
+            />
+          </div>
+          <p className="model-note">
+            按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“日期与天象”跳到食甚，再以
+            1 分钟/秒慢放。没有遮挡时不会出现食影。
+          </p>
           <div className="setting-row">
             <span id="texture-quality-label">贴图质量</span>
             <Select
@@ -808,6 +854,11 @@ export default function Home() {
             <p>
               星空采用 Solar System Scope
               的银河全景贴图，位于无限远背景；未按观测地点校准为实时星图。高清源文件中的未测绘区域也可能为示意填充。
+            </p>
+            <p>
+              动态食影按有限大小的太阳与遮挡天体计算，独立于画面中的放大比例；地月及伽利略卫星使用星历，其他卫星沿用近似轨道。轮廓表示当前影区边界，细线记录过去
+              90
+              分钟影轴在自转表面上的轨迹，偏食未必有中心轨迹。模型采用球形天体、均匀日面，未计入大气折射、太阳临边昏暗和月缘地形；月全食保留微弱亮度作示意，颜色不预测真实红月亮。星环及彗核不参与食影计算。
             </p>
             <p>
               知识来源：

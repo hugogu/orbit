@@ -32,11 +32,15 @@ export function observatoryTools(actions: ObservatoryActions) {
       name: 'set_solar_simulation',
       title: '调整天体运行时间',
       description:
-        'Set simulation speed and pause or resume motion. Presets run from real time (0) to 10 years per second (7).',
+        'Set simulation speed and pause or resume motion. Presets run from real time (0), eclipse slow motion at 1 minute per second (1), to 10 years per second (8).',
       inputSchema: {
         type: 'object',
         properties: {
-          speedIndex: { type: 'integer', minimum: 0, maximum: 7 },
+          speedIndex: {
+            type: 'integer',
+            minimum: 0,
+            maximum: speeds.length - 1,
+          },
           paused: { type: 'boolean' },
         },
         required: ['speedIndex', 'paused'],
@@ -50,7 +54,7 @@ export function observatoryTools(actions: ObservatoryActions) {
           typeof v.speedIndex !== 'number' ||
           !Number.isInteger(v.speedIndex) ||
           v.speedIndex < 0 ||
-          v.speedIndex > 7 ||
+          v.speedIndex >= speeds.length ||
           typeof v.paused !== 'boolean'
         )
           throw new Error('Invalid simulation preset');

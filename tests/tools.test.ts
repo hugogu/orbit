@@ -19,11 +19,11 @@ void test('agent actions integrate with the same selection and simulation callba
     name: '地球',
   });
   assert.equal(selected, 'earth');
-  assert.deepEqual(time.execute({ speedIndex: 7, paused: true }), {
+  assert.deepEqual(time.execute({ speedIndex: 8, paused: true }), {
     daysPerSecond: 3650,
     paused: true,
   });
-  assert.equal(speed, 7);
+  assert.equal(speed, 8);
   assert.equal(paused, true);
 });
 void test('invalid agent inputs never alter app state', () => {
@@ -41,7 +41,7 @@ void test('invalid agent inputs never alter app state', () => {
   for (const value of [
     null,
     {},
-    { speedIndex: 8, paused: false },
+    { speedIndex: 9, paused: false },
     { speedIndex: 1.2, paused: false },
     { speedIndex: 2, paused: 'false' },
   ])

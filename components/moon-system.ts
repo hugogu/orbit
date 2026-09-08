@@ -21,7 +21,7 @@ export function createMoonSystem(
     const mesh = new THREE.Mesh(
       irregular
         ? new THREE.IcosahedronGeometry(moon.size, 1)
-        : new THREE.SphereGeometry(moon.size, 24, 16),
+        : new THREE.SphereGeometry(moon.size, 64, 48),
       new THREE.MeshStandardMaterial({
         color: moon.color,
         roughness: 1,

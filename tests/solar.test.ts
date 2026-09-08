@@ -40,7 +40,8 @@ void test('distance mode uses AU consistently', () => {
 void test('sun stays at focus; real time preset advances one second per second', () => {
   assert.deepEqual(orbitPosition(bodies[0], 999), [0, 0, 0]);
   assert.equal(speeds[0] * 86400, 1);
-  assert.equal(speeds[7], 3650);
+  assert.equal(speeds[1] * 86400, 60);
+  assert.equal(speeds.at(-1), 3650);
 });
 void test('orbital position changes and stays finite even after long integration', () => {
   assert.notDeepEqual(orbitPosition(earth, 0), orbitPosition(earth, 50));

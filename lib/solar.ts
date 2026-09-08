@@ -348,9 +348,11 @@ export function orbitPosition(
   }
   return eccentricPosition(body, eccentric, mode);
 }
-export const speeds = [1 / 86400, 0.1, 1, 10, 30, 100, 365, 3650];
+export const speeds = [1 / 86400, 1 / 1440, 0.1, 1, 10, 30, 100, 365, 3650];
 export function speedLabel(speed: number) {
   return speed === 1 / 86400
     ? '实时'
-    : `${speed.toLocaleString('zh-CN')} 天 / 秒`;
+    : speed === 1 / 1440
+      ? '1 分钟 / 秒'
+      : `${speed.toLocaleString('zh-CN')} 天 / 秒`;
 }
