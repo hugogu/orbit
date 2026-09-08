@@ -16,15 +16,15 @@ import {
   ArrowUpRight,
   LocateFixed,
   SlidersHorizontal,
-  Plus,
   Info,
   CalendarDays,
   X,
-  Sparkles as CometIcon,
 } from 'lucide-react';
 import SolarScene from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import PhysicalFacts from '@/components/physical-facts';
+import CuriosityCard from '@/components/curiosity-card';
+import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
 import { comets, cometPerihelion } from '@/lib/comets';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
@@ -84,6 +84,7 @@ export default function Home() {
     [help, setHelp] = useState(false),
     [settings, setSettings] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
+    [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
     [details, setDetails] = useState(false),
     [fullscreen, setFullscreen] = useState(false),
     [notice, setNotice] = useState('');
@@ -104,6 +105,21 @@ export default function Home() {
         if (isTextureQuality(saved)) setTextureQuality(saved);
       } catch {
         /* Storage can be disabled in private contexts. */
+      }
+      let previous: unknown;
+      try {
+        previous = JSON.parse(
+          localStorage.getItem('orbit-curiosities-v1') ?? 'null',
+        );
+      } catch {
+        /* Ignore corrupt or unavailable storage. */
+      }
+      const picks = pickCuriosities(previous);
+      setCuriosityPicks(picks);
+      try {
+        localStorage.setItem('orbit-curiosities-v1', JSON.stringify(picks));
+      } catch {
+        /* Random facts still work without persistence. */
       }
     });
   }, []);
@@ -252,12 +268,11 @@ export default function Home() {
           跳到模型下一次近日点 <CalendarDays size={15} />
         </button>
       </div>
-      <div className="did-you-know">
-        <span>
-          <CometIcon size={15} /> 来自深空的访客
-        </span>
-        <p>{activeComet.fact}</p>
-      </div>
+      <CuriosityCard
+        id={activeComet.id}
+        index={curiosityPicks[activeComet.id]}
+        name={activeComet.name}
+      />
       <p className="description">
         靠近太阳时，冰升华产生彗发与彗尾。图中的蓝色离子尾示意指向背离太阳的方向，并会随远离太阳而淡去；真实尘埃尾通常弯曲。
       </p>
@@ -324,12 +339,11 @@ export default function Home() {
           </strong>
         </div>
       </div>
-      <div className="did-you-know">
-        <span>
-          <Plus size={14} /> 你知道吗
-        </span>
-        <p>{body.fact}</p>
-      </div>
+      <CuriosityCard
+        id={selectedMoon?.id ?? body.id}
+        index={curiosityPicks[selectedMoon?.id ?? body.id]}
+        name={selectedMoon?.name ?? body.name}
+      />
       {selectedMoon && (
         <div className="did-you-know">
           <span>正在跟随 · {selectedMoon.name}</span>
