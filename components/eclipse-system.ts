@@ -17,6 +17,7 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
       mesh,
       material: attachEclipseMaterial(
         mesh.material as THREE.MeshStandardMaterial,
+        id === 'earth',
       ),
     }));
   const guideRoot = new THREE.Group();
@@ -77,20 +78,18 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
   const trackCache = new Map<string, (THREE.Vector3 | null)[]>();
   return {
     guideRoot,
+    setEarthNightMap(texture: THREE.Texture) {
+      const earth = entries.find((e) => e.id === 'earth');
+      if (!earth) return;
+      earth.material.uniforms.earthNightMap.value = texture;
+      earth.material.uniforms.earthNightReady.value = 1;
+    },
     update(
       days: number,
       selected: string | null,
       enabled: boolean,
       showGuides: boolean,
     ) {
-      if (!enabled) {
-        entries.forEach((e) => {
-          e.material.uniforms.eclipseCount.value = 0;
-        });
-        guideRoot.visible = false;
-        lastGuideDay = NaN;
-        return;
-      }
       frame = shadowFrame(days);
       const sun = frame.get('sun')!.position;
       for (const entry of entries) {
@@ -101,13 +100,17 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
         entry.material.update(
           receiver,
           sun,
-          possibleCasters(receiver, frame),
+          enabled ? possibleCasters(receiver, frame) : [],
           rotation,
-          true,
+          enabled,
         );
       }
       guideRoot.visible =
-        showGuides && !!selected && frame.has(selected) && selected !== 'sun';
+        enabled &&
+        showGuides &&
+        !!selected &&
+        frame.has(selected) &&
+        selected !== 'sun';
       if (!guideRoot.visible) {
         lastGuideDay = NaN;
         return;

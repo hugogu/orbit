@@ -35,8 +35,13 @@ float eclipseVisibility() {
 }
 `;
 
-export function attachEclipseMaterial(material: THREE.MeshStandardMaterial) {
+export function attachEclipseMaterial(
+  material: THREE.MeshStandardMaterial,
+  night = false,
+) {
   const uniforms = {
+    earthNightMap: { value: null as THREE.Texture | null },
+    earthNightReady: { value: 0 },
     eclipseSun: { value: new THREE.Vector3(1e5, 0, 0) },
     eclipseSunRadius: { value: 1 },
     eclipseCasters: {
@@ -47,12 +52,17 @@ export function attachEclipseMaterial(material: THREE.MeshStandardMaterial) {
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader =
+      (night ? 'varying vec2 earthNightUv;\n' : '') +
       'varying vec3 eclipseSurface;\n' +
       shader.vertexShader.replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\neclipseSurface=position;',
+        '#include <begin_vertex>\neclipseSurface=position;' +
+          (night ? '\nearthNightUv=uv;' : ''),
       );
     shader.fragmentShader =
+      (night
+        ? 'uniform sampler2D earthNightMap; uniform float earthNightReady; varying vec2 earthNightUv;\n'
+        : '') +
       eclipseFragment +
       shader.fragmentShader.replace(
         '#include <opaque_fragment>',
@@ -60,10 +70,19 @@ export function attachEclipseMaterial(material: THREE.MeshStandardMaterial) {
       float visibility=eclipseVisibility();
       // Retain a small neutral floor for readability; atmospheric refraction is omitted.
       outgoingLight *= mix(0.035,1.0,visibility);
+      ${
+        night
+          ? `
+      float solarAltitude=dot(normalize(eclipseSurface),normalize(eclipseSun-normalize(eclipseSurface)));
+      float nightBlend=1.0-smoothstep(-0.12,0.08,solarAltitude);
+      outgoingLight += texture2D(earthNightMap,earthNightUv).rgb * nightBlend * earthNightReady * 1.5;
+      `
+          : ''
+      }
       #include <opaque_fragment>`,
       );
   };
-  material.customProgramCacheKey = () => 'orbit-finite-sun-shadows-v1';
+  material.customProgramCacheKey = () => `orbit-finite-sun-shadows-v2-${night}`;
   material.needsUpdate = true;
   return {
     uniforms,

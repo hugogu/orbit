@@ -1,5 +1,21 @@
 [
   {
+    "filename": "2k_earth_nightmap.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 255287,
+    "url": "https://www.solarsystemscope.com/textures/download/2k_earth_nightmap.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_earth_nightmap.jpg",
+    "width": 8192,
+    "height": 4096,
+    "bytes": 3144468,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_earth_nightmap.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
     "filename": "2k_neptune.jpg",
     "width": 2048,
     "height": 1024,

@@ -112,7 +112,12 @@ void test('only the focused body and background upgrade; unmount disposes late a
     capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
   } as THREE.WebGLRenderer;
   const manager = createTextureManager(renderer, () => {});
-  for (const name of ['earth_daymap', 'mars', 'stars_milky_way'])
+  for (const name of [
+    'earth_daymap',
+    'earth_nightmap',
+    'mars',
+    'stars_milky_way',
+  ])
     manager.register(name, () => {});
   for (const resolve of pending.values()) resolve(new THREE.Texture());
   pending.clear();
@@ -121,6 +126,16 @@ void test('only the focused body and background upgrade; unmount disposes late a
   assert.deepEqual([...pending.keys()].sort(), [
     '/textures/8k_mars.jpg',
     '/textures/8k_stars_milky_way.jpg',
+  ]);
+  for (const resolve of pending.values()) resolve(new THREE.Texture());
+  pending.clear();
+  await Promise.resolve();
+  manager.update('ultra', 'earth_daymap', false, false, false);
+  assert.deepEqual([...pending.keys()].sort(), [
+    '/textures/2k_mars.jpg',
+    '/textures/2k_stars_milky_way.jpg',
+    '/textures/8k_earth_daymap.jpg',
+    '/textures/8k_earth_nightmap.jpg',
   ]);
   manager.dispose();
   for (const resolve of pending.values()) {

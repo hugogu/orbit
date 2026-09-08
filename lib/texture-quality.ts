@@ -16,6 +16,7 @@ export const highResolutionTextures: Record<
   mercury: { file: '8k_mercury.jpg', width: 8192 },
   venus_atmosphere: { file: '4k_venus_atmosphere.jpg', width: 4096 },
   earth_daymap: { file: '8k_earth_daymap.jpg', width: 8192 },
+  earth_nightmap: { file: '8k_earth_nightmap.jpg', width: 8192 },
   mars: { file: '8k_mars.jpg', width: 8192 },
   jupiter: { file: '8k_jupiter.jpg', width: 4096 },
   saturn: { file: '8k_saturn.jpg', width: 4096 },

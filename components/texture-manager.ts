@@ -69,6 +69,7 @@ export function createTextureManager(
       focus: string | null,
       compact: boolean,
       saveData: boolean,
+      galaxy = true,
     ) {
       const high = shouldLoadHighResolution(quality, compact, saveData);
       for (const slot of slots) {
@@ -76,7 +77,8 @@ export function createTextureManager(
         const upgrade =
           high &&
           (slot.name === focus ||
-            slot.name === 'stars_milky_way' ||
+            (slot.name === 'stars_milky_way' && galaxy) ||
+            (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
             (slot.name === 'saturn_ring_alpha' && focus === 'saturn'));
         let path = texturePath(
           slot.name,
