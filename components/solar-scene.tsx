@@ -109,8 +109,9 @@ export default function SolarScene({
       texture.mapping = THREE.EquirectangularReflectionMapping;
       galaxyTexture = texture;
     });
-    scene.backgroundIntensity = 0.16;
+    scene.backgroundIntensity = 0.35;
     scene.backgroundRotation.x = -0.55;
+    scene.backgroundRotation.y = Math.PI / 2;
     const roots = new Map<string, THREE.Group>(),
       meshes = new Map<string, THREE.Mesh>(),
       orbitLines = new Map<string, THREE.Line>(),
