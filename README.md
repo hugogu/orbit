@@ -10,6 +10,7 @@ A Chinese-language interactive 3D solar-system learning observatory built with T
 - UTC date/time selection (1700–2200), observer coordinates, local daily sunrise/sunset, next global solar/lunar eclipses and next locally visible solar eclipse.
 - A visible “现在” button restores the device's current time and real-time playback. “使用当前位置” requests browser location permission and fills WGS84 coordinates; denial/timeouts preserve manual input. Coordinates stay in the page. UTC offset is initially inferred from the device timezone on the query date, not reverse-geocoded from coordinates; the user can correct it. Elevation remains manual.
 - Expanded physical facts include mass, density, equatorial gravity, escape velocity, diameter, approximate orbital eccentricity/inclination and rotation direction, with JPL/NASA sources.
+- Texture quality: automatic, standard 2K, or ultra (up to 8K). Automatic uses 2K on compact/touch devices and data-saving connections. Higher-resolution maps load only for the followed body and the Milky Way background, respecting the GPU texture-size limit; previous maps are disposed after replacement. Preferences are saved locally, and failed high-resolution loads fall back to 2K.
 - Eight time presets from real time to ten years per second, plus pause.
 - Mouse drag/orbit, wheel/zoom, right drag/pan. Touch: one finger/orbit, pinch/zoom, two fingers/pan.
 - Keyboard: WASD/arrows pan, +/- zoom, Space pause, R overview, Esc stop following.
@@ -45,6 +46,7 @@ Sky events are computed independently in a Web Worker. Sunrise/set searches use 
 - [JPL satellite mean elements](https://ssd.jpl.nasa.gov/sats/elem/)
 - [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
 - Textures: [Solar System Scope](https://www.solarsystemscope.com/textures/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source imagery includes enhanced colors and illustrative unmapped terrain.
+- Source files are used without pixel edits. Actual dimensions are recorded in `public/textures/source-manifest.json`: Earth, Mercury, Mars, Moon and Milky Way are 8192 pixels wide; Sun, Jupiter, Saturn and Venus are 4096 despite some source filenames saying 8K. Uranus/Neptune remain 2K; Pluto and other moons retain schematic materials. The galaxy panorama is an immersive background, not a calibrated live sky chart for the observer's location.
 
 ## Verification
 

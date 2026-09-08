@@ -10,7 +10,7 @@ export function createMoonSystem(
   meshes: Map<string, THREE.Mesh>,
   layer: HTMLElement,
   onSelect: (id: string) => void,
-  moonTexture: THREE.Texture,
+  moonTexture: THREE.Texture | null,
 ) {
   const entries = orbitingMoons.map((moon) => {
     const root = new THREE.Group();

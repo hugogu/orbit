@@ -1,0 +1,106 @@
+[
+  {
+    "filename": "2k_neptune.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 241580,
+    "url": "https://www.solarsystemscope.com/textures/download/2k_neptune.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "2k_stars_milky_way.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 251454,
+    "url": "https://www.solarsystemscope.com/textures/download/2k_stars_milky_way.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "2k_uranus.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 77751,
+    "url": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "4k_venus_atmosphere.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1546146,
+    "url": "https://www.solarsystemscope.com/textures/download/4k_venus_atmosphere.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_earth_daymap.jpg",
+    "width": 8192,
+    "height": 4096,
+    "bytes": 4565076,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_earth_daymap.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_jupiter.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 3080980,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_jupiter.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_mars.jpg",
+    "width": 8192,
+    "height": 4096,
+    "bytes": 8396951,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_mercury.jpg",
+    "width": 8192,
+    "height": 4096,
+    "bytes": 15035740,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_mercury.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_moon.jpg",
+    "width": 8192,
+    "height": 4096,
+    "bytes": 15030356,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_moon.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_saturn.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1098204,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_saturn.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_saturn_ring_alpha.png",
+    "width": 8192,
+    "height": 500,
+    "bytes": 64790,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_stars_milky_way.jpg",
+    "width": 8192,
+    "height": 4096,
+    "bytes": 1905513,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_stars_milky_way.jpg",
+    "license": "CC BY 4.0"
+  },
+  {
+    "filename": "8k_sun.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 3696361,
+    "url": "https://www.solarsystemscope.com/textures/download/8k_sun.jpg",
+    "license": "CC BY 4.0"
+  }
+]

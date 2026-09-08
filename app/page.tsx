@@ -31,6 +31,18 @@ import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import {
+  isTextureQuality,
+  textureQualityLabels,
+  type TextureQuality,
+} from '@/lib/texture-quality';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -71,6 +83,7 @@ export default function Home() {
     [region, setRegion] = useState('inner'),
     [help, setHelp] = useState(false),
     [settings, setSettings] = useState(false),
+    [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
     [details, setDetails] = useState(false),
     [fullscreen, setFullscreen] = useState(false),
     [notice, setNotice] = useState('');
@@ -86,6 +99,12 @@ export default function Home() {
       const now = Date.now();
       setEpoch(now);
       setTime(now);
+      try {
+        const saved = localStorage.getItem('orbit-texture-quality');
+        if (isTextureQuality(saved)) setTextureQuality(saved);
+      } catch {
+        /* Storage can be disabled in private contexts. */
+      }
     });
   }, []);
   function seekTime(ms: number, live = false) {
@@ -386,9 +405,11 @@ export default function Home() {
           cometId: isComet ? cometId : null,
           cometClose,
           epoch,
+          textureQuality,
         }}
         onSelect={select}
         onTime={setTime}
+        onAssetStatus={setNotice}
       />
       <div className="vignette" />
       <header className="topbar">
@@ -657,6 +678,43 @@ export default function Home() {
           <DialogTitle>观测设置</DialogTitle>
           <DialogDescription>调整你的太空观测视图。</DialogDescription>
           <div className="setting-row">
+            <span id="texture-quality-label">贴图质量</span>
+            <Select
+              value={textureQuality}
+              onValueChange={(value) => {
+                if (!isTextureQuality(value)) return;
+                setTextureQuality(value);
+                try {
+                  localStorage.setItem('orbit-texture-quality', value);
+                } catch {
+                  /* Optional local preference. */
+                }
+              }}
+            >
+              <SelectTrigger aria-labelledby="texture-quality-label">
+                <SelectValue>
+                  {textureQualityLabels[textureQuality]}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(textureQualityLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="model-note">
+            高清按需加载到正在跟随的天体和银河背景，切换目标会释放旧高清材质。自动模式在手机或省流量环境使用
+            2K。超清更耗显存与流量。
+          </p>
+          <p className="model-note">
+            实际最高：地球、月球、水星、火星和银河
+            8K；太阳、木星、土星、金星云层 4K；天王星、海王星
+            2K。冥王星及其他卫星暂无此来源贴图，仍为示意材质。
+          </p>
+          <div className="setting-row">
             <label htmlFor="orbits">公转轨道</label>
             <Switch id="orbits" checked={orbits} onCheckedChange={setOrbits} />
           </div>
@@ -732,6 +790,10 @@ export default function Home() {
               14 颗卫星用 JPL
               固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用
               JPL 带历元的二体轨道，远离历元时误差增大。
+            </p>
+            <p>
+              星空采用 Solar System Scope
+              的银河全景贴图，位于无限远背景；未按观测地点校准为实时星图。高清源文件中的未测绘区域也可能为示意填充。
             </p>
             <p>
               知识来源：

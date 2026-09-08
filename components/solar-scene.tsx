@@ -9,6 +9,8 @@ import { comets } from '@/lib/comets';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
 import { orbitingMoons, moonSystemExtent } from '@/lib/moon-orbits';
+import { createTextureManager } from './texture-manager';
+import type { TextureQuality } from '@/lib/texture-quality';
 export type SceneState = {
   speed: number;
   paused: boolean;
@@ -23,22 +25,25 @@ export type SceneState = {
   cometId: string | null;
   cometClose: boolean;
   epoch: number | null;
+  textureQuality: TextureQuality;
 };
 export default function SolarScene({
   state,
   onSelect,
   onTime,
+  onAssetStatus,
 }: {
   state: SceneState;
   onSelect: (id: string) => void;
   onTime: (days: number) => void;
+  onAssetStatus: (message: string) => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
-    latest = useRef({ state, onSelect, onTime });
+    latest = useRef({ state, onSelect, onTime, onAssetStatus });
   const [error, setError] = useState('');
   useEffect(() => {
-    latest.current = { state, onSelect, onTime };
-  }, [state, onSelect, onTime]);
+    latest.current = { state, onSelect, onTime, onAssetStatus };
+  }, [state, onSelect, onTime, onAssetStatus]);
   useEffect(() => {
     const container = host.current!;
     let renderer: THREE.WebGLRenderer;
@@ -79,14 +84,22 @@ export default function SolarScene({
     scene.add(new THREE.AmbientLight(0x8098c4, 0.65));
     const sunlight = new THREE.PointLight(0xffead0, 3.5, 0, 0);
     scene.add(sunlight);
-    const textureLoader = new THREE.TextureLoader(),
-      textures: THREE.Texture[] = [];
-    const load = (name: string) => {
-      const t = textureLoader.load('/textures/2k_' + name + '.jpg');
-      t.colorSpace = THREE.SRGBColorSpace;
-      textures.push(t);
-      return t;
-    };
+    const textureManager = createTextureManager(renderer, (message) =>
+      latest.current.onAssetStatus(message),
+    );
+    const applyMap = (
+      material: THREE.MeshBasicMaterial | THREE.MeshStandardMaterial,
+      name: string,
+    ) =>
+      textureManager.register(name, (texture) => {
+        material.map = texture;
+        material.needsUpdate = true;
+      });
+    textureManager.register('stars_milky_way', (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      scene.background = texture;
+    });
+    scene.backgroundIntensity = 0.6;
     const roots = new Map<string, THREE.Group>(),
       meshes = new Map<string, THREE.Mesh>(),
       orbitLines = new Map<string, THREE.Line>(),
@@ -106,14 +119,14 @@ export default function SolarScene({
       root.add(pivot);
       const material =
         body.id === 'sun'
-          ? new THREE.MeshBasicMaterial({ map: load('sun'), color: 0xffe1ad })
+          ? new THREE.MeshBasicMaterial({ color: 0xffe1ad })
           : new THREE.MeshStandardMaterial({
-              map: body.texture ? load(body.texture) : null,
               color: body.texture ? 0xffffff : body.color,
               roughness: 1,
             });
+      if (body.texture) applyMap(material, body.texture);
       const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(body.size, 48, 32),
+        new THREE.SphereGeometry(body.size, 96, 64),
         material,
       );
       mesh.userData.id = body.id;
@@ -145,13 +158,9 @@ export default function SolarScene({
           const r = Math.hypot(pos.getX(i), pos.getY(i));
           uv.setXY(i, (r - 3) / 2.6, 0.5);
         }
-        const t = textureLoader.load('/textures/2k_saturn_ring_alpha.png');
-        t.colorSpace = THREE.SRGBColorSpace;
-        textures.push(t);
         const ring = new THREE.Mesh(
           geo,
           new THREE.MeshStandardMaterial({
-            map: t,
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.88,
@@ -160,6 +169,7 @@ export default function SolarScene({
             emissiveIntensity: 0.2,
           }),
         );
+        applyMap(ring.material, 'saturn_ring_alpha');
         ring.rotation.x = -Math.PI / 2;
         pivot.add(ring);
       }
@@ -201,7 +211,11 @@ export default function SolarScene({
       meshes,
       labelLayer,
       (id) => latest.current.onSelect(id),
-      load('moon'),
+      null,
+    );
+    applyMap(
+      meshes.get('moon-moon')!.material as THREE.MeshStandardMaterial,
+      'moon',
     );
     // Seeded distributions are conceptual populations, not measured asteroid positions.
     let seed = 71;
@@ -242,7 +256,6 @@ export default function SolarScene({
       scene.add(cloud);
       return cloud;
     }
-    points(4200, 700, 2300, 0, 0xbccbe7, 2.2, true);
     const belt = points(1800, 35, 40, 2, 0xa89983, 0.13),
       kuiper = points(2200, 99, 128, 8, 0x6f899a, 0.18),
       scattered = points(750, 130, 166, 65, 0x8394b2, 0.2),
@@ -346,12 +359,31 @@ export default function SolarScene({
       transition = 0;
       following = null;
     });
+    const compactScreen = window.matchMedia(
+      '(max-width: 700px), (pointer: coarse)',
+    );
+    const connection = (
+      navigator as Navigator & { connection?: { saveData?: boolean } }
+    ).connection;
     const animate = (now: number) => {
       frame = requestAnimationFrame(animate);
       const s = latest.current.state,
         dt = Math.min((now - previous) / 1000, 0.08);
       previous = now;
       if (document.hidden) return;
+      const selectedMoonTexture = s.selected === 'moon-moon' ? 'moon' : null;
+      const focusBody = bodies.find(
+        (b) =>
+          b.id ===
+          (orbitingMoons.find((m) => m.id === s.selected)?.parentId ??
+            s.selected),
+      );
+      textureManager.update(
+        s.textureQuality,
+        selectedMoonTexture ?? focusBody?.texture ?? null,
+        compactScreen.matches,
+        !!connection?.saveData,
+      );
       const seek = s.epoch !== epoch;
       if (seek) {
         epoch = s.epoch;
@@ -512,7 +544,7 @@ export default function SolarScene({
           ms.forEach((m) => m.dispose());
         } else if (o instanceof THREE.Sprite) o.material.dispose();
       });
-      textures.forEach((t) => t.dispose());
+      textureManager.dispose();
       renderer.dispose();
       container.replaceChildren();
     };
