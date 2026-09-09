@@ -571,7 +571,7 @@ button:disabled {
   letter-spacing: 0.04em;
   margin: 0 1px 14px;
 }
-.scene-meta > span:first-child {
+.follow-status {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -692,23 +692,36 @@ button:disabled {
   }
 }
 .physical-facts {
-  margin: 20px 0;
-  border-top: 1px solid #ffffff15;
-  border-bottom: 1px solid #ffffff15;
-  padding: 14px 0;
+  margin: 22px 0 18px;
+  border: 0;
+  padding: 0;
 }
 .physical-facts summary {
   color: #dfc99f;
   cursor: pointer;
   font-size: 14px;
+  list-style-position: outside;
+}
+.physical-facts[open] summary {
+  margin-bottom: 14px;
 }
 .physical-facts .facts {
-  margin: 16px 0;
+  margin: 0;
   padding: 0;
+  border: 0;
+  gap: 20px 12px;
 }
 .physical-facts .facts strong {
   font-size: 16px;
   overflow-wrap: anywhere;
+}
+.physical-facts .little-note {
+  margin-top: 16px;
+}
+.physical-facts .source {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
 }
 .astronomy-button {
   display: flex;
@@ -1337,6 +1350,27 @@ button:disabled {
     display: none;
   }
 }
+@media (min-width: 601px) and (max-width: 900px) {
+  .catalog {
+    max-height: calc(100svh - 410px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #394250 transparent;
+  }
+  .scene-meta {
+    margin-left: 186px;
+    margin-right: 20px;
+  }
+  .scale-status {
+    display: none;
+  }
+  .follow-status {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
 @media (max-width: 600px) {
   .observatory {
     min-height: 550px;
@@ -1451,7 +1485,7 @@ button:disabled {
     gap: 8px;
     font-size: 12px;
   }
-  .scene-meta > span:nth-child(2) {
+  .scale-status {
     display: none;
   }
   .timeline {
@@ -1810,5 +1844,19 @@ button:disabled {
   }
   .catalog {
     padding-bottom: 0;
+  }
+  .scene-meta {
+    margin-left: 230px;
+    margin-right: 302px;
+  }
+  .follow-status,
+  .scale-status {
+    white-space: nowrap;
+  }
+}
+@media (min-width: 1500px) and (min-height: 601px) {
+  .scene-meta {
+    margin-left: 250px;
+    margin-right: 322px;
   }
 }

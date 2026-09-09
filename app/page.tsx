@@ -481,7 +481,7 @@ export default function Home() {
           aria-label="ORBIT 返回太阳系总览"
         >
           <Orbit strokeWidth={1.3} />
-          <span>
+          <span className="follow-status">
             ORBIT<i>太阳系漫游</i>
           </span>
         </button>
@@ -617,7 +617,7 @@ export default function Home() {
       </div>
       <div className="bottom-area">
         <div className="scene-meta">
-          <span>
+          <span className="follow-status">
             <i />
             {isComet
               ? `${cometClose ? '正在跟随' : '轨道全景'} · ${activeComet.name}`
@@ -627,7 +627,7 @@ export default function Home() {
                   ? activeRegion.name
                   : '太阳系全景'}
           </span>
-          <span>
+          <span className="scale-status">
             {realSizes
               ? scale === 'distance'
                 ? '大小与距离采用同一比例'
