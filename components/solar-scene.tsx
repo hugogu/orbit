@@ -33,6 +33,7 @@ export type SceneState = {
   shadowGuides: boolean;
   eclipseView: boolean;
   galaxy: boolean;
+  solarActivity: boolean;
   realSizes: boolean;
   systemView: boolean;
 };
@@ -147,7 +148,10 @@ export default function SolarScene({
       pivot.add(mesh);
       meshes.set(body.id, mesh);
       if (body.id === 'sun') {
-        sunEffects = createSunEffects(body.size);
+        sunEffects = createSunEffects(
+          body.size,
+          material as THREE.MeshBasicMaterial,
+        );
         root.add(sunEffects.root);
       }
       if (body.id === 'saturn') {
@@ -546,9 +550,10 @@ export default function SolarScene({
       }
       controls.update();
       sunEffects?.update(
-        now / 1000,
+        days,
         camera,
         meshes.get('sun')!.parent!.quaternion,
+        s.solarActivity,
       );
       renderer.render(scene, camera);
       cometSystem.project(camera, width, height, s.labels);
@@ -591,6 +596,7 @@ export default function SolarScene({
           o instanceof THREE.Line ||
           o instanceof THREE.Points
         ) {
+          if (o instanceof THREE.InstancedMesh) o.dispose();
           o.geometry.dispose();
           const ms = Array.isArray(o.material) ? o.material : [o.material];
           ms.forEach((m) => m.dispose());

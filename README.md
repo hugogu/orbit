@@ -1,13 +1,13 @@
 <div align="center">
   <img src="docs/images/orbit-readme-hero.png" alt="A stylised view of the Sun, planets, orbital paths, and the Milky Way" width="100%" />
 
-  # ORBIT · Solar System Observatory
+# ORBIT · Solar System Observatory
 
-  **An interactive 3D Solar System observatory for learning**
+**An interactive 3D Solar System observatory for learning**
 
-  **[English](README.md) · [简体中文](README.zh-CN.md)**
+**[English](README.md) · [简体中文](README.zh-CN.md)**
 
-  [Live demo](https://orbit-henna-xi.vercel.app/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
+[Live demo](https://orbit-henna-xi.vercel.app/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
@@ -17,16 +17,16 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 
 ## Highlights
 
-|  | Explore | Learn |
-| --- | --- | --- |
-| ☀️ | Run the scene at the present moment or at any UTC time from **1700–2200** | Planetary positions, orbital motion, rotation, and timescales |
-| 🪐 | Browse the Sun, eight planets, Pluto, 19 representative moons, four famous comets, and Saturn’s rings | Object types, orbits, and physical properties |
-| 🔭 | Select, follow, or view a body from above; expand a planet in the navigator to open a moon directly | Move from the full system to a single world |
-| 🌅 | Enter a location and fixed UTC offset, or request browser geolocation | A local day’s sunrise, sunset, and daylight length |
-| 🌑 | Find the next solar eclipse, lunar eclipse, and locally visible solar eclipse | Event timing and eclipse geometry |
-| 🌗 | See terminators, Earth’s city lights at night, and solar-eclipse umbra, penumbra, and shadow-axis tracks | Illumination and eclipse geometry |
-| ✨ | Choose automatic, standard 2K, or ultra textures up to 8K; the Milky Way can be toggled separately | A practical balance between detail and device performance |
-| 📱 | Navigate with mouse, keyboard, touch gestures, and responsive portrait or landscape layouts | Continuous exploration across desktop and mobile |
+|     | Explore                                                                                                  | Learn                                                         |
+| --- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| ☀️  | Run the scene at the present moment or at any UTC time from **1700–2200**                                | Planetary positions, orbital motion, rotation, and timescales |
+| 🪐  | Browse the Sun, eight planets, Pluto, 19 representative moons, four famous comets, and Saturn’s rings    | Object types, orbits, and physical properties                 |
+| 🔭  | Select, follow, or view a body from above; expand a planet in the navigator to open a moon directly      | Move from the full system to a single world                   |
+| 🌅  | Enter a location and fixed UTC offset, or request browser geolocation                                    | A local day’s sunrise, sunset, and daylight length            |
+| 🌑  | Find the next solar eclipse, lunar eclipse, and locally visible solar eclipse                            | Event timing and eclipse geometry                             |
+| 🌗  | See terminators, Earth’s city lights at night, and solar-eclipse umbra, penumbra, and shadow-axis tracks | Illumination and eclipse geometry                             |
+| ✨  | Choose automatic, standard 2K, or ultra textures up to 8K; the Milky Way can be toggled separately       | A practical balance between detail and device performance     |
+| 📱  | Navigate with mouse, keyboard, touch gestures, and responsive portrait or landscape layouts              | Continuous exploration across desktop and mobile              |
 
 ## See it running
 
@@ -41,11 +41,13 @@ Both images above were captured from a running ORBIT observatory. Texture select
 
 ## Controls
 
-| Scene navigation | Time control | Astronomy tools |
-| --- | --- | --- |
-| Left-drag to orbit, wheel to zoom, right-drag to pan | Nine rates, pause, return to now, and seek to a date | Sunrise/sunset, global eclipses, and locally visible solar eclipses |
-| One finger to orbit, pinch to zoom, two fingers to pan | Selection changes do not reset the simulation clock | Focus Earth or Moon at eclipse maximum |
-| `WASD` / arrow keys to pan, `+` / `-` to zoom, `Space` to pause, `R` for overview, `Esc` to stop following | From real time to ten years per second, including one minute per second for eclipse study | Manual coordinates or browser geolocation |
+| Scene navigation                                                                                           | Time control                                                                              | Astronomy tools                                                     |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Left-drag to orbit, wheel to zoom, right-drag to pan                                                       | Nine rates, pause, return to now, and seek to a date                                      | Sunrise/sunset, global eclipses, and locally visible solar eclipses |
+| One finger to orbit, pinch to zoom, two fingers to pan                                                     | Selection changes do not reset the simulation clock                                       | Focus Earth or Moon at eclipse maximum                              |
+| `WASD` / arrow keys to pan, `+` / `-` to zoom, `Space` to pause, `R` for overview, `Esc` to stop following | From real time to ten years per second, including one minute per second for eclipse study | Manual coordinates or browser geolocation                           |
+
+Solar activity can be toggled in display settings. Prominences, coronal filaments, and sunspots share the UTC simulation clock: pause freezes them, and revisiting a date reproduces the same model state. Try **1 day/second** to see growth, decay, and rotation. Lifetimes use illustrative day-to-month ranges and latitude-dependent rotation; generated regions are not historical observations or predictions. See [NASA prominences](https://www.nasa.gov/image-article/what-solar-prominence/), [NASA sunspots](https://science.nasa.gov/sun/sunspots/), and [NASA differential rotation](https://www.nasa.gov/image-article/solar-rotation-varies-by-latitude/).
 
 ## Scene and data flow
 
@@ -107,11 +109,11 @@ npm run build:vercel
 
 The repository root includes [`vercel.json`](vercel.json). Import the GitHub repository in Vercel without changing the root directory; the configuration uses:
 
-| Setting | Value |
-| --- | --- |
-| Build Command | `npm run build:vercel` |
-| Output Directory | `dist/client` |
-| Framework Preset | Other / unset |
+| Setting          | Value                  |
+| ---------------- | ---------------------- |
+| Build Command    | `npm run build:vercel` |
+| Output Directory | `dist/client`          |
+| Framework Preset | Other / unset          |
 
 Vercel needs a static `dist/client/index.html`. The usual `npm run build` target remains for Sites/Cloudflare Worker output; publishing that Worker target as a Vercel static site results in a root-page 404.
 
@@ -119,13 +121,13 @@ Vercel needs a static `dist/client/index.html`. The usual `npm run build` target
 
 ORBIT is an educational tool with explicit assumptions, not a navigation product or professional ephemeris service. Display and event search use the same UTC clock, but each part has a different accuracy envelope:
 
-| Scope | Approach | What to keep in mind |
-| --- | --- | --- |
-| Planets, Pluto, Moon, and Galilean moons | [Astronomy Engine](https://github.com/cosinekitty/astronomy) positions transformed into a fixed J2000 ecliptic scene frame | Intended for educational viewing; surface-map longitude alignment is not a cartographic guarantee |
-| Other representative moons | Fixed-epoch JPL mean orbital elements | Perturbations, resonances, and long-term precession are omitted; phase error can grow away from the epoch |
-| Four comets | Two-body propagation of JPL Small-Body Database snapshots | Gravitational perturbations and outgassing are omitted; return and perihelion dates are not precise forecasts |
-| Sunrise, sunset, and eclipses | Independent Web Worker search; sunrise/sunset use a supplied fixed UTC offset, solar upper limb, and standard refraction | No terrain, weather, or dynamic daylight-saving rules; a global eclipse is not necessarily locally visible |
-| Eclipse shadows | Physical radii and heliocentric vectors produce umbra, penumbra, and antumbra before mapping to the display meshes | No atmospheric refraction, limb darkening, terrain, rings, or comet effects |
+| Scope                                    | Approach                                                                                                                   | What to keep in mind                                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Planets, Pluto, Moon, and Galilean moons | [Astronomy Engine](https://github.com/cosinekitty/astronomy) positions transformed into a fixed J2000 ecliptic scene frame | Intended for educational viewing; surface-map longitude alignment is not a cartographic guarantee             |
+| Other representative moons               | Fixed-epoch JPL mean orbital elements                                                                                      | Perturbations, resonances, and long-term precession are omitted; phase error can grow away from the epoch     |
+| Four comets                              | Two-body propagation of JPL Small-Body Database snapshots                                                                  | Gravitational perturbations and outgassing are omitted; return and perihelion dates are not precise forecasts |
+| Sunrise, sunset, and eclipses            | Independent Web Worker search; sunrise/sunset use a supplied fixed UTC offset, solar upper limb, and standard refraction   | No terrain, weather, or dynamic daylight-saving rules; a global eclipse is not necessarily locally visible    |
+| Eclipse shadows                          | Physical radii and heliocentric vectors produce umbra, penumbra, and antumbra before mapping to the display meshes         | No atmospheric refraction, limb darkening, terrain, rings, or comet effects                                   |
 
 ### Scale options
 
@@ -133,13 +135,13 @@ The default demonstrative view compresses distances and enlarges bodies so the s
 
 ## Technology
 
-| Area | Stack |
-| --- | --- |
-| Interface | React 19, TypeScript, Vinext |
-| 3D rendering | Three.js, WebGL |
-| Ephemeris and events | Astronomy Engine, JPL data, browser Web Worker |
-| Styling and interaction | Tailwind CSS, Base UI, Lucide |
-| Delivery | Vercel static export, with a separate Sites/Cloudflare Worker build target |
+| Area                    | Stack                                                                      |
+| ----------------------- | -------------------------------------------------------------------------- |
+| Interface               | React 19, TypeScript, Vinext                                               |
+| 3D rendering            | Three.js, WebGL                                                            |
+| Ephemeris and events    | Astronomy Engine, JPL data, browser Web Worker                             |
+| Styling and interaction | Tailwind CSS, Base UI, Lucide                                              |
+| Delivery                | Vercel static export, with a separate Sites/Cloudflare Worker build target |
 
 ## Contributing
 

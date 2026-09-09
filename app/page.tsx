@@ -90,6 +90,7 @@ export default function Home() {
     [shadowGuides, setShadowGuides] = useState(true),
     [eclipseView, setEclipseView] = useState(false),
     [galaxy, setGalaxy] = useState(true),
+    [solarActivity, setSolarActivity] = useState(true),
     [realSizes, setRealSizes] = useState(false),
     [systemView, setSystemView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
@@ -113,6 +114,9 @@ export default function Home() {
         const saved = localStorage.getItem('orbit-texture-quality');
         if (isTextureQuality(saved)) setTextureQuality(saved);
         setGalaxy(localStorage.getItem('orbit-galaxy') !== 'false');
+        setSolarActivity(
+          localStorage.getItem('orbit-solar-activity') !== 'false',
+        );
         setRealSizes(localStorage.getItem('orbit-real-sizes') === 'true');
       } catch {
         /* Storage can be disabled in private contexts. */
@@ -466,6 +470,7 @@ export default function Home() {
           shadowGuides,
           eclipseView,
           galaxy,
+          solarActivity,
           realSizes,
           systemView,
         }}
@@ -753,6 +758,25 @@ export default function Home() {
             低亮度银河全景，保留暗色太空背景，避免掩盖天体。
           </p>
           <div className="setting-row">
+            <label htmlFor="solar-activity">太阳活动效果</label>
+            <Switch
+              id="solar-activity"
+              checked={solarActivity}
+              onCheckedChange={(v) => {
+                setSolarActivity(v);
+                try {
+                  localStorage.setItem('orbit-solar-activity', String(v));
+                } catch {
+                  /* Optional preference. */
+                }
+              }}
+            />
+          </div>
+          <p className="model-note">
+            日冕、日珥与黑子跟随模拟时间；暂停时冻结。实时变化缓慢，调至「1 天 /
+            秒」可观察生长、消散和自转。按典型时间尺度生成的科普示意，不代表该日期实测活动。
+          </p>
+          <div className="setting-row">
             <label htmlFor="real-sizes">天体按真实大小比例</label>
             <Switch
               id="real-sizes"
@@ -909,6 +933,37 @@ export default function Home() {
               14 颗卫星用 JPL
               固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用
               JPL 带历元的二体轨道，远离历元时误差增大。
+            </p>
+            <p>
+              太阳活动使用可重现的科普模型：日珥约一天形成，维持约 14–86
+              天后消散；黑子约 1–2 天长成，持续约 6–64 天。活动区随纬度以约
+              25–36 天的周期自转，内部等离子流以小时为尺度演化。所有活动与 UTC
+              模拟时钟同步，暂停和跳转日期同样生效。这些活动区并非历史观测或未来预报，未模拟真实太阳活动周期。
+              依据：
+              <a
+                href="https://www.nasa.gov/image-article/what-solar-prominence/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                NASA 日珥
+              </a>
+              、
+              <a
+                href="https://science.nasa.gov/sun/sunspots/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                NASA 黑子
+              </a>
+              、
+              <a
+                href="https://www.nasa.gov/image-article/solar-rotation-varies-by-latitude/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                太阳自转
+              </a>
+              。
             </p>
             <p>
               星空采用 Solar System Scope

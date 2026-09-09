@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { createSunEffects } from '../components/sun-effects.ts';
 
 void test('camera orbits change only the corona billboard; plasma stays anchored to the Sun', () => {
-  const effects = createSunEffects(4.8);
+  const effects = createSunEffects(4.8, new THREE.MeshBasicMaterial());
   const camera = new THREE.PerspectiveCamera();
   camera.position.set(0, 0, 30);
   const spin = new THREE.Quaternion().setFromAxisAngle(
@@ -34,7 +34,7 @@ void test('camera orbits change only the corona billboard; plasma stays anchored
 void test('the apparent solar limb follows perspective and real-size parent scaling', () => {
   for (const scale of [0.00001, 1, 20]) {
     const parent = new THREE.Group();
-    const effects = createSunEffects(1);
+    const effects = createSunEffects(1, new THREE.MeshBasicMaterial());
     parent.add(effects.root);
     parent.scale.setScalar(scale);
     parent.rotation.y = 0.3;
@@ -63,7 +63,6 @@ void test('the apparent solar limb follows perspective and real-size parent scal
         false,
         'transparent effects must not occlude each other',
       );
-      assert.equal(object.material.uniforms.time.value, 4);
       const positions = object.geometry.attributes.position.array;
       assert.ok([...positions].every(Number.isFinite));
       object.geometry.dispose();
