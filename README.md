@@ -1,81 +1,83 @@
 <div align="center">
-  <img src="docs/images/orbit-readme-hero.png" alt="太阳、行星与银河组成的太阳系概念图" width="100%" />
+  <img src="docs/images/orbit-readme-hero.png" alt="A stylised view of the Sun, planets, orbital paths, and the Milky Way" width="100%" />
 
-  # ORBIT · 太阳系漫游
+  # ORBIT · Solar System Observatory
 
-  **面向学习的交互式 3D 太阳系观测台**
+  **An interactive 3D Solar System observatory for learning**
 
-  [在线体验](https://orbit-henna-xi.vercel.app/) · [提交问题](https://github.com/hugogu/orbit/issues) · [功能建议](https://github.com/hugogu/orbit/issues/new)
+  **[English](README.md) · [简体中文](README.zh-CN.md)**
+
+  [Live demo](https://orbit-henna-xi.vercel.app/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
-> 上图为项目视觉封面，不是应用界面截图。ORBIT 在浏览器中运行，无需安装客户端。
+> The banner is project artwork, not an application screenshot. ORBIT runs entirely in the browser.
 
-ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计算结合在一起。它适合用来观察太阳系中天体的相对运动、认识主要卫星和彗星，并从指定观测地点了解日出、日落与食象。
+ORBIT combines an explorable 3D scene, a controllable simulation clock, and astronomy calculations with stated sources and assumptions. Follow a body through the Solar System, inspect selected moons and famous comets, and use an observer location to explore sunrise, sunset, and eclipses.
 
-## 功能一览
+## Highlights
 
-|  | 能做什么 | 适合了解什么 |
+|  | Explore | Learn |
 | --- | --- | --- |
-| ☀️ | 以当前时刻或 **1700–2200 年**的任意 UTC 时刻运行场景 | 行星位置、公转、自转与时间尺度 |
-| 🪐 | 浏览太阳、八大行星、冥王星、19 颗代表性卫星、4 颗著名彗星与土星环 | 天体类型、轨道和物理特征 |
-| 🔭 | 选中、跟随、俯视或一键返回全景；导航栏可展开卫星并直接定位 | 从太阳系全局切换到单个天体 |
-| 🌅 | 输入经纬度与固定 UTC 偏移，或使用浏览器当前位置 | 当地某一天的日出、日落、昼长 |
-| 🌑 | 查询下一次日食、月食与下一次当地可见的日食 | 食象发生时刻、最大食分附近的几何关系 |
-| 🌗 | 显示天体昼夜分界、地球夜间灯光，以及日食时的本影、半影与影轴轨迹 | 日照、月食和日食的空间几何 |
-| ✨ | 在自动、标准 2K 与最高 8K 纹理之间选择；银河背景可单独开关 | 视觉质量与设备性能之间的取舍 |
-| 📱 | 支持桌面鼠标和键盘、触屏手势、手机横屏与竖屏布局 | 不同设备上的连续探索 |
+| ☀️ | Run the scene at the present moment or at any UTC time from **1700–2200** | Planetary positions, orbital motion, rotation, and timescales |
+| 🪐 | Browse the Sun, eight planets, Pluto, 19 representative moons, four famous comets, and Saturn’s rings | Object types, orbits, and physical properties |
+| 🔭 | Select, follow, or view a body from above; expand a planet in the navigator to open a moon directly | Move from the full system to a single world |
+| 🌅 | Enter a location and fixed UTC offset, or request browser geolocation | A local day’s sunrise, sunset, and daylight length |
+| 🌑 | Find the next solar eclipse, lunar eclipse, and locally visible solar eclipse | Event timing and eclipse geometry |
+| 🌗 | See terminators, Earth’s city lights at night, and solar-eclipse umbra, penumbra, and shadow-axis tracks | Illumination and eclipse geometry |
+| ✨ | Choose automatic, standard 2K, or ultra textures up to 8K; the Milky Way can be toggled separately | A practical balance between detail and device performance |
+| 📱 | Navigate with mouse, keyboard, touch gestures, and responsive portrait or landscape layouts | Continuous exploration across desktop and mobile |
 
-## 看见的内容，知道它从哪里来
+## See it running
 
 <table>
   <tr>
-    <td width="50%" align="center"><img src="public/textures/2k_earth_nightmap.jpg" alt="地球夜间城市灯光纹理" width="100%" /><br /><sub>地球夜间灯光：会随太阳方向出现在夜半球</sub></td>
-    <td width="50%" align="center"><img src="public/textures/2k_stars_milky_way.jpg" alt="银河背景纹理" width="100%" /><br /><sub>银河背景：可调暗或关闭，避免干扰太阳系观察</sub></td>
+    <td width="50%" align="center"><img src="docs/images/earth-night-lights.jpg" alt="ORBIT running with Earth's night-side city lights visible" width="100%" /><br /><sub>Earth’s city lights emerge naturally on the night-facing hemisphere.</sub></td>
+    <td width="50%" align="center"><img src="docs/images/eclipse-shadow-path.jpg" alt="ORBIT running at the 8 April 2024 total solar eclipse, showing eclipse shadow boundaries and the shadow-axis path" width="100%" /><br /><sub>The 8 April 2024 total solar eclipse: surface shadow boundaries and the shadow-axis path.</sub></td>
   </tr>
 </table>
 
-项目提供高分辨率日间、夜间与银河纹理；会按设置、设备类型、节省流量偏好和 GPU 纹理限制选择加载质量。高分辨率材质只在需要时为当前跟随天体加载，并会在替换后释放上一份资源。
+Both images above were captured from a running ORBIT observatory. Texture selection considers the user setting, device class, data-saving preference, and GPU texture limits. High-resolution maps are loaded for the focused body only when needed, then the previous map is released.
 
-## 交互方式
+## Controls
 
-| 场景导航 | 时间控制 | 天文计算 |
+| Scene navigation | Time control | Astronomy tools |
 | --- | --- | --- |
-| 鼠标左键拖动旋转、滚轮缩放、右键拖动平移 | 9 档速度、暂停、回到“现在”、指定日期 | 日出日落、全球日食/月食、当地可见日食 |
-| 单指旋转、双指缩放、双指平移 | 模拟时钟在切换天体后仍保持 | 在食象最大时刻聚焦地球或月球 |
-| `WASD` / 方向键平移，`+` / `-` 缩放，`Space` 暂停，`R` 全景，`Esc` 结束跟随 | 从实时到十年/秒，含适合观察食象的一分钟/秒 | 观测点支持手动输入与浏览器定位 |
+| Left-drag to orbit, wheel to zoom, right-drag to pan | Nine rates, pause, return to now, and seek to a date | Sunrise/sunset, global eclipses, and locally visible solar eclipses |
+| One finger to orbit, pinch to zoom, two fingers to pan | Selection changes do not reset the simulation clock | Focus Earth or Moon at eclipse maximum |
+| `WASD` / arrow keys to pan, `+` / `-` to zoom, `Space` to pause, `R` for overview, `Esc` to stop following | From real time to ten years per second, including one minute per second for eclipse study | Manual coordinates or browser geolocation |
 
-## 场景与数据流
+## Scene and data flow
 
 ```mermaid
 flowchart LR
-  A[浏览器输入<br/>时间、地点、导航操作] --> B[React 观测台界面]
-  B --> C[时间轴与状态]
-  C --> D[Astronomy Engine<br/>行星、月球、伽利略卫星]
-  C --> E[JPL 轨道要素<br/>其余卫星与彗星]
-  D --> F[Three.js 3D 场景]
+  A[Browser input<br/>time, place, navigation] --> B[React observatory UI]
+  B --> C[Clock and application state]
+  C --> D[Astronomy Engine<br/>planets, Moon, Galilean moons]
+  C --> E[JPL orbital elements<br/>other moons and comets]
+  D --> F[Three.js scene]
   E --> F
-  C --> G[Web Worker<br/>日出日落与食象搜索]
+  C --> G[Web Worker<br/>sunrise/sunset and eclipse search]
   G --> B
-  F --> H[桌面与移动端 WebGL 渲染]
+  F --> H[WebGL on desktop and mobile]
 ```
 
-### 可探索的天体
+### Objects in the observatory
 
-- **行星系统**：太阳、八大行星、冥王星、土星环，以及小行星带、柯伊伯带、散布盘、日球层和示意性的奥尔特云。
-- **卫星目录**：19 颗可独立查看的代表性卫星，包含月球、伽利略卫星和卡戎；每颗都有独立介绍页、基础物理数据、轨道数据、来源链接和随机趣味知识。
-- **彗星导航**：哈雷彗星、恩克彗星、67P/丘留莫夫–格拉西缅科彗星、海尔–波普彗星。可沿时间轴观察其模型轨道，也可跳到模型中的下一次近日点。
-- **知识卡片**：33 个可选天体各有 30 条带来源的“你知道吗”内容；每次打开页面会轮换，避免总是看到同一条。
+- **Planetary system:** the Sun, eight planets, Pluto, Saturn’s rings, the asteroid belt, Kuiper belt, scattered disc, heliosphere, and a schematic Oort cloud.
+- **Moon directory:** 19 individually selectable representative moons, including the Moon, the Galilean moons, and Charon. Each has its own article, physical data, orbital data, sources, and a rotating fact card.
+- **Comet navigation:** Halley, Encke, 67P/Churyumov–Gerasimenko, and Hale–Bopp. Observe their model trajectories on the shared time axis or jump to the next model perihelion.
+- **Knowledge cards:** each of the 33 selectable bodies has 30 sourced “Did you know?” entries. The opening selection rotates between visits.
 
-## 快速开始
+## Quick start
 
-### 前置条件
+### Prerequisites
 
 - [Node.js](https://nodejs.org/) `>= 22.13.0`
-- npm（项目包含 `package-lock.json`）
-- 支持 WebGL 的现代浏览器；推荐开启硬件加速
+- npm; this repository includes `package-lock.json`
+- A modern WebGL-capable browser with hardware acceleration recommended
 
-### 本地运行
+### Run locally
 
 ```bash
 git clone git@github.com:hugogu/orbit.git
@@ -84,9 +86,9 @@ npm ci
 npm run dev
 ```
 
-随后打开终端输出的本地地址。开发时，浏览器定位功能只会在安全上下文（HTTPS 或 localhost）下请求权限。
+Open the local URL printed by the development server. Browser geolocation is requested only in a secure context: HTTPS or localhost.
 
-### 质量检查
+### Verify a change
 
 ```bash
 npm test
@@ -95,70 +97,70 @@ npx tsc --noEmit
 npm run build
 ```
 
-测试涵盖 UTC 时钟、天体坐标转换、地球昼夜方向、卫星与彗星轨道、食象峰值、地点边界、纹理策略与交互状态。提交前请运行以上检查；涉及 Vercel 发布时，另外运行：
+The test suite covers the UTC clock, coordinate transforms, Earth day/night orientation, satellite and comet orbits, eclipse maxima, location boundaries, texture policy, and interaction state. Run the Vercel export as well before a Vercel release:
 
 ```bash
 npm run build:vercel
 ```
 
-## 部署到 Vercel
+## Deploy to Vercel
 
-仓库根目录已经包含 [`vercel.json`](vercel.json)。在 Vercel 导入 GitHub 仓库时保持根目录不变，配置会自动使用：
+The repository root includes [`vercel.json`](vercel.json). Import the GitHub repository in Vercel without changing the root directory; the configuration uses:
 
-| 配置项 | 值 |
+| Setting | Value |
 | --- | --- |
 | Build Command | `npm run build:vercel` |
 | Output Directory | `dist/client` |
-| Framework Preset | Other / 不指定 |
+| Framework Preset | Other / unset |
 
-Vercel 静态发布需要 `dist/client/index.html`。常规的 `npm run build` 仍然保留给 Sites/Cloudflare Worker 目标；将其 Worker 产物作为 Vercel 静态站点发布，会造成根路径 404。
+Vercel needs a static `dist/client/index.html`. The usual `npm run build` target remains for Sites/Cloudflare Worker output; publishing that Worker target as a Vercel static site results in a root-page 404.
 
-## 模型边界与准确性
+## Accuracy and model boundaries
 
-ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历服务。显示和查询共享一个 UTC 时钟，但各部分有不同的精度范围：
+ORBIT is an educational tool with explicit assumptions, not a navigation product or professional ephemeris service. Display and event search use the same UTC clock, but each part has a different accuracy envelope:
 
-| 范围 | 实现方式 | 使用时应了解 |
+| Scope | Approach | What to keep in mind |
 | --- | --- | --- |
-| 行星、冥王星、月球、伽利略卫星 | [Astronomy Engine](https://github.com/cosinekitty/astronomy) 的位置计算，转为固定 J2000 黄道场景坐标 | 用于教育观察；表面贴图经纬度并非测绘保证 |
-| 其余代表性卫星 | JPL 固定历元平均轨道要素 | 未包含摄动、共振和长期岁差，远离历元的相位误差可能较大 |
-| 四颗彗星 | JPL Small-Body Database 快照的两体传播 | 未包含引力摄动和释气；近日点与回归日期不能视为精确预报 |
-| 日出、日落与食象 | 独立 Web Worker 搜索；日出日落采用给定固定 UTC 偏移、太阳上缘和标准大气折射 | 未计入地形、天气与动态夏令时；全球食象不等于当地可见 |
-| 阴影 | 物理半径与日心向量计算本影、半影和反本影，再映射到展示网格 | 不包含大气折射、太阳边缘变暗、地形、行星环或彗星的影响 |
+| Planets, Pluto, Moon, and Galilean moons | [Astronomy Engine](https://github.com/cosinekitty/astronomy) positions transformed into a fixed J2000 ecliptic scene frame | Intended for educational viewing; surface-map longitude alignment is not a cartographic guarantee |
+| Other representative moons | Fixed-epoch JPL mean orbital elements | Perturbations, resonances, and long-term precession are omitted; phase error can grow away from the epoch |
+| Four comets | Two-body propagation of JPL Small-Body Database snapshots | Gravitational perturbations and outgassing are omitted; return and perihelion dates are not precise forecasts |
+| Sunrise, sunset, and eclipses | Independent Web Worker search; sunrise/sunset use a supplied fixed UTC offset, solar upper limb, and standard refraction | No terrain, weather, or dynamic daylight-saving rules; a global eclipse is not necessarily locally visible |
+| Eclipse shadows | Physical radii and heliocentric vectors produce umbra, penumbra, and antumbra before mapping to the display meshes | No atmospheric refraction, limb darkening, terrain, rings, or comet effects |
 
-### 比例设置
+### Scale options
 
-默认的演示模式会压缩距离并放大天体，便于在同一画面中观察。可分别开启真实天体大小和真实距离；两者同时开启时，太阳、行星与 19 颗卫星使用同一物理比例，彗核、彗尾和辉光仍保持教学用示意效果。
+The default demonstrative view compresses distances and enlarges bodies so the system remains readable in one scene. Real body size and real distance can be enabled independently. With both enabled, the Sun, planets, and 19 moons share one physical scale; comet nuclei, tails, and glows remain instructional illustrations.
 
-## 技术栈
+## Technology
 
-| 类别 | 采用技术 |
+| Area | Stack |
 | --- | --- |
-| 界面 | React 19、TypeScript、Vinext |
-| 3D 渲染 | Three.js、WebGL |
-| 星历与事件 | Astronomy Engine、JPL 数据与浏览器 Web Worker |
-| 样式与交互 | Tailwind CSS、Base UI、Lucide |
-| 部署 | Vercel 静态导出；也保留 Sites/Cloudflare Worker 构建目标 |
+| Interface | React 19, TypeScript, Vinext |
+| 3D rendering | Three.js, WebGL |
+| Ephemeris and events | Astronomy Engine, JPL data, browser Web Worker |
+| Styling and interaction | Tailwind CSS, Base UI, Lucide |
+| Delivery | Vercel static export, with a separate Sites/Cloudflare Worker build target |
 
-## 贡献
+## Contributing
 
-欢迎提交改进。开始前请先查看现有 [Issues](https://github.com/hugogu/orbit/issues)，避免重复工作。
+Contributions are welcome. Start by reviewing the existing [issues](https://github.com/hugogu/orbit/issues) to avoid duplicate work.
 
-1. Fork 本仓库并从默认分支新建一个聚焦的分支。
-2. 保持改动小而完整；功能、重构和构建配置尽量拆成独立提交。
-3. 为行为变更补充或更新测试，并运行“质量检查”中的全部命令。
-4. 提交 Pull Request 时说明用户可见的变化、数据来源或模型假设的变更，以及验证方式。
+1. Fork the repository and create a focused branch from the default branch.
+2. Keep a change small and complete. Separate feature work, refactors, and build configuration where practical.
+3. Add or update tests for changed behavior, then run every command under “Verify a change”.
+4. In a pull request, explain the visible behavior, any changed source or modelling assumption, and how you verified it.
 
-报告问题时，请附上浏览器与版本、设备类型、屏幕尺寸、发生时间、所在地时区/坐标（如与地点计算相关）和复现步骤。请勿提交密钥、精确家庭地址或其他敏感信息。
+For a bug report, include the browser and version, device class, viewport size, time of occurrence, relevant time zone or coordinates, and reproducible steps. Do not include keys, a precise home address, or other sensitive data.
 
-## 数据与素材致谢
+## Data and asset credits
 
-- [NASA Solar System](https://science.nasa.gov/solar-system/planets/)、[NASA Kuiper Belt](https://science.nasa.gov/solar-system/kuiper-belt/facts/)、[NASA Oort Cloud](https://science.nasa.gov/solar-system/oort-cloud/facts/)
-- [JPL 行星物理参数](https://ssd.jpl.nasa.gov/planets/phys_par.html)、[JPL 近似位置/开普勒要素](https://ssd.jpl.nasa.gov/planets/approx_pos.html)、[JPL 卫星数据](https://ssd.jpl.nasa.gov/sats/)
+- [NASA Solar System](https://science.nasa.gov/solar-system/planets/), [NASA Kuiper Belt](https://science.nasa.gov/solar-system/kuiper-belt/facts/), and [NASA Oort Cloud](https://science.nasa.gov/solar-system/oort-cloud/facts/)
+- [JPL planetary physical parameters](https://ssd.jpl.nasa.gov/planets/phys_par.html), [JPL approximate positions and Keplerian elements](https://ssd.jpl.nasa.gov/planets/approx_pos.html), and [JPL satellite data](https://ssd.jpl.nasa.gov/sats/)
 - [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
-- [NASA 日食几何](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
-- [Astronomy Engine](https://github.com/cosinekitty/astronomy)（MIT）
-- 纹理来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形；银河全景是沉浸式背景，不是观测地点的实时星图。
+- [NASA eclipse geometry](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
+- [Astronomy Engine](https://github.com/cosinekitty/astronomy) (MIT)
+- Textures from [Solar System Scope Textures](https://www.solarsystemscope.com/textures/), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). File dimensions, download sources, and license information are recorded in [`public/textures/source-manifest.json`](public/textures/source-manifest.json). Some maps use enhanced colour or illustrative terrain; the Milky Way panorama is an immersive background, not a live sky chart for the observer’s location.
 
-## 许可证
+## License
 
-仓库目前尚未声明 `LICENSE`。在未添加许可证前，代码与素材默认保留全部权利；请勿假定可以再发布、商用或二次分发。对外正式开源前，维护者应选择并加入适合项目与第三方素材条件的许可证。
+This repository does not yet declare a `LICENSE`. Until one is added, the code and assets remain all rights reserved; do not assume permission to redistribute, use commercially, or create derivatives. Before a public open-source release, the maintainer should choose and add a license that is compatible with the project and its third-party assets.
