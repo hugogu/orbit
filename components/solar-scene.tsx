@@ -12,6 +12,7 @@ import { orbitingMoons } from '@/lib/moon-orbits';
 import { displayRadius, displaySystemExtent } from '@/lib/display-scale';
 import { createTextureManager } from './texture-manager';
 import { createEclipseSystem } from './eclipse-system';
+import { createSunEffects } from './sun-effects';
 import type { TextureQuality } from '@/lib/texture-quality';
 export type SceneState = {
   speed: number;
@@ -116,6 +117,7 @@ export default function SolarScene({
       meshes = new Map<string, THREE.Mesh>(),
       orbitLines = new Map<string, THREE.Line>(),
       labels = new Map<string, HTMLButtonElement>();
+    let sunEffects: ReturnType<typeof createSunEffects> | null = null;
     const labelLayer = document.createElement('div');
     labelLayer.className = 'scene-labels';
     container.appendChild(labelLayer);
@@ -145,22 +147,8 @@ export default function SolarScene({
       pivot.add(mesh);
       meshes.set(body.id, mesh);
       if (body.id === 'sun') {
-        const glow = new THREE.Mesh(
-          new THREE.PlaneGeometry(1, 1),
-          new THREE.ShaderMaterial({
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            uniforms: {},
-            vertexShader:
-              'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-            fragmentShader:
-              'varying vec2 vUv;void main(){float r=length(vUv-.5)*2.;float a=pow(max(0.,1.-r),3.);gl_FragColor=vec4(1.,.38,.06,a*.8);}',
-          }),
-        );
-        glow.scale.set(34, 34, 1);
-        glow.name = 'sun-glow';
-        root.add(glow);
+        sunEffects = createSunEffects(body.size);
+        root.add(sunEffects.root);
       }
       if (body.id === 'saturn') {
         const geo = new THREE.RingGeometry(3.0, 5.6, 128);
@@ -557,7 +545,7 @@ export default function SolarScene({
         following = newTarget.clone();
       }
       controls.update();
-      scene.getObjectByName('sun-glow')?.quaternion.copy(camera.quaternion);
+      sunEffects?.update(now / 1000, camera);
       renderer.render(scene, camera);
       cometSystem.project(camera, width, height, s.labels);
       moonSystem.project(camera, width, height, s.selected, s.labels);
