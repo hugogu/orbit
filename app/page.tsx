@@ -541,7 +541,7 @@ export default function Home() {
         </h1>
       </div>
       <section
-        className="catalog glass"
+        className={`catalog glass ${tab === 'explore' ? 'catalog-body' : 'catalog-regions'}`}
         aria-label={tab === 'explore' ? '选择天体' : '选择太阳系区域'}
       >
         <div className="catalog-title">
@@ -616,14 +616,6 @@ export default function Home() {
         </button>
       </div>
       <div className="bottom-area">
-        {shadows && shadowGuides && body && (
-          <div className="shadow-legend" aria-label="食影图例">
-            <span className="umbra-key">本影</span>
-            <span className="penumbra-key">半影</span>
-            <span className="antumbra-key">伪本影（环食）</span>
-            <span>细线：过去 90 分钟影轴轨迹</span>
-          </div>
-        )}
         <div className="scene-meta">
           <span>
             <i />
@@ -683,7 +675,10 @@ export default function Home() {
               <span>10 年 / 秒</span>
             </div>
           </div>
-          <div className="simulation-clock">
+          <div
+            className="simulation-clock"
+            aria-label="模拟日期，协调世界时 UTC"
+          >
             <span>模拟日期 · UTC</span>
             <strong>{time ? utcLabel(time).slice(0, 10) : '正在同步'}</strong>
             <small>{time ? utcLabel(time).slice(11) : '—'}</small>
@@ -695,7 +690,7 @@ export default function Home() {
             onClick={() => seekTime(Date.now(), true)}
           >
             <RotateCcw size={16} />
-            现在
+            <span>现在</span>
           </button>
         </section>
         <footer className="footer">
@@ -796,6 +791,12 @@ export default function Home() {
             按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“日期与天象”跳到食甚，再以
             1 分钟/秒慢放。没有遮挡时不会出现食影。
           </p>
+          <div className="shadow-legend" aria-label="食影图例">
+            <span className="umbra-key">本影</span>
+            <span className="penumbra-key">半影</span>
+            <span className="antumbra-key">伪本影（环食）</span>
+            <span>细线：过去 90 分钟影轴轨迹</span>
+          </div>
           <div className="setting-row">
             <span id="texture-quality-label">贴图质量</span>
             <Select
