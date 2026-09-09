@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../lib/i18n/provider';
 import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
@@ -32,6 +33,7 @@ export default function AstronomyPanel({
   onSeek: (ms: number, live?: boolean) => void;
   onEclipse: (ms: number, kind: 'solar' | 'lunar') => void;
 }) {
+  const { t, locale } = useI18n();
   const [date, setDate] = useState(''),
     [day, setDay] = useState('');
   const [latitude, setLatitude] = useState('39.9042'),
@@ -46,6 +48,9 @@ export default function AstronomyPanel({
     [error, setError] = useState(''),
     [locating, setLocating] = useState(false),
     [locationMessage, setLocationMessage] = useState('');
+  const [locationValues, setLocationValues] = useState<
+    Record<string, string | number>
+  >({});
   const locationRequest = useRef(0);
   const worker = useRef<Worker | null>(null),
     opened = useRef(false);
@@ -109,8 +114,12 @@ export default function AstronomyPanel({
       if (Number.isFinite(localDate.getTime()))
         setOffset(String(-localDate.getTimezoneOffset() / 60));
       setLocationMessage(
-        `已定位，精度约 ±${Math.ceil(fix.accuracy)} 米。时差按设备时区 ${Intl.DateTimeFormat().resolvedOptions().timeZone} 的所选日期填写，请核对；海拔保留手动值。`,
+        '已定位，精度约 ±{{accuracy}} 米。时差按设备时区 {{zone}} 的所选日期填写，请核对；海拔保留手动值。',
       );
+      setLocationValues({
+        accuracy: Math.ceil(fix.accuracy),
+        zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
     } catch (error) {
       if (request === locationRequest.current)
         setLocationMessage(
@@ -180,8 +189,13 @@ export default function AstronomyPanel({
   }
   const format = (ms: number | null | undefined) =>
     ms == null
-      ? '当天无此事件'
-      : utcLabel(ms + (result?.query.utcOffset ?? 0) * 3600000).slice(0, 16);
+      ? t('当天无此事件')
+      : new Intl.DateTimeFormat(locale, {
+          dateStyle: 'short',
+          timeStyle: 'short',
+          hourCycle: 'h23',
+          timeZone: 'UTC',
+        }).format(ms + (result?.query.utcOffset ?? 0) * 3600000);
   const eventCard = (
     title: string,
     event: SkyEvent | null,
@@ -189,32 +203,40 @@ export default function AstronomyPanel({
     kind: 'solar' | 'lunar' = 'solar',
   ) => (
     <article className="sky-event">
-      <span>{title}</span>
+      <span>{t(title)}</span>
       {event ? (
         <>
-          <h3>{event.kind}</h3>
+          <h3>{t(event.kind)}</h3>
           <strong>{format(event.peak)}</strong>
           <p>
-            食甚时间
+            {t('食甚时间')}
             {local && event.altitude !== undefined
-              ? ` · 太阳高度 ${event.altitude.toFixed(1)}°`
+              ? t(' · 太阳高度 {{v0}}°', { v0: event.altitude.toFixed(1) })
               : ''}
           </p>
           {event.begin !== undefined && (
             <p>
-              {local ? '初亏' : '半影食始'} {format(event.begin)}
+              {local ? t('初亏') : t('半影食始')} {format(event.begin)}
               <br />
-              {local ? '复圆' : '半影食终'} {format(event.end)}
+              {local ? t('复圆') : t('半影食终')} {format(event.end)}
             </p>
           )}
           {event.obscuration !== undefined && (
-            <p>食甚遮掩太阳面积约 {(event.obscuration * 100).toFixed(1)}%</p>
+            <p>
+              {t('食甚遮掩太阳面积约 {{percent}}%', {
+                percent: (event.obscuration * 100).toFixed(1),
+              })}
+            </p>
           )}
           {!local && event.altitude !== undefined && (
             <p>
-              此地点食甚时月亮在
-              {event.altitude > 0 ? '地平线上方' : '地平线下方'}（
-              {event.altitude.toFixed(1)}°）；其他阶段是否可见需另看月出月落。
+              {t(
+                '此地点食甚时月亮在{{horizon}}（{{altitude}}°）；其他阶段是否可见需另看月出月落。',
+                {
+                  horizon: t(event.altitude > 0 ? '地平线上方' : '地平线下方'),
+                  altitude: event.altitude.toFixed(1),
+                },
+              )}
             </p>
           )}
           <button
@@ -224,26 +246,29 @@ export default function AstronomyPanel({
               onOpenChange(false);
             }}
           >
-            观察食甚阴影
+            {t('观察食甚阴影')}
           </button>
         </>
       ) : (
-        <p>在支持的日期范围内未找到下一次。</p>
+        <p>{t('在支持的日期范围内未找到下一次。')}</p>
       )}
     </article>
   );
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="orbit-dialog astronomy-dialog">
-        <DialogTitle>日期与天象</DialogTitle>
+      <DialogContent
+        closeLabel={t('Close')}
+        className="orbit-dialog astronomy-dialog"
+      >
+        <DialogTitle>{t('日期与天象')}</DialogTitle>
         <DialogDescription>
-          选择时间探索太阳系，按观测地点查询日出日落和下一次食象。
+          {t('选择时间探索太阳系，按观测地点查询日出日落和下一次食象。')}
         </DialogDescription>
         <div className="astro-form">
           <label className="wide">
-            模拟时间（UTC）
+            {t('模拟时间（UTC）')}
             <input
-              aria-label="模拟时间（UTC）"
+              aria-label={t('模拟时间（UTC）')}
               type="datetime-local"
               step="1"
               min={new Date(MIN_TIME).toISOString().slice(0, 19)}
@@ -259,29 +284,31 @@ export default function AstronomyPanel({
             className="primary-action"
             onClick={() => seek(Date.parse(date + 'Z'))}
           >
-            应用时间并暂停
+            {t('应用时间并暂停')}
           </button>
           <button
             className="secondary-action"
             onClick={() => seek(Date.now(), true)}
           >
-            回到现在 · 实时运行
+            {t('回到现在 · 实时运行')}
           </button>
           <p className="wide little-note">
-            支持 1700—2200 年。所有天体共享此时间；切换目标保留模拟进度。
+            {t('支持 1700—2200 年。所有天体共享此时间；切换目标保留模拟进度。')}
           </p>
           <button
             className="secondary-action wide location-button"
             onClick={locating ? clearResults : locate}
           >
             <LocateFixed size={16} />
-            {locating ? '正在定位… 点击取消' : '使用当前位置'}
+            {locating ? t('正在定位… 点击取消') : t('使用当前位置')}
           </button>
           {locationMessage && (
-            <output className="wide little-note">{locationMessage}</output>
+            <output className="wide little-note">
+              {t(locationMessage, locationValues)}
+            </output>
           )}
           <label>
-            纬度（北正南负）
+            {t('纬度（北正南负）')}
             <input
               type="number"
               min="-90"
@@ -296,7 +323,7 @@ export default function AstronomyPanel({
             />
           </label>
           <label>
-            经度（东正西负）
+            {t('经度（东正西负）')}
             <input
               type="number"
               min="-180"
@@ -311,7 +338,7 @@ export default function AstronomyPanel({
             />
           </label>
           <label>
-            海拔（米）
+            {t('海拔（米）')}
             <input
               type="number"
               min="-500"
@@ -324,7 +351,7 @@ export default function AstronomyPanel({
             />
           </label>
           <label>
-            UTC 时差（小时）
+            {t('UTC 时差（小时）')}
             <input
               type="number"
               min="-12"
@@ -338,7 +365,7 @@ export default function AstronomyPanel({
             />
           </label>
           <label className="wide">
-            日出日落日期（当地）
+            {t('日出日落日期（当地）')}
             <input
               type="date"
               min="1700-01-01"
@@ -351,63 +378,69 @@ export default function AstronomyPanel({
             />
           </label>
           <p className="wide little-note">
-            初始地点为北京，可定位或手动修改。经纬度采用
-            WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；日出日落未考虑山脉、建筑和实际天气。
+            {t(
+              '初始地点为北京，可定位或手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；日出日落未考虑山脉、建筑和实际天气。',
+            )}
           </p>
           <button
             className="primary-action wide"
             onClick={calculate}
             disabled={busy}
           >
-            {busy ? '正在计算天象…' : '计算日出日落与下一次食象'}
+            {busy ? t('正在计算天象…') : t('计算日出日落与下一次食象')}
           </button>
           {busy && (
             <button className="secondary-action wide" onClick={clearResults}>
-              取消计算
+              {t('取消计算')}
             </button>
           )}
           {error && (
             <p role="alert" className="wide astro-error">
-              {error}
+              {t(error)}
             </p>
           )}
         </div>
         {result && (
           <section aria-live="polite" className="sky-results">
             <p>
-              观测点 {result.query.latitude}°, {result.query.longitude}° · UTC{' '}
+              {t('观测点')}
+              {result.query.latitude}°, {result.query.longitude}° · UTC{' '}
               {result.query.utcOffset >= 0 ? '+' : ''}
               {result.query.utcOffset}
               <br />
-              下一次食象从 {format(result.query.start)} 起查找。
+              {t('下一次食象从 {{date}} 起查找。', {
+                date: format(result.query.start),
+              })}
             </p>
             <article className="sky-event">
-              <span>{result.query.day} · 日出 / 日落</span>
+              <span>
+                {result.query.day} {t('· 日出 / 日落')}
+              </span>
               <div className="rise-set">
                 <strong>
-                  日出
+                  {t('日出')}
                   <br />
                   {format(result.data.rise)}
                 </strong>
                 <strong>
-                  日落
+                  {t('日落')}
                   <br />
                   {format(result.data.set)}
                 </strong>
               </div>
-              <p>{result.data.daylight}</p>
+              <p>{t(result.data.daylight)}</p>
             </article>
-            {eventCard('全球下一次日食 · 不代表本地可见', result.data.solar)}
+            {eventCard(t('全球下一次日食 · 不代表本地可见'), result.data.solar)}
             {eventCard(
-              '该地点下一次至少部分可见的日食',
+              t('该地点下一次至少部分可见的日食'),
               result.data.localSolar,
               true,
             )}
-            {eventCard('全球下一次月食', result.data.lunar, false, 'lunar')}
+            {eventCard(t('全球下一次月食'), result.data.lunar, false, 'lunar')}
           </section>
         )}
         <p className="little-note">
-          天象由{' '}
+          {t('天象由')}{' '}
           <a
             href="https://github.com/cosinekitty/astronomy"
             target="_blank"
@@ -415,9 +448,9 @@ export default function AstronomyPanel({
           >
             Astronomy Engine
           </a>{' '}
-          独立计算。“观察食甚阴影”会聚焦地球或月球，暂停于食甚；点击播放可按 1
-          分钟/秒观察影区移动。表面食影按物理尺度计算，三维天体间距仍有放大，不能用画面重叠判断日月食。未来与历史
-          UTC 受地球自转预测误差影响。
+          {t(
+            '独立计算。“观察食甚阴影”会聚焦地球或月球，暂停于食甚；点击播放可按 1 分钟/秒观察影区移动。表面食影按物理尺度计算，三维天体间距仍有放大，不能用画面重叠判断日月食。未来与历史 UTC 受地球自转预测误差影响。',
+          )}
         </p>
       </DialogContent>
     </Dialog>

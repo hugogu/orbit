@@ -16,7 +16,7 @@ export const physicalParameters: Record<
   neptune: { mass: 102.4092e24, density: 1.638, gravity: 11.15, escape: 23.56 },
   pluto: { mass: 13024.6e18, density: 1.853, gravity: 0.62, escape: 1.21 },
 };
-export function extraFacts(body: Body): Fact[] {
+export function extraFacts(body: Body, locale = 'zh-CN'): Fact[] {
   if (body.id === 'sun')
     return [
       { label: '主要成分', value: '氢与氦' },
@@ -39,7 +39,7 @@ export function extraFacts(body: Body): Fact[] {
     { label: '逃逸速度', value: p.escape.toFixed(2), unit: 'km/s' },
     {
       label: '直径（由平均半径）',
-      value: (body.radius * 2).toLocaleString('zh-CN'),
+      value: (body.radius * 2).toLocaleString(locale),
       unit: 'km',
     },
     { label: '轨道偏心率（约）', value: String(body.e) },

@@ -1,4 +1,6 @@
 'use client';
+import { translator, type Locale } from '../lib/i18n';
+import { useI18n } from '../lib/i18n/provider';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -15,6 +17,7 @@ import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
 import type { TextureQuality } from '@/lib/texture-quality';
 export type SceneState = {
+  locale: Locale;
   speed: number;
   paused: boolean;
   orbits: boolean;
@@ -48,6 +51,7 @@ export default function SolarScene({
   onTime: (days: number) => void;
   onAssetStatus: (message: string) => void;
 }) {
+  const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null),
     latest = useRef({ state, onSelect, onTime, onAssetStatus });
   const [error, setError] = useState('');
@@ -377,12 +381,30 @@ export default function SolarScene({
     const connection = (
       navigator as Navigator & { connection?: { saveData?: boolean } }
     ).connection;
+    let lastLocale: Locale | undefined;
     const animate = (now: number) => {
       frame = requestAnimationFrame(animate);
       const s = latest.current.state,
         dt = Math.min((now - previous) / 1000, 0.08);
       previous = now;
       if (document.hidden) return;
+      const translate = translator(s.locale);
+      if (s.locale !== lastLocale) {
+        renderer.domElement.setAttribute(
+          'aria-label',
+          translate('太阳系三维场景，可拖动旋转、滚轮或双指缩放'),
+        );
+        for (const body of bodies) {
+          const label = labels.get(body.id)!;
+          label.textContent = translate(body.name);
+          label.setAttribute(
+            'aria-label',
+            translate('探索{{name}}', { name: translate(body.name) }),
+          );
+        }
+        moonSystem.localize(translate);
+        lastLocale = s.locale;
+      }
       const selectedMoonTexture = s.selected === 'moon-moon' ? 'moon' : null;
       const focusBody = bodies.find(
         (b) =>
@@ -446,7 +468,7 @@ export default function SolarScene({
       oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
       heliosphere.visible =
         s.belts && s.view >= 400 && s.scale === 'illustrated';
-      cometSystem.update(s.cometId, days, s.orbits);
+      cometSystem.update(s.cometId, days, s.orbits, translate);
       const comet = comets.find((c) => c.id === s.cometId);
       const cometKey = `${s.cometId}/${s.cometClose}`;
       if (
@@ -611,7 +633,7 @@ export default function SolarScene({
     <div className="scene" ref={host}>
       {error && (
         <div className="scene-error" role="alert">
-          {error}
+          {t(error)}
         </div>
       )}
     </div>

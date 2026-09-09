@@ -1,3 +1,4 @@
+import type { Translate } from './i18n';
 import { bodies, speeds } from './solar';
 import { comets } from './comets';
 import { orbitingMoons } from './moon-orbits';
@@ -6,11 +7,14 @@ export interface ObservatoryActions {
   focus: (id: string) => void;
   simulation: (speedIndex: number, paused: boolean) => void;
 }
-export function observatoryTools(actions: ObservatoryActions) {
+export function observatoryTools(
+  actions: ObservatoryActions,
+  t: Translate = (key) => key,
+) {
   return [
     {
       name: 'focus_solar_body',
-      title: '抵近观察天体',
+      title: t('抵近观察天体'),
       description:
         'Select and follow a solar-system body; show its educational facts.',
       inputSchema: {
@@ -25,12 +29,12 @@ export function observatoryTools(actions: ObservatoryActions) {
         const body = catalog.find((b) => b.id === value?.id);
         if (!body) throw new Error('Unknown solar-system body');
         actions.focus(body.id);
-        return { selected: body.id, name: body.name };
+        return { selected: body.id, name: t(body.name) };
       },
     },
     {
       name: 'set_solar_simulation',
-      title: '调整天体运行时间',
+      title: t('调整天体运行时间'),
       description:
         'Set simulation speed and pause or resume motion. Presets run from real time (0), eclipse slow motion at 1 minute per second (1), to 10 years per second (8).',
       inputSchema: {
@@ -64,7 +68,10 @@ export function observatoryTools(actions: ObservatoryActions) {
     },
   ];
 }
-export function registerObservatoryTools(actions: ObservatoryActions) {
+export function registerObservatoryTools(
+  actions: ObservatoryActions,
+  t?: Translate,
+) {
   const context = (
     document as Document & {
       modelContext?: {
@@ -77,7 +84,7 @@ export function registerObservatoryTools(actions: ObservatoryActions) {
   ).modelContext;
   if (!context) return;
   const lifecycle = new AbortController();
-  for (const tool of observatoryTools(actions)) {
+  for (const tool of observatoryTools(actions, t)) {
     try {
       void Promise.resolve(
         context.registerTool(tool, { signal: lifecycle.signal }),

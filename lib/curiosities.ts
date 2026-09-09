@@ -2,13 +2,23 @@ import { bodies } from './solar';
 import { comets } from './comets';
 import { orbitingMoons } from './moon-orbits';
 
-export type Curiosity = { text: string; source: string; related?: boolean };
+export type Curiosity = {
+  text: string;
+  source: string;
+  related?: boolean;
+  values?: Record<string, string | number>;
+};
 const nasa = 'https://science.nasa.gov/';
 const entries = (
-  texts: string[],
+  texts: (string | Pick<Curiosity, 'text' | 'values'>)[],
   source: string,
   related = false,
-): Curiosity[] => texts.map((text) => ({ text, source, related }));
+): Curiosity[] =>
+  texts.map((entry) => ({
+    ...(typeof entry === 'string' ? { text: entry } : entry),
+    source,
+    related,
+  }));
 
 // Editorial facts and calculated comparisons are kept separate from shared lessons.
 const planetFacts: Record<string, string[]> = {
@@ -420,17 +430,58 @@ export const curiosities: Record<string, Curiosity[]> = {
 };
 for (const body of bodies.filter((b) => b.id !== 'sun')) {
   const source = `${nasa}${body.source}/`;
-  const calculations = [
-    `${body.name}的平均直径约 ${(body.radius * 2).toLocaleString('zh-CN')} 公里，是平均半径的两倍。`,
-    `按球形近似，${body.name}赤道一圈约 ${(2 * Math.PI * body.radius).toLocaleString('zh-CN', { maximumFractionDigits: 0 })} 公里。`,
-    `${body.name}平均半径约为地球的 ${(body.radius / 6371).toFixed(2)} 倍。`,
-    `按平均半径估算，${body.name}体积约为地球的 ${((body.radius / 6371) ** 3).toPrecision(3)} 倍。`,
-    `以平均日距估算，阳光到达${body.name}约需 ${((body.au * 499) / 60).toFixed(1)} 分钟。`,
-    `${body.name}一年约相当于 ${(body.period / 365.256).toFixed(2)} 个地球年。`,
-    `${body.name}的恒星自转周期约为 ${(Math.abs(body.day) * 24).toFixed(1)} 小时。`,
-    `按本站轨道参数估算，${body.name}近日点距太阳约 ${(body.au * (1 - body.e)).toFixed(2)} AU。`,
-    `按本站轨道参数估算，${body.name}远日点距太阳约 ${(body.au * (1 + body.e)).toFixed(2)} AU。`,
-    `以平均日距做圆轨道估算，${body.name}绕日速度约为 ${((2 * Math.PI * body.au * 149597870.7) / (body.period * 86400)).toFixed(1)} 公里/秒；实际速度随位置改变。`,
+  const calculations: (string | Pick<Curiosity, 'text' | 'values'>)[] = [
+    {
+      text: '{{v0}}的平均直径约 {{v1}} 公里，是平均半径的两倍。',
+      values: { v0: body.name, v1: (body.radius * 2).toLocaleString('zh-CN') },
+    },
+    {
+      text: '按球形近似，{{v0}}赤道一圈约 {{v1}} 公里。',
+      values: {
+        v0: body.name,
+        v1: (2 * Math.PI * body.radius).toLocaleString('zh-CN', {
+          maximumFractionDigits: 0,
+        }),
+      },
+    },
+    {
+      text: '{{v0}}平均半径约为地球的 {{v1}} 倍。',
+      values: { v0: body.name, v1: (body.radius / 6371).toFixed(2) },
+    },
+    {
+      text: '按平均半径估算，{{v0}}体积约为地球的 {{v1}} 倍。',
+      values: { v0: body.name, v1: ((body.radius / 6371) ** 3).toPrecision(3) },
+    },
+    {
+      text: '以平均日距估算，阳光到达{{v0}}约需 {{v1}} 分钟。',
+      values: { v0: body.name, v1: ((body.au * 499) / 60).toFixed(1) },
+    },
+    {
+      text: '{{v0}}一年约相当于 {{v1}} 个地球年。',
+      values: { v0: body.name, v1: (body.period / 365.256).toFixed(2) },
+    },
+    {
+      text: '{{v0}}的恒星自转周期约为 {{v1}} 小时。',
+      values: { v0: body.name, v1: (Math.abs(body.day) * 24).toFixed(1) },
+    },
+    {
+      text: '按本站轨道参数估算，{{v0}}近日点距太阳约 {{v1}} AU。',
+      values: { v0: body.name, v1: (body.au * (1 - body.e)).toFixed(2) },
+    },
+    {
+      text: '按本站轨道参数估算，{{v0}}远日点距太阳约 {{v1}} AU。',
+      values: { v0: body.name, v1: (body.au * (1 + body.e)).toFixed(2) },
+    },
+    {
+      text: '以平均日距做圆轨道估算，{{v0}}绕日速度约为 {{v1}} 公里/秒；实际速度随位置改变。',
+      values: {
+        v0: body.name,
+        v1: (
+          (2 * Math.PI * body.au * 149597870.7) /
+          (body.period * 86400)
+        ).toFixed(1),
+      },
+    },
   ];
   if (body.id === 'earth') {
     calculations[2] =

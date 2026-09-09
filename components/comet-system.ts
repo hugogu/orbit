@@ -1,3 +1,4 @@
+import type { Translate } from '../lib/i18n';
 import * as THREE from 'three';
 import {
   comets,
@@ -78,7 +79,12 @@ export function createCometSystem(
   return {
     position,
     center,
-    update(id: string | null, days: number, orbits: boolean) {
+    update(
+      id: string | null,
+      days: number,
+      orbits: boolean,
+      t: Translate = (key) => key,
+    ) {
       const index = comets.findIndex((c) => c.id === id),
         comet = comets[index];
       group.visible = !!comet;
@@ -107,7 +113,11 @@ export function createCometSystem(
         north,
         direction.copy(position).normalize(),
       );
-      label.textContent = comet.name;
+      label.textContent = t(comet.name);
+      label.setAttribute(
+        'aria-label',
+        t('跟随{{name}}', { name: t(comet.name) }),
+      );
     },
     project(
       camera: THREE.Camera,

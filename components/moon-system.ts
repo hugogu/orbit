@@ -1,3 +1,4 @@
+import type { Translate } from '../lib/i18n';
 import * as THREE from 'three';
 import { orbitingMoons } from '../lib/moon-orbits';
 import { displayRadius, moonDisplayOffset } from '../lib/display-scale';
@@ -55,6 +56,15 @@ export function createMoonSystem(
     lastPathDay = NaN;
   const projected = new THREE.Vector3();
   return {
+    localize(t: Translate) {
+      for (const { moon, label } of entries) {
+        label.textContent = t(moon.name);
+        label.setAttribute(
+          'aria-label',
+          t('跟随{{name}}', { name: t(moon.name) }),
+        );
+      }
+    },
     update(
       days: number,
       scale: ScaleMode,

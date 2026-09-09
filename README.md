@@ -27,6 +27,7 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 | 🌗  | See terminators, Earth’s city lights at night, and solar-eclipse umbra, penumbra, and shadow-axis tracks | Illumination and eclipse geometry                             |
 | ✨  | Choose automatic, standard 2K, or ultra textures up to 8K; the Milky Way can be toggled separately       | A practical balance between detail and device performance     |
 | 📱  | Navigate with mouse, keyboard, touch gestures, and responsive portrait or landscape layouts              | Continuous exploration across desktop and mobile              |
+| 🌐  | Switch between Simplified Chinese, English, and Japanese; your language choice is remembered            | Translated profiles, fact cards, scene labels, and astronomy tools |
 
 ## See it running
 
@@ -144,6 +145,8 @@ The default demonstrative view compresses distances and enlarges bodies so the s
 | Delivery                | Vercel static export, with a separate Sites/Cloudflare Worker build target |
 
 ## Contributing
+
+To improve a translation or add another language, see the [localization guide](docs/i18n.md). Languages are registered in one place with separate catalogs; switching preserves the selected body, camera, and simulation clock.
 
 Contributions are welcome. Start by reviewing the existing [issues](https://github.com/hugogu/orbit/issues) to avoid duplicate work.
 

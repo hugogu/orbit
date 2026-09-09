@@ -1,0 +1,159 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import fs from 'node:fs';
+import ts from 'typescript';
+import {
+  defaultLocale,
+  detectLocale,
+  languageUrl,
+  languages,
+  resolveLocale,
+  translator,
+  type Locale,
+} from '../lib/i18n';
+import { I18nProvider } from '../lib/i18n/provider';
+import { bodies, regions, speedLabel } from '../lib/solar';
+import { comets } from '../lib/comets';
+import { moonSystems } from '../lib/moons';
+import { curiosities } from '../lib/curiosities';
+import CuriosityCard from '../components/curiosity-card';
+import MoonDetails from '../components/moon-details';
+import BodyNavigation from '../components/body-navigation';
+import { orbitingMoons } from '../lib/moon-orbits';
+
+const codes = Object.keys(languages) as Locale[];
+const placeholders = (text: string) =>
+  [...text.matchAll(/{{\s*(\w+)\s*}}/g)].map((m) => m[1]).sort();
+void test('locale selection uses URL, saved preference, browser languages, then the default', () => {
+  assert.equal(detectLocale('ja-JP', 'en', ['zh-CN']), 'ja');
+  assert.equal(detectLocale('unknown', 'en-GB', ['ja-JP']), 'en');
+  assert.equal(detectLocale(null, 'broken', ['zz-ZZ', 'ja-JP']), 'ja');
+  assert.equal(detectLocale(null, null, ['zh-TW']), 'zh-CN');
+  assert.equal(detectLocale(null, null, ['zz']), defaultLocale);
+  assert.equal(resolveLocale('EN_us'), 'en');
+  assert.equal(resolveLocale({}), undefined);
+  assert.equal(
+    languageUrl('https://example.test/?v=build&lang=en#moon-titan', 'ja'),
+    '/?v=build&lang=ja#moon-titan',
+  );
+});
+void test('catalogs cover all source keys and interpolation parameters, allowing language-specific plurals', () => {
+  const source = languages[defaultLocale].messages;
+  const pluralSuffix = /_(zero|one|two|few|many|other)$/;
+  const required = Object.keys(source).filter((key) => !pluralSuffix.test(key));
+  for (const locale of codes) {
+    const catalog = languages[locale].messages;
+    for (const key of required)
+      assert.ok(Object.hasOwn(catalog, key), `${locale}: missing ${key}`);
+    for (const [key, value] of Object.entries(catalog)) {
+      const sourceKey = Object.hasOwn(source, key)
+        ? key
+        : key.replace(pluralSuffix, '');
+      assert.ok(Object.hasOwn(source, sourceKey), `${locale}: unknown ${key}`);
+      assert.ok(value.trim().length > 0, `${locale}: ${key}`);
+      assert.deepEqual(
+        placeholders(value),
+        placeholders(source[sourceKey as keyof typeof source]),
+        `${locale}: ${key}`,
+      );
+      if (locale === 'en') assert.doesNotMatch(value, /\p{Script=Han}/u, key);
+    }
+  }
+  assert.equal(translator('en')('未登记的文案'), '未登记的文案');
+  assert.equal(speedLabel(1, translator('en')), '1 day / s');
+  assert.equal(speedLabel(10, translator('en')), '10 days / s');
+  assert.equal(speedLabel(1, translator('ja')), '1日 / 秒');
+});
+void test('all educational data and literal translation keys have catalog entries', () => {
+  const source: Record<string, string> = languages[defaultLocale].messages;
+  const check = (value: unknown) => {
+    if (typeof value === 'string' && /\p{Script=Han}/u.test(value))
+      assert.ok(Object.hasOwn(source, value), value);
+    else if (Array.isArray(value)) value.forEach(check);
+    else if (value && typeof value === 'object')
+      Object.values(value).forEach(check);
+  };
+  [bodies, regions, comets, moonSystems, curiosities].forEach(check);
+  const scan = (directory: string) => {
+    for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (item.name === 'i18n' || item.name === 'ui') continue;
+      const path = `${directory}/${item.name}`;
+      if (item.isDirectory()) {
+        scan(path);
+        continue;
+      }
+      if (!/\.tsx?$/.test(path)) continue;
+      const tree = ts.createSourceFile(
+        path,
+        fs.readFileSync(path, 'utf8'),
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      const visit = (node: ts.Node) => {
+        if (
+          ts.isCallExpression(node) &&
+          node.expression.getText(tree) === 't'
+        ) {
+          const key = node.arguments[0];
+          if (
+            key &&
+            ts.isStringLiteralLike(key) &&
+            /\p{Script=Han}/u.test(key.text)
+          )
+            check(key.text);
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(tree);
+    }
+  };
+  ['app', 'components'].forEach(scan);
+});
+void test('every body retains all 30 sourced facts in each language, including numeric comparisons', () => {
+  for (const locale of codes) {
+    for (const [id, pool] of Object.entries(curiosities)) {
+      assert.equal(pool.length, 30);
+      for (let index = 0; index < pool.length; index++) {
+        const html = renderToStaticMarkup(
+          createElement(
+            I18nProvider,
+            { initialLocale: locale },
+            createElement(CuriosityCard, { id, index, name: '太阳' }),
+          ),
+        );
+        assert.ok(html.includes(pool[index].source));
+        assert.ok(html.includes(`${index + 1}/30`));
+        assert.doesNotMatch(html, /{{|undefined|NaN|Infinity/);
+        if (locale === 'en')
+          assert.doesNotMatch(html, /\p{Script=Han}/u, `${id}/${index}`);
+      }
+    }
+  }
+});
+void test('moon profiles and their navigation use localized names and keep stable body links', () => {
+  for (const locale of codes) {
+    const t = translator(locale);
+    const moon = orbitingMoons.find((m) => m.en === 'Titan')!;
+    const markup = renderToStaticMarkup(
+      createElement(I18nProvider, { initialLocale: locale },
+          createElement(MoonDetails, { key: 'details', moon, onSelect() {} }),
+          createElement(BodyNavigation, {
+            key: 'nav',
+            selected: moon.id,
+            onSelect() {},
+          }),
+      ),
+    );
+    assert.ok(markup.includes(t(moon.name)));
+    assert.ok(markup.includes(`href="#${moon.id}"`));
+    assert.ok(
+      markup.includes(
+        renderToStaticMarkup(createElement('p', null, t(moon.description)))
+          .slice(3, -4),
+      ),
+    );
+    if (locale === 'en') assert.doesNotMatch(markup, /\p{Script=Han}/u);
+  }
+});

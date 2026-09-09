@@ -74,7 +74,13 @@ void test('Halley is retrograde and speeds up near perihelion', () => {
 
 void test('comet scene preserves the absolute date across selections and keeps its tail antisolar', () => {
   const original = globalThis.document;
-  const label = { className: '', hidden: false, style: {}, textContent: '' };
+  const label = {
+    className: '',
+    setAttribute() {},
+    hidden: false,
+    style: {},
+    textContent: '',
+  };
   Object.defineProperty(globalThis, 'document', {
     configurable: true,
     value: { createElement: () => label },

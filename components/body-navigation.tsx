@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../lib/i18n/provider';
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Orbit } from 'lucide-react';
 import { bodies } from '../lib/solar';
@@ -13,10 +14,11 @@ function BodyTree({
   selected: string | null;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const parent = orbitingMoons.find((m) => m.id === selected)?.parentId;
   const [expanded, setExpanded] = useState<string[]>(parent ? [parent] : []);
   return (
-    <nav className="body-tree" aria-label="天体与卫星目录">
+    <nav className="body-tree" aria-label={t('天体与卫星目录')}>
       {[...bodies, ...comets].map((body, i) => {
         const moons = orbitingMoons.filter((m) => m.parentId === body.id);
         const open = expanded.includes(body.id);
@@ -36,14 +38,17 @@ function BodyTree({
                   style={{ background: body.color }}
                 />
                 <span>
-                  {body.name}
+                  {t(body.name)}
                   <small>{body.en.split(' / ')[0]}</small>
                 </span>
               </button>
               {moons.length > 0 && (
                 <button
                   className="moon-expander"
-                  aria-label={`${open ? '收起' : '展开'}${body.name}的卫星`}
+                  aria-label={t(
+                    open ? '收起{{name}}的卫星' : '展开{{name}}的卫星',
+                    { name: t(body.name) },
+                  )}
                   aria-expanded={open}
                   onClick={() =>
                     setExpanded((v) =>
@@ -61,7 +66,10 @@ function BodyTree({
               )}
             </div>
             {open && (
-              <ul className="moon-children" aria-label={`${body.name}的卫星`}>
+              <ul
+                className="moon-children"
+                aria-label={t('{{name}}的卫星', { name: t(body.name) })}
+              >
                 {moons.map((moon) => (
                   <li key={moon.id}>
                     <button
@@ -74,7 +82,7 @@ function BodyTree({
                         style={{ background: moon.color }}
                       />
                       <span>
-                        {moon.name}
+                        {t(moon.name)}
                         <small>{moon.en}</small>
                       </span>
                     </button>
@@ -95,6 +103,7 @@ export default function BodyNavigation({
   selected: string | null;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const parent = orbitingMoons.find((m) => m.id === selected)?.parentId;
   return (
@@ -107,13 +116,18 @@ export default function BodyNavigation({
         />
       </div>
       <button className="mobile-body-picker" onClick={() => setOpen(true)}>
-        <Orbit size={18} /> 天体导航 <ChevronDown size={16} />
+        <Orbit size={18} /> {t('天体导航')}
+        <ChevronDown size={16} />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="navigation-sheet">
-          <SheetTitle>天体导航</SheetTitle>
+        <SheetContent
+          closeLabel={t('Close')}
+          side="bottom"
+          className="navigation-sheet"
+        >
+          <SheetTitle>{t('天体导航')}</SheetTitle>
           <SheetDescription>
-            展开行星下的卫星，点击名称即可定位。
+            {t('展开行星下的卫星，点击名称即可定位。')}
           </SheetDescription>
           <BodyTree
             key={parent ?? 'bodies'}

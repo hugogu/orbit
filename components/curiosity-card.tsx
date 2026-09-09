@@ -1,3 +1,5 @@
+'use client';
+import { useI18n } from '../lib/i18n/provider';
 import { Plus, ArrowUpRight } from 'lucide-react';
 import { curiosities } from '../lib/curiosities';
 
@@ -10,17 +12,28 @@ export default function CuriosityCard({
   index?: number;
   name: string;
 }) {
+  const { t } = useI18n();
   const pool = curiosities[id];
   const fact = pool?.[index] ?? pool?.[0];
   if (!fact) return null;
   return (
     <div className="did-you-know" data-curiosity={id}>
       <span>
-        <Plus size={14} /> 你知道吗 · {name}
+        <Plus size={14} /> {t('你知道吗 · {{name}}', { name: t(name) })}
       </span>
-      <p>{fact.text}</p>
+      <p>
+        {t(
+          fact.text,
+          Object.fromEntries(
+            Object.entries(fact.values ?? {}).map(([key, value]) => [
+              key,
+              typeof value === 'string' ? t(value) : value,
+            ]),
+          ),
+        )}
+      </p>
       <a className="source" href={fact.source} target="_blank" rel="noreferrer">
-        {fact.related ? '延伸知识' : '资料与计算依据'} · {index + 1}/
+        {fact.related ? t('延伸知识') : t('资料与计算依据')} · {index + 1}/
         {pool.length} <ArrowUpRight size={13} />
       </a>
     </div>
