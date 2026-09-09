@@ -545,7 +545,11 @@ export default function SolarScene({
         following = newTarget.clone();
       }
       controls.update();
-      sunEffects?.update(now / 1000, camera);
+      sunEffects?.update(
+        now / 1000,
+        camera,
+        meshes.get('sun')!.parent!.quaternion,
+      );
       renderer.render(scene, camera);
       cometSystem.project(camera, width, height, s.labels);
       moonSystem.project(camera, width, height, s.selected, s.labels);
