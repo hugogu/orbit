@@ -26,11 +26,11 @@ export type SkyLocation = Pick<
 >;
 export type DailySunQuery = SkyLocation & { day: string };
 export type DailySunResults = Pick<SkyResults, 'rise' | 'set' | 'daylight'>;
-export const defaultSkyLocation: SkyLocation = {
-  latitude: 39.9042,
-  longitude: 116.4074,
+export const fallbackSkyLocation: SkyLocation = {
+  latitude: 0,
+  longitude: 0,
   height: 0,
-  utcOffset: 8,
+  utcOffset: 0,
 };
 export type SkyEvent = {
   kind: string;

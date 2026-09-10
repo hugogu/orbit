@@ -41,7 +41,10 @@ export default function AstronomyPanel({
   onSeek: (ms: number, live?: boolean) => void;
   onEclipse: (ms: number, kind: 'solar' | 'lunar') => void;
   location: SkyLocation;
-  onLocationChange: (location: SkyLocation) => void;
+  onLocationChange: (
+    location: SkyLocation,
+    source?: 'device' | 'manual',
+  ) => void;
 }) {
   const { t, locale } = useI18n();
   const [date, setDate] = useState('');
@@ -121,12 +124,15 @@ export default function AstronomyPanel({
         ? -localDate.getTimezoneOffset() / 60
         : Number(offset);
       if (Number.isFinite(localDate.getTime())) setOffset(String(nextOffset));
-      onLocationChange({
-        latitude: fix.latitude,
-        longitude: fix.longitude,
-        height: Number(height) || 0,
-        utcOffset: nextOffset,
-      });
+      onLocationChange(
+        {
+          latitude: fix.latitude,
+          longitude: fix.longitude,
+          height: Number(height) || 0,
+          utcOffset: nextOffset,
+        },
+        'device',
+      );
       setLocationMessage(
         '已定位，精度约 ±{{accuracy}} 米。时差按设备时区 {{zone}} 的所选日期填写，请核对；海拔保留手动值。',
       );
@@ -395,7 +401,7 @@ export default function AstronomyPanel({
           </label>
           <p className="wide little-note">
             {t(
-              '初始地点为北京，可定位或手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
+              '设备会尝试提供当前位置，也可手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
             )}
           </p>
           <button

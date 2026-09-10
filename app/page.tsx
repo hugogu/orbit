@@ -1,6 +1,6 @@
 'use client';
 import { useI18n } from '../lib/i18n/provider';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { registerObservatoryTools } from '@/lib/observatory-tools';
 import {
@@ -35,7 +35,8 @@ import AstronomyPanel from '@/components/astronomy-panel';
 import LayoutSettings from '@/components/layout-settings';
 import { comets, cometPerihelion } from '@/lib/comets';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
-import { defaultSkyLocation, type SkyLocation } from '@/lib/sky-events';
+import { fallbackSkyLocation, type SkyLocation } from '@/lib/sky-events';
+import { currentLocation } from '@/lib/geolocation';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -74,7 +75,7 @@ import {
 import {
   loadPreferences,
   savePreferences,
-  type ObservatoryPreferences,
+  type StoredPreferences,
 } from '@/lib/preferences';
 export default function Home() {
   const { t, locale } = useI18n();
@@ -112,7 +113,11 @@ export default function Home() {
     [preferencesReady, setPreferencesReady] = useState(false),
     [settingsTab, setSettingsTab] = useState('layout'),
     [observerLocation, setObserverLocation] =
-      useState<SkyLocation>(defaultSkyLocation);
+      useState<SkyLocation>(fallbackSkyLocation),
+    [observerLocationSource, setObserverLocationSource] = useState<
+      'pending' | 'device' | 'manual' | 'fallback'
+    >('pending');
+  const automaticLocation = useRef(true);
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const body = bodies.find(
     (b) => b.id === (selectedMoon?.parentId ?? selected),
@@ -146,8 +151,42 @@ export default function Home() {
         setRealSizes(preferences.realSizes);
       if (preferences.textureQuality !== undefined)
         setTextureQuality(preferences.textureQuality);
-      if (preferences.observerLocation !== undefined)
-        setObserverLocation(preferences.observerLocation);
+      const savedLocation = preferences.observerLocation;
+      const savedSource = preferences.observerLocationSource;
+      const fallbackLocation = {
+        ...fallbackSkyLocation,
+        utcOffset: -new Date().getTimezoneOffset() / 60,
+      };
+      // A location without an explicit source comes from an older release,
+      // where Beijing was the built-in value. Do not treat that legacy value
+      // as the user's location; start with a neutral fallback while asking
+      // the device for its current position.
+      if (savedLocation && savedSource) setObserverLocation(savedLocation);
+      else setObserverLocation(fallbackLocation);
+      if (savedLocation && savedSource) {
+        automaticLocation.current = false;
+        setObserverLocationSource(savedSource);
+      } else {
+        const geolocation =
+          typeof navigator === 'undefined' ? undefined : navigator.geolocation;
+        void currentLocation(
+          geolocation,
+          typeof window !== 'undefined' && window.isSecureContext,
+        )
+          .then((fix) => {
+            if (!automaticLocation.current) return;
+            setObserverLocation({
+              ...fallbackLocation,
+              latitude: fix.latitude,
+              longitude: fix.longitude,
+            });
+            setObserverLocationSource('device');
+          })
+          .catch(() => {
+            if (!automaticLocation.current) return;
+            setObserverLocationSource('fallback');
+          });
+      }
       setPreferencesReady(true);
       let previous: unknown;
       try {
@@ -168,7 +207,7 @@ export default function Home() {
   }, []);
   useEffect(() => {
     if (!preferencesReady) return;
-    const preferences: ObservatoryPreferences = {
+    const preferences: StoredPreferences = {
       orbits,
       labels,
       belts,
@@ -179,8 +218,12 @@ export default function Home() {
       solarActivity,
       realSizes,
       textureQuality,
-      observerLocation,
     };
+    if (['device', 'manual'].includes(observerLocationSource)) {
+      preferences.observerLocation = observerLocation;
+      preferences.observerLocationSource =
+        observerLocationSource;
+    }
     savePreferences(preferences);
   }, [
     preferencesReady,
@@ -195,6 +238,7 @@ export default function Home() {
     realSizes,
     textureQuality,
     observerLocation,
+    observerLocationSource,
   ]);
   function seekTime(ms: number, live = false) {
     setEpoch(ms);
@@ -202,6 +246,14 @@ export default function Home() {
     setPaused(!live);
     if (live) setSpeed(0);
     if (live) setEclipseView(false);
+  }
+  function updateObserverLocation(
+    next: SkyLocation,
+    source: 'device' | 'manual' = 'manual',
+  ) {
+    automaticLocation.current = false;
+    setObserverLocation(next);
+    setObserverLocationSource(source);
   }
   const select = useCallback((id: string) => {
     if (window.location.hash !== `#${id}`)
@@ -460,7 +512,11 @@ export default function Home() {
         </div>
       </div>
       {body.id === 'earth' && (
-        <SunriseSunset time={time ?? J2000_MS} location={observerLocation} />
+        <SunriseSunset
+          time={time ?? J2000_MS}
+          location={observerLocation}
+          locationSource={observerLocationSource}
+        />
       )}
       <CuriosityCard
         id={body.id}
@@ -558,6 +614,10 @@ export default function Home() {
           solarActivity,
           realSizes,
           systemView,
+          observerLocation,
+          observerLocationReady:
+            observerLocationSource !== 'pending' &&
+            observerLocationSource !== 'fallback',
         }}
         onSelect={select}
         onTime={setTime}
@@ -828,7 +888,7 @@ export default function Home() {
         time={time ?? J2000_MS}
         onSeek={seekTime}
         location={observerLocation}
-        onLocationChange={setObserverLocation}
+        onLocationChange={updateObserverLocation}
         onEclipse={(ms, kind) => {
           seekTime(ms);
           select(kind === 'solar' ? 'earth' : 'moon-moon');

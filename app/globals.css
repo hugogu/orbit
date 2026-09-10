@@ -909,7 +909,7 @@ button:disabled {
 .daily-sun {
   margin: 20px 0 22px;
   padding: 14px 0 16px;
-  border-block: 1px solid #ffffff12;
+  border-bottom: 1px solid #ffffff12;
 }
 .daily-sun-heading {
   display: flex;

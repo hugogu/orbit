@@ -15,7 +15,9 @@ import { displayRadius, displaySystemExtent } from '@/lib/display-scale';
 import { createTextureManager, type RegisterOptions } from './texture-manager';
 import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
+import { createObserverMarker } from './observer-marker';
 import type { TextureQuality } from '@/lib/texture-quality';
+import type { SkyLocation } from '@/lib/sky-events';
 export type SceneState = {
   locale: Locale;
   speed: number;
@@ -39,6 +41,8 @@ export type SceneState = {
   solarActivity: boolean;
   realSizes: boolean;
   systemView: boolean;
+  observerLocation: SkyLocation;
+  observerLocationReady: boolean;
 };
 export default function SolarScene({
   state,
@@ -129,7 +133,9 @@ export default function SolarScene({
       meshes = new Map<string, THREE.Mesh>(),
       orbitLines = new Map<string, THREE.Line>(),
       labels = new Map<string, HTMLButtonElement>();
-    let sunEffects: ReturnType<typeof createSunEffects> | null = null;
+    let sunEffects: ReturnType<typeof createSunEffects> | null = null,
+      observerMarker: ReturnType<typeof createObserverMarker> | null = null,
+      earthPivot: THREE.Group | null = null;
     const labelLayer = document.createElement('div');
     labelLayer.className = 'scene-labels';
     container.appendChild(labelLayer);
@@ -202,6 +208,7 @@ export default function SolarScene({
         pivot.add(ring);
       }
       if (body.id === 'earth') {
+        earthPivot = pivot;
         const atmosphere = new THREE.Mesh(
           new THREE.SphereGeometry(1.04, 32, 24),
           new THREE.MeshBasicMaterial({
@@ -233,6 +240,7 @@ export default function SolarScene({
       labelLayer.appendChild(label);
       labels.set(body.id, label);
     }
+    if (earthPivot) observerMarker = createObserverMarker(earthPivot);
     const moonSystem = createMoonSystem(
       scene,
       roots,
@@ -260,7 +268,10 @@ export default function SolarScene({
       eclipseSystem.setEarthNightMap(texture),
     );
     const idleWindow = window as Window & {
-      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      requestIdleCallback?: (
+        callback: () => void,
+        options?: { timeout: number },
+      ) => number;
       cancelIdleCallback?: (handle: number) => void;
     };
     const texturePreload = idleWindow.requestIdleCallback
@@ -520,6 +531,12 @@ export default function SolarScene({
         const line = orbitLines.get(body.id);
         if (line) line.visible = s.orbits;
       }
+      observerMarker?.update(
+        s.observerLocation.latitude,
+        s.observerLocation.longitude,
+        s.observerLocationReady && s.selected === 'earth',
+        now,
+      );
       moonSystem.update(days, s.scale, s.selected, s.orbits, s.realSizes);
       eclipseSystem.update(days, s.selected, s.shadows, s.shadowGuides);
       belt.visible = s.belts && s.scale === 'illustrated';
@@ -675,6 +692,7 @@ export default function SolarScene({
       window.removeEventListener('keydown', onKey);
       controls.dispose();
       eclipseSystem.dispose();
+      observerMarker?.dispose();
       scene.traverse((o) => {
         if (
           o instanceof THREE.Mesh ||

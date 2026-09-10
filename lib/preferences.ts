@@ -16,6 +16,7 @@ export type ObservatoryPreferences = {
   realSizes: boolean;
   textureQuality: TextureQuality;
   observerLocation: SkyLocation;
+  observerLocationSource: 'device' | 'manual';
 };
 
 export type StoredPreferences = Partial<ObservatoryPreferences>;
@@ -44,6 +45,11 @@ export function sanitizePreferences(value: unknown): StoredPreferences {
     result.textureQuality = source.textureQuality;
   if (isObserverLocation(source.observerLocation))
     result.observerLocation = source.observerLocation;
+  if (
+    source.observerLocationSource === 'device' ||
+    source.observerLocationSource === 'manual'
+  )
+    result.observerLocationSource = source.observerLocationSource;
   return result;
 }
 

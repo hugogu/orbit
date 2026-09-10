@@ -30,6 +30,7 @@ void test('preferences are validated and persisted as one versioned record', () 
           height: 12,
           utcOffset: 8,
         },
+        observerLocationSource: 'manual',
         invalid: 'ignored',
       } as never,
       storage,
@@ -47,10 +48,18 @@ void test('preferences are validated and persisted as one versioned record', () 
       height: 12,
       utcOffset: 8,
     },
+    observerLocationSource: 'manual',
   });
   assert.deepEqual(sanitizePreferences({ shadows: 'yes', scale: 'wrong' }), {});
   assert.deepEqual(
     sanitizePreferences({ observerLocation: { latitude: 91 } }),
+    {},
+  );
+  assert.deepEqual(sanitizePreferences({ observerLocationSource: 'device' }), {
+    observerLocationSource: 'device',
+  });
+  assert.deepEqual(
+    sanitizePreferences({ observerLocationSource: 'remote' }),
     {},
   );
 });
