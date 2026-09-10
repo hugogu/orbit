@@ -10,7 +10,7 @@ export function isTextureQuality(value: unknown): value is TextureQuality {
 // Only published higher-resolution maps are listed; no artificial upscaling.
 export const highResolutionTextures: Record<
   string,
-  { file: string; width: number; standardFile?: string }
+  { file: string; width: number; standardFile?: string; revision?: string }
 > = {
   sun: { file: '8k_sun.jpg', width: 4096 },
   mercury: { file: '8k_mercury.jpg', width: 8192 },
@@ -34,7 +34,10 @@ export const highResolutionTextures: Record<
   // available observations and artwork; it is intentionally labeled as such.
   pluto: { file: '2k_pluto.jpg', width: 2048 },
   // CelestiaContent surface maps. Most originals are 4K; Uranian moon maps
-  // are published at 2K and intentionally keep that native resolution.
+  // are published at 2K and intentionally keep that native resolution. The
+  // Voyager maps for Ariel, Miranda, Umbriel, Titania, Oberon and Triton have
+  // unmapped regions. Their local files use a mirrored, low-frequency fill so
+  // the teaching globe remains continuous instead of showing a flat half.
   phobos: {
     file: 'satellites/4k_phobos.jpg',
     width: 4096,
@@ -89,31 +92,37 @@ export const highResolutionTextures: Record<
     file: 'satellites/4k_miranda.jpg',
     width: 4096,
     standardFile: 'satellites/2k_miranda.jpg',
+    revision: 'filled-v1',
   },
   ariel: {
     file: 'satellites/4k_ariel.jpg',
     width: 4096,
     standardFile: 'satellites/2k_ariel.jpg',
+    revision: 'filled-v1',
   },
   umbriel: {
     file: 'satellites/2k_umbriel.jpg',
     width: 2048,
     standardFile: 'satellites/2k_umbriel.jpg',
+    revision: 'filled-v1',
   },
   titania: {
     file: 'satellites/2k_titania.jpg',
     width: 2048,
     standardFile: 'satellites/2k_titania.jpg',
+    revision: 'filled-v1',
   },
   oberon: {
     file: 'satellites/2k_oberon.jpg',
     width: 2048,
     standardFile: 'satellites/2k_oberon.jpg',
+    revision: 'filled-v1',
   },
   triton: {
     file: 'satellites/4k_triton.jpg',
     width: 4096,
     standardFile: 'satellites/2k_triton.jpg',
+    revision: 'filled-v1',
   },
   charon: {
     file: 'satellites/4k_charon.jpg',
@@ -141,7 +150,7 @@ export function texturePath(name: string, high: boolean, maxSize: number) {
       ? map.file
       : (map?.standardFile ??
         `2k_${name}.${name === 'saturn_ring_alpha' ? 'png' : 'jpg'}`);
-  return `/textures/${file}`;
+  return `/textures/${file}${map?.revision ? `?v=${map.revision}` : ''}`;
 }
 export function shouldLoadHighResolution(
   quality: TextureQuality,

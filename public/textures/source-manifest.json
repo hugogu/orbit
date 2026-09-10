@@ -215,55 +215,61 @@
     "filename": "satellites/4k_miranda.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 378333,
+    "bytes": 498420,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/miranda.jpg",
     "license": "CC BY-SA 4.0",
-    "path": "satellites/4k_miranda.jpg"
+    "path": "satellites/4k_miranda.jpg",
+    "derived": "mirror-fill-v1"
   },
   {
     "filename": "satellites/4k_ariel.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 427212,
+    "bytes": 596246,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/ariel.jpg",
     "license": "CC BY-SA 4.0",
-    "path": "satellites/4k_ariel.jpg"
+    "path": "satellites/4k_ariel.jpg",
+    "derived": "mirror-fill-v1"
   },
   {
     "filename": "satellites/2k_umbriel.jpg",
     "width": 2048,
     "height": 1024,
-    "bytes": 101804,
+    "bytes": 137913,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/medres/umbriel.jpg",
     "license": "CC BY-SA 4.0",
-    "path": "satellites/2k_umbriel.jpg"
+    "path": "satellites/2k_umbriel.jpg",
+    "derived": "mirror-fill-v1"
   },
   {
     "filename": "satellites/2k_titania.jpg",
     "width": 2048,
     "height": 1024,
-    "bytes": 144401,
+    "bytes": 234976,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/medres/titania.jpg",
     "license": "CC BY-SA 4.0",
-    "path": "satellites/2k_titania.jpg"
+    "path": "satellites/2k_titania.jpg",
+    "derived": "mirror-fill-v1"
   },
   {
     "filename": "satellites/2k_oberon.jpg",
     "width": 2048,
     "height": 1024,
-    "bytes": 97065,
+    "bytes": 150551,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/medres/oberon.jpg",
     "license": "CC BY-SA 4.0",
-    "path": "satellites/2k_oberon.jpg"
+    "path": "satellites/2k_oberon.jpg",
+    "derived": "mirror-fill-v1"
   },
   {
     "filename": "satellites/4k_triton.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 662510,
+    "bytes": 711910,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/triton.jpg",
     "license": "CC BY 3.0",
-    "path": "satellites/4k_triton.jpg"
+    "path": "satellites/4k_triton.jpg",
+    "derived": "mirror-fill-v1"
   },
   {
     "filename": "satellites/4k_charon.jpg",

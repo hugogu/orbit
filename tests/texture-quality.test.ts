@@ -68,6 +68,24 @@ void test('every body texture is registered and has a local fallback', () => {
   }
 });
 
+void test('gapped moon maps use a cache-busted continuous revision', () => {
+  const repaired = ['ariel', 'miranda', 'oberon', 'titania', 'triton', 'umbriel'];
+  for (const name of repaired) {
+    const map = highResolutionTextures[name];
+    assert.equal(map.revision, 'filled-v1', `${name} revision marker`);
+    assert.match(
+      texturePath(name, false, 8192),
+      /\?v=filled-v1$/,
+      `${name} standard map cache key`,
+    );
+    assert.match(
+      texturePath(name, true, 8192),
+      /\?v=filled-v1$/,
+      `${name} high map cache key`,
+    );
+  }
+});
+
 void test('async texture swaps retain visible maps, discard stale loads and recover from failure', async (t) => {
   const pending = new Map<
     string,

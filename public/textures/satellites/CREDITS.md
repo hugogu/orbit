@@ -8,8 +8,8 @@ These assets are redistributed from [CelestiaContent](https://github.com/Celesti
 | Io | ItzImcool and NASA/JPL/USGS/JunoCam; CC BY 4.0 | Observed composite map |
 | Ganymede | Askaniy Anpilogov and NASA/JPL/USGS; CC BY 3.0 | Observed composite map |
 | Titan | Askaniy Anpilogov and collaborators; CC BY 3.0 | Radar/infrared-informed map; colors are not visible-light photography |
-| Triton | Askaniy Anpilogov and NASA/JPL/USGS; CC BY 3.0 | Observed composite map |
-| Miranda, Ariel, Umbriel, Titania, Oberon | ItzImcool, Paul Schenk, NASA/JPL/Ted Stryk; CC BY-SA 4.0 | Voyager-derived map; Uranian maps are native 2K |
+| Triton | Askaniy Anpilogov and NASA/JPL/USGS; CC BY 3.0 | Observed composite map; the source coverage has an unmapped region that ORBIT fills by mirroring nearby observed texture for a continuous educational globe |
+| Miranda, Ariel, Umbriel, Titania, Oberon | ItzImcool, Paul Schenk, NASA/JPL/Ted Stryk; CC BY-SA 4.0 | Voyager-derived map; Uranian maps are native 2K. Their source coverage has unmapped regions; ORBIT fills those regions by mirroring nearby observed texture for a continuous educational globe. |
 | Uranus | Askaniy Anpilogov, NASA/JPL-Caltech/Björn Jónsson, Simon et al. 2015; CC BY-NC-SA 3.0 | Atmospheric map combining Hubble OPAL and Voyager 2 data; contrast lifted for close viewing; not a live weather map |
 | Charon | Askaniy Anpilogov; CC BY-NC-SA 3.0 | Observed composite map; non-commercial upstream terms apply |
 | Europa, Callisto, Enceladus, Iapetus, Mimas | CelestiaContent README credits NASA/USGS/Paul Schenk and contributors; no SPDX declaration in the upstream file | Educational rendering; see upstream README before reuse |
