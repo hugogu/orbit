@@ -48,7 +48,7 @@ import {
   textureQualityLabels,
   type TextureQuality,
 } from '@/lib/texture-quality';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -68,6 +68,11 @@ import {
   speedLabel,
   type ScaleMode,
 } from '@/lib/solar';
+import {
+  loadPreferences,
+  savePreferences,
+  type ObservatoryPreferences,
+} from '@/lib/preferences';
 export default function Home() {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState<string | null>(null),
@@ -100,7 +105,9 @@ export default function Home() {
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
     [details, setDetails] = useState(false),
     [fullscreen, setFullscreen] = useState(false),
-    [notice, setNotice] = useState('');
+    [notice, setNotice] = useState(''),
+    [preferencesReady, setPreferencesReady] = useState(false),
+    [settingsTab, setSettingsTab] = useState('environment');
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const body = bodies.find(
     (b) => b.id === (selectedMoon?.parentId ?? selected),
@@ -113,17 +120,22 @@ export default function Home() {
       const now = Date.now();
       setEpoch(now);
       setTime(now);
-      try {
-        const saved = localStorage.getItem('orbit-texture-quality');
-        if (isTextureQuality(saved)) setTextureQuality(saved);
-        setGalaxy(localStorage.getItem('orbit-galaxy') !== 'false');
-        setSolarActivity(
-          localStorage.getItem('orbit-solar-activity') !== 'false',
-        );
-        setRealSizes(localStorage.getItem('orbit-real-sizes') === 'true');
-      } catch {
-        /* Storage can be disabled in private contexts. */
-      }
+      const preferences = loadPreferences();
+      if (preferences.orbits !== undefined) setOrbits(preferences.orbits);
+      if (preferences.labels !== undefined) setLabels(preferences.labels);
+      if (preferences.belts !== undefined) setBelts(preferences.belts);
+      if (preferences.scale !== undefined) setScale(preferences.scale);
+      if (preferences.shadows !== undefined) setShadows(preferences.shadows);
+      if (preferences.shadowGuides !== undefined)
+        setShadowGuides(preferences.shadowGuides);
+      if (preferences.galaxy !== undefined) setGalaxy(preferences.galaxy);
+      if (preferences.solarActivity !== undefined)
+        setSolarActivity(preferences.solarActivity);
+      if (preferences.realSizes !== undefined)
+        setRealSizes(preferences.realSizes);
+      if (preferences.textureQuality !== undefined)
+        setTextureQuality(preferences.textureQuality);
+      setPreferencesReady(true);
       let previous: unknown;
       try {
         previous = JSON.parse(
@@ -141,6 +153,34 @@ export default function Home() {
       }
     });
   }, []);
+  useEffect(() => {
+    if (!preferencesReady) return;
+    const preferences: ObservatoryPreferences = {
+      orbits,
+      labels,
+      belts,
+      scale,
+      shadows,
+      shadowGuides,
+      galaxy,
+      solarActivity,
+      realSizes,
+      textureQuality,
+    };
+    savePreferences(preferences);
+  }, [
+    preferencesReady,
+    orbits,
+    labels,
+    belts,
+    scale,
+    shadows,
+    shadowGuides,
+    galaxy,
+    solarActivity,
+    realSizes,
+    textureQuality,
+  ]);
   function seekTime(ms: number, live = false) {
     setEpoch(ms);
     setTime(ms);
@@ -784,156 +824,162 @@ export default function Home() {
         <DialogContent closeLabel={t('Close')} className="orbit-dialog">
           <DialogTitle>{t('观测设置')}</DialogTitle>
           <DialogDescription>{t('调整你的太空观测视图。')}</DialogDescription>
-          <div className="setting-row">
-            <label htmlFor="galaxy">{t('银河背景')}</label>
-            <Switch
-              id="galaxy"
-              checked={galaxy}
-              onCheckedChange={(v) => {
-                setGalaxy(v);
-                try {
-                  localStorage.setItem('orbit-galaxy', String(v));
-                } catch {
-                  /* Optional preference. */
-                }
-              }}
-            />
-          </div>
-          <p className="model-note">
-            {t('低亮度银河全景，保留暗色太空背景，避免掩盖天体。')}
-          </p>
-          <div className="setting-row">
-            <label htmlFor="solar-activity">{t('太阳活动效果')}</label>
-            <Switch
-              id="solar-activity"
-              checked={solarActivity}
-              onCheckedChange={(v) => {
-                setSolarActivity(v);
-                try {
-                  localStorage.setItem('orbit-solar-activity', String(v));
-                } catch {
-                  /* Optional preference. */
-                }
-              }}
-            />
-          </div>
-          <p className="model-note">
-            {t(
-              '日冕、日珥与黑子跟随模拟时间；暂停时冻结。实时变化缓慢，调至「1 天 / 秒」可观察生长、消散和自转。按典型时间尺度生成的科普示意，不代表该日期实测活动。',
-            )}
-          </p>
-          <div className="setting-row">
-            <label htmlFor="real-sizes">{t('天体按真实大小比例')}</label>
-            <Switch
-              id="real-sizes"
-              checked={realSizes}
-              onCheckedChange={(v) => {
-                setRealSizes(v);
-                try {
-                  localStorage.setItem('orbit-real-sizes', String(v));
-                } catch {
-                  /* Optional preference. */
-                }
-              }}
-            />
-          </div>
-          <p className="model-note">
-            {t(
-              '太阳、行星与卫星按平均半径缩放。同时开启真实距离时，卫星间距也使用同一尺度。全景中的小天体可能难以看见，请通过导航靠近。彗核、彗尾和光晕仍为示意。',
-            )}
-          </p>
-          <div className="setting-row">
-            <label htmlFor="shadows">{t('动态食影')}</label>
-            <Switch
-              id="shadows"
-              checked={shadows}
-              onCheckedChange={setShadows}
-            />
-          </div>
-          <div className="setting-row">
-            <label htmlFor="shadow-guides">{t('食影轮廓与轨迹')}</label>
-            <Switch
-              id="shadow-guides"
-              checked={shadowGuides}
-              onCheckedChange={setShadowGuides}
-              disabled={!shadows}
-            />
-          </div>
-          <p className="model-note">
-            {t(
-              '按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“日期与天象”跳到食甚，再以 1 分钟/秒慢放。没有遮挡时不会出现食影。',
-            )}
-          </p>
-          <div className="shadow-legend" aria-label={t('食影图例')}>
-            <span className="umbra-key">{t('本影')}</span>
-            <span className="penumbra-key">{t('半影')}</span>
-            <span className="antumbra-key">{t('伪本影（环食）')}</span>
-            <span>{t('细线：过去 90 分钟影轴轨迹')}</span>
-          </div>
-          <div className="setting-row">
-            <span id="texture-quality-label">{t('贴图质量')}</span>
-            <Select
-              value={textureQuality}
-              onValueChange={(value) => {
-                if (!isTextureQuality(value)) return;
-                setTextureQuality(value);
-                try {
-                  localStorage.setItem('orbit-texture-quality', value);
-                } catch {
-                  /* Optional local preference. */
-                }
-              }}
-            >
-              <SelectTrigger aria-labelledby="texture-quality-label">
-                <SelectValue>
-                  {t(textureQualityLabels[textureQuality])}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(textureQualityLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {t(label)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="model-note">
-            {t(
-              '高清按需加载到正在跟随的天体和银河背景，切换目标会释放旧高清材质。自动模式在手机或省流量环境使用 2K。超清更耗显存与流量。',
-            )}
-          </p>
-          <p className="model-note">
-            {t(
-              '实际最高：地球、月球、水星、火星和银河 8K；太阳、木星、土星、金星云层 4K；天王星 4K、海王星 2K；冥王星使用 2K 的 NASA/JPL 科普示意图。卫星贴图按需加载，缺少完整全球测绘的土卫二、海卫二和彗核使用明确标注的示意表面。',
-            )}
-          </p>
-          <div className="setting-row">
-            <label htmlFor="orbits">{t('公转轨道')}</label>
-            <Switch id="orbits" checked={orbits} onCheckedChange={setOrbits} />
-          </div>
-          <div className="setting-row">
-            <label htmlFor="labels">{t('天体名称')}</label>
-            <Switch id="labels" checked={labels} onCheckedChange={setLabels} />
-          </div>
-          <div className="setting-row">
-            <label htmlFor="belts">{t('小天体与外围结构')}</label>
-            <Switch id="belts" checked={belts} onCheckedChange={setBelts} />
-          </div>
-          <div className="setting-row">
-            <label htmlFor="scale">{t('距离按真实比例')}</label>
-            <Switch
-              id="scale"
-              checked={scale === 'distance'}
-              onCheckedChange={(v) => {
-                setScale(v ? 'distance' : 'illustrated');
-              }}
-            />
-          </div>
-          <p className="model-note">
-            {t(
-              '真实距离模式保留行星轨道半长轴的比例；未开启真实大小时，天体和卫星间距仍为教学示意。外围粒子层在此模式下隐藏。',
-            )}
+          <Tabs
+            value={settingsTab}
+            onValueChange={(value) => setSettingsTab(String(value))}
+            className="settings-tabs"
+          >
+            <TabsList className="settings-tabs-list" aria-label={t('设置分类')}>
+              <TabsTrigger value="environment">{t('环境')}</TabsTrigger>
+              <TabsTrigger value="phenomena">{t('天象')}</TabsTrigger>
+              <TabsTrigger value="textures">{t('材质')}</TabsTrigger>
+              <TabsTrigger value="layers">{t('图层')}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="environment" className="settings-tab-panel">
+              <div className="setting-row">
+                <label htmlFor="galaxy">{t('银河背景')}</label>
+                <Switch
+                  id="galaxy"
+                  checked={galaxy}
+                  onCheckedChange={setGalaxy}
+                />
+              </div>
+              <p className="model-note">
+                {t('低亮度银河全景，保留暗色太空背景，避免掩盖天体。')}
+              </p>
+              <div className="setting-row">
+                <label htmlFor="solar-activity">{t('太阳活动效果')}</label>
+                <Switch
+                  id="solar-activity"
+                  checked={solarActivity}
+                  onCheckedChange={setSolarActivity}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '日冕、日珥与黑子跟随模拟时间；暂停时冻结。实时变化缓慢，调至「1 天 / 秒」可观察生长、消散和自转。按典型时间尺度生成的科普示意，不代表该日期实测活动。',
+                )}
+              </p>
+              <div className="setting-row">
+                <label htmlFor="real-sizes">{t('天体按真实大小比例')}</label>
+                <Switch
+                  id="real-sizes"
+                  checked={realSizes}
+                  onCheckedChange={setRealSizes}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '太阳、行星与卫星按平均半径缩放。同时开启真实距离时，卫星间距也使用同一尺度。全景中的小天体可能难以看见，请通过导航靠近。彗核、彗尾和光晕仍为示意。',
+                )}
+              </p>
+            </TabsContent>
+            <TabsContent value="phenomena" className="settings-tab-panel">
+              <div className="setting-row">
+                <label htmlFor="shadows">{t('动态食影')}</label>
+                <Switch
+                  id="shadows"
+                  checked={shadows}
+                  onCheckedChange={setShadows}
+                />
+              </div>
+              <div className="setting-row">
+                <label htmlFor="shadow-guides">{t('食影轮廓与轨迹')}</label>
+                <Switch
+                  id="shadow-guides"
+                  checked={shadowGuides}
+                  onCheckedChange={setShadowGuides}
+                  disabled={!shadows}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“日期与天象”跳到食甚，再以 1 分钟/秒慢放。没有遮挡时不会出现食影。',
+                )}
+              </p>
+              <div className="shadow-legend" aria-label={t('食影图例')}>
+                <span className="umbra-key">{t('本影')}</span>
+                <span className="penumbra-key">{t('半影')}</span>
+                <span className="antumbra-key">{t('伪本影（环食）')}</span>
+                <span>{t('细线：过去 90 分钟影轴轨迹')}</span>
+              </div>
+            </TabsContent>
+            <TabsContent value="textures" className="settings-tab-panel">
+              <div className="setting-row">
+                <span id="texture-quality-label">{t('贴图质量')}</span>
+                <Select
+                  value={textureQuality}
+                  onValueChange={(value) => {
+                    if (isTextureQuality(value)) setTextureQuality(value);
+                  }}
+                >
+                  <SelectTrigger aria-labelledby="texture-quality-label">
+                    <SelectValue>
+                      {t(textureQualityLabels[textureQuality])}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(textureQualityLabels).map(
+                      ([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {t(label)}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="model-note">
+                {t(
+                  '高清按需加载到正在跟随的天体和银河背景，切换目标会释放旧高清材质。自动模式在手机或省流量环境使用 2K。超清更耗显存与流量。',
+                )}
+              </p>
+              <p className="model-note">
+                {t(
+                  '实际最高：地球、月球、水星、火星和银河 8K；太阳、木星、土星、金星云层 4K；天王星 4K、海王星 2K；冥王星使用 2K 的 NASA/JPL 科普示意图。卫星贴图按需加载，缺少完整全球测绘的土卫二、海卫二和彗核使用明确标注的示意表面。',
+                )}
+              </p>
+            </TabsContent>
+            <TabsContent value="layers" className="settings-tab-panel">
+              <div className="setting-row">
+                <label htmlFor="orbits">{t('公转轨道')}</label>
+                <Switch
+                  id="orbits"
+                  checked={orbits}
+                  onCheckedChange={setOrbits}
+                />
+              </div>
+              <div className="setting-row">
+                <label htmlFor="labels">{t('天体名称')}</label>
+                <Switch
+                  id="labels"
+                  checked={labels}
+                  onCheckedChange={setLabels}
+                />
+              </div>
+              <div className="setting-row">
+                <label htmlFor="belts">{t('小天体与外围结构')}</label>
+                <Switch id="belts" checked={belts} onCheckedChange={setBelts} />
+              </div>
+              <div className="setting-row">
+                <label htmlFor="scale">{t('距离按真实比例')}</label>
+                <Switch
+                  id="scale"
+                  checked={scale === 'distance'}
+                  onCheckedChange={(value) =>
+                    setScale(value ? 'distance' : 'illustrated')
+                  }
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '真实距离模式保留行星轨道半长轴的比例；未开启真实大小时，天体和卫星间距仍为教学示意。外围粒子层在此模式下隐藏。',
+                )}
+              </p>
+            </TabsContent>
+          </Tabs>
+          <p className="settings-persistence">
+            <span aria-hidden="true">✓</span> {t('设置会保存在此设备')}
           </p>
         </DialogContent>
       </Dialog>

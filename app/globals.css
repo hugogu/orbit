@@ -1078,6 +1078,62 @@ button:disabled {
   font-weight: 500;
   padding-right: 20px;
 }
+.settings-tabs {
+  min-width: 0;
+  gap: 16px;
+}
+.settings-tabs-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  gap: 4px;
+  padding: 4px;
+  background: #080d15;
+  border: 1px solid #ffffff0d;
+  border-radius: 9px;
+}
+.settings-tabs-list [data-slot='tabs-trigger'] {
+  min-width: 0;
+  min-height: 34px;
+  padding: 5px 7px;
+  font-size: 12px;
+  color: #8e9aac;
+}
+.settings-tabs-list [data-slot='tabs-trigger'][data-active] {
+  color: #f0d9a8;
+  background: #202633;
+}
+.settings-tab-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.settings-tab-panel .model-note {
+  margin: 4px 0 12px;
+}
+.settings-tab-panel .setting-row + .setting-row {
+  margin-top: 2px;
+}
+.settings-persistence {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 0 0;
+  color: #8d9aab;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.settings-persistence span {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border: 1px solid #668a79;
+  border-radius: 50%;
+  color: #9dd5b5;
+  font-size: 10px;
+}
 .setting-row {
   display: flex;
   align-items: center;
@@ -1553,6 +1609,22 @@ button:disabled {
   }
   .orbit-dialog {
     padding: 23px !important;
+    width: min(420px, calc(100vw - 24px));
+    max-height: min(88dvh, 680px);
+  }
+  .settings-tabs {
+    gap: 12px;
+  }
+  .settings-tabs-list {
+    gap: 3px;
+  }
+  .settings-tabs-list [data-slot='tabs-trigger'] {
+    min-height: 36px;
+    padding-inline: 4px;
+    font-size: 11px;
+  }
+  .settings-tab-panel .setting-row {
+    padding-block: 11px;
   }
   .scene-error {
     inset: 32% 12%;
@@ -1928,6 +2000,23 @@ html:lang(en) .moon-children button > span:last-child {
   }
   .header-actions {
     gap: 6px;
+  }
+  .orbit-dialog {
+    max-height: calc(100dvh - 20px);
+    padding: 18px !important;
+  }
+  .settings-tabs {
+    gap: 9px;
+  }
+  .settings-tabs-list [data-slot='tabs-trigger'] {
+    min-height: 31px;
+  }
+  .settings-tab-panel .setting-row {
+    padding-block: 8px;
+  }
+  .settings-tab-panel .model-note {
+    margin-block: 3px 8px;
+    line-height: 1.65;
   }
   html:lang(en) .header-actions .live {
     display: none;

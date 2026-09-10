@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {
+  loadPreferences,
+  preferencesStorageKey,
+  sanitizePreferences,
+  savePreferences,
+} from '../lib/preferences';
+
+function memoryStorage(initial: Record<string, string> = {}) {
+  const values = new Map(Object.entries(initial));
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => void values.set(key, value),
+  } as Storage;
+}
+
+void test('preferences are validated and persisted as one versioned record', () => {
+  const storage = memoryStorage();
+  assert.equal(
+    savePreferences(
+      {
+        galaxy: false,
+        scale: 'distance',
+        textureQuality: 'ultra',
+        labels: true,
+        invalid: 'ignored',
+      } as never,
+      storage,
+    ),
+    true,
+  );
+  assert.deepEqual(loadPreferences(storage), {
+    galaxy: false,
+    scale: 'distance',
+    textureQuality: 'ultra',
+    labels: true,
+  });
+  assert.deepEqual(sanitizePreferences({ shadows: 'yes', scale: 'wrong' }), {});
+});
+
+void test('legacy individual keys are migrated when no versioned record exists', () => {
+  const storage = memoryStorage({
+    'orbit-galaxy': 'false',
+    'orbit-solar-activity': 'true',
+    'orbit-real-sizes': 'true',
+    'orbit-texture-quality': 'standard',
+  });
+  assert.deepEqual(loadPreferences(storage), {
+    galaxy: false,
+    solarActivity: true,
+    realSizes: true,
+    textureQuality: 'standard',
+  });
+  assert.equal(storage.getItem(preferencesStorageKey), null);
+});
