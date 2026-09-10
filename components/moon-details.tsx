@@ -17,7 +17,10 @@ export default function MoonDetails({
   const { t, locale } = useI18n();
   const parent = bodies.find((b) => b.id === moon.parentId)!;
   return (
-    <article aria-label={t('{{name}}介绍', { name: t(moon.name) })}>
+    <article
+      className="moon-details"
+      aria-label={t('{{name}}介绍', { name: t(moon.name) })}
+    >
       <p className="eyebrow">
         {t('{{name}}的天然卫星', { name: t(parent.name) })}
       </p>
@@ -58,7 +61,10 @@ export default function MoonDetails({
           '半径采用球形近似，轨道半长轴从主星中心计量。除月球外的卫星表面配色与自转朝向仍为教学示意。',
         )}
       </p>
-      <button className="secondary-action" onClick={() => onSelect(parent.id)}>
+      <button
+        className="secondary-action moon-back-action"
+        onClick={() => onSelect(parent.id)}
+      >
         {t('返回{{name}}', { name: t(parent.name) })}
       </button>
       <a

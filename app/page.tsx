@@ -28,7 +28,7 @@ import MoonDetails from '@/components/moon-details';
 import BodyNavigation from '@/components/body-navigation';
 import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
-import CuriosityCard from '@/components/curiosity-card';
+import CuriosityCard, { CuriositySource } from '@/components/curiosity-card';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
 import LayoutSettings from '@/components/layout-settings';
@@ -455,6 +455,7 @@ export default function Home() {
         id={body.id}
         index={curiosityPicks[body.id]}
         name={t(body.name)}
+        showSource={false}
       />
       <PhysicalFacts body={body} />
       <MoonGuide
@@ -463,6 +464,10 @@ export default function Home() {
           select(id);
           setSystemView(true);
         }}
+      />
+      <CuriositySource
+        id={body.id}
+        index={curiosityPicks[body.id]}
       />
       <a
         className="source"

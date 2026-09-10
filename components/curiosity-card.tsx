@@ -3,14 +3,40 @@ import { useI18n } from '../lib/i18n/provider';
 import { Plus, ArrowUpRight } from 'lucide-react';
 import { curiosities } from '../lib/curiosities';
 
+export function CuriositySource({
+  id,
+  index = 0,
+}: {
+  id: string;
+  index?: number;
+}) {
+  const { t } = useI18n();
+  const pool = curiosities[id];
+  const fact = pool?.[index] ?? pool?.[0];
+  if (!fact) return null;
+  return (
+    <a
+      className="source curiosity-source"
+      href={fact.source}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {fact.related ? t('延伸知识') : t('资料与计算依据')} · {index + 1}/
+      {pool.length} <ArrowUpRight size={13} />
+    </a>
+  );
+}
+
 export default function CuriosityCard({
   id,
   index = 0,
   name,
+  showSource = true,
 }: {
   id: string;
   index?: number;
   name: string;
+  showSource?: boolean;
 }) {
   const { t } = useI18n();
   const pool = curiosities[id];
@@ -32,10 +58,7 @@ export default function CuriosityCard({
           ),
         )}
       </p>
-      <a className="source" href={fact.source} target="_blank" rel="noreferrer">
-        {fact.related ? t('延伸知识') : t('资料与计算依据')} · {index + 1}/
-        {pool.length} <ArrowUpRight size={13} />
-      </a>
+      {showSource && <CuriositySource id={id} index={index} />}
     </div>
   );
 }

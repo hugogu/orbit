@@ -6,7 +6,7 @@ import { curiosities, pickCuriosities } from '../lib/curiosities';
 import { bodies } from '../lib/solar';
 import { comets } from '../lib/comets';
 import { orbitingMoons } from '../lib/moon-orbits';
-import CuriosityCard from '../components/curiosity-card';
+import CuriosityCard, { CuriositySource } from '../components/curiosity-card';
 
 void test('all selectable bodies have 30 distinct sourced knowledge entries', () => {
   for (const body of [...bodies, ...comets, ...orbitingMoons]) {
@@ -54,4 +54,21 @@ void test('planet, comet and selected moon cards show their own text and source'
     assert.ok(html.includes(curiosities[id][7].source));
     assert.ok(html.includes('8/30'));
   }
+});
+void test('curiosity sources can be rendered after a body satellite guide', () => {
+  const fact = curiosities.earth[7];
+  const card = renderToStaticMarkup(
+    createElement(CuriosityCard, {
+      id: 'earth',
+      index: 7,
+      name: '地球',
+      showSource: false,
+    }),
+  );
+  assert.equal(card.includes(fact.source), false);
+  const source = renderToStaticMarkup(
+    createElement(CuriositySource, { id: 'earth', index: 7 }),
+  );
+  assert.ok(source.includes(fact.source));
+  assert.ok(source.includes('8/30'));
 });

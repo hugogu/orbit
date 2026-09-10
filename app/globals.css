@@ -943,6 +943,9 @@ button:disabled {
 .moon-guide [data-slot='accordion-content'] p {
   margin-top: 0;
 }
+.moon-details .moon-back-action {
+  margin: 22px 0 16px;
+}
 .comet-actions {
   display: grid;
   gap: 8px;
