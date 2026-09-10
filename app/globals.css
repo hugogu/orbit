@@ -1078,13 +1078,34 @@ button:disabled {
   font-weight: 500;
   padding-right: 20px;
 }
+.orbit-dialog.settings-dialog {
+  width: calc(100vw - 24px);
+  max-width: 560px !important;
+  height: auto;
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.settings-dialog > * {
+  flex-shrink: 0;
+}
+.settings-dialog > .settings-tabs {
+  flex: 1;
+  min-height: 0;
+}
 .settings-tabs {
   min-width: 0;
+  flex-direction: column;
   gap: 16px;
 }
 .settings-tabs-list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  height: auto !important;
   width: 100%;
   gap: 4px;
   padding: 4px;
@@ -1092,11 +1113,16 @@ button:disabled {
   border: 1px solid #ffffff0d;
   border-radius: 9px;
 }
+.settings-tabs-list::-webkit-scrollbar,
+.settings-tab-panel::-webkit-scrollbar {
+  display: none;
+}
 .settings-tabs-list [data-slot='tabs-trigger'] {
-  min-width: 0;
-  min-height: 34px;
-  padding: 5px 7px;
-  font-size: 12px;
+  flex: 1 0 auto;
+  min-width: 48px;
+  min-height: 44px;
+  padding: 5px 10px;
+  font-size: 13px;
   color: #8e9aac;
 }
 .settings-tabs-list [data-slot='tabs-trigger'][data-active] {
@@ -1105,12 +1131,23 @@ button:disabled {
 }
 .settings-tab-panel {
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 0 14px 4px 4px;
   display: flex;
   flex-direction: column;
   gap: 0;
 }
+.settings-tab-panel .setting-row {
+  gap: 20px;
+}
 .settings-tab-panel .model-note {
   margin: 4px 0 12px;
+}
+.layout-note {
+  margin-bottom: 4px !important;
 }
 .settings-tab-panel .setting-row + .setting-row {
   margin-top: 2px;
@@ -1619,9 +1656,9 @@ button:disabled {
     gap: 3px;
   }
   .settings-tabs-list [data-slot='tabs-trigger'] {
-    min-height: 36px;
+    min-height: 44px;
     padding-inline: 4px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .settings-tab-panel .setting-row {
     padding-block: 11px;
@@ -2009,7 +2046,7 @@ html:lang(en) .moon-children button > span:last-child {
     gap: 9px;
   }
   .settings-tabs-list [data-slot='tabs-trigger'] {
-    min-height: 31px;
+    min-height: 44px;
   }
   .settings-tab-panel .setting-row {
     padding-block: 8px;
@@ -2058,5 +2095,23 @@ html:lang(en) .moon-children button > span:last-child {
     padding: 0;
     font-size: 0;
     gap: 0;
+  }
+}
+@media (orientation: landscape) and (max-height: 600px) and (min-width: 650px) {
+  .orbit-dialog.settings-dialog {
+    max-width: 760px !important;
+    gap: 10px;
+  }
+  .settings-dialog > [data-slot='dialog-description'] {
+    display: none;
+  }
+  .settings-dialog .layout-tab-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    column-gap: 28px;
+  }
+  .layout-tab-panel .layout-note {
+    grid-column: 1 / -1;
   }
 }

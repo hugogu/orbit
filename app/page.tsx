@@ -31,6 +31,7 @@ import PhysicalFacts from '@/components/physical-facts';
 import CuriosityCard from '@/components/curiosity-card';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
+import LayoutSettings from '@/components/layout-settings';
 import { comets, cometPerihelion } from '@/lib/comets';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
 import { orbitingMoons } from '@/lib/moon-orbits';
@@ -107,7 +108,7 @@ export default function Home() {
     [fullscreen, setFullscreen] = useState(false),
     [notice, setNotice] = useState(''),
     [preferencesReady, setPreferencesReady] = useState(false),
-    [settingsTab, setSettingsTab] = useState('environment');
+    [settingsTab, setSettingsTab] = useState('layout');
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const body = bodies.find(
     (b) => b.id === (selectedMoon?.parentId ?? selected),
@@ -115,6 +116,12 @@ export default function Home() {
   const activeRegion = regions.find((r) => r.id === region)!;
   const activeComet = comets.find((c) => c.id === cometId)!;
   const isComet = selected === cometId;
+  // Topic views choose a distance mode without overwriting the user's layout preference.
+  const displayScale = isComet
+    ? 'distance'
+    : tab === 'structure'
+      ? 'illustrated'
+      : scale;
   useEffect(() => {
     queueMicrotask(() => {
       const now = Date.now();
@@ -202,7 +209,6 @@ export default function Home() {
       setCometId(id);
       setCometClose(true);
       setSelected(id);
-      setScale('distance');
       setReset((v) => v + 1);
       return;
     }
@@ -224,7 +230,6 @@ export default function Home() {
     setView(205);
     setReset((v) => v + 1);
     setTop(false);
-    setScale('illustrated');
   }, []);
   useEffect(() => {
     const restore = () => {
@@ -279,8 +284,6 @@ export default function Home() {
     setView(r.view);
     setSelected(null);
     setReset((v) => v + 1);
-    setScale('illustrated');
-    setBelts(true);
   }
   useEffect(
     () =>
@@ -526,7 +529,7 @@ export default function Home() {
           orbits,
           labels,
           belts,
-          scale,
+          scale: displayScale,
           selected,
           view,
           reset,
@@ -716,10 +719,10 @@ export default function Home() {
           </span>
           <span className="scale-status">
             {realSizes
-              ? scale === 'distance'
+              ? displayScale === 'distance'
                 ? t('大小与距离采用同一比例')
                 : t('天体大小按真实比例 · 距离示意')
-              : scale === 'distance'
+              : displayScale === 'distance'
                 ? t('距离按比例 · 天体已放大')
                 : t('演示比例 · 距离与天体大小已调整')}
           </span>
@@ -821,7 +824,10 @@ export default function Home() {
         }}
       />
       <Dialog open={settings} onOpenChange={setSettings}>
-        <DialogContent closeLabel={t('Close')} className="orbit-dialog">
+        <DialogContent
+          closeLabel={t('Close')}
+          className="orbit-dialog settings-dialog"
+        >
           <DialogTitle>{t('观测设置')}</DialogTitle>
           <DialogDescription>{t('调整你的太空观测视图。')}</DialogDescription>
           <Tabs
@@ -830,11 +836,24 @@ export default function Home() {
             className="settings-tabs"
           >
             <TabsList className="settings-tabs-list" aria-label={t('设置分类')}>
+              <TabsTrigger value="layout">{t('布局')}</TabsTrigger>
               <TabsTrigger value="environment">{t('环境')}</TabsTrigger>
               <TabsTrigger value="phenomena">{t('天象')}</TabsTrigger>
               <TabsTrigger value="textures">{t('材质')}</TabsTrigger>
               <TabsTrigger value="layers">{t('图层')}</TabsTrigger>
             </TabsList>
+            <TabsContent
+              value="layout"
+              className="settings-tab-panel layout-tab-panel"
+            >
+              <LayoutSettings
+                realSizes={realSizes}
+                scale={displayScale}
+                distanceLocked={isComet || tab === 'structure'}
+                onRealSizesChange={setRealSizes}
+                onScaleChange={setScale}
+              />
+            </TabsContent>
             <TabsContent value="environment" className="settings-tab-panel">
               <div className="setting-row">
                 <label htmlFor="galaxy">{t('银河背景')}</label>
@@ -858,19 +877,6 @@ export default function Home() {
               <p className="model-note">
                 {t(
                   '日冕、日珥与黑子跟随模拟时间；暂停时冻结。实时变化缓慢，调至「1 天 / 秒」可观察生长、消散和自转。按典型时间尺度生成的科普示意，不代表该日期实测活动。',
-                )}
-              </p>
-              <div className="setting-row">
-                <label htmlFor="real-sizes">{t('天体按真实大小比例')}</label>
-                <Switch
-                  id="real-sizes"
-                  checked={realSizes}
-                  onCheckedChange={setRealSizes}
-                />
-              </div>
-              <p className="model-note">
-                {t(
-                  '太阳、行星与卫星按平均半径缩放。同时开启真实距离时，卫星间距也使用同一尺度。全景中的小天体可能难以看见，请通过导航靠近。彗核、彗尾和光晕仍为示意。',
                 )}
               </p>
             </TabsContent>
@@ -961,21 +967,6 @@ export default function Home() {
                 <label htmlFor="belts">{t('小天体与外围结构')}</label>
                 <Switch id="belts" checked={belts} onCheckedChange={setBelts} />
               </div>
-              <div className="setting-row">
-                <label htmlFor="scale">{t('距离按真实比例')}</label>
-                <Switch
-                  id="scale"
-                  checked={scale === 'distance'}
-                  onCheckedChange={(value) =>
-                    setScale(value ? 'distance' : 'illustrated')
-                  }
-                />
-              </div>
-              <p className="model-note">
-                {t(
-                  '真实距离模式保留行星轨道半长轴的比例；未开启真实大小时，天体和卫星间距仍为教学示意。外围粒子层在此模式下隐藏。',
-                )}
-              </p>
             </TabsContent>
           </Tabs>
           <p className="settings-persistence">
@@ -1033,7 +1024,7 @@ export default function Home() {
             </p>
             <p>
               {t(
-                '大小与距离可分别设置；同时开启真实大小和真实距离时，两者采用统一尺度。彗核、彗尾和光晕仍为示意。月球及四颗伽利略卫星使用含摄动的模型，其余 14 颗卫星用 JPL 固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用 JPL 带历元的二体轨道，远离历元时误差增大。',
+                '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星与卫星会使用同一物理尺度。彗核、彗尾和光晕仍为示意。月球及四颗伽利略卫星使用含摄动的模型，其余 14 颗卫星用 JPL 固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用 JPL 带历元的二体轨道，远离历元时误差增大。',
               )}
             </p>
             <p>

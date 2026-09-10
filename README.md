@@ -132,7 +132,7 @@ ORBIT is an educational tool with explicit assumptions, not a navigation product
 
 ### Scale options
 
-The default demonstrative view compresses distances and enlarges bodies so the system remains readable in one scene. Real body size and real distance can be enabled independently. With both enabled, the Sun, planets, and 19 moons share one physical scale; comet nuclei, tails, and glows remain instructional illustrations.
+The default demonstrative view compresses distances and enlarges bodies so the system remains readable in one scene. **Observation settings → Layout** keeps the true-size and true-distance switches together. Changes apply immediately and are saved in this browser. With both true-scale options enabled, the Sun, planets, and 19 moons share one physical scale; comet nuclei, tails, and glows remain instructional illustrations. Display adjustments do not affect the simulation date, orbital periods, or sky event calculations.
 
 ## Technology
 
