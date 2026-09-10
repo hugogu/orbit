@@ -203,3 +203,50 @@ void test('scene guides update, hide on disable, and clean up GPU geometry', () 
   system.dispose();
   assert.equal(system.guideRoot.parent, null);
 });
+
+void test('cached shadow positions preserve rotation and refresh on short date seeks', () => {
+  const material = new THREE.MeshStandardMaterial();
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1), material);
+  const system = createEclipseSystem(new Map([['earth', mesh]]));
+  const shader = {
+    uniforms: {},
+    vertexShader: '',
+    fragmentShader: '',
+  } as THREE.WebGLProgramParametersWithUniforms;
+  material.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+  const sun = () => shader.uniforms.eclipseSun.value as THREE.Vector3;
+  const start = days('2024-04-08T18:17:15Z');
+  system.update(start, 'earth', true, false);
+  const initial = sun().clone();
+  mesh.rotateY(0.01);
+  system.update(start + 0.1 / 86400, 'earth', true, false);
+  const rotated = initial
+    .clone()
+    .applyQuaternion(mesh.quaternion.clone().invert());
+  assert.ok(
+    sun().distanceTo(rotated) < 1e-8,
+    'cached vectors follow the current surface rotation',
+  );
+
+  const assertCurrent = (time: number) => {
+    const frame = shadowFrame(time);
+    const receiver = frame.get('earth')!;
+    const expected = frame
+      .get('sun')!
+      .position.clone()
+      .sub(receiver.position)
+      .applyQuaternion(mesh.quaternion.clone().invert())
+      .divideScalar(receiver.radius);
+    assert.ok(sun().distanceTo(expected) < 1e-8);
+  };
+  const shortSeek = start + 0.5 / 86400;
+  system.update(shortSeek, 'earth', true, false, true);
+  assertCurrent(shortSeek);
+  system.update(start + 2 / 86400, 'earth', true, false);
+  assertCurrent(start + 2 / 86400);
+  system.update(start, 'earth', true, false);
+  assertCurrent(start);
+  system.dispose();
+  mesh.geometry.dispose();
+  material.dispose();
+});

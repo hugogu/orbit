@@ -75,12 +75,13 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
     lastSelected: string | null = null,
     lastCasterKey = '',
     lastShadowDay = NaN,
-    lastShadowEnabled = true;
+    lastShadowEnabled = true,
+    lastMaterialDay = NaN;
   let frame = shadowFrame(0);
-  // Shadow uniforms only need to change when the simulated time advances by a
-  // meaningful amount. Rebuilding the full Astronomy Engine frame every
-  // render tick is extremely expensive on the main thread.
-  const shadowUpdateStepDays = 1 / 1440;
+  // Cache physical positions for at most one simulated second, but transform
+  // them into the current rotating surface frame on every simulation update.
+  const shadowUpdateStepDays = 1 / 86400;
+  const inverseRotation = new THREE.Quaternion();
   const trackCache = new Map<string, (THREE.Vector3 | null)[]>();
   const casterCache = new Map<string, ReturnType<typeof possibleCasters>>();
   return {
@@ -96,8 +97,10 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
       selected: string | null,
       enabled: boolean,
       showGuides: boolean,
+      seek = false,
     ) {
       const refreshShadows =
+        seek ||
         !Number.isFinite(lastShadowDay) ||
         days < lastShadowDay ||
         Math.abs(days - lastShadowDay) >= shadowUpdateStepDays ||
@@ -105,20 +108,28 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
       if (refreshShadows) {
         frame = shadowFrame(days);
         casterCache.clear();
-        const sun = frame.get('sun')!.position;
         for (const entry of entries) {
           const receiver = frame.get(entry.id)!;
           const casters = enabled ? possibleCasters(receiver, frame) : [];
           casterCache.set(entry.id, casters);
-          const rotation = entry.mesh
-            .getWorldQuaternion(new THREE.Quaternion())
-            .invert();
-          entry.material.update(receiver, sun, casters, rotation, enabled);
         }
         lastShadowDay = days;
         lastShadowEnabled = enabled;
       }
       const sun = frame.get('sun')!.position;
+      if (refreshShadows || days !== lastMaterialDay) {
+        for (const entry of entries) {
+          entry.mesh.getWorldQuaternion(inverseRotation).invert();
+          entry.material.update(
+            frame.get(entry.id)!,
+            sun,
+            casterCache.get(entry.id) ?? [],
+            inverseRotation,
+            enabled,
+          );
+        }
+        lastMaterialDay = days;
+      }
       guideRoot.visible =
         enabled &&
         showGuides &&
@@ -133,9 +144,10 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
         mesh = meshes.get(selected!)!;
       if (guideRoot.parent !== mesh) mesh.add(guideRoot);
       if (
+        !seek &&
         selected === lastSelected &&
         Number.isFinite(lastGuideDay) &&
-        Math.abs(days - lastGuideDay) < 1 / 86400
+        Math.abs(days - lastGuideDay) < shadowUpdateStepDays
       )
         return;
       const casters = (casterCache.get(target.id) ?? []).slice(0, MAX_CASTERS);

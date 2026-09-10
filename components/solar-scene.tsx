@@ -541,7 +541,7 @@ export default function SolarScene({
         now,
       );
       moonSystem.update(days, s.scale, s.selected, s.orbits, s.realSizes);
-      eclipseSystem.update(days, s.selected, s.shadows, s.shadowGuides);
+      eclipseSystem.update(days, s.selected, s.shadows, s.shadowGuides, seek);
       belt.visible = s.belts && s.scale === 'illustrated';
       kuiper.visible = s.belts && s.scale === 'illustrated';
       scattered.visible = s.belts && s.view >= 350 && s.scale === 'illustrated';
