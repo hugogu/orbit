@@ -395,7 +395,9 @@ export default function SolarScene({
       lastCameraAspect = 0,
       lastTop = false,
       lastComet = '',
+      highResolutionReadyAt = 0,
       transition = 0;
+    const navigationTextureGraceMs = 5000;
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
     const projected = new THREE.Vector3(),
@@ -445,6 +447,11 @@ export default function SolarScene({
           (orbitingMoons.find((m) => m.id === s.selected)?.parentId ??
             s.selected),
       );
+      const navigationChanged =
+        s.selected !== lastSelected || s.reset !== lastReset;
+      if (navigationChanged)
+        highResolutionReadyAt = now + navigationTextureGraceMs;
+      const navigating = transition > 0 || now < highResolutionReadyAt;
       textureManager.update(
         s.textureQuality,
         selectedMoonTexture ?? cometTexture ?? focusBody?.texture ?? null,
@@ -454,6 +461,7 @@ export default function SolarScene({
         selectedMoonTexture || cometTexture
           ? [selectedMoonTexture ?? cometTexture!]
           : [],
+        navigating,
       );
       scene.background = s.galaxy ? (galaxyTexture ?? emptySky) : emptySky;
       const seek = s.epoch !== epoch;

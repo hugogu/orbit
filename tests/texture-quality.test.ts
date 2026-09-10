@@ -123,6 +123,46 @@ void test('async texture swaps retain visible maps, discard stale loads and reco
   assert.equal(fallback.dispose.mock.callCount(), 1);
 });
 
+void test('navigation defers focused high-resolution upgrades until the transition settles', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+  } as THREE.WebGLRenderer;
+  const manager = createTextureManager(renderer, () => {});
+  manager.register('earth_daymap', () => {});
+  pending.get('/textures/2k_earth_daymap.jpg')!(new THREE.Texture());
+  pending.clear();
+  await Promise.resolve();
+  manager.update('ultra', 'earth_daymap', false, false, true, [], true);
+  assert.equal(pending.has('/textures/8k_earth_daymap.jpg'), false);
+  manager.update('ultra', 'earth_daymap', false, false);
+  assert.equal(pending.has('/textures/8k_earth_daymap.jpg'), true);
+  pending.get('/textures/8k_earth_daymap.jpg')!(new THREE.Texture());
+  pending.clear();
+  await Promise.resolve();
+  manager.update('ultra', null, false, false, true, [], true);
+  manager.update('ultra', null, false, false);
+  assert.equal(
+    pending.has('/textures/2k_earth_daymap.jpg'),
+    false,
+    'keep the previous high-resolution map during navigation',
+  );
+  manager.update('standard', null, false, false, true, [], true);
+  assert.equal(
+    pending.has('/textures/2k_earth_daymap.jpg'),
+    true,
+    'an explicit standard-quality choice still applies during navigation',
+  );
+  pending.get('/textures/2k_earth_daymap.jpg')!(new THREE.Texture());
+  manager.dispose();
+});
+
 void test('only the focused body and background upgrade; unmount disposes late arrivals', async (t) => {
   const pending = new Map<string, (texture: THREE.Texture) => void>();
   t.mock.method(

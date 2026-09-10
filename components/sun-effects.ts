@@ -6,6 +6,9 @@ import { solarActivityAt } from '../lib/solar-activity';
 
 // UVs are measured in solar radii; the emission ends before the quad's edges.
 const coronaExtent = 2.6;
+// Surface activity evolves over hours and days. Sampling it hourly avoids
+// rebuilding the same procedural regions on every animation frame at real time.
+const solarActivityStepDays = 1 / 24;
 function createCorona(radius: number) {
   const material = new THREE.ShaderMaterial({
     transparent: true,
@@ -74,7 +77,8 @@ export function createSunEffects(
 
   const solarRotation = new THREE.Quaternion();
   const frameMatrix = new THREE.Matrix4();
-  let previousDays = NaN;
+  let previousActivityDays = NaN;
+  let previousEnabled = true;
   let regions = solarActivityAt(0);
   return {
     root,
@@ -86,12 +90,19 @@ export function createSunEffects(
       enabled = true,
     ) {
       root.visible = enabled;
-      if (days !== previousDays) {
-        regions = solarActivityAt(days);
-        previousDays = days;
+      const activityDays =
+        Math.floor(days / solarActivityStepDays) * solarActivityStepDays;
+      const activityChanged = activityDays !== previousActivityDays;
+      if (activityChanged) {
+        regions = solarActivityAt(activityDays);
+        previousActivityDays = activityDays;
       }
-      spots.update(regions, enabled);
-      if (!enabled) return;
+      if (activityChanged || enabled !== previousEnabled)
+        spots.update(regions, enabled);
+      if (!enabled) {
+        previousEnabled = enabled;
+        return;
+      }
       root.updateWorldMatrix(true, false);
       root.getWorldPosition(worldPosition);
       root.getWorldScale(worldScale);
@@ -125,7 +136,8 @@ export function createSunEffects(
       frameMatrix.makeRotationFromQuaternion(solarRotation);
       corona.material.uniforms.solarFrame.value.setFromMatrix4(frameMatrix);
       prominences.root.quaternion.copy(orientation);
-      prominences.update(regions);
+      if (activityChanged || !previousEnabled) prominences.update(regions);
+      previousEnabled = enabled;
     },
   };
 }

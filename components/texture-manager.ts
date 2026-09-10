@@ -12,7 +12,10 @@ type Slot = {
   path: string;
   texture: THREE.Texture | null;
   version: number;
+  downgradeTimer: ReturnType<typeof setTimeout> | null;
+  navigationHold: boolean;
 };
+const navigationTextureHoldMs = 8000;
 export type RegisterOptions = {
   /** Defer loading until this map is the selected/focused surface. */
   lazy?: boolean;
@@ -29,6 +32,10 @@ export function createTextureManager(
     failed = new Set<string>();
   async function request(slot: Slot, path: string) {
     if (slot.path === path || disposed) return;
+    if (slot.downgradeTimer) {
+      clearTimeout(slot.downgradeTimer);
+      slot.downgradeTimer = null;
+    }
     slot.path = path;
     const version = ++slot.version;
     try {
@@ -65,6 +72,11 @@ export function createTextureManager(
   }
   function release(slot: Slot) {
     if (!slot.path && !slot.texture) return;
+    if (slot.downgradeTimer) {
+      clearTimeout(slot.downgradeTimer);
+      slot.downgradeTimer = null;
+    }
+    slot.navigationHold = false;
     slot.version++;
     slot.path = '';
     slot.texture?.dispose();
@@ -85,6 +97,8 @@ export function createTextureManager(
         path: '',
         texture: null,
         version: 0,
+        downgradeTimer: null,
+        navigationHold: false,
       };
       slots.push(slot);
       if (!slot.lazy)
@@ -100,9 +114,11 @@ export function createTextureManager(
       saveData: boolean,
       galaxy = true,
       activeTextures: readonly string[] = [],
+      deferHighResolution = false,
     ) {
       const high = shouldLoadHighResolution(quality, compact, saveData);
       for (const slot of slots) {
+        if (deferHighResolution) slot.navigationHold = true;
         if (
           slot.lazy &&
           !activeTextures.includes(slot.name) &&
@@ -118,23 +134,55 @@ export function createTextureManager(
             (slot.name === 'stars_milky_way' && galaxy) ||
             (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
             (slot.name === 'saturn_ring_alpha' && focus === 'saturn'));
-        let path = texturePath(
-          slot.name,
-          upgrade,
-          renderer.capabilities.maxTextureSize,
-        );
-        if (failed.has(path))
-          path = texturePath(
+        const highPath = texturePath(
+            slot.name,
+            true,
+            renderer.capabilities.maxTextureSize,
+          ),
+          standardPath = texturePath(
             slot.name,
             false,
             renderer.capabilities.maxTextureSize,
           );
+        if (
+          !deferHighResolution &&
+          (slot.navigationHold || !!slot.downgradeTimer) &&
+          !upgrade &&
+          high &&
+          slot.path === highPath &&
+          highPath !== standardPath
+        ) {
+          slot.navigationHold = false;
+          if (!slot.downgradeTimer) {
+            slot.downgradeTimer = setTimeout(() => {
+              slot.downgradeTimer = null;
+              void request(slot, standardPath);
+            }, navigationTextureHoldMs);
+          }
+          continue;
+        }
+        if (upgrade && slot.downgradeTimer) {
+          clearTimeout(slot.downgradeTimer);
+          slot.downgradeTimer = null;
+        }
+        if (
+          deferHighResolution &&
+          high &&
+          !upgrade &&
+          slot.path === highPath &&
+          highPath !== standardPath
+        )
+          continue;
+        let path = upgrade && !deferHighResolution ? highPath : standardPath;
+        if (failed.has(path))
+          path = standardPath;
         void request(slot, path);
       }
     },
     dispose() {
       disposed = true;
       slots.forEach((s) => {
+        if (s.downgradeTimer) clearTimeout(s.downgradeTimer);
         s.version++;
         s.texture?.dispose();
       });
