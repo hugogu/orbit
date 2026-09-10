@@ -219,10 +219,12 @@ export default function Home() {
       realSizes,
       textureQuality,
     };
-    if (['device', 'manual'].includes(observerLocationSource)) {
+    if (
+      observerLocationSource === 'device' ||
+      observerLocationSource === 'manual'
+    ) {
       preferences.observerLocation = observerLocation;
-      preferences.observerLocationSource =
-        observerLocationSource;
+      preferences.observerLocationSource = observerLocationSource;
     }
     savePreferences(preferences);
   }, [
