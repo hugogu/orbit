@@ -77,8 +77,7 @@ void test('comet scene preserves the absolute date across selections and keeps i
   const label = {
     className: '',
     setAttribute() {},
-    hidden: false,
-    style: {},
+    style: { display: '' },
     textContent: '',
   };
   Object.defineProperty(globalThis, 'document', {
@@ -116,8 +115,9 @@ void test('comet scene preserves the absolute date across selections and keeps i
     system.update('halley', peri + cometElements(comets[0]).period / 2, true);
     assert.equal(tail.visible, false);
     system.update(null, peri, true);
+    system.project(new THREE.PerspectiveCamera(), 1000, 500, true);
     assert.equal(group.visible, false);
-    assert.equal(label.hidden, true);
+    assert.equal(label.style.display, 'none');
   } finally {
     if (original)
       Object.defineProperty(globalThis, 'document', {

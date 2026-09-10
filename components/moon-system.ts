@@ -1,4 +1,5 @@
 import type { Translate } from '../lib/i18n';
+import { createSceneLabel } from './scene-label';
 import * as THREE from 'three';
 import { orbitingMoons } from '../lib/moon-orbits';
 import { displayRadius, moonDisplayOffset } from '../lib/display-scale';
@@ -49,7 +50,14 @@ export function createMoonSystem(
     label.setAttribute('aria-label', `跟随${moon.name}`);
     label.onclick = () => onSelect(moon.id);
     layer.appendChild(label);
-    return { moon, root, mesh, path, label };
+    return {
+      moon,
+      root,
+      mesh,
+      path,
+      label,
+      projectLabel: createSceneLabel(label, -130),
+    };
   });
   let lastScale = '',
     lastRealSizes = false,
@@ -119,20 +127,17 @@ export function createMoonSystem(
     ) {
       const parentId =
         orbitingMoons.find((m) => m.id === selected)?.parentId ?? selected;
-      for (const { moon, root, label } of entries) {
+      for (const { moon, root, projectLabel } of entries) {
         projected.copy(root.position);
         projected.y += moon.size * root.scale.x * 1.1;
         projected.project(camera);
-        label.style.display =
-          labels &&
-          parentId === moon.parentId &&
-          Math.abs(projected.z) < 1 &&
-          Math.abs(projected.x) < 0.97 &&
-          Math.abs(projected.y) < 0.94
-            ? 'block'
-            : 'none';
-        label.style.transform = `translate(-50%,-130%) translate(${(projected.x * 0.5 + 0.5) * width}px,${(-projected.y * 0.5 + 0.5) * height}px)`;
-        label.classList.toggle('selected', selected === moon.id);
+        projectLabel(
+          projected,
+          width,
+          height,
+          labels && parentId === moon.parentId,
+          selected === moon.id,
+        );
       }
     },
   };

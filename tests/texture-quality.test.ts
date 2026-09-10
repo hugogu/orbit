@@ -69,7 +69,14 @@ void test('every body texture is registered and has a local fallback', () => {
 });
 
 void test('gapped moon maps use a cache-busted continuous revision', () => {
-  const repaired = ['ariel', 'miranda', 'oberon', 'titania', 'triton', 'umbriel'];
+  const repaired = [
+    'ariel',
+    'miranda',
+    'oberon',
+    'titania',
+    'triton',
+    'umbriel',
+  ];
   for (const name of repaired) {
     const map = highResolutionTextures[name];
     assert.equal(map.revision, 'filled-v1', `${name} revision marker`);
@@ -242,14 +249,18 @@ void test('idle preloading warms lazy maps and keeps them attached after navigat
   let applied: THREE.Texture | null = null;
   let cleared = 0;
   const manager = createTextureManager(renderer, () => {});
-  manager.register('phobos', (texture) => {
-    applied = texture;
-  }, {
-    lazy: true,
-    clear: () => {
-      cleared++;
+  manager.register(
+    'phobos',
+    (texture) => {
+      applied = texture;
     },
-  });
+    {
+      lazy: true,
+      clear: () => {
+        cleared++;
+      },
+    },
+  );
   manager.preload();
   const texture = new THREE.Texture();
   pending.get('/textures/satellites/2k_phobos.jpg')!(texture);
@@ -302,4 +313,38 @@ void test('lazy satellite maps load for the selected surface and release on navi
   await Promise.resolve();
   assert.equal(dispose.mock.callCount(), 1);
   manager.dispose();
+});
+
+void test('unmount cancels queued preloads and never uploads their late results', async (t) => {
+  const pending: ((texture: THREE.Texture) => void)[] = [];
+  const load = t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    () => new Promise<THREE.Texture>((resolve) => pending.push(resolve)),
+  );
+  const warm = t.mock.fn();
+  const apply = t.mock.fn();
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    initTexture: warm,
+  } as unknown as THREE.WebGLRenderer;
+  const manager = createTextureManager(renderer, () => {});
+  for (const name of ['phobos', 'deimos', 'titania', 'oberon'])
+    manager.register(name, apply, { lazy: true });
+  manager.preload();
+  assert.equal(load.mock.callCount(), 2, 'bounded background concurrency');
+  manager.dispose();
+  for (const finish of pending) {
+    const texture = new THREE.Texture();
+    const dispose = t.mock.method(texture, 'dispose');
+    finish(texture);
+    await Promise.resolve();
+    assert.equal(dispose.mock.callCount(), 1);
+  }
+  await new Promise((resolve) => setImmediate(resolve));
+  manager.preload();
+  manager.update('ultra', 'phobos', false, false);
+  assert.equal(load.mock.callCount(), 2, 'the remaining queue stays cancelled');
+  assert.equal(warm.mock.callCount(), 0);
+  assert.equal(apply.mock.callCount(), 0);
 });

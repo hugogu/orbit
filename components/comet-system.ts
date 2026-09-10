@@ -1,4 +1,5 @@
 import type { Translate } from '../lib/i18n';
+import { createSceneLabel } from './scene-label';
 import * as THREE from 'three';
 import {
   comets,
@@ -6,6 +7,7 @@ import {
   cometPosition,
   cometOrbitPoint,
 } from '../lib/comets';
+const untranslated: Translate = (key) => key;
 
 export function createCometSystem(
   scene: THREE.Scene,
@@ -71,6 +73,12 @@ export function createCometSystem(
   const label = document.createElement('button');
   label.className = 'planet-label comet-label';
   labelLayer.appendChild(label);
+  const projectLabel = createSceneLabel(label, -150);
+  let lastComet: string | null = null;
+  let lastTranslate: Translate | undefined;
+  label.onclick = () => {
+    if (lastComet) onSelect?.(lastComet);
+  };
   const position = new THREE.Vector3(),
     center = new THREE.Vector3(),
     projected = new THREE.Vector3(),
@@ -83,14 +91,13 @@ export function createCometSystem(
       id: string | null,
       days: number,
       orbits: boolean,
-      t: Translate = (key) => key,
+      t: Translate = untranslated,
       close = false,
     ) {
       const index = comets.findIndex((c) => c.id === id),
         comet = comets[index];
       group.visible = !!comet;
       if (!comet) {
-        label.hidden = true;
         return;
       }
       paths.forEach((path, i) => {
@@ -106,7 +113,6 @@ export function createCometSystem(
       nucleus.position.copy(position);
       nucleus.rotation.y = days * 2;
       nucleus.userData.id = comet.id;
-      label.onclick = () => onSelect?.(comet.id);
       tail.position.copy(position);
       const activity = cometActivity(position.length() / 3.1);
       tail.visible = activity > 0;
@@ -115,11 +121,15 @@ export function createCometSystem(
         north,
         direction.copy(position).normalize(),
       );
-      label.textContent = t(comet.name);
-      label.setAttribute(
-        'aria-label',
-        t('跟随{{name}}', { name: t(comet.name) }),
-      );
+      if (lastComet !== comet.id || lastTranslate !== t) {
+        label.textContent = t(comet.name);
+        label.setAttribute(
+          'aria-label',
+          t('跟随{{name}}', { name: t(comet.name) }),
+        );
+        lastComet = comet.id;
+        lastTranslate = t;
+      }
     },
     nucleus,
     project(
@@ -129,13 +139,7 @@ export function createCometSystem(
       show: boolean,
     ) {
       projected.copy(position).project(camera);
-      label.hidden =
-        !group.visible ||
-        !show ||
-        Math.abs(projected.x) > 0.97 ||
-        Math.abs(projected.y) > 0.94 ||
-        Math.abs(projected.z) > 1;
-      label.style.transform = `translate(-50%,-150%) translate(${(projected.x * 0.5 + 0.5) * width}px,${(-projected.y * 0.5 + 0.5) * height}px)`;
+      projectLabel(projected, width, height, group.visible && show);
     },
   };
 }

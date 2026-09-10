@@ -147,7 +147,11 @@ export function createTextureManager(
     slot.clear?.();
   }
   function pumpPreloads() {
-    while (activePreloads < preloadConcurrency && preloadQueue.length > 0) {
+    while (
+      !disposed &&
+      activePreloads < preloadConcurrency &&
+      preloadQueue.length > 0
+    ) {
       const path = preloadQueue.shift()!;
       queuedPreloads.delete(path);
       if (textureCache.has(path)) continue;
@@ -192,6 +196,7 @@ export function createTextureManager(
         );
     },
     preload() {
+      if (disposed) return;
       for (const slot of slots) {
         const path = texturePath(
           slot.name,
@@ -219,6 +224,7 @@ export function createTextureManager(
       activeTextures: readonly string[] = [],
       deferHighResolution = false,
     ) {
+      if (disposed) return;
       const high = shouldLoadHighResolution(quality, compact, saveData);
       for (const slot of slots) {
         const highPath = texturePath(
@@ -279,13 +285,14 @@ export function createTextureManager(
         )
           continue;
         let path = upgrade && !deferHighResolution ? highPath : standardPath;
-        if (failed.has(path))
-          path = standardPath;
-        void request(slot, path);
+        if (failed.has(path)) path = standardPath;
+        if (slot.path !== path) void request(slot, path);
       }
     },
     dispose() {
       disposed = true;
+      preloadQueue.length = 0;
+      queuedPreloads.clear();
       const textures = new Set(textureCache.values());
       slots.forEach((s) => {
         if (s.downgradeTimer) clearTimeout(s.downgradeTimer);
@@ -293,6 +300,8 @@ export function createTextureManager(
         s.version++;
       });
       textures.forEach((texture) => texture.dispose());
+      textureCache.clear();
+      cacheRequests.clear();
       failed = new Set();
     },
   };

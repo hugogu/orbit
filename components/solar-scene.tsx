@@ -16,6 +16,7 @@ import { createTextureManager, type RegisterOptions } from './texture-manager';
 import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
+import { createSceneLabel } from './scene-label';
 import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
 export type SceneState = {
@@ -132,7 +133,8 @@ export default function SolarScene({
     const roots = new Map<string, THREE.Group>(),
       meshes = new Map<string, THREE.Mesh>(),
       orbitLines = new Map<string, THREE.Line>(),
-      labels = new Map<string, HTMLButtonElement>();
+      labels = new Map<string, HTMLButtonElement>(),
+      projectLabels = new Map<string, ReturnType<typeof createSceneLabel>>();
     let sunEffects: ReturnType<typeof createSunEffects> | null = null,
       observerMarker: ReturnType<typeof createObserverMarker> | null = null,
       earthPivot: THREE.Group | null = null;
@@ -239,6 +241,7 @@ export default function SolarScene({
       label.onclick = () => latest.current.onSelect(body.id);
       labelLayer.appendChild(label);
       labels.set(body.id, label);
+      projectLabels.set(body.id, createSceneLabel(label));
     }
     if (earthPivot) observerMarker = createObserverMarker(earthPivot);
     const moonSystem = createMoonSystem(
@@ -658,19 +661,16 @@ export default function SolarScene({
       cometSystem.project(camera, width, height, s.labels);
       moonSystem.project(camera, width, height, s.selected, s.labels);
       for (const body of bodies) {
-        const label = labels.get(body.id)!;
         projected.copy(roots.get(body.id)!.position);
         projected.y += displayRadius(body.id, s.scale, s.realSizes) * 1.2;
         projected.project(camera);
-        const show =
-          s.labels &&
-          projected.z < 1 &&
-          projected.z > -1 &&
-          Math.abs(projected.x) < 0.97 &&
-          Math.abs(projected.y) < 0.94;
-        label.style.display = show ? 'block' : 'none';
-        label.style.transform = `translate(-50%,-100%) translate(${(projected.x * 0.5 + 0.5) * width}px,${(-projected.y * 0.5 + 0.5) * height}px)`;
-        label.classList.toggle('selected', body.id === s.selected);
+        projectLabels.get(body.id)!(
+          projected,
+          width,
+          height,
+          s.labels,
+          body.id === s.selected,
+        );
       }
       if (now - lastReport > 350) {
         latest.current.onTime(time);
@@ -680,6 +680,7 @@ export default function SolarScene({
     frame = requestAnimationFrame(animate);
     const onContextLost = (e: Event) => {
       e.preventDefault();
+      cancelAnimationFrame(frame);
       setError('3D 图形连接已中断，请刷新页面恢复。');
     };
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
@@ -706,7 +707,14 @@ export default function SolarScene({
         } else if (o instanceof THREE.Sprite) o.material.dispose();
       });
       textureManager.dispose();
+      renderer.domElement.removeEventListener('pointerdown', onDown);
+      renderer.domElement.removeEventListener('pointerup', onUp);
+      renderer.domElement.removeEventListener(
+        'webglcontextlost',
+        onContextLost,
+      );
       renderer.dispose();
+      renderer.forceContextLoss();
       container.replaceChildren();
     };
   }, []);
