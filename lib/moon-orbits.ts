@@ -27,6 +27,29 @@ const parameters: Record<
   Nereid: [360.13, 0.15, 20, '#aaa6a1', 7, 0.751],
   Charon: [6.387, 0.23, 2.1, '#aaa6a2'],
 };
+/** Surface map key used by the renderer. Nereid uses the openly licensed
+ * small-body illustration because no complete global albedo map is available. */
+export const moonTextureNames: Record<string, string> = {
+  Moon: 'moon',
+  Phobos: 'phobos',
+  Deimos: 'deimos',
+  Io: 'io',
+  Europa: 'europa',
+  Ganymede: 'ganymede',
+  Callisto: 'callisto',
+  Titan: 'titan',
+  Enceladus: 'enceladus',
+  Mimas: 'mimas',
+  Iapetus: 'iapetus',
+  Miranda: 'miranda',
+  Ariel: 'ariel',
+  Umbriel: 'umbriel',
+  Titania: 'titania',
+  Oberon: 'oberon',
+  Triton: 'triton',
+  Nereid: 'nereid',
+  Charon: 'charon',
+};
 export const orbitingMoons = Object.entries(moonSystems).flatMap(
   ([parentId, system]) =>
     system.moons.map((moon, index) => {
@@ -42,6 +65,7 @@ export const orbitingMoons = Object.entries(moonSystems).flatMap(
         color,
         inc,
         e,
+        texture: moonTextureNames[moon.en] ?? 'nereid',
         phase: 0.7 + index * 1.7,
         au: 0,
       };

@@ -7,9 +7,17 @@ import {
 type Slot = {
   name: string;
   apply: (texture: THREE.Texture) => void;
+  clear?: () => void;
+  lazy: boolean;
   path: string;
   texture: THREE.Texture | null;
   version: number;
+};
+export type RegisterOptions = {
+  /** Defer loading until this map is the selected/focused surface. */
+  lazy?: boolean;
+  /** Clear the material map when a lazy surface is released. */
+  clear?: () => void;
 };
 export function createTextureManager(
   renderer: THREE.WebGLRenderer,
@@ -55,14 +63,35 @@ export function createTextureManager(
       if (path !== fallback) void request(slot, fallback);
     }
   }
+  function release(slot: Slot) {
+    if (!slot.path && !slot.texture) return;
+    slot.version++;
+    slot.path = '';
+    slot.texture?.dispose();
+    slot.texture = null;
+    slot.clear?.();
+  }
   return {
-    register(name: string, apply: Slot['apply']) {
-      const slot: Slot = { name, apply, path: '', texture: null, version: 0 };
+    register(
+      name: string,
+      apply: Slot['apply'],
+      options: RegisterOptions = {},
+    ) {
+      const slot: Slot = {
+        name,
+        apply,
+        clear: options.clear,
+        lazy: !!options.lazy,
+        path: '',
+        texture: null,
+        version: 0,
+      };
       slots.push(slot);
-      void request(
-        slot,
-        texturePath(name, false, renderer.capabilities.maxTextureSize),
-      );
+      if (!slot.lazy)
+        void request(
+          slot,
+          texturePath(name, false, renderer.capabilities.maxTextureSize),
+        );
     },
     update(
       quality: TextureQuality,
@@ -70,9 +99,18 @@ export function createTextureManager(
       compact: boolean,
       saveData: boolean,
       galaxy = true,
+      activeTextures: readonly string[] = [],
     ) {
       const high = shouldLoadHighResolution(quality, compact, saveData);
       for (const slot of slots) {
+        if (
+          slot.lazy &&
+          !activeTextures.includes(slot.name) &&
+          slot.name !== focus
+        ) {
+          release(slot);
+          continue;
+        }
         if (!slot.texture && slot.path) continue;
         const upgrade =
           high &&

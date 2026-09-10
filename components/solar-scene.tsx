@@ -10,9 +10,9 @@ import { DAY_MS, J2000_MS, advanceTime } from '@/lib/simulation-time';
 import { comets } from '@/lib/comets';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
-import { orbitingMoons } from '@/lib/moon-orbits';
+import { moonTextureNames, orbitingMoons } from '@/lib/moon-orbits';
 import { displayRadius, displaySystemExtent } from '@/lib/display-scale';
-import { createTextureManager } from './texture-manager';
+import { createTextureManager, type RegisterOptions } from './texture-manager';
 import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
 import type { TextureQuality } from '@/lib/texture-quality';
@@ -104,11 +104,18 @@ export default function SolarScene({
     const applyMap = (
       material: THREE.MeshBasicMaterial | THREE.MeshStandardMaterial,
       name: string,
+      options: RegisterOptions & { mapColor?: number } = {},
     ) =>
-      textureManager.register(name, (texture) => {
-        material.map = texture;
-        material.needsUpdate = true;
-      });
+      textureManager.register(
+        name,
+        (texture) => {
+          material.map = texture;
+          if (options.mapColor !== undefined)
+            material.color.set(options.mapColor);
+          material.needsUpdate = true;
+        },
+        options,
+      );
     let galaxyTexture: THREE.Texture | null = null;
     const emptySky = new THREE.Color(0x020408);
     textureManager.register('stars_milky_way', (texture) => {
@@ -129,6 +136,18 @@ export default function SolarScene({
     const cometSystem = createCometSystem(scene, labelLayer, (id) =>
       latest.current.onSelect(id),
     );
+    const cometMaterial = cometSystem.nucleus
+      .material as THREE.MeshStandardMaterial;
+    const cometFallbackColor = cometMaterial.color.getHex();
+    applyMap(cometMaterial, 'comet_nucleus', {
+      lazy: true,
+      mapColor: 0xffffff,
+      clear: () => {
+        cometMaterial.map = null;
+        cometMaterial.color.setHex(cometFallbackColor);
+        cometMaterial.needsUpdate = true;
+      },
+    });
     for (const body of bodies) {
       const root = new THREE.Group();
       scene.add(root);
@@ -221,10 +240,20 @@ export default function SolarScene({
       (id) => latest.current.onSelect(id),
       null,
     );
-    applyMap(
-      meshes.get('moon-moon')!.material as THREE.MeshStandardMaterial,
-      'moon',
-    );
+    for (const moon of orbitingMoons) {
+      const material = meshes.get(moon.id)!
+        .material as THREE.MeshStandardMaterial;
+      const fallbackColor = material.color.getHex();
+      applyMap(material, moonTextureNames[moon.en], {
+        lazy: moon.en !== 'Moon',
+        mapColor: 0xffffff,
+        clear: () => {
+          material.map = null;
+          material.color.setHex(fallbackColor);
+          material.needsUpdate = true;
+        },
+      });
+    }
     const eclipseSystem = createEclipseSystem(meshes);
     textureManager.register('earth_nightmap', (texture) =>
       eclipseSystem.setEarthNightMap(texture),
@@ -405,7 +434,10 @@ export default function SolarScene({
         moonSystem.localize(translate);
         lastLocale = s.locale;
       }
-      const selectedMoonTexture = s.selected === 'moon-moon' ? 'moon' : null;
+      const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
+      const selectedMoonTexture = selectedMoon?.texture ?? null;
+      const cometTexture =
+        s.cometId && s.selected === s.cometId ? 'comet_nucleus' : null;
       const focusBody = bodies.find(
         (b) =>
           b.id ===
@@ -414,10 +446,13 @@ export default function SolarScene({
       );
       textureManager.update(
         s.textureQuality,
-        selectedMoonTexture ?? focusBody?.texture ?? null,
+        selectedMoonTexture ?? cometTexture ?? focusBody?.texture ?? null,
         compactScreen.matches,
         !!connection?.saveData,
         s.galaxy,
+        selectedMoonTexture || cometTexture
+          ? [selectedMoonTexture ?? cometTexture!]
+          : [],
       );
       scene.background = s.galaxy ? (galaxyTexture ?? emptySky) : emptySky;
       const seek = s.epoch !== epoch;
@@ -468,7 +503,7 @@ export default function SolarScene({
       oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
       heliosphere.visible =
         s.belts && s.view >= 400 && s.scale === 'illustrated';
-      cometSystem.update(s.cometId, days, s.orbits, translate);
+      cometSystem.update(s.cometId, days, s.orbits, translate, s.cometClose);
       const comet = comets.find((c) => c.id === s.cometId);
       const cometKey = `${s.cometId}/${s.cometClose}`;
       if (
@@ -486,7 +521,7 @@ export default function SolarScene({
         const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
         targetDistance = comet
           ? s.cometClose
-            ? 22 / Math.min(1, Math.max(0.5, camera.aspect))
+            ? 3.2 / Math.min(1, Math.max(0.5, camera.aspect))
             : Math.max(35, comet.au * 3.1 * 3.4) / Math.min(1, camera.aspect)
           : selectedMoon
             ? 5 / Math.min(1, camera.aspect)

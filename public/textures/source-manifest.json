@@ -118,5 +118,168 @@
     "bytes": 3696361,
     "url": "https://www.solarsystemscope.com/textures/download/8k_sun.jpg",
     "license": "CC BY 4.0"
+  },
+  {
+    "filename": "satellites/4k_phobos.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 590288,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/phobos.jpg",
+    "license": "CC BY 3.0",
+    "path": "satellites/4k_phobos.jpg"
+  },
+  {
+    "filename": "satellites/4k_deimos.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 230043,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/deimos.jpg",
+    "license": "CC0 1.0",
+    "path": "satellites/4k_deimos.jpg"
+  },
+  {
+    "filename": "satellites/4k_io.png",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 11589437,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/io.png",
+    "license": "CC BY 4.0",
+    "path": "satellites/4k_io.png"
+  },
+  {
+    "filename": "satellites/4k_europa.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1440001,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/europa.jpg",
+    "license": "Upstream README attribution; no SPDX declaration",
+    "path": "satellites/4k_europa.jpg"
+  },
+  {
+    "filename": "satellites/4k_ganymede.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1460470,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/ganymede.jpg",
+    "license": "CC BY 3.0",
+    "path": "satellites/4k_ganymede.jpg"
+  },
+  {
+    "filename": "satellites/4k_callisto.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1931997,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/callisto.jpg",
+    "license": "Upstream README attribution; no SPDX declaration",
+    "path": "satellites/4k_callisto.jpg"
+  },
+  {
+    "filename": "satellites/4k_titan.png",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 2478053,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/titan.png",
+    "license": "CC BY 3.0",
+    "path": "satellites/4k_titan.png"
+  },
+  {
+    "filename": "satellites/4k_enceladus.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1891393,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/enceladus.jpg",
+    "license": "Upstream README attribution; no SPDX declaration",
+    "path": "satellites/4k_enceladus.jpg"
+  },
+  {
+    "filename": "satellites/4k_mimas.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1122405,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/mimas.jpg",
+    "license": "Upstream README attribution; no SPDX declaration",
+    "path": "satellites/4k_mimas.jpg"
+  },
+  {
+    "filename": "satellites/4k_iapetus.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1369992,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/iapetus.jpg",
+    "license": "Upstream README attribution; no SPDX declaration",
+    "path": "satellites/4k_iapetus.jpg"
+  },
+  {
+    "filename": "satellites/4k_miranda.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 378333,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/miranda.jpg",
+    "license": "CC BY-SA 4.0",
+    "path": "satellites/4k_miranda.jpg"
+  },
+  {
+    "filename": "satellites/4k_ariel.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 427212,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/ariel.jpg",
+    "license": "CC BY-SA 4.0",
+    "path": "satellites/4k_ariel.jpg"
+  },
+  {
+    "filename": "satellites/2k_umbriel.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 101804,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/medres/umbriel.jpg",
+    "license": "CC BY-SA 4.0",
+    "path": "satellites/2k_umbriel.jpg"
+  },
+  {
+    "filename": "satellites/2k_titania.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 144401,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/medres/titania.jpg",
+    "license": "CC BY-SA 4.0",
+    "path": "satellites/2k_titania.jpg"
+  },
+  {
+    "filename": "satellites/2k_oberon.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 97065,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/medres/oberon.jpg",
+    "license": "CC BY-SA 4.0",
+    "path": "satellites/2k_oberon.jpg"
+  },
+  {
+    "filename": "satellites/4k_triton.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 662510,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/triton.jpg",
+    "license": "CC BY 3.0",
+    "path": "satellites/4k_triton.jpg"
+  },
+  {
+    "filename": "satellites/4k_charon.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 753376,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/charon.jpg",
+    "license": "CC BY-NC-SA 3.0",
+    "path": "satellites/4k_charon.jpg"
+  },
+  {
+    "filename": "satellites/4k_asteroid.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 964825,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
+    "license": "CC BY 4.0",
+    "path": "satellites/4k_asteroid.jpg",
+    "note": "Illustrative small-body surface for Nereid and comet nuclei"
   }
 ]

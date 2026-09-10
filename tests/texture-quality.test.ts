@@ -146,3 +146,43 @@ void test('only the focused body and background upgrade; unmount disposes late a
     assert.equal(dispose.mock.callCount(), 1);
   }
 });
+
+void test('lazy satellite maps load for the selected surface and release on navigation', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+  } as THREE.WebGLRenderer;
+  const manager = createTextureManager(renderer, () => {});
+  let cleared = 0;
+  manager.register('phobos', () => {}, {
+    lazy: true,
+    clear: () => {
+      cleared++;
+    },
+  });
+  manager.update('standard', null, false, false, true, []);
+  assert.equal(pending.size, 0);
+  manager.update('standard', 'phobos', false, false, true, ['phobos']);
+  assert.deepEqual([...pending.keys()], ['/textures/satellites/2k_phobos.jpg']);
+  const standard = new THREE.Texture();
+  pending.get('/textures/satellites/2k_phobos.jpg')!(standard);
+  pending.clear();
+  await Promise.resolve();
+  manager.update('ultra', 'phobos', false, false, true, ['phobos']);
+  assert.deepEqual([...pending.keys()], ['/textures/satellites/4k_phobos.jpg']);
+  manager.update('standard', 'deimos', false, false, true, ['deimos']);
+  assert.equal(cleared, 1);
+  const stale = new THREE.Texture();
+  const dispose = t.mock.method(stale, 'dispose');
+  pending.get('/textures/satellites/4k_phobos.jpg')!(stale);
+  pending.delete('/textures/satellites/4k_phobos.jpg');
+  await Promise.resolve();
+  assert.equal(dispose.mock.callCount(), 1);
+  manager.dispose();
+});

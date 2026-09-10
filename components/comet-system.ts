@@ -84,6 +84,7 @@ export function createCometSystem(
       days: number,
       orbits: boolean,
       t: Translate = (key) => key,
+      close = false,
     ) {
       const index = comets.findIndex((c) => c.id === id),
         comet = comets[index];
@@ -101,6 +102,7 @@ export function createCometSystem(
         .add(new THREE.Vector3(...cometOrbitPoint(comet, Math.PI)))
         .multiplyScalar(0.5);
       head.position.copy(position);
+      head.visible = !close;
       nucleus.position.copy(position);
       nucleus.rotation.y = days * 2;
       nucleus.userData.id = comet.id;
@@ -119,6 +121,7 @@ export function createCometSystem(
         t('跟随{{name}}', { name: t(comet.name) }),
       );
     },
+    nucleus,
     project(
       camera: THREE.Camera,
       width: number,
