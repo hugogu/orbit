@@ -259,6 +259,22 @@ export default function SolarScene({
     textureManager.register('earth_nightmap', (texture) =>
       eclipseSystem.setEarthNightMap(texture),
     );
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const texturePreload = idleWindow.requestIdleCallback
+      ? {
+          kind: 'idle' as const,
+          handle: idleWindow.requestIdleCallback(
+            () => textureManager.preload(),
+            { timeout: 2500 },
+          ),
+        }
+      : {
+          kind: 'timeout' as const,
+          handle: window.setTimeout(() => textureManager.preload(), 1800),
+        };
     // Seeded distributions are conceptual populations, not measured asteroid positions.
     let seed = 71;
     const rand = () => {
@@ -652,6 +668,9 @@ export default function SolarScene({
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
     return () => {
       cancelAnimationFrame(frame);
+      if (texturePreload.kind === 'idle')
+        idleWindow.cancelIdleCallback?.(texturePreload.handle);
+      else window.clearTimeout(texturePreload.handle);
       observer.disconnect();
       window.removeEventListener('keydown', onKey);
       controls.dispose();

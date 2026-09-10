@@ -210,6 +210,42 @@ void test('only the focused body and background upgrade; unmount disposes late a
   }
 });
 
+void test('idle preloading warms lazy maps and keeps them attached after navigation', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+  } as THREE.WebGLRenderer;
+  let applied: THREE.Texture | null = null;
+  let cleared = 0;
+  const manager = createTextureManager(renderer, () => {});
+  manager.register('phobos', (texture) => {
+    applied = texture;
+  }, {
+    lazy: true,
+    clear: () => {
+      cleared++;
+    },
+  });
+  manager.preload();
+  const texture = new THREE.Texture();
+  pending.get('/textures/satellites/2k_phobos.jpg')!(texture);
+  pending.clear();
+  await Promise.resolve();
+  manager.update('standard', null, false, false);
+  await Promise.resolve();
+  assert.equal(applied, texture);
+  manager.update('standard', 'deimos', false, false);
+  assert.equal(cleared, 0);
+  assert.equal(applied, texture);
+  manager.dispose();
+});
+
 void test('lazy satellite maps load for the selected surface and release on navigation', async (t) => {
   const pending = new Map<string, (texture: THREE.Texture) => void>();
   t.mock.method(
