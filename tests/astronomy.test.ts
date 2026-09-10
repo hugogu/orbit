@@ -17,6 +17,8 @@ import {
 } from '../lib/simulation-time.ts';
 import {
   calculateSkyEvents,
+  calculateDailySunEvents,
+  localDayForTime,
   altitude,
   validateQuery,
   type SkyQuery,
@@ -158,6 +160,26 @@ void test('daily events respect local midnight, opposite UTC date and horizon cr
   );
   assert.ok(Math.abs(altitude(AstroBody.Sun, r.rise!, observer) + 0.27) < 0.1);
   assert.notEqual(r.localSolar!.peak, r.solar!.peak);
+});
+void test('daily sunrise and sunset can be projected from the simulation clock for Earth', () => {
+  const location = {
+    latitude: 39.9042,
+    longitude: 116.4074,
+    height: 0,
+    utcOffset: 8,
+  };
+  const simulationTime = Date.parse('2025-03-01T18:00:00Z');
+  const day = localDayForTime(simulationTime, location.utcOffset);
+  const daily = calculateDailySunEvents({ ...location, day });
+  const full = calculateSkyEvents({
+    start: simulationTime,
+    day,
+    ...location,
+  });
+  assert.equal(day, '2025-03-02');
+  assert.equal(daily.rise, full.rise);
+  assert.equal(daily.set, full.set);
+  assert.equal(daily.daylight, full.daylight);
 });
 void test('polar day/night and invalid inputs produce explicit outcomes', () => {
   for (const [day, word] of [

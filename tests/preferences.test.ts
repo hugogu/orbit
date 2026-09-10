@@ -24,6 +24,12 @@ void test('preferences are validated and persisted as one versioned record', () 
         scale: 'distance',
         textureQuality: 'ultra',
         labels: true,
+        observerLocation: {
+          latitude: 31.23,
+          longitude: 121.47,
+          height: 12,
+          utcOffset: 8,
+        },
         invalid: 'ignored',
       } as never,
       storage,
@@ -35,8 +41,18 @@ void test('preferences are validated and persisted as one versioned record', () 
     scale: 'distance',
     textureQuality: 'ultra',
     labels: true,
+    observerLocation: {
+      latitude: 31.23,
+      longitude: 121.47,
+      height: 12,
+      utcOffset: 8,
+    },
   });
   assert.deepEqual(sanitizePreferences({ shadows: 'yes', scale: 'wrong' }), {});
+  assert.deepEqual(
+    sanitizePreferences({ observerLocation: { latitude: 91 } }),
+    {},
+  );
 });
 
 void test('legacy individual keys are migrated when no versioned record exists', () => {

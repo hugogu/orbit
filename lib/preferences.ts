@@ -1,5 +1,6 @@
 import { isTextureQuality, type TextureQuality } from './texture-quality';
 import type { ScaleMode } from './solar';
+import type { SkyLocation } from './sky-events';
 
 export const preferencesStorageKey = 'orbit-observatory-preferences-v1';
 
@@ -14,6 +15,7 @@ export type ObservatoryPreferences = {
   solarActivity: boolean;
   realSizes: boolean;
   textureQuality: TextureQuality;
+  observerLocation: SkyLocation;
 };
 
 export type StoredPreferences = Partial<ObservatoryPreferences>;
@@ -40,7 +42,32 @@ export function sanitizePreferences(value: unknown): StoredPreferences {
     result.scale = source.scale;
   if (isTextureQuality(source.textureQuality))
     result.textureQuality = source.textureQuality;
+  if (isObserverLocation(source.observerLocation))
+    result.observerLocation = source.observerLocation;
   return result;
+}
+
+function isObserverLocation(value: unknown): value is SkyLocation {
+  if (!value || typeof value !== 'object') return false;
+  const location = value as Record<string, unknown>;
+  return (
+    typeof location.latitude === 'number' &&
+    Number.isFinite(location.latitude) &&
+    location.latitude >= -90 &&
+    location.latitude <= 90 &&
+    typeof location.longitude === 'number' &&
+    Number.isFinite(location.longitude) &&
+    location.longitude >= -180 &&
+    location.longitude <= 180 &&
+    typeof location.height === 'number' &&
+    Number.isFinite(location.height) &&
+    location.height >= -500 &&
+    location.height <= 10000 &&
+    typeof location.utcOffset === 'number' &&
+    Number.isFinite(location.utcOffset) &&
+    location.utcOffset >= -12 &&
+    location.utcOffset <= 14
+  );
 }
 
 function storageOrNull(storage?: Storage | null): Storage | null {

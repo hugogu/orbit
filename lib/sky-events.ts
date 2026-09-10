@@ -20,6 +20,18 @@ export type SkyQuery = {
   height: number;
   utcOffset: number;
 };
+export type SkyLocation = Pick<
+  SkyQuery,
+  'latitude' | 'longitude' | 'height' | 'utcOffset'
+>;
+export type DailySunQuery = SkyLocation & { day: string };
+export type DailySunResults = Pick<SkyResults, 'rise' | 'set' | 'daylight'>;
+export const defaultSkyLocation: SkyLocation = {
+  latitude: 39.9042,
+  longitude: 116.4074,
+  height: 0,
+  utcOffset: 8,
+};
 export type SkyEvent = {
   kind: string;
   peak: number;
@@ -43,13 +55,11 @@ const kinds: Record<string, string> = {
   penumbral: '半影食',
 };
 export function validateQuery(q: SkyQuery) {
-  if (
-    !validTime(q.start) ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(q.day) ||
-    !validTime(Date.parse(q.day + 'T12:00:00Z')) ||
-    new Date(q.day + 'T12:00:00Z').toISOString().slice(0, 10) !== q.day
-  )
-    throw new Error('请选择 1700—2200 年内的有效日期。');
+  if (!validTime(q.start)) throw new Error('请选择 1700—2200 年内的有效日期。');
+  validateDay(q.day);
+  validateLocation(q);
+}
+function validateLocation(q: SkyLocation) {
   for (const [value, min, max] of [
     [q.latitude, -90, 90],
     [q.longitude, -180, 180],
@@ -58,6 +68,55 @@ export function validateQuery(q: SkyQuery) {
   ])
     if (!Number.isFinite(value) || value < min || value > max)
       throw new Error('请检查经纬度、海拔和 UTC 时差。');
+}
+function validateDay(day: string) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(day) ||
+    !validTime(Date.parse(day + 'T12:00:00Z')) ||
+    new Date(day + 'T12:00:00Z').toISOString().slice(0, 10) !== day
+  )
+    throw new Error('请选择 1700—2200 年内的有效日期。');
+}
+export function localDayForTime(time: number, utcOffset: number) {
+  return new Date(time + utcOffset * 3600000).toISOString().slice(0, 10);
+}
+function dailySunEvents(
+  day: string,
+  location: SkyLocation,
+  observer = new Observer(
+    location.latitude,
+    location.longitude,
+    location.height,
+  ),
+): DailySunResults {
+  const midnight =
+    Date.parse(day + 'T00:00:00Z') - location.utcOffset * 3600000;
+  const daily = (direction: 1 | -1) => {
+    const t = SearchRiseSet(
+      Body.Sun,
+      observer,
+      direction,
+      new Date(midnight),
+      1,
+    )?.date.getTime();
+    return t !== undefined && t >= midnight && t < midnight + DAY_MS ? t : null;
+  };
+  const rise = daily(1),
+    set = daily(-1);
+  const daylight =
+    rise === null && set === null
+      ? altitude(Body.Sun, midnight + DAY_MS / 2, observer) > 0
+        ? '极昼：全天太阳不落'
+        : '极夜：全天太阳不升'
+      : rise === null || set === null
+        ? '当天仅有一次升落事件'
+        : '按太阳上缘和标准大气折射计算';
+  return { rise, set, daylight };
+}
+export function calculateDailySunEvents(q: DailySunQuery): DailySunResults {
+  validateDay(q.day);
+  validateLocation(q);
+  return dailySunEvents(q.day, q);
 }
 export function altitude(body: Body, ms: number, observer: Observer) {
   const date = new Date(ms),
@@ -80,28 +139,8 @@ function localSolarVisible(e: LocalSolarEclipseInfo, observer: Observer) {
 }
 export function calculateSkyEvents(q: SkyQuery): SkyResults {
   validateQuery(q);
-  const observer = new Observer(q.latitude, q.longitude, q.height);
-  const midnight = Date.parse(q.day + 'T00:00:00Z') - q.utcOffset * 3600000;
-  const daily = (direction: 1 | -1) => {
-    const t = SearchRiseSet(
-      Body.Sun,
-      observer,
-      direction,
-      new Date(midnight),
-      1,
-    )?.date.getTime();
-    return t !== undefined && t >= midnight && t < midnight + DAY_MS ? t : null;
-  };
-  const rise = daily(1),
-    set = daily(-1);
-  const daylight =
-    rise === null && set === null
-      ? altitude(Body.Sun, midnight + DAY_MS / 2, observer) > 0
-        ? '极昼：全天太阳不落'
-        : '极夜：全天太阳不升'
-      : rise === null || set === null
-        ? '当天仅有一次升落事件'
-        : '按太阳上缘和标准大气折射计算';
+  const observer = new Observer(q.latitude, q.longitude, q.height),
+    daily = dailySunEvents(q.day, q, observer);
   const solar = SearchGlobalSolarEclipse(new Date(q.start));
   const lunar = SearchLunarEclipse(new Date(q.start));
   let local = SearchLocalSolarEclipse(new Date(q.start), observer);
@@ -112,9 +151,7 @@ export function calculateSkyEvents(q: SkyQuery): SkyResults {
     local = NextLocalSolarEclipse(local.peak.time, observer);
   const within = (ms: number) => ms >= q.start && ms <= MAX_TIME;
   return {
-    rise,
-    set,
-    daylight,
+    ...daily,
     solar: within(solar.peak.date.getTime())
       ? { kind: '日' + kinds[solar.kind], peak: solar.peak.date.getTime() }
       : null,

@@ -906,6 +906,37 @@ button:disabled {
   font-size: 12px;
   color: #8692a1;
 }
+.daily-sun {
+  margin: 20px 0 22px;
+  padding: 14px 0 16px;
+  border-block: 1px solid #ffffff12;
+}
+.daily-sun-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #dfc99f;
+  font-size: 13px;
+}
+.daily-sun-heading small {
+  color: #728094;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.daily-sun-facts {
+  border: 0;
+  padding: 0;
+  gap: 12px;
+}
+.daily-sun-facts strong {
+  font-variant-numeric: tabular-nums;
+}
+.daily-sun .little-note {
+  margin: 14px 0 0;
+  line-height: 1.7;
+}
 .moon-guide {
   margin: 24px 0;
 }

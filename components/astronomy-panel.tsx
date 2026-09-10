@@ -13,7 +13,13 @@ import {
   utcLabel,
   validTime,
 } from '../lib/simulation-time';
-import type { SkyEvent, SkyQuery, SkyResults } from '../lib/sky-events';
+import {
+  localDayForTime,
+  type SkyEvent,
+  type SkyLocation,
+  type SkyQuery,
+  type SkyResults,
+} from '../lib/sky-events';
 import { currentLocation } from '../lib/geolocation';
 import { LocateFixed } from 'lucide-react';
 // Vite generates the default constructor; it is not an export of the worker source.
@@ -26,20 +32,23 @@ export default function AstronomyPanel({
   time,
   onSeek,
   onEclipse,
+  location,
+  onLocationChange,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   time: number;
   onSeek: (ms: number, live?: boolean) => void;
   onEclipse: (ms: number, kind: 'solar' | 'lunar') => void;
+  location: SkyLocation;
+  onLocationChange: (location: SkyLocation) => void;
 }) {
   const { t, locale } = useI18n();
-  const [date, setDate] = useState(''),
-    [day, setDay] = useState('');
-  const [latitude, setLatitude] = useState('39.9042'),
-    [longitude, setLongitude] = useState('116.4074'),
-    [height, setHeight] = useState('0'),
-    [offset, setOffset] = useState('8');
+  const [date, setDate] = useState('');
+  const [latitude, setLatitude] = useState(String(location.latitude)),
+    [longitude, setLongitude] = useState(String(location.longitude)),
+    [height, setHeight] = useState(String(location.height)),
+    [offset, setOffset] = useState(String(location.utcOffset));
   const [result, setResult] = useState<{
       query: SkyQuery;
       data: SkyResults;
@@ -59,13 +68,10 @@ export default function AstronomyPanel({
       queueMicrotask(() => {
         if (!opened.current) return;
         setDate(utcLabel(time).replace(' ', 'T'));
-        setDay(
-          new Date(
-            time + Math.max(-12, Math.min(14, Number(offset) || 0)) * 3600000,
-          )
-            .toISOString()
-            .slice(0, 10),
-        );
+        setLatitude(String(location.latitude));
+        setLongitude(String(location.longitude));
+        setHeight(String(location.height));
+        setOffset(String(location.utcOffset));
         setResult(null);
         setError('');
       });
@@ -80,7 +86,7 @@ export default function AstronomyPanel({
       });
     }
     opened.current = open;
-  }, [open, time, offset]);
+  }, [open, time, location]);
   useEffect(
     () => () => {
       worker.current?.terminate();
@@ -110,9 +116,17 @@ export default function AstronomyPanel({
       if (request !== locationRequest.current) return;
       setLatitude(fix.latitude.toFixed(5));
       setLongitude(fix.longitude.toFixed(5));
-      const localDate = new Date((day || date.slice(0, 10)) + 'T12:00:00');
-      if (Number.isFinite(localDate.getTime()))
-        setOffset(String(-localDate.getTimezoneOffset() / 60));
+      const localDate = new Date(date.slice(0, 10) + 'T12:00:00');
+      const nextOffset = Number.isFinite(localDate.getTime())
+        ? -localDate.getTimezoneOffset() / 60
+        : Number(offset);
+      if (Number.isFinite(localDate.getTime())) setOffset(String(nextOffset));
+      onLocationChange({
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        height: Number(height) || 0,
+        utcOffset: nextOffset,
+      });
       setLocationMessage(
         '已定位，精度约 ±{{accuracy}} 米。时差按设备时区 {{zone}} 的所选日期填写，请核对；海拔保留手动值。',
       );
@@ -142,20 +156,23 @@ export default function AstronomyPanel({
   function calculate() {
     clearResults();
     const start = Date.parse(date + 'Z');
+    const numericLocation = [latitude, longitude, height, offset].map(Number);
     if (
       !validTime(start) ||
-      [latitude, longitude, height, offset].some((x) => !x.trim())
+      numericLocation.some((value) => !Number.isFinite(value))
     ) {
       setError('请填写有效的时间和地点。');
       return;
     }
+    const [numericLatitude, numericLongitude, numericHeight, utcOffset] =
+      numericLocation;
     const query = {
       start,
-      day,
-      latitude: Number(latitude),
-      longitude: Number(longitude),
-      height: Number(height),
-      utcOffset: Number(offset),
+      day: localDayForTime(start, utcOffset),
+      latitude: numericLatitude,
+      longitude: numericLongitude,
+      height: numericHeight,
+      utcOffset,
     };
     setBusy(true);
     let task: Worker;
@@ -260,9 +277,9 @@ export default function AstronomyPanel({
         closeLabel={t('Close')}
         className="orbit-dialog astronomy-dialog"
       >
-        <DialogTitle>{t('日期与天象')}</DialogTitle>
+        <DialogTitle>{t('天象推演')}</DialogTitle>
         <DialogDescription>
-          {t('选择时间探索太阳系，按观测地点查询日出日落和下一次食象。')}
+          {t('选择模拟时间探索下一次日食与月食；观测点用于判断当地可见性。')}
         </DialogDescription>
         <div className="astro-form">
           <label className="wide">
@@ -316,9 +333,12 @@ export default function AstronomyPanel({
               step="any"
               value={latitude}
               onChange={(e) => {
-                setLatitude(e.target.value);
+                const value = e.target.value;
+                setLatitude(value);
                 setLocationMessage('');
                 clearResults();
+                if (value.trim() && Number.isFinite(Number(value)))
+                  onLocationChange({ ...location, latitude: Number(value) });
               }}
             />
           </label>
@@ -331,9 +351,12 @@ export default function AstronomyPanel({
               step="any"
               value={longitude}
               onChange={(e) => {
-                setLongitude(e.target.value);
+                const value = e.target.value;
+                setLongitude(value);
                 setLocationMessage('');
                 clearResults();
+                if (value.trim() && Number.isFinite(Number(value)))
+                  onLocationChange({ ...location, longitude: Number(value) });
               }}
             />
           </label>
@@ -345,8 +368,11 @@ export default function AstronomyPanel({
               max="10000"
               value={height}
               onChange={(e) => {
-                setHeight(e.target.value);
+                const value = e.target.value;
+                setHeight(value);
                 clearResults();
+                if (value.trim() && Number.isFinite(Number(value)))
+                  onLocationChange({ ...location, height: Number(value) });
               }}
             />
           </label>
@@ -359,27 +385,17 @@ export default function AstronomyPanel({
               step="0.25"
               value={offset}
               onChange={(e) => {
-                setOffset(e.target.value);
+                const value = e.target.value;
+                setOffset(value);
                 clearResults();
-              }}
-            />
-          </label>
-          <label className="wide">
-            {t('日出日落日期（当地）')}
-            <input
-              type="date"
-              min="1700-01-01"
-              max="2200-12-31"
-              value={day}
-              onChange={(e) => {
-                setDay(e.target.value);
-                clearResults();
+                if (value.trim() && Number.isFinite(Number(value)))
+                  onLocationChange({ ...location, utcOffset: Number(value) });
               }}
             />
           </label>
           <p className="wide little-note">
             {t(
-              '初始地点为北京，可定位或手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；日出日落未考虑山脉、建筑和实际天气。',
+              '初始地点为北京，可定位或手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
             )}
           </p>
           <button
@@ -387,7 +403,7 @@ export default function AstronomyPanel({
             onClick={calculate}
             disabled={busy}
           >
-            {busy ? t('正在计算天象…') : t('计算日出日落与下一次食象')}
+            {busy ? t('正在计算天象…') : t('计算下一次食象')}
           </button>
           {busy && (
             <button className="secondary-action wide" onClick={clearResults}>
@@ -412,24 +428,6 @@ export default function AstronomyPanel({
                 date: format(result.query.start),
               })}
             </p>
-            <article className="sky-event">
-              <span>
-                {result.query.day} {t('· 日出 / 日落')}
-              </span>
-              <div className="rise-set">
-                <strong>
-                  {t('日出')}
-                  <br />
-                  {format(result.data.rise)}
-                </strong>
-                <strong>
-                  {t('日落')}
-                  <br />
-                  {format(result.data.set)}
-                </strong>
-              </div>
-              <p>{t(result.data.daylight)}</p>
-            </article>
             {eventCard(t('全球下一次日食 · 不代表本地可见'), result.data.solar)}
             {eventCard(
               t('该地点下一次至少部分可见的日食'),

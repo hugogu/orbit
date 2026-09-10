@@ -28,12 +28,14 @@ import MoonDetails from '@/components/moon-details';
 import BodyNavigation from '@/components/body-navigation';
 import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
+import SunriseSunset from '@/components/sunrise-sunset';
 import CuriosityCard, { CuriositySource } from '@/components/curiosity-card';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
 import LayoutSettings from '@/components/layout-settings';
 import { comets, cometPerihelion } from '@/lib/comets';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
+import { defaultSkyLocation, type SkyLocation } from '@/lib/sky-events';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -108,7 +110,9 @@ export default function Home() {
     [fullscreen, setFullscreen] = useState(false),
     [notice, setNotice] = useState(''),
     [preferencesReady, setPreferencesReady] = useState(false),
-    [settingsTab, setSettingsTab] = useState('layout');
+    [settingsTab, setSettingsTab] = useState('layout'),
+    [observerLocation, setObserverLocation] =
+      useState<SkyLocation>(defaultSkyLocation);
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const body = bodies.find(
     (b) => b.id === (selectedMoon?.parentId ?? selected),
@@ -142,6 +146,8 @@ export default function Home() {
         setRealSizes(preferences.realSizes);
       if (preferences.textureQuality !== undefined)
         setTextureQuality(preferences.textureQuality);
+      if (preferences.observerLocation !== undefined)
+        setObserverLocation(preferences.observerLocation);
       setPreferencesReady(true);
       let previous: unknown;
       try {
@@ -173,6 +179,7 @@ export default function Home() {
       solarActivity,
       realSizes,
       textureQuality,
+      observerLocation,
     };
     savePreferences(preferences);
   }, [
@@ -187,6 +194,7 @@ export default function Home() {
     solarActivity,
     realSizes,
     textureQuality,
+    observerLocation,
   ]);
   function seekTime(ms: number, live = false) {
     setEpoch(ms);
@@ -451,6 +459,9 @@ export default function Home() {
           </strong>
         </div>
       </div>
+      {body.id === 'earth' && (
+        <SunriseSunset time={time ?? J2000_MS} location={observerLocation} />
+      )}
       <CuriosityCard
         id={body.id}
         index={curiosityPicks[body.id]}
@@ -465,10 +476,7 @@ export default function Home() {
           setSystemView(true);
         }}
       />
-      <CuriositySource
-        id={body.id}
-        index={curiosityPicks[body.id]}
-      />
+      <CuriositySource id={body.id} index={curiosityPicks[body.id]} />
       <a
         className="source"
         href={`https://science.nasa.gov/${body.source}/`}
@@ -590,12 +598,12 @@ export default function Home() {
           <LanguagePicker />
           <button
             className="astronomy-button"
-            aria-label={t('日期与天象')}
-            title={t('日期与天象')}
+            aria-label={t('天象推演')}
+            title={t('天象推演')}
             onClick={() => setAstronomy(true)}
           >
             <CalendarDays size={18} />
-            {t('日期与天象')}
+            {t('天象推演')}
           </button>
           <span className="live">
             <i />
@@ -819,6 +827,8 @@ export default function Home() {
         onOpenChange={setAstronomy}
         time={time ?? J2000_MS}
         onSeek={seekTime}
+        location={observerLocation}
+        onLocationChange={setObserverLocation}
         onEclipse={(ms, kind) => {
           seekTime(ms);
           select(kind === 'solar' ? 'earth' : 'moon-moon');
@@ -905,7 +915,7 @@ export default function Home() {
               </div>
               <p className="model-note">
                 {t(
-                  '按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“日期与天象”跳到食甚，再以 1 分钟/秒慢放。没有遮挡时不会出现食影。',
+                  '按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“天象推演”跳到食甚，再以 1 分钟/秒慢放。没有遮挡时不会出现食影。',
                 )}
               </p>
               <div className="shadow-legend" aria-label={t('食影图例')}>
