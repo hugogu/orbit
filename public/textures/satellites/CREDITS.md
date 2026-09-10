@@ -10,7 +10,7 @@ These assets are redistributed from [CelestiaContent](https://github.com/Celesti
 | Titan | Askaniy Anpilogov and collaborators; CC BY 3.0 | Radar/infrared-informed map; colors are not visible-light photography |
 | Triton | Askaniy Anpilogov and NASA/JPL/USGS; CC BY 3.0 | Observed composite map |
 | Miranda, Ariel, Umbriel, Titania, Oberon | ItzImcool, Paul Schenk, NASA/JPL/Ted Stryk; CC BY-SA 4.0 | Voyager-derived map; Uranian maps are native 2K |
-| Uranus | Askaniy Anpilogov, NASA/JPL-Caltech/Björn Jónsson, Simon et al. 2015; CC BY-NC-SA 3.0 | Atmospheric map combining Hubble OPAL and Voyager 2 data; not a live weather map |
+| Uranus | Askaniy Anpilogov, NASA/JPL-Caltech/Björn Jónsson, Simon et al. 2015; CC BY-NC-SA 3.0 | Atmospheric map combining Hubble OPAL and Voyager 2 data; contrast lifted for close viewing; not a live weather map |
 | Charon | Askaniy Anpilogov; CC BY-NC-SA 3.0 | Observed composite map; non-commercial upstream terms apply |
 | Europa, Callisto, Enceladus, Iapetus, Mimas | CelestiaContent README credits NASA/USGS/Paul Schenk and contributors; no SPDX declaration in the upstream file | Educational rendering; see upstream README before reuse |
 | Nereid and comet nuclei | cubicApocalypse, `asteroid.jpg`; CC BY 4.0 | Clearly labeled illustrative small-body surface; not a measured global map |

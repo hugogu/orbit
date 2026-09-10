@@ -159,7 +159,8 @@ export default function SolarScene({
         body.id === 'sun'
           ? new THREE.MeshBasicMaterial({ color: 0xffe1ad })
           : new THREE.MeshStandardMaterial({
-              color: body.texture ? 0xffffff : body.color,
+              color:
+                body.texture && body.id !== 'uranus' ? 0xffffff : body.color,
               roughness: 1,
             });
       if (body.texture) applyMap(material, body.texture);

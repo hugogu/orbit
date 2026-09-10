@@ -35,11 +35,11 @@
     "filename": "2k_uranus.jpg",
     "width": 2048,
     "height": 1024,
-    "bytes": 32006,
+    "bytes": 53919,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/uranus.jpg",
     "license": "CC BY-NC-SA 3.0",
     "path": "2k_uranus.jpg",
-    "note": "Locally downsampled from the 4K CelestiaContent atmospheric map"
+    "note": "Locally downsampled from the 4K map with a restrained contrast lift for close viewing"
   },
   {
     "filename": "4k_venus_atmosphere.jpg",
@@ -288,11 +288,11 @@
     "filename": "4k_uranus.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 106259,
+    "bytes": 155716,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/uranus.jpg",
     "license": "CC BY-NC-SA 3.0",
     "path": "4k_uranus.jpg",
-    "note": "Subtle atmospheric bands and polar cap are representative, not a live weather map"
+    "note": "Subtle atmospheric bands and polar cap with a restrained contrast lift for close viewing; representative, not live weather"
   },
   {
     "filename": "2k_pluto.jpg",
