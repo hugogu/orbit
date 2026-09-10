@@ -164,8 +164,9 @@ ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历�
 - [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
 - [NASA 日食几何](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy)（MIT）
-- 纹理来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形；银河全景是沉浸式背景，不是观测地点的实时星图。
+- 纹理主要来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形；银河全景是沉浸式背景，不是观测地点的实时星图。
 - 卫星贴图来自 [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent)，原始 sidecar 许可与上游提交记录保存在 [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md)。由于缺少完整全球反照率地图，海卫二与彗核使用 CC BY 4.0 的 `asteroid.jpg` 作为明确标注的科普示意材质。
+- 天王星使用 CelestiaContent 的 Hubble OPAL / Voyager 2 大气合成图；冥王星使用 [NASA/JPL/Caltech 3D 资源](https://science.nasa.gov/3d-resources/pluto/)中的 2K 科普示意图，均已在贴图页面标注其代表性或虚构性质。
 
 ## 许可证
 

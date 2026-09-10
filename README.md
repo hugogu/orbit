@@ -164,8 +164,9 @@ For a bug report, include the browser and version, device class, viewport size, 
 - [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
 - [NASA eclipse geometry](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) (MIT)
-- Textures from [Solar System Scope Textures](https://www.solarsystemscope.com/textures/), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). File dimensions, download sources, and license information are recorded in [`public/textures/source-manifest.json`](public/textures/source-manifest.json). Some maps use enhanced colour or illustrative terrain; the Milky Way panorama is an immersive background, not a live sky chart for the observer’s location.
+- Most textures come from [Solar System Scope Textures](https://www.solarsystemscope.com/textures/), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). File dimensions, download sources, and license information are recorded in [`public/textures/source-manifest.json`](public/textures/source-manifest.json). Some maps use enhanced colour or illustrative terrain; the Milky Way panorama is an immersive background, not a live sky chart for the observer’s location.
 - Satellite maps are redistributed from [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent); original sidecar licenses and the upstream commit are preserved in [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md). Nereid and comet nuclei use the CC BY 4.0 `asteroid.jpg` surface as an explicitly illustrative teaching texture because complete global albedo maps are not available.
+- Uranus uses CelestiaContent’s Hubble OPAL / Voyager 2 atmospheric composite. Pluto uses the 2K teaching map from [NASA/JPL/Caltech 3D Resources](https://science.nasa.gov/3d-resources/pluto/); both pages identify these maps as representative or fictional where applicable.
 
 ## License
 

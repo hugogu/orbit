@@ -35,9 +35,11 @@
     "filename": "2k_uranus.jpg",
     "width": 2048,
     "height": 1024,
-    "bytes": 77751,
-    "url": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
-    "license": "CC BY 4.0"
+    "bytes": 32006,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/uranus.jpg",
+    "license": "CC BY-NC-SA 3.0",
+    "path": "2k_uranus.jpg",
+    "note": "Locally downsampled from the 4K CelestiaContent atmospheric map"
   },
   {
     "filename": "4k_venus_atmosphere.jpg",
@@ -281,5 +283,25 @@
     "license": "CC BY 4.0",
     "path": "satellites/4k_asteroid.jpg",
     "note": "Illustrative small-body surface for Nereid and comet nuclei"
+  },
+  {
+    "filename": "4k_uranus.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 106259,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/uranus.jpg",
+    "license": "CC BY-NC-SA 3.0",
+    "path": "4k_uranus.jpg",
+    "note": "Subtle atmospheric bands and polar cap are representative, not a live weather map"
+  },
+  {
+    "filename": "2k_pluto.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 324860,
+    "url": "https://assets.science.nasa.gov/dynamicimage/assets/science/cds/3d/resources/image/pluto/preview.webp?w=2048",
+    "license": "NASA/JPL/Caltech attribution; fictional teaching map, terms not explicitly stated",
+    "path": "2k_pluto.jpg",
+    "note": "Complete illustrative map assembled by David Seal from Pat Rawlings artwork and available observations"
   }
 ]

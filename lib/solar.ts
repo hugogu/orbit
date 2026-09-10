@@ -235,6 +235,7 @@ export const bodies: Body[] = [
     en: 'PLUTO',
     type: '矮行星',
     color: '#c5b6a8',
+    texture: 'pluto',
     radius: 1188.3,
     au: 39.482,
     period: 90560,

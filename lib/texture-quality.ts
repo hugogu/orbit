@@ -23,6 +23,16 @@ export const highResolutionTextures: Record<
   moon: { file: '8k_moon.jpg', width: 8192 },
   saturn_ring_alpha: { file: '8k_saturn_ring_alpha.png', width: 8192 },
   stars_milky_way: { file: '8k_stars_milky_way.jpg', width: 8192 },
+  // The original Solar System Scope map is a nearly uniform fill. This
+  // CelestiaContent map preserves the subtle atmospheric bands and polar cap.
+  uranus: {
+    file: '4k_uranus.jpg',
+    width: 4096,
+    standardFile: '2k_uranus.jpg',
+  },
+  // NASA/JPL's Pluto 3D resource is a complete teaching map assembled from
+  // available observations and artwork; it is intentionally labeled as such.
+  pluto: { file: '2k_pluto.jpg', width: 2048 },
   // CelestiaContent surface maps. Most originals are 4K; Uranian moon maps
   // are published at 2K and intentionally keep that native resolution.
   phobos: {

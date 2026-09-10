@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { readFileSync, existsSync } from 'node:fs';
 import { createTextureManager } from '../components/texture-manager';
+import { bodies } from '../lib/solar';
 import {
   highResolutionTextures,
   texturePath,
@@ -20,7 +21,7 @@ void test('quality respects device preferences, GPU limits and actual source res
     '/textures/2k_earth_daymap.jpg',
   );
   assert.equal(texturePath('jupiter', true, 4096), '/textures/8k_jupiter.jpg');
-  assert.equal(texturePath('uranus', true, 8192), '/textures/2k_uranus.jpg');
+  assert.equal(texturePath('uranus', true, 8192), '/textures/4k_uranus.jpg');
   const manifest = JSON.parse(
     readFileSync(
       new URL('../public/textures/source-manifest.json', import.meta.url),
@@ -42,6 +43,28 @@ void test('quality respects device preferences, GPU limits and actual source res
         new URL(`../public${texturePath(name, false, 8192)}`, import.meta.url),
       ),
     );
+  }
+});
+
+void test('every body texture is registered and has a local fallback', () => {
+  assert.ok(highResolutionTextures.uranus, 'Uranus map catalog entry');
+  assert.ok(highResolutionTextures.pluto, 'Pluto map catalog entry');
+  for (const body of bodies.filter((body) => body.texture)) {
+    const name = body.texture!;
+    assert.ok(
+      existsSync(
+        new URL(`../public${texturePath(name, false, 8192)}`, import.meta.url),
+      ),
+      `${body.id} fallback map`,
+    );
+    if (highResolutionTextures[name]) {
+      assert.ok(
+        existsSync(
+          new URL(`../public${texturePath(name, true, 8192)}`, import.meta.url),
+        ),
+        `${body.id} high-resolution map`,
+      );
+    }
   }
 });
 
