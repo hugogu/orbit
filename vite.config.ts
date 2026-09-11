@@ -39,6 +39,10 @@ export default defineConfig(async () => {
   if (process.env.VERCEL === '1') {
     return {
       css: { postcss: { plugins: [tailwindcss()] } },
+      // Never publish source maps with the static production site. The browser
+      // still receives the compiled bundle it needs, while the original
+      // TypeScript/TSX source remains out of the deployment artifact.
+      build: { sourcemap: false },
       plugins: [vinext()],
     };
   }
@@ -54,6 +58,7 @@ export default defineConfig(async () => {
 
   return {
     css: { postcss: { plugins: [tailwindcss()] } },
+    build: { sourcemap: false },
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,

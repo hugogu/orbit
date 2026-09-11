@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
-    "build:vercel": "VERCEL=1 vinext build",
+    "build:vercel": "VERCEL=1 vinext build && npm run check:production-artifacts",
+    "check:production-artifacts": "if find dist/client -type f -name '*.map' -print -quit | grep -q .; then echo 'Source maps found in production output'; exit 1; fi; if grep -R -q --include='*.js' --include='*.css' 'sourceMappingURL=' dist/client; then echo 'sourceMappingURL found in production output'; exit 1; fi; echo 'Verified: production output contains no source maps.'",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
