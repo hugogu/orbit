@@ -441,6 +441,13 @@ export default function SolarScene({
     const compactScreen = window.matchMedia(
       '(max-width: 700px), (pointer: coarse)',
     );
+    // Dragging the window edge can flip this several times a second; only
+    // adopt the new value once it holds steady, so a brief resize doesn't
+    // reload the 8K galaxy background.
+    const compactDebounceMs = 600;
+    let compactSignal = compactScreen.matches,
+      compactStable = compactSignal,
+      compactChangedAt = -Infinity;
     const connection = (
       navigator as Navigator & { connection?: { saveData?: boolean } }
     ).connection;
@@ -483,10 +490,15 @@ export default function SolarScene({
       if (navigationChanged)
         highResolutionReadyAt = now + navigationTextureGraceMs;
       const navigating = transition > 0 || now < highResolutionReadyAt;
+      if (compactScreen.matches !== compactSignal) {
+        compactSignal = compactScreen.matches;
+        compactChangedAt = now;
+      }
+      if (now - compactChangedAt > compactDebounceMs) compactStable = compactSignal;
       textureManager.update(
         s.textureQuality,
         selectedMoonTexture ?? cometTexture ?? focusBody?.texture ?? null,
-        compactScreen.matches,
+        compactStable,
         !!connection?.saveData,
         s.galaxy,
         selectedMoonTexture || cometTexture
