@@ -163,6 +163,38 @@ void test('navigation defers focused high-resolution upgrades until the transiti
   manager.dispose();
 });
 
+void test('navigation keeps an already-loaded high-resolution galaxy background', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+  } as THREE.WebGLRenderer;
+  const manager = createTextureManager(renderer, () => {});
+  manager.register('stars_milky_way', () => {});
+  pending.get('/textures/2k_stars_milky_way.jpg')!(new THREE.Texture());
+  pending.clear();
+  await Promise.resolve();
+
+  manager.update('ultra', null, false, false, true);
+  assert.equal(pending.has('/textures/8k_stars_milky_way.jpg'), true);
+  pending.get('/textures/8k_stars_milky_way.jpg')!(new THREE.Texture());
+  pending.clear();
+  await Promise.resolve();
+
+  manager.update('ultra', 'earth_daymap', false, false, true, [], true);
+  assert.equal(
+    pending.has('/textures/2k_stars_milky_way.jpg'),
+    false,
+    'navigation must not downgrade the already-loaded high-resolution background',
+  );
+  manager.dispose();
+});
+
 void test('only the focused body and background upgrade; unmount disposes late arrivals', async (t) => {
   const pending = new Map<string, (texture: THREE.Texture) => void>();
   t.mock.method(

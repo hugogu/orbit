@@ -144,6 +144,11 @@ export function createTextureManager(
             false,
             renderer.capabilities.maxTextureSize,
           );
+        // Navigation deferral applies to a new high-resolution upgrade. Keep
+        // an already-loaded high-resolution texture visible during the grace
+        // window so navigation cannot trigger a downgrade/reload cycle.
+        const alreadyHigh =
+          slot.path === highPath && highPath !== standardPath;
         if (
           !deferHighResolution &&
           (slot.navigationHold || !!slot.downgradeTimer) &&
@@ -173,7 +178,10 @@ export function createTextureManager(
           highPath !== standardPath
         )
           continue;
-        let path = upgrade && !deferHighResolution ? highPath : standardPath;
+        let path =
+          upgrade && (!deferHighResolution || alreadyHigh)
+            ? highPath
+            : standardPath;
         if (failed.has(path))
           path = standardPath;
         void request(slot, path);
