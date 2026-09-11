@@ -226,6 +226,10 @@ export function createTextureManager(
     ) {
       if (disposed) return;
       const high = shouldLoadHighResolution(quality, compact, saveData);
+      // A texture already sitting at high resolution stays there through a
+      // resize; `compact` only gates whether a *new* upgrade should start,
+      // not whether an already-paid-for one gets discarded.
+      const keepHigh = shouldLoadHighResolution(quality, false, saveData);
       for (const slot of slots) {
         const highPath = texturePath(
             slot.name,
@@ -249,12 +253,14 @@ export function createTextureManager(
           }
         }
         if (!slot.texture && slot.path) continue;
-        const upgrade =
-          high &&
-          (slot.name === focus ||
-            (slot.name === 'stars_milky_way' && galaxy) ||
-            (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
-            (slot.name === 'saturn_ring_alpha' && focus === 'saturn'));
+        const eligible =
+          slot.name === focus ||
+          (slot.name === 'stars_milky_way' && galaxy) ||
+          (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
+          (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
+        const alreadyHigh =
+          slot.path === highPath && highPath !== standardPath;
+        const upgrade = eligible && (alreadyHigh ? keepHigh : high);
         if (
           !deferHighResolution &&
           (slot.navigationHold || !!slot.downgradeTimer) &&
