@@ -948,10 +948,10 @@ button:disabled {
 .concept-tooltip {
   position: absolute;
   z-index: 80;
-  left: 50%;
+  left: 0;
   bottom: calc(100% + 8px);
   width: max-content;
-  max-width: min(300px, calc(100vw - 48px));
+  max-width: min(300px, calc(100vw - 32px));
   padding: 8px 10px;
   border: 1px solid #ffffff20;
   border-radius: 7px;
@@ -961,9 +961,10 @@ button:disabled {
   font-size: 11px;
   font-weight: 400;
   line-height: 1.65;
+  overflow-wrap: anywhere;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 4px);
+  transform: translateY(4px);
   transition:
     opacity 140ms ease,
     transform 140ms ease;
@@ -971,7 +972,18 @@ button:disabled {
 .concept-hint:hover .concept-tooltip,
 .concept-hint:focus-visible .concept-tooltip {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
+}
+.moon-guide .concept-tooltip,
+.observer-readout .concept-tooltip {
+  right: 0;
+  left: auto;
+}
+.moon-guide .concept-hint:hover .concept-tooltip,
+.moon-guide .concept-hint:focus-visible .concept-tooltip,
+.observer-readout .concept-hint:hover .concept-tooltip,
+.observer-readout .concept-hint:focus-visible .concept-tooltip {
+  transform: translateY(0);
 }
 .physical-facts summary {
   display: inline-flex;
@@ -1149,6 +1161,7 @@ button:disabled {
 .orbit-dialog {
   max-height: 88dvh;
   overflow-y: auto;
+  overflow-x: hidden;
   max-width: 420px !important;
   border: 1px solid #ffffff15;
   background: #101620 !important;
@@ -1392,7 +1405,8 @@ button:disabled {
 }
 .mobile-details {
   max-height: 82svh;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 28px !important;
   background: #101620 !important;
   line-height: 1.9;

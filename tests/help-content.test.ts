@@ -11,6 +11,10 @@ const moons = readFileSync(
   new URL('../components/moon-guide.tsx', import.meta.url),
   'utf8',
 );
+const styles = readFileSync(
+  new URL('../app/globals.css', import.meta.url),
+  'utf8',
+);
 
 void test('space journey help is split into operation, model and source tabs', () => {
   assert.match(page, /value="operation"/);
@@ -27,4 +31,10 @@ void test('archive keeps app guidance compact behind concept hints', () => {
     /\{t\('无法获取设备位置，当前显示参考坐标。可在“天象推演”中手动设置。'\)\}/,
   );
   assert.doesNotMatch(moons, /className="little-note"/);
+});
+
+void test('archive overlays cannot create horizontal sheet scrolling', () => {
+  assert.match(styles, /\.orbit-dialog \{[\s\S]*overflow-x: hidden;/);
+  assert.match(styles, /\.mobile-details \{[\s\S]*overflow-x: hidden;/);
+  assert.match(styles, /\.moon-guide \.concept-tooltip,[\s\S]*right: 0;/);
 });
