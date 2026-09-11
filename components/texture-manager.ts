@@ -292,7 +292,26 @@ export function createTextureManager(
           continue;
         let path = upgrade && !deferHighResolution ? highPath : standardPath;
         if (failed.has(path)) path = standardPath;
-        if (slot.path !== path) void request(slot, path);
+        if (slot.path !== path) {
+          if (slot.name === 'stars_milky_way')
+            // eslint-disable-next-line no-console -- temporary diagnostic, remove before merge
+            console.log('[texture-debug] stars_milky_way request', {
+              t: Math.round(performance.now()),
+              from: slot.path,
+              to: path,
+              compact,
+              saveData,
+              high,
+              keepHigh,
+              eligible,
+              alreadyHigh,
+              upgrade,
+              deferHighResolution,
+              highPath,
+              standardPath,
+            });
+          void request(slot, path);
+        }
       }
     },
     dispose() {
