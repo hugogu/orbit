@@ -8,14 +8,16 @@ export default function PhysicalFacts({ body }: { body: Body }) {
   return (
     <details className="physical-facts">
       <summary>
-        {t('更多基础数据')}
-        <ConceptHint
-          label={t(
-            body.id === 'sun'
-              ? '太阳没有固体表面，温度随层次变化，自转随纬度变化。'
-              : '引力数据为赤道参考值；巨行星没有可站立的固体表面。自转方向相对于太阳系通常的公转方向。轨道参数为科普近似值。',
-          )}
-        />
+        <span className="physical-facts-label">
+          {t('更多基础数据')}
+          <ConceptHint
+            label={t(
+              body.id === 'sun'
+                ? '太阳没有固体表面，温度随层次变化，自转随纬度变化。'
+                : '引力数据为赤道参考值；巨行星没有可站立的固体表面。自转方向相对于太阳系通常的公转方向。轨道参数为科普近似值。',
+            )}
+          />
+        </span>
       </summary>
       <div className="facts">
         {extraFacts(body, locale).map((f) => (

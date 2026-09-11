@@ -1,6 +1,6 @@
 import { HelpCircle } from 'lucide-react';
 
-/** A compact, keyboard reachable explanation that does not take archive space. */
+/** A compact, keyboard reachable explanation using the browser's native tooltip. */
 export default function ConceptHint({ label }: { label: string }) {
   return (
     <button
@@ -15,9 +15,6 @@ export default function ConceptHint({ label }: { label: string }) {
       }}
     >
       <HelpCircle size={13} strokeWidth={1.8} aria-hidden="true" />
-      <span className="concept-tooltip" role="tooltip">
-        {label}
-      </span>
     </button>
   );
 }

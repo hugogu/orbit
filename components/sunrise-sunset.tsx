@@ -73,8 +73,12 @@ export default function SunriseSunset({
                 )}
               />
             </span>
-            <br />
-            {t(result.daylight)}。
+            {result.daylight !== '按太阳上缘和标准大气折射计算' && (
+              <>
+                <br />
+                {t(result.daylight)}。
+              </>
+            )}
           </p>
         </>
       ) : (

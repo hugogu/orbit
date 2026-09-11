@@ -11,6 +11,14 @@ const moons = readFileSync(
   new URL('../components/moon-guide.tsx', import.meta.url),
   'utf8',
 );
+const hint = readFileSync(
+  new URL('../components/concept-hint.tsx', import.meta.url),
+  'utf8',
+);
+const physicalFacts = readFileSync(
+  new URL('../components/physical-facts.tsx', import.meta.url),
+  'utf8',
+);
 const styles = readFileSync(
   new URL('../app/globals.css', import.meta.url),
   'utf8',
@@ -33,8 +41,17 @@ void test('archive keeps app guidance compact behind concept hints', () => {
   assert.doesNotMatch(moons, /className="little-note"/);
 });
 
-void test('archive overlays cannot create horizontal sheet scrolling', () => {
+void test('archive hints use one native tooltip without horizontal overflow', () => {
+  assert.match(hint, /title=\{label\}/);
+  assert.doesNotMatch(hint, /concept-tooltip/);
   assert.match(styles, /\.orbit-dialog \{[\s\S]*overflow-x: hidden;/);
   assert.match(styles, /\.mobile-details \{[\s\S]*overflow-x: hidden;/);
-  assert.match(styles, /\.moon-guide \.concept-tooltip,[\s\S]*right: 0;/);
+  assert.match(physicalFacts, /physical-facts-label/);
+  assert.match(styles, /\.physical-facts summary::marker/);
+  assert.match(styles, /content: '▸  ';/);
+  assert.doesNotMatch(styles, /\.concept-tooltip/);
+});
+
+void test('ordinary sunrise cards keep the calculation note in the tooltip only', () => {
+  assert.match(sunrise, /result\.daylight !== '按太阳上缘和标准大气折射计算'/);
 });

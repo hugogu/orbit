@@ -700,7 +700,14 @@ button:disabled {
   color: #dfc99f;
   cursor: pointer;
   font-size: 14px;
-  list-style-position: outside;
+  list-style-position: inside;
+}
+.physical-facts summary::marker {
+  content: '▸  ';
+  color: #dfc99f;
+}
+.physical-facts[open] summary::marker {
+  content: '▾  ';
 }
 .physical-facts[open] summary {
   margin-bottom: 14px;
@@ -945,47 +952,10 @@ button:disabled {
 .concept-hint:focus-visible {
   color: #e0c897;
 }
-.concept-tooltip {
-  position: absolute;
-  z-index: 80;
-  left: 0;
-  bottom: calc(100% + 8px);
-  width: max-content;
-  max-width: min(300px, calc(100vw - 32px));
-  padding: 8px 10px;
-  border: 1px solid #ffffff20;
-  border-radius: 7px;
-  background: #111a27;
-  box-shadow: 0 8px 24px #0008;
-  color: #c7d2df;
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1.65;
-  overflow-wrap: anywhere;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(4px);
-  transition:
-    opacity 140ms ease,
-    transform 140ms ease;
-}
-.concept-hint:hover .concept-tooltip,
-.concept-hint:focus-visible .concept-tooltip {
-  opacity: 1;
-  transform: translateY(0);
-}
-.moon-guide .concept-tooltip,
-.observer-readout .concept-tooltip {
-  right: 0;
-  left: auto;
-}
-.moon-guide .concept-hint:hover .concept-tooltip,
-.moon-guide .concept-hint:focus-visible .concept-tooltip,
-.observer-readout .concept-hint:hover .concept-tooltip,
-.observer-readout .concept-hint:focus-visible .concept-tooltip {
-  transform: translateY(0);
-}
 .physical-facts summary {
+  display: list-item;
+}
+.physical-facts-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
