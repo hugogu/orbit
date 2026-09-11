@@ -5,6 +5,7 @@ import { bodies } from '../lib/solar';
 import { moonRadii } from '../lib/eclipse-shadows';
 import { moonSemimajorKm } from '../lib/satellite-elements';
 import CuriosityCard from './curiosity-card';
+import ConceptHint from './concept-hint';
 export default function MoonDetails({
   moon,
   curiosityIndex,
@@ -27,6 +28,11 @@ export default function MoonDetails({
       <div className="detail-heading">
         <h2>{t(moon.name)}</h2>
         <span className="type-chip">{t('天然卫星')}</span>
+        <ConceptHint
+          label={t(
+            '半径采用球形近似，轨道半长轴从主星中心计量。除月球外的卫星表面配色与自转朝向仍为教学示意。',
+          )}
+        />
       </div>
       <p className="description">{t(moon.description)}</p>
       <div className="facts">
@@ -56,11 +62,6 @@ export default function MoonDetails({
         </div>
       </div>
       <CuriosityCard id={moon.id} index={curiosityIndex} name={t(moon.name)} />
-      <p className="little-note">
-        {t(
-          '半径采用球形近似，轨道半长轴从主星中心计量。除月球外的卫星表面配色与自转朝向仍为教学示意。',
-        )}
-      </p>
       <button
         className="secondary-action moon-back-action"
         onClick={() => onSelect(parent.id)}

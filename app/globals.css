@@ -920,6 +920,71 @@ button:disabled {
   color: #dfc99f;
   font-size: 13px;
 }
+.concept-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.concept-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: #9aa9bc;
+  cursor: help;
+  outline: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+}
+.concept-hint:hover,
+.concept-hint:focus-visible {
+  color: #e0c897;
+}
+.concept-tooltip {
+  position: absolute;
+  z-index: 80;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  width: max-content;
+  max-width: min(300px, calc(100vw - 48px));
+  padding: 8px 10px;
+  border: 1px solid #ffffff20;
+  border-radius: 7px;
+  background: #111a27;
+  box-shadow: 0 8px 24px #0008;
+  color: #c7d2df;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.65;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+.concept-hint:hover .concept-tooltip,
+.concept-hint:focus-visible .concept-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.physical-facts summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.region-detail-heading {
+  gap: 8px;
+}
+.region-detail-heading .region-heading {
+  margin-top: 0;
+  margin-bottom: 0;
+}
 .daily-sun-heading small {
   color: #728094;
   font-size: 11px;
@@ -936,6 +1001,12 @@ button:disabled {
 .daily-sun .little-note {
   margin: 14px 0 0;
   line-height: 1.7;
+}
+.observer-readout {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
 }
 .moon-guide {
   margin: 24px 0;
@@ -1222,6 +1293,65 @@ button:disabled {
   max-width: 680px !important;
   max-height: 85svh;
   overflow: auto;
+}
+.help-tabs {
+  display: grid;
+  gap: 14px;
+  min-height: 0;
+  margin-top: 8px;
+}
+.help-tabs-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid #ffffff12;
+  border-radius: 9px;
+  background: #080e17;
+}
+.help-tabs-list [data-slot='tabs-trigger'] {
+  min-height: 34px;
+  border-radius: 6px;
+  color: #8290a4;
+  font-size: 12px;
+}
+.help-tabs-list [data-slot='tabs-trigger'][data-state='active'] {
+  background: #d9c49a18;
+  color: #e3cea1;
+}
+.help-tab-panel {
+  min-height: 0;
+}
+.help-callouts {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  border-top: 1px solid #ffffff12;
+  padding-top: 14px;
+}
+.help-callouts p {
+  margin: 0;
+  color: #97a3b7;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.help-callouts strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #d9c49a;
+  font-weight: 400;
+}
+.source-list h3 {
+  margin: 0 0 7px;
+  color: #d9c49a;
+  font-size: 13px;
+  font-weight: 400;
+}
+.source-list p + h3 {
+  margin-top: 22px;
+}
+.source-list p {
+  margin: 0;
 }
 .help-grid {
   display: grid;

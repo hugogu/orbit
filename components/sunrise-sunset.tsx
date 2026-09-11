@@ -6,6 +6,7 @@ import {
   localDayForTime,
   type SkyLocation,
 } from '../lib/sky-events';
+import ConceptHint from './concept-hint';
 
 export default function SunriseSunset({
   time,
@@ -37,7 +38,10 @@ export default function SunriseSunset({
   return (
     <section className="daily-sun" aria-label={t('当日日出日落')}>
       <div className="daily-sun-heading">
-        <span>{t('日出 / 日落')}</span>
+        <span className="concept-heading">
+          {t('日出 / 日落')}
+          <ConceptHint label={t('按太阳上缘和标准大气折射计算')} />
+        </span>
         <small>
           {day} · {t('当地时间')}
         </small>
@@ -55,18 +59,22 @@ export default function SunriseSunset({
             </div>
           </div>
           <p className="little-note">
-            {t('观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}', {
-              latitude: location.latitude.toFixed(4),
-              longitude: location.longitude.toFixed(4),
-              offset,
-            })}
+            <span className="observer-readout">
+              {t('观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}', {
+                latitude: location.latitude.toFixed(4),
+                longitude: location.longitude.toFixed(4),
+                offset,
+              })}
+              <ConceptHint
+                label={t(
+                  locationSource === 'fallback'
+                    ? '无法获取设备位置，当前显示参考坐标。可在“天象推演”中手动设置。'
+                    : '可在“天象推演”中修改观测地点。',
+                )}
+              />
+            </span>
             <br />
-            {t(result.daylight)}。{' '}
-            {locationSource === 'fallback'
-              ? t(
-                  '无法获取设备位置，当前显示参考坐标。可在“天象推演”中手动设置。',
-                )
-              : t('可在“天象推演”中修改观测地点。')}
+            {t(result.daylight)}。
           </p>
         </>
       ) : (

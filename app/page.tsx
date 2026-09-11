@@ -30,6 +30,7 @@ import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
 import SunriseSunset from '@/components/sunrise-sunset';
 import CuriosityCard, { CuriositySource } from '@/components/curiosity-card';
+import ConceptHint from '@/components/concept-hint';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
 import LayoutSettings from '@/components/layout-settings';
@@ -97,6 +98,7 @@ export default function Home() {
     [cometClose, setCometClose] = useState(false),
     [region, setRegion] = useState('inner'),
     [help, setHelp] = useState(false),
+    [helpTab, setHelpTab] = useState('operation'),
     [settings, setSettings] = useState(false),
     [shadows, setShadows] = useState(true),
     [shadowGuides, setShadowGuides] = useState(true),
@@ -368,7 +370,14 @@ export default function Home() {
         {t('彗星档案 /')}
         {activeComet.en}
       </div>
-      <h2 className="region-heading">{t(activeComet.name)}</h2>
+      <div className="detail-heading comet-detail-heading">
+        <h2>{t(activeComet.name)}</h2>
+        <ConceptHint
+          label={t(
+            '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。轨道按 AU 比例显示，彗核、旋转与彗尾为示意。',
+          )}
+        />
+      </div>
       <p className="description">{t(activeComet.description)}</p>
       <div className="facts">
         <div>
@@ -437,11 +446,6 @@ export default function Home() {
       <p className="description">
         {t(
           '靠近太阳时，冰升华产生彗发与彗尾。图中的蓝色离子尾示意指向背离太阳的方向，并会随远离太阳而淡去；真实尘埃尾通常弯曲。',
-        )}
-      </p>
-      <p className="little-note">
-        {t(
-          '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。轨道按 AU 比例显示，彗核、旋转与彗尾为示意。',
         )}
       </p>
       <a
@@ -735,14 +739,16 @@ export default function Home() {
               {t('结构档案 /')}
               {activeRegion.en}
             </div>
-            <h2 className="region-heading">{t(activeRegion.name)}</h2>
+            <div className="detail-heading region-detail-heading">
+              <h2 className="region-heading">{t(activeRegion.name)}</h2>
+              <ConceptHint
+                label={t(
+                  '区域边界为示意，并非硬边界；奥尔特云为推测结构。尘埃粒子数量与密度经过艺术化处理。',
+                )}
+              />
+            </div>
             <div className="region-range">{t(activeRegion.range)}</div>
             <p className="description">{t(activeRegion.text)}</p>
-            <p className="little-note">
-              {t(
-                '区域边界为示意，并非硬边界；奥尔特云为推测结构。尘埃粒子数量与密度经过艺术化处理。',
-              )}
-            </p>
           </>
         ) : (
           readout
@@ -1060,149 +1066,194 @@ export default function Home() {
           <DialogDescription>
             {t('选中一个天体，镜头会靠近并跟随它。')}
           </DialogDescription>
-          <div className="help-grid">
-            <div>
-              <strong>{t('鼠标')}</strong>
-              <p>
-                {t('左键拖动旋转')}
-                <br />
-                {t('滚轮缩放')}
-                <br />
-                {t('右键拖动平移')}
-              </p>
-            </div>
-            <div>
-              <strong>{t('触屏')}</strong>
-              <p>
-                {t('单指拖动旋转')}
-                <br />
-                {t('双指捏合缩放')}
-                <br />
-                {t('双指拖动平移')}
-              </p>
-            </div>
-            <div>
-              <strong>{t('键盘')}</strong>
-              <p>
-                {t('WASD / 方向键平移')}
-                <br />
-                {t('+ / − 缩放 · 空格暂停')}
-                <br />
-                {t('R 返回总览 · Esc 解除跟随')}
-              </p>
-            </div>
-          </div>
-          <div className="model-explainer">
-            <h3>{t('理解模型')}</h3>
-            <p>
-              {t(
-                '太阳、八大行星、冥王星和月球的位置由 Astronomy Engine 按 UTC 日期计算，以固定 J2000 黄道坐标显示几何位置，不含光行时。自转轴和本初子午线使用天文模型；地球采用地球定向转换。纹理经度未全部校准，云层纹理不代表实时天气。高速时自转会出现视觉混叠。',
-              )}
-            </p>
-            <p>
-              {t(
-                '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星与卫星会使用同一物理尺度。彗核、彗尾和光晕仍为示意。月球及四颗伽利略卫星使用含摄动的模型，其余 14 颗卫星用 JPL 固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用 JPL 带历元的二体轨道，远离历元时误差增大。',
-              )}
-            </p>
-            <p>
-              {t(
-                '太阳活动使用可重现的科普模型：日珥约一天形成，维持约 14–86 天后消散；黑子约 1–2 天长成，持续约 6–64 天。活动区随纬度以约 25–36 天的周期自转，内部等离子流以小时为尺度演化。所有活动与 UTC 模拟时钟同步，暂停和跳转日期同样生效。这些活动区并非历史观测或未来预报，未模拟真实太阳活动周期。 依据：',
-              )}
-              <a
-                href="https://www.nasa.gov/image-article/what-solar-prominence/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('NASA 日珥')}
-              </a>
-              、
-              <a
-                href="https://science.nasa.gov/sun/sunspots/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('NASA 黑子')}
-              </a>
-              、
-              <a
-                href="https://www.nasa.gov/image-article/solar-rotation-varies-by-latitude/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('太阳自转')}
-              </a>
-              。
-            </p>
-            <p>
-              {t(
-                '星空采用 Solar System Scope 的银河全景贴图，位于无限远背景；未按观测地点校准为实时星图。高清源文件中的未测绘区域也可能为示意填充。',
-              )}
-            </p>
-            <p>
-              {t(
-                '动态食影按有限大小的太阳与遮挡天体计算，独立于画面中的放大比例；地月及伽利略卫星使用星历，其他卫星沿用近似轨道。轮廓表示当前影区边界，细线记录过去 90 分钟影轴在自转表面上的轨迹，偏食未必有中心轨迹。模型采用球形天体、均匀日面，未计入大气折射、太阳临边昏暗和月缘地形；月全食保留微弱亮度作示意，颜色不预测真实红月亮。星环及彗核不参与食影计算。',
-              )}
-            </p>
-            <p>
-              {t('知识来源：')}
-              <a
-                href="https://science.nasa.gov/solar-system/planets/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('NASA 行星')}
-              </a>{' '}
-              ·{' '}
-              <a
-                href="https://science.nasa.gov/solar-system/kuiper-belt/facts/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('柯伊伯带')}
-              </a>{' '}
-              ·{' '}
-              <a
-                href="https://science.nasa.gov/solar-system/oort-cloud/facts/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('奥尔特云')}
-              </a>
-              {t('。参数参考：')}
-              <a
-                href="https://ssd.jpl.nasa.gov/planets/phys_par.html"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('JPL 行星参数')}
-              </a>
-              、
-              <a
-                href="https://github.com/cosinekitty/astronomy"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Astronomy Engine
-              </a>
-              {t('。纹理：')}
-              <a
-                href="https://www.solarsystemscope.com/textures/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Solar System Scope
-              </a>
-              ，
-              <a
-                href="https://creativecommons.org/licenses/by/4.0/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                CC BY 4.0
-              </a>
-              {t('。纹理含增强色彩及未测绘区域的示意填充。')}
-            </p>
-          </div>
+          <Tabs
+            value={helpTab}
+            onValueChange={(value) => setHelpTab(String(value))}
+            className="help-tabs"
+          >
+            <TabsList className="help-tabs-list" aria-label={t('帮助分类')}>
+              <TabsTrigger value="operation">{t('操作')}</TabsTrigger>
+              <TabsTrigger value="model">{t('模型')}</TabsTrigger>
+              <TabsTrigger value="sources">{t('来源')}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="operation" className="help-tab-panel">
+              <div className="help-grid">
+                <div>
+                  <strong>{t('鼠标')}</strong>
+                  <p>
+                    {t('左键拖动旋转')}
+                    <br />
+                    {t('滚轮缩放')}
+                    <br />
+                    {t('右键拖动平移')}
+                  </p>
+                </div>
+                <div>
+                  <strong>{t('触屏')}</strong>
+                  <p>
+                    {t('单指拖动旋转')}
+                    <br />
+                    {t('双指捏合缩放')}
+                    <br />
+                    {t('双指拖动平移')}
+                  </p>
+                </div>
+                <div>
+                  <strong>{t('键盘')}</strong>
+                  <p>
+                    {t('WASD / 方向键平移')}
+                    <br />
+                    {t('+ / − 缩放 · 空格暂停')}
+                    <br />
+                    {t('R 返回总览 · Esc 解除跟随')}
+                  </p>
+                </div>
+              </div>
+              <div className="help-callouts">
+                <p>
+                  <strong>{t('天体导航')}</strong>
+                  {t(
+                    '在天体导航中展开卫星目录，可以单独跟随每颗卫星并阅读其介绍。使用底部控件调速或暂停。',
+                  )}
+                </p>
+                <p>
+                  <strong>{t('观测地点')}</strong>
+                  {t('可在“天象推演”中修改观测地点。')}
+                </p>
+              </div>
+            </TabsContent>
+            <TabsContent value="model" className="help-tab-panel">
+              <div className="model-explainer">
+                <h3>{t('理解模型')}</h3>
+                <p>
+                  {t(
+                    '太阳、八大行星、冥王星和月球的位置由 Astronomy Engine 按 UTC 日期计算，以固定 J2000 黄道坐标显示几何位置，不含光行时。自转轴和本初子午线使用天文模型；地球采用地球定向转换。纹理经度未全部校准，云层纹理不代表实时天气。高速时自转会出现视觉混叠。',
+                  )}
+                </p>
+                <p>
+                  {t(
+                    '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星与卫星会使用同一物理尺度。彗核、彗尾和光晕仍为示意。月球及四颗伽利略卫星使用含摄动的模型，其余 14 颗卫星用 JPL 固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用 JPL 带历元的二体轨道，远离历元时误差增大。',
+                  )}
+                </p>
+                <p>
+                  {t('按太阳上缘和标准大气折射计算')}。{' '}
+                  {t(
+                    '设备会尝试提供当前位置，也可手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
+                  )}
+                </p>
+                <p>
+                  {t('太阳没有固体表面，温度随层次变化，自转随纬度变化。')}{' '}
+                  {t(
+                    '引力数据为赤道参考值；巨行星没有可站立的固体表面。自转方向相对于太阳系通常的公转方向。轨道参数为科普近似值。',
+                  )}
+                </p>
+                <p>
+                  {t(
+                    '太阳活动使用可重现的科普模型：日珥约一天形成，维持约 14–86 天后消散；黑子约 1–2 天长成，持续约 6–64 天。活动区随纬度以约 25–36 天的周期自转，内部等离子流以小时为尺度演化。所有活动与 UTC 模拟时钟同步，暂停和跳转日期同样生效。这些活动区并非历史观测或未来预报，未模拟真实太阳活动周期。 依据：',
+                  )}
+                  <a
+                    href="https://www.nasa.gov/image-article/what-solar-prominence/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NASA 日珥')}
+                  </a>
+                  、
+                  <a
+                    href="https://science.nasa.gov/sun/sunspots/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NASA 黑子')}
+                  </a>
+                  、
+                  <a
+                    href="https://www.nasa.gov/image-article/solar-rotation-varies-by-latitude/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('太阳自转')}
+                  </a>
+                  。
+                </p>
+                <p>
+                  {t(
+                    '星空采用 Solar System Scope 的银河全景贴图，位于无限远背景；未按观测地点校准为实时星图。高清源文件中的未测绘区域也可能为示意填充。',
+                  )}{' '}
+                  {t(
+                    '动态食影按有限大小的太阳与遮挡天体计算，独立于画面中的放大比例；地月及伽利略卫星使用星历，其他卫星沿用近似轨道。轮廓表示当前影区边界，细线记录过去 90 分钟影轴在自转表面上的轨迹，偏食未必有中心轨迹。模型采用球形天体、均匀日面，未计入大气折射、太阳临边昏暗和月缘地形；月全食保留微弱亮度作示意，颜色不预测真实红月亮。星环及彗核不参与食影计算。',
+                  )}
+                </p>
+              </div>
+            </TabsContent>
+            <TabsContent value="sources" className="help-tab-panel">
+              <div className="model-explainer source-list">
+                <h3>{t('知识来源：')}</h3>
+                <p>
+                  <a
+                    href="https://science.nasa.gov/solar-system/planets/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NASA 行星')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://science.nasa.gov/solar-system/kuiper-belt/facts/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('柯伊伯带')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://science.nasa.gov/solar-system/oort-cloud/facts/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('奥尔特云')}
+                  </a>
+                </p>
+                <h3>{t('参数参考：')}</h3>
+                <p>
+                  <a
+                    href="https://ssd.jpl.nasa.gov/planets/phys_par.html"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('JPL 行星参数')}
+                  </a>
+                  、{' '}
+                  <a
+                    href="https://github.com/cosinekitty/astronomy"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Astronomy Engine
+                  </a>
+                </p>
+                <h3>{t('纹理：')}</h3>
+                <p>
+                  <a
+                    href="https://www.solarsystemscope.com/textures/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Solar System Scope
+                  </a>
+                  ，{' '}
+                  <a
+                    href="https://creativecommons.org/licenses/by/4.0/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    CC BY 4.0
+                  </a>
+                  。{t('纹理含增强色彩及未测绘区域的示意填充。')}
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
       <Sheet open={details} onOpenChange={setDetails}>
