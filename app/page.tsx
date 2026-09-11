@@ -105,6 +105,7 @@ export default function Home() {
     [eclipseView, setEclipseView] = useState(false),
     [galaxy, setGalaxy] = useState(true),
     [solarActivity, setSolarActivity] = useState(true),
+    [cometTails, setCometTails] = useState(true),
     [realSizes, setRealSizes] = useState(false),
     [systemView, setSystemView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
@@ -149,6 +150,8 @@ export default function Home() {
       if (preferences.galaxy !== undefined) setGalaxy(preferences.galaxy);
       if (preferences.solarActivity !== undefined)
         setSolarActivity(preferences.solarActivity);
+      if (preferences.cometTails !== undefined)
+        setCometTails(preferences.cometTails);
       if (preferences.realSizes !== undefined)
         setRealSizes(preferences.realSizes);
       if (preferences.textureQuality !== undefined)
@@ -218,6 +221,7 @@ export default function Home() {
       shadowGuides,
       galaxy,
       solarActivity,
+      cometTails,
       realSizes,
       textureQuality,
     };
@@ -239,6 +243,7 @@ export default function Home() {
     shadowGuides,
     galaxy,
     solarActivity,
+    cometTails,
     realSizes,
     textureQuality,
     observerLocation,
@@ -445,7 +450,7 @@ export default function Home() {
       />
       <p className="description">
         {t(
-          '靠近太阳时，冰升华产生彗发与彗尾。图中的蓝色离子尾示意指向背离太阳的方向，并会随远离太阳而淡去；真实尘埃尾通常弯曲。',
+          '靠近太阳时，冰升华产生彗发与彗尾。蓝色离子尾近乎笔直地背向太阳，尘埃尾较宽、通常弯曲；远离太阳时，活动逐渐减弱。',
         )}
       </p>
       <a
@@ -618,6 +623,7 @@ export default function Home() {
           eclipseView,
           galaxy,
           solarActivity,
+          cometTails,
           realSizes,
           systemView,
           observerLocation,
@@ -964,6 +970,19 @@ export default function Home() {
               </p>
             </TabsContent>
             <TabsContent value="phenomena" className="settings-tab-panel">
+              <div className="setting-row">
+                <label htmlFor="comet-tails">{t('彗发与彗尾')}</label>
+                <Switch
+                  id="comet-tails"
+                  checked={cometTails}
+                  onCheckedChange={setCometTails}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '柔和彗发、蓝色离子尾与弯曲尘埃尾，随模拟时间和日距变化。形态与大小为科普示意；关闭可减少绘制开销。',
+                )}
+              </p>
               <div className="setting-row">
                 <label htmlFor="shadows">{t('动态食影')}</label>
                 <Switch

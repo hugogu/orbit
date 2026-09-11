@@ -13,6 +13,7 @@ export type ObservatoryPreferences = {
   shadowGuides: boolean;
   galaxy: boolean;
   solarActivity: boolean;
+  cometTails: boolean;
   realSizes: boolean;
   textureQuality: TextureQuality;
   observerLocation: SkyLocation;
@@ -29,6 +30,7 @@ const booleanKeys = [
   'shadowGuides',
   'galaxy',
   'solarActivity',
+  'cometTails',
   'realSizes',
 ] as const;
 

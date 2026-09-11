@@ -40,6 +40,7 @@ export type SceneState = {
   eclipseView: boolean;
   galaxy: boolean;
   solarActivity: boolean;
+  cometTails: boolean;
   realSizes: boolean;
   systemView: boolean;
   observerLocation: SkyLocation;
@@ -548,7 +549,14 @@ export default function SolarScene({
       oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
       heliosphere.visible =
         s.belts && s.view >= 400 && s.scale === 'illustrated';
-      cometSystem.update(s.cometId, days, s.orbits, translate, s.cometClose);
+      cometSystem.update(
+        s.cometId,
+        days,
+        s.orbits,
+        translate,
+        s.cometClose,
+        s.cometTails,
+      );
       const comet = comets.find((c) => c.id === s.cometId);
       const cometKey = `${s.cometId}/${s.cometClose}`;
       if (

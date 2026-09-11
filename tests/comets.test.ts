@@ -98,9 +98,10 @@ void test('comet scene preserves the absolute date across selections and keeps i
       1,
     );
     const tail = scene.getObjectByName('ion-tail')!;
-    assert.ok(tail.visible);
+    const atmosphere = scene.getObjectByName('comet-atmosphere')!;
+    assert.ok(atmosphere.visible);
     const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(
-      tail.quaternion,
+      tail.getWorldQuaternion(new THREE.Quaternion()),
     );
     assert.ok(direction.dot(initial.clone().normalize()) > 0.99999);
     system.update('halley', peri + 100, false);
@@ -113,7 +114,7 @@ void test('comet scene preserves the absolute date across selections and keeps i
     system.update('halley', peri, true);
     assert.ok(system.position.distanceTo(initial) < 1e-10);
     system.update('halley', peri + cometElements(comets[0]).period / 2, true);
-    assert.equal(tail.visible, false);
+    assert.equal(atmosphere.visible, false);
     system.update(null, peri, true);
     system.project(new THREE.PerspectiveCamera(), 1000, 500, true);
     assert.equal(group.visible, false);

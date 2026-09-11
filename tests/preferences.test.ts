@@ -21,6 +21,7 @@ void test('preferences are validated and persisted as one versioned record', () 
     savePreferences(
       {
         galaxy: false,
+        cometTails: false,
         scale: 'distance',
         textureQuality: 'ultra',
         labels: true,
@@ -39,6 +40,7 @@ void test('preferences are validated and persisted as one versioned record', () 
   );
   assert.deepEqual(loadPreferences(storage), {
     galaxy: false,
+    cometTails: false,
     scale: 'distance',
     textureQuality: 'ultra',
     labels: true,

@@ -1,12 +1,8 @@
 import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
+import { createCometAtmosphere } from './comet-atmosphere';
 import * as THREE from 'three';
-import {
-  comets,
-  cometActivity,
-  cometPosition,
-  cometOrbitPoint,
-} from '../lib/comets';
+import { comets, cometPosition, cometOrbitPoint } from '../lib/comets';
 const untranslated: Translate = (key) => key;
 
 export function createCometSystem(
@@ -55,21 +51,17 @@ export function createCometSystem(
   nucleus.scale.set(1.5, 0.85, 1);
   nucleus.name = 'comet-nucleus';
   group.add(nucleus);
-  const tailGeometry = new THREE.ConeGeometry(1.2, 8, 24, 1, true);
-  tailGeometry.rotateZ(Math.PI);
-  tailGeometry.translate(0, 4, 0);
-  const tail = new THREE.Mesh(
-    tailGeometry,
-    new THREE.MeshBasicMaterial({
-      color: '#85d8f0',
-      transparent: true,
-      opacity: 0.12,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  );
-  group.add(tail);
-  tail.name = 'ion-tail';
+  const atmosphere = createCometAtmosphere();
+  group.add(atmosphere.group);
+  const orbitFrames = comets.map((comet) => {
+    const peri = new THREE.Vector3(...cometOrbitPoint(comet, 0));
+    const opposite = new THREE.Vector3(...cometOrbitPoint(comet, Math.PI));
+    const normal = peri
+      .clone()
+      .cross(new THREE.Vector3(...cometOrbitPoint(comet, Math.PI / 2)))
+      .normalize();
+    return { center: peri.add(opposite).multiplyScalar(0.5), normal };
+  });
   const label = document.createElement('button');
   label.className = 'planet-label comet-label';
   labelLayer.appendChild(label);
@@ -81,9 +73,7 @@ export function createCometSystem(
   };
   const position = new THREE.Vector3(),
     center = new THREE.Vector3(),
-    projected = new THREE.Vector3(),
-    north = new THREE.Vector3(0, 1, 0),
-    direction = new THREE.Vector3();
+    projected = new THREE.Vector3();
   return {
     position,
     center,
@@ -93,6 +83,7 @@ export function createCometSystem(
       orbits: boolean,
       t: Translate = untranslated,
       close = false,
+      tails = true,
     ) {
       const index = comets.findIndex((c) => c.id === id),
         comet = comets[index];
@@ -104,23 +95,13 @@ export function createCometSystem(
         path.visible = i === index && orbits;
       });
       position.set(...cometPosition(comet, days));
-      center
-        .set(...cometOrbitPoint(comet, 0))
-        .add(new THREE.Vector3(...cometOrbitPoint(comet, Math.PI)))
-        .multiplyScalar(0.5);
+      center.copy(orbitFrames[index].center);
       head.position.copy(position);
       head.visible = !close;
       nucleus.position.copy(position);
       nucleus.rotation.y = days * 2;
       nucleus.userData.id = comet.id;
-      tail.position.copy(position);
-      const activity = cometActivity(position.length() / 3.1);
-      tail.visible = activity > 0;
-      tail.scale.setScalar(activity);
-      tail.quaternion.setFromUnitVectors(
-        north,
-        direction.copy(position).normalize(),
-      );
+      atmosphere.update(position, orbitFrames[index].normal, days, tails);
       if (lastComet !== comet.id || lastTranslate !== t) {
         label.textContent = t(comet.name);
         label.setAttribute(
