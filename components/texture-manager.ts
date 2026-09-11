@@ -290,28 +290,18 @@ export function createTextureManager(
           highPath !== standardPath
         )
           continue;
-        let path = upgrade && !deferHighResolution ? highPath : standardPath;
+        // `deferHighResolution` only exists to avoid eagerly fetching a
+        // *newly*-eligible slot's high-res texture while the user might
+        // still be navigating past it. A slot that was already high before
+        // this navigation (e.g. the always-eligible galaxy background) has
+        // nothing to do with the current selection and must not be forced
+        // down and back up on every navigation.
+        let path =
+          upgrade && (alreadyHigh || !deferHighResolution)
+            ? highPath
+            : standardPath;
         if (failed.has(path)) path = standardPath;
-        if (slot.path !== path) {
-          if (slot.name === 'stars_milky_way')
-            // eslint-disable-next-line no-console -- temporary diagnostic, remove before merge
-            console.log('[texture-debug] stars_milky_way request', {
-              t: Math.round(performance.now()),
-              from: slot.path,
-              to: path,
-              compact,
-              saveData,
-              high,
-              keepHigh,
-              eligible,
-              alreadyHigh,
-              upgrade,
-              deferHighResolution,
-              highPath,
-              standardPath,
-            });
-          void request(slot, path);
-        }
+        if (slot.path !== path) void request(slot, path);
       }
     },
     dispose() {
