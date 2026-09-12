@@ -16,3 +16,16 @@
 - Localization lives in `lib/i18n`; see `docs/i18n.md` for adding languages. Keep IDs and astronomy data language-independent, translate complete sentences at presentation time, and add all new text to each catalog. Never recreate the Three.js scene on a locale change; verify that selection, paused time, and camera survive switching.
 - The Layout tab keeps the true-size and true-distance controls together. Topic views may temporarily force a presentation distance mode without overwriting the user's saved preference; navigation and refresh must not overwrite it.
 - For CPU regressions, record process CPU alongside scene timings and compare the same settings before/after. A fresh preview process can clear high usage even with unchanged code; do not attribute that drop to an application fix. Avoid per-frame DOM writes for hidden/subpixel labels, cancel queued texture preloads on teardown, and release the old WebGL context during hot replacement.
+
+## Review guardrails
+
+- Keep UI labels and metadata strings separate. Do not reuse labels containing decorative separators (`/`, `·`, arrows, or similar) in document titles, Open Graph, Twitter, or JSON-LD names.
+- Treat metadata as untrusted output: escape `<`, `>`, and `&` when serializing JSON-LD into a `<script>` element, and test that a value containing `</script>` cannot close the block.
+- For App Router/Vinext, use route-group root layouts when routes need different document languages. Each root layout must directly render exactly one `<html>` and `<body>` and import global CSS; shared providers may remain child components. Keep async `params` Promise types for the current Vinext/Next 15+ contract.
+- Build-generated, environment-dependent public assets such as sitemaps and robots files must be ignored and generated during builds; never commit host-specific output.
+- Normalize external base URLs to an HTTP(S) origin before using them for canonical, Open Graph, or sitemap URLs. Client-imported modules must not assume `process` exists.
+- Convert values to the displayed unit before formatting metadata (for example, days to years), and test representative long-period values.
+- Validate structured-data hierarchy and links. Breadcrumb ancestors must link to their own collection pages rather than the current entity page.
+- Cache locale-independent catalogs and URL snapshots within loops or operations; avoid repeated parsing and lookup.
+- Add every new translation ID to every catalog, and verify localized metadata, `lang`, canonical/hreflang, and stable IDs in the static export.
+- When moving route modules, update source-inspection tests and run the full test, lint, type-check, and production-export checks.

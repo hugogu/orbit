@@ -1,5 +1,5 @@
 'use client';
-import { useI18n } from '../lib/i18n/provider';
+import { useI18n } from '../../lib/i18n/provider';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { registerObservatoryTools } from '@/lib/observatory-tools';
@@ -21,7 +21,7 @@ import {
   CalendarDays,
   X,
 } from 'lucide-react';
-import LanguagePicker from '../components/language-picker';
+import LanguagePicker from '../../components/language-picker';
 import SolarScene from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';
@@ -78,6 +78,7 @@ import {
   savePreferences,
   type StoredPreferences,
 } from '@/lib/preferences';
+import { bodyDetailsPath } from '@/lib/seo';
 export default function Home() {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState<string | null>(null),
@@ -455,6 +456,12 @@ export default function Home() {
       </p>
       <a
         className="source"
+        href={bodyDetailsPath(locale, activeComet.id)}
+      >
+        {t('阅读{{name}}的完整资料 ↗', { name: t(activeComet.name) })}
+      </a>
+      <a
+        className="source"
         href={`https://science.nasa.gov/solar-system/comets/${activeComet.source}/`}
         target="_blank"
         rel="noreferrer"
@@ -544,6 +551,12 @@ export default function Home() {
         }}
       />
       <CuriositySource id={body.id} index={curiosityPicks[body.id]} />
+      <a
+        className="source"
+        href={bodyDetailsPath(locale, body.id)}
+      >
+        {t('阅读{{name}}的完整资料 ↗', { name: t(body.name) })}
+      </a>
       <a
         className="source"
         href={`https://science.nasa.gov/${body.source}/`}

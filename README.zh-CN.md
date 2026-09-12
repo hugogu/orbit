@@ -110,6 +110,8 @@ npm run build:vercel
 
 ORBIT 以静态导出方式部署到 Vercel，另有独立的 Cloudflare Worker 构建目标用于 Sites 平台；Google Analytics 为可选功能，通过一个环境变量控制。Vercel 项目配置、构建参数与分析配置请参阅[部署指南](docs/deployment.md)。
 
+Vercel 构建还会输出可抓取的天体资料页（`/:locale/bodies/:id`）、`robots.txt` 和 `sitemap.xml`。在 Vercel 项目中部署前，请将 `NEXT_PUBLIC_SITE_URL` 设置为正式的 HTTPS 域名；构建会用它生成 canonical、Open Graph、多语言 alternate 与 sitemap 地址。未设置时使用演示域名。
+
 ## 模型边界与准确性
 
 ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历服务。显示和查询共享一个 UTC 时钟，但各部分有不同的精度范围：

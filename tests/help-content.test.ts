@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
-const page = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+const page = readFileSync(
+  new URL('../app/_pages/home-page.tsx', import.meta.url),
+  'utf8',
+);
 const sunrise = readFileSync(
   new URL('../components/sunrise-sunset.tsx', import.meta.url),
   'utf8',
