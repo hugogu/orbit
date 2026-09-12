@@ -29,3 +29,5 @@
 - Cache locale-independent catalogs and URL snapshots within loops or operations; avoid repeated parsing and lookup.
 - Add every new translation ID to every catalog, and verify localized metadata, `lang`, canonical/hreflang, and stable IDs in the static export.
 - When moving route modules, update source-inspection tests and run the full test, lint, type-check, and production-export checks.
+- Social previews need both a subject-first square image and a 1200×630 card because clients crop and cache `og:image` differently; keep the square first in metadata, embed attribution in generated derivatives, and use a bundled licensed font for localized card text.
+- Keep site navigation links visually consistent and distinguish them from external sources: internal profile links have no outbound arrow, while source links retain an arrow and should not repeat a URL already shown in the same panel.

@@ -19,6 +19,7 @@ import { I18nProvider } from '../lib/i18n/provider';
 import { bodies, regions, speedLabel } from '../lib/solar';
 import { comets } from '../lib/comets';
 import { moonSystems } from '../lib/moons';
+import { profileContent } from '../lib/profile-content';
 import { curiosities } from '../lib/curiosities';
 import CuriosityCard from '../components/curiosity-card';
 import MoonDetails from '../components/moon-details';
@@ -84,7 +85,7 @@ void test('all educational data and literal translation keys have catalog entrie
     else if (value && typeof value === 'object')
       Object.values(value).forEach(check);
   };
-  [bodies, regions, comets, moonSystems, curiosities].forEach(check);
+  [bodies, regions, comets, moonSystems, curiosities, profileContent].forEach(check);
   const scan = (directory: string) => {
     for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
       if (item.name === 'i18n' || item.name === 'ui') continue;

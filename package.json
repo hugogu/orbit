@@ -10,12 +10,13 @@
     "prebuild": "node --import tsx scripts/generate-og.ts && node --import tsx scripts/generate-seo.ts",
     "build": "vinext build",
     "prebuild:vercel": "node --import tsx scripts/generate-og.ts && node --import tsx scripts/generate-seo.ts",
-    "build:vercel": "VERCEL=1 vinext build && npm run check:production-artifacts",
+    "build:vercel": "VERCEL=1 vinext build && npm run check:production-artifacts && npm run check:profiles",
     "check:production-artifacts": "if find dist/client -type f -name '*.map' -print -quit | grep -q .; then echo 'Source maps found in production output'; exit 1; fi; if grep -R -q --include='*.js' --include='*.css' 'sourceMappingURL=' dist/client; then echo 'sourceMappingURL found in production output'; exit 1; fi; echo 'Verified: production output contains no source maps.'",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts",
+    "check:profiles": "node --import tsx scripts/check-profile-export.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

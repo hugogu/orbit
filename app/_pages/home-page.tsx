@@ -448,17 +448,15 @@ export default function Home() {
         id={activeComet.id}
         index={curiosityPicks[activeComet.id]}
         name={t(activeComet.name)}
+        showSource={false}
       />
       <p className="description">
         {t(
           '靠近太阳时，冰升华产生彗发与彗尾。蓝色离子尾近乎笔直地背向太阳，尘埃尾较宽、通常弯曲；远离太阳时，活动逐渐减弱。',
         )}
       </p>
-      <a
-        className="source"
-        href={bodyDetailsPath(locale, activeComet.id)}
-      >
-        {t('阅读{{name}}的完整资料 ↗', { name: t(activeComet.name) })}
+      <a className="source" href={bodyDetailsPath(locale, activeComet.id)}>
+        {t('阅读{{name}}的完整资料', { name: t(activeComet.name) })}
       </a>
       <a
         className="source"
@@ -467,7 +465,7 @@ export default function Home() {
         rel="noreferrer"
       >
         {t('在 NASA 继续探索')}
-        <ArrowUpRight size={15} />
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
       <a
         className="source"
@@ -476,7 +474,7 @@ export default function Home() {
         rel="noreferrer"
       >
         {t('轨道参数：JPL 小天体数据库')}
-        <ArrowUpRight size={15} />
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
     </>
   ) : selectedMoon ? (
@@ -550,12 +548,15 @@ export default function Home() {
           setSystemView(true);
         }}
       />
-      <CuriositySource id={body.id} index={curiosityPicks[body.id]} />
-      <a
-        className="source"
-        href={bodyDetailsPath(locale, body.id)}
-      >
-        {t('阅读{{name}}的完整资料 ↗', { name: t(body.name) })}
+      <CuriositySource
+        id={body.id}
+        index={curiosityPicks[body.id]}
+        omitSource={
+          body.id === 'sun' ? 'https://science.nasa.gov/sun/facts/' : undefined
+        }
+      />
+      <a className="source" href={bodyDetailsPath(locale, body.id)}>
+        {t('阅读{{name}}的完整资料', { name: t(body.name) })}
       </a>
       <a
         className="source"
@@ -564,7 +565,7 @@ export default function Home() {
         rel="noreferrer"
       >
         {t('在 NASA 继续探索')}
-        <ArrowUpRight size={15} />
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
     </>
   ) : (

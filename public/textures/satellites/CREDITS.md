@@ -61,3 +61,30 @@ use NASA, JPL, ESA, or contributor names or marks to imply endorsement of
 ORBIT. The CC BY-SA assets require adaptations to be offered under the same
 license; this obligation applies to the adapted Uranian-moon files even when
 they are bundled inside a larger application.
+
+## Rendered profile and sharing images
+
+The build creates `/media/v2/bodies/*.webp` (page portraits),
+`/media/v2/bodies/*.jpg` (square previews), and
+`/og/v2/{locale}/bodies/*.jpg` (landscape share cards). These are ORBIT
+adaptations of the source textures listed above, using spherical or schematic
+ellipsoidal projection, simulated lighting, and, for Saturn, the Solar System
+Scope ring texture. They are illustrations, not current observations.
+
+The rendered images of Miranda, Ariel, Umbriel, Titania, and Oberon remain
+**CC BY-SA 4.0**. Other rendered images are offered under the same CC BY or
+CC0 license as their source texture, as identified above. The ORBIT source
+code's noncommercial license does **not** apply to these images. Planetary
+renders use Solar System Scope's CC BY 4.0 material; the Sun's view and glow
+are illustrative. Fallback body maps and comet shapes remain schematic.
+
+Generated WebP and JPEG files embed XMP creator, source, adaptation, and
+license information. Each profile also displays attribution and links to the
+source license. Preserve that information when redistributing a downloaded
+image; social platforms may strip embedded metadata. Avoid implying that
+NASA, the texture contributors, or the Noto Project endorse ORBIT.
+
+Landscape labels use an OFL-licensed, renamed Noto Sans CJK subset. See
+[`scripts/assets/README.md`](https://github.com/hugogu/orbit/blob/main/scripts/assets/README.md)
+for its source and license. Font glyphs rendered into images do not change
+the images' license.

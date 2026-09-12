@@ -2,7 +2,7 @@ import { comets, type Comet } from './comets';
 import { languages, localePath, translator, type Locale } from './i18n';
 import { orbitingMoons, type OrbitingMoon } from './moon-orbits';
 import { bodies, type Body } from './solar';
-import { texturePath } from './texture-quality';
+import { portraitPath, wideImagePath, portraitCredit } from './profile-images';
 
 /** Permanent public origin used when a build does not provide an override. */
 const fallbackSiteOrigin = 'https://www.orbits.observer';
@@ -26,8 +26,7 @@ export function normalizeSiteOrigin(value: string) {
 }
 
 /**
- * Override this during a production build so canonical and sitemap URLs use
- * the permanent public hostname instead of the demo deployment. This helper
+ * Override this during a build to use a different public hostname. This helper
  * is also imported by the client entry, so it must not assume `process` exists.
  */
 function resolveSiteOrigin() {
@@ -68,20 +67,19 @@ export function bodyDetailsPath(locale: Locale, id: string) {
   return `/${localePath(locale)}/bodies/${encodeURIComponent(id)}`;
 }
 
+export function profileTitle(entry: CatalogEntry, locale: Locale) {
+  const t = translator(locale);
+  return t('{{name}}：结构、轨道与探索', { name: t(entry.data.name) });
+}
+
 /** Build-time generated social preview for one localized profile. */
 export function ogImagePath(locale: Locale, id: string) {
-  return `/og/${localePath(locale)}/bodies/${encodeURIComponent(id)}.png`;
+  return wideImagePath(locale, id);
 }
 
 /** A local surface illustration keeps profile pages useful when the 3D scene is not loaded. */
 export function entryImagePath(entry: CatalogEntry) {
-  const texture =
-    entry.kind === 'body'
-      ? entry.data.texture ?? entry.data.id
-      : entry.kind === 'moon'
-        ? entry.data.texture
-        : 'comet_nucleus';
-  return texturePath(texture, false, 2048);
+  return portraitPath(entry.data.id);
 }
 
 export function explorerPath(locale: Locale, id?: string) {
@@ -95,8 +93,10 @@ export function absoluteSiteUrl(path: string) {
 
 export function serializeJsonLd(value: object) {
   const serialized = JSON.stringify(value);
-  return serialized.replace(/[<>&]/g, (character) =>
-    `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  return serialized.replace(
+    /[<>&]/g,
+    (character) =>
+      `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
   );
 }
 
@@ -124,6 +124,7 @@ export function profileJsonLd({
   const websiteId = `${siteOrigin}#website`;
   const celestialId = `${canonical}#astronomical-body`;
   const breadcrumbId = `${canonical}#breadcrumb`;
+  const credit = portraitCredit(entry);
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -195,7 +196,14 @@ export function profileJsonLd({
         description,
         inLanguage: languages[locale].intl,
         isPartOf: { '@id': websiteId },
-        primaryImageOfPage: { '@type': 'ImageObject', url: image },
+        primaryImageOfPage: {
+          '@type': 'ImageObject',
+          contentUrl: image,
+          width: 1000,
+          height: 1000,
+          creditText: `${credit.name}; rendered by ORBIT`,
+          license: credit.license,
+        },
         about: { '@id': celestialId },
         breadcrumb: { '@id': breadcrumbId },
       },
