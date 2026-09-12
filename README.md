@@ -106,27 +106,9 @@ The test suite covers the UTC clock, coordinate transforms, Earth day/night orie
 npm run build:vercel
 ```
 
-## Deploy to Vercel
+## Deployment
 
-The repository root includes [`vercel.json`](vercel.json). Import the GitHub repository in Vercel without changing the root directory; the configuration uses:
-
-| Setting          | Value                  |
-| ---------------- | ---------------------- |
-| Build Command    | `npm run build:vercel` |
-| Output Directory | `dist/client`          |
-| Framework Preset | Other / unset          |
-
-Vercel needs a static `dist/client/index.html`. The usual `npm run build` target remains for Sites/Cloudflare Worker output; publishing that Worker target as a Vercel static site results in a root-page 404.
-
-## Google Analytics (optional)
-
-ORBIT can report page views to Google Analytics 4 through `gtag.js`. The script only loads when a Measurement ID is configured, so analytics stays off by default.
-
-1. Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` to your GA4 Measurement ID (for example `G-XXXXXXXXXX`). Copy [`.env.example`](.env.example) to `.env.local` for local development.
-2. On Vercel, add the same variable under Project Settings → Environment Variables. Scope it to Production only, unless you also want Preview deployments tracked.
-3. The variable is read at build time, so the same setup works for both the Vercel static export and the Sites/Cloudflare Worker build target — no other configuration is required.
-
-Leave the variable unset to ship ORBIT without loading any analytics script.
+ORBIT deploys as a static export to Vercel, with a separate Cloudflare Worker build for the Sites platform, and optional Google Analytics configured through one environment variable. See the [deployment guide](docs/deployment.md) for Vercel project setup, build settings, and analytics configuration.
 
 ## Accuracy and model boundaries
 
