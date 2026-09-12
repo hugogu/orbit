@@ -4,7 +4,11 @@ import { orbitingMoons, type OrbitingMoon } from './moon-orbits';
 import { bodies, type Body } from './solar';
 import { texturePath } from './texture-quality';
 
-const fallbackSiteOrigin = 'https://orbit-henna-xi.vercel.app';
+/** Permanent public origin used when a build does not provide an override. */
+const fallbackSiteOrigin = 'https://www.orbits.observer';
+
+/** Plain entity name for metadata and structured data; UI labels may be more decorative. */
+export const seoSiteName = 'ORBIT Solar System Observatory';
 
 export function normalizeSiteOrigin(value: string) {
   const candidate = value.trim();
@@ -114,7 +118,6 @@ export function profileJsonLd({
   description: string;
   canonical: string;
 }) {
-  const t = translator(locale);
   const name = entryLocalizedName(entry, locale);
   const image = absoluteSiteUrl(entryImagePath(entry));
   const organizationId = `${siteOrigin}#organization`;
@@ -127,7 +130,7 @@ export function profileJsonLd({
       {
         '@type': 'Organization',
         '@id': organizationId,
-        name: 'ORBIT · Solar System Observatory',
+        name: seoSiteName,
         url: siteOrigin,
         logo: {
           '@type': 'ImageObject',
@@ -137,7 +140,7 @@ export function profileJsonLd({
       {
         '@type': 'WebSite',
         '@id': websiteId,
-        name: t('ORBIT · 太阳系漫游'),
+        name: seoSiteName,
         url: absoluteSiteUrl('/'),
         publisher: { '@id': organizationId },
         inLanguage: languages[locale].intl,
@@ -165,12 +168,6 @@ export function profileJsonLd({
           {
             '@type': 'ListItem',
             position: 2,
-            name: t('太阳系知识'),
-            item: absoluteSiteUrl(explorerPath(locale)),
-          },
-          {
-            '@type': 'ListItem',
-            position: 3,
             name,
             item: canonical,
           },
@@ -183,9 +180,10 @@ export function profileJsonLd({
         name: title,
         description,
         learningResourceType: 'interactive astronomy profile',
-        educationalLevel: 'general audience',
+        educationalLevel: 'Beginner',
         inLanguage: languages[locale].intl,
         provider: { '@id': organizationId },
+        author: { '@id': organizationId },
         about: { '@id': celestialId },
         image,
       },
@@ -217,14 +215,14 @@ export function homeJsonLd() {
       {
         '@type': 'Organization',
         '@id': organizationId,
-        name: 'ORBIT · Solar System Observatory',
+        name: seoSiteName,
         url: siteOrigin,
         logo: { '@type': 'ImageObject', url: absoluteSiteUrl('/og-image.png') },
       },
       {
         '@type': 'WebSite',
         '@id': websiteId,
-        name: 'ORBIT · Solar System Observatory',
+        name: seoSiteName,
         url: absoluteSiteUrl('/'),
         description,
         publisher: { '@id': organizationId },
@@ -233,11 +231,11 @@ export function homeJsonLd() {
       {
         '@type': 'LearningResource',
         '@id': `${siteOrigin}#learning-resource`,
-        name: 'ORBIT · Solar System Observatory',
+        name: seoSiteName,
         description,
         url: absoluteSiteUrl('/'),
         learningResourceType: 'interactive astronomy simulation',
-        educationalLevel: 'general audience',
+        educationalLevel: 'Beginner',
         inLanguage: seoLocales.map((locale) => languages[locale].intl),
         provider: { '@id': organizationId },
         about: { '@type': 'AstronomicalBody', name: 'Solar System' },

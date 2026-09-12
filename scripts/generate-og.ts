@@ -1,13 +1,13 @@
 import { mkdirSync, rmSync } from 'node:fs';
-import { resolve } from 'node:path';
-import sharp from 'sharp';
+import { createRequire } from 'node:module';
+import { dirname, resolve } from 'node:path';
+import type sharpModule from 'sharp/lib/index.js';
 import { languages, localePath, translator } from '../lib/i18n';
 import { catalogEntries, seoLocales } from '../lib/seo';
 
-type PngWriter = {
-  png: () => { toFile: (path: string) => Promise<unknown> };
-};
-const sharpFactory = sharp as unknown as (input: Buffer) => PngWriter;
+// Sharp is a CommonJS export; load it with Node while retaining its bundled declarations.
+const require = createRequire(import.meta.url);
+const sharp = require('sharp') as typeof sharpModule;
 
 const publicDir = resolve('public');
 const outputDir = resolve(publicDir, 'og');
@@ -56,10 +56,14 @@ function renderImage({
   name,
   description,
   color,
+  observatoryName,
+  languageName,
 }: {
   name: string;
   description: string;
   color: string;
+  observatoryName: string;
+  languageName: string;
 }) {
   const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#d9c49a';
   const descriptionLines = wrapText(description, 44);
@@ -90,7 +94,7 @@ function renderImage({
   <text x="92" y="245" fill="#f1e8d7" font-size="66" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif">${escapeXml(name)}</text>
   <rect x="92" y="286" width="620" height="2" fill="url(#line)" />
   ${descriptionSvg}
-  <text x="92" y="552" fill="#77859a" font-size="18">Solar System Observatory · ${escapeXml(languages.en.name)}</text>
+  <text x="92" y="552" fill="#77859a" font-size="18">${escapeXml(observatoryName)} · ${escapeXml(languageName)}</text>
 </svg>
 `;
 }
@@ -109,8 +113,14 @@ for (const locale of seoLocales) {
       'bodies',
       `${entry.data.id}.png`,
     );
-    mkdirSync(resolve(outputPath, '..'), { recursive: true });
-    await sharpFactory(Buffer.from(renderImage({ name, description, color })))
+    mkdirSync(dirname(outputPath), { recursive: true });
+    await sharp(Buffer.from(renderImage({
+      name,
+      description,
+      color,
+      observatoryName: t('太阳系观测台'),
+      languageName: languages[locale].name,
+    })))
       .png()
       .toFile(outputPath);
   }

@@ -12,6 +12,7 @@ import {
   ogImagePath,
   profileJsonLd,
   serializeJsonLd,
+  seoSiteName,
   seoLocales,
 } from '../lib/seo';
 import { localePath, translator } from '../lib/i18n';
@@ -30,6 +31,7 @@ const localizedLayout = readFileSync(
   'utf8',
 );
 const bodyPage = readFileSync(new URL('../app/_pages/body-page.tsx', import.meta.url), 'utf8');
+const ogGenerator = readFileSync(new URL('../scripts/generate-og.ts', import.meta.url), 'utf8');
 const bodyNavigation = readFileSync(
   new URL('../components/body-navigation.tsx', import.meta.url),
   'utf8',
@@ -69,6 +71,13 @@ void test('profiles expose local images and unique localized social assets', () 
   }
 });
 
+void test('OG cards use each locale for their footer and output directory', () => {
+  assert.match(ogGenerator, /observatoryName: t\('太阳系观测台'\)/);
+  assert.match(ogGenerator, /languageName: languages\[locale\]\.name/);
+  assert.doesNotMatch(ogGenerator, /languages\.en\.name/);
+  assert.match(ogGenerator, /mkdirSync\(dirname\(outputPath\)/);
+});
+
 void test('profile JSON-LD describes the learning resource and breadcrumb graph', () => {
   const entry = catalogEntries().find((item) => item.data.id === 'sun')!;
   const graph = profileJsonLd({
@@ -84,8 +93,15 @@ void test('profile JSON-LD describes the learning resource and breadcrumb graph'
     ['Organization', 'WebSite', 'AstronomicalBody', 'BreadcrumbList', 'LearningResource', 'WebPage'],
   );
   const breadcrumb = nodes.find((node) => node['@type'] === 'BreadcrumbList')!;
-  assert.equal((breadcrumb.itemListElement as Array<unknown>).length, 3);
-  assert.equal((homeJsonLd()['@graph'] as Array<Record<string, unknown>>).length, 3);
+  assert.equal((breadcrumb.itemListElement as Array<unknown>).length, 2);
+  assert.equal((nodes[0] as Record<string, unknown>).name, seoSiteName);
+  assert.equal((nodes[1] as Record<string, unknown>).name, seoSiteName);
+  const resource = nodes.find((node) => node['@type'] === 'LearningResource')!;
+  assert.equal(resource.educationalLevel, 'Beginner');
+  assert.deepEqual(resource.author, resource.provider);
+  const homeNodes = homeJsonLd()['@graph'] as Array<Record<string, unknown>>;
+  assert.equal(homeNodes.length, 3);
+  assert.ok(homeNodes.every((node) => node.name === seoSiteName || node['@type'] === 'Organization'));
 });
 
 void test('sitemap repeats reciprocal hreflang links for every localized profile', () => {

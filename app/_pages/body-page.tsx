@@ -25,6 +25,7 @@ import {
   ogImagePath,
   profileJsonLd,
   serializeJsonLd,
+  seoSiteName,
   seoLocales,
   type CatalogEntry,
 } from '../../lib/seo';
@@ -152,14 +153,13 @@ export const dynamicParams = false;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, entry } = await resolvePage(params);
-  const t = translator(locale);
   const title = pageTitle(entry, locale);
   const description = entryDescription(entry, locale);
   const canonical = absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id));
   return {
     title,
     description,
-    applicationName: t('ORBIT · 太阳系漫游'),
+    applicationName: seoSiteName,
     alternates: {
       canonical,
       languages: Object.fromEntries(
@@ -180,7 +180,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: canonical,
       title,
       description,
-      siteName: 'ORBIT · Solar System Observatory',
+      siteName: seoSiteName,
       locale: languages[locale].intl.replace('-', '_'),
       images: [
         {
@@ -325,6 +325,7 @@ export default async function BodyPage({ params }: PageProps) {
             width={1200}
             height={630}
             loading="eager"
+            // Static profile pages should reference the original local texture directly.
             unoptimized
           />
           <figcaption>{name}</figcaption>
