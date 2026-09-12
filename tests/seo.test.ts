@@ -11,6 +11,7 @@ import {
   seoLocales,
 } from '../lib/seo';
 import { localePath, translator } from '../lib/i18n';
+import { renderSitemap, sitemapEntries } from '../lib/sitemap';
 
 const explorerLayout = readFileSync(
   new URL('../app/(explorer)/layout.tsx', import.meta.url),
@@ -38,6 +39,16 @@ void test('localized profile routes use regional URL segments', () => {
   assert.equal(bodyDetailsPath('zh-CN', 'sun'), '/zh-CN/bodies/sun');
   assert.equal(bodyDetailsPath('en', 'sun'), '/en-US/bodies/sun');
   assert.equal(bodyDetailsPath('ja', 'sun'), '/ja-JP/bodies/sun');
+});
+
+void test('sitemap repeats reciprocal hreflang links for every localized profile', () => {
+  const entries = sitemapEntries();
+  const localized = entries.filter((entry) => entry.alternates);
+  assert.equal(localized.length, catalogEntries().length * seoLocales.length);
+  assert.equal(new Set(localized.flatMap((entry) => entry.alternates!.map((link) => link.hreflang))).size, 4);
+  assert.ok(localized.every((entry) => entry.alternates!.length === 4));
+  assert.match(renderSitemap(), /xmlns:xhtml="http:\/\/www\.w3\.org\/1999\/xhtml"/);
+  assert.equal((renderSitemap().match(/<xhtml:link /g) ?? []).length, localized.length * 4);
 });
 
 void test('explorer links keep the language and optional body selection', () => {
