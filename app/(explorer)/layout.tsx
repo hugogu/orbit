@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import LayoutShell from '../layout-shell';
+import '../globals.css';
+import RootProviders from '../root-providers';
 import { metadata as siteMetadata } from '../site-metadata';
 
 export const metadata: Metadata = siteMetadata;
@@ -9,5 +10,11 @@ export default function ExplorerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <LayoutShell>{children}</LayoutShell>;
+  return (
+    <html lang="zh-CN" className="dark">
+      <body>
+        <RootProviders>{children}</RootProviders>
+      </body>
+    </html>
+  );
 }

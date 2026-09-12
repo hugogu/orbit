@@ -7,6 +7,7 @@ import {
   catalogEntries,
   explorerPath,
   normalizeSiteOrigin,
+  serializeJsonLd,
   seoLocales,
 } from '../lib/seo';
 
@@ -45,7 +46,13 @@ void test('site origins normalize scheme-less hosts and discard paths safely', (
 });
 
 void test('root layouts emit the route locale before client hydration', () => {
-  assert.match(explorerLayout, /<LayoutShell>/);
-  assert.match(localizedLayout, /<LayoutShell locale=\{locale\}>/);
+  assert.match(explorerLayout, /<html lang="zh-CN"/);
+  assert.match(localizedLayout, /<html lang=\{languages\[locale\]\.intl\}/);
   assert.match(localizedLayout, /generateStaticParams/);
+});
+
+void test('JSON-LD escapes script-sensitive characters', () => {
+  const serialized = serializeJsonLd({ description: '</script><script>alert(1)</script>' });
+  assert.doesNotMatch(serialized, /[<>&]/);
+  assert.ok(serialized.includes('\\u003c/script\\u003e'));
 });

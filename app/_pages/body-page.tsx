@@ -14,6 +14,7 @@ import {
   catalogEntries,
   catalogEntry,
   explorerPath,
+  serializeJsonLd,
   seoLocales,
   siteOrigin,
   type CatalogEntry,
@@ -413,7 +414,7 @@ export default async function BodyPage({ params }: PageProps) {
         <a href={explorerPath(locale)}>{t('开始你的太空漫游')}</a>
         <span>ORBIT · Solar System Observatory</span>
       </footer>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
     </main>
   );
 }

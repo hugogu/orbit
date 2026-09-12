@@ -71,3 +71,10 @@ export function explorerPath(locale: Locale, id?: string) {
 export function absoluteSiteUrl(path: string) {
   return new URL(path, `${siteOrigin}/`).toString();
 }
+
+export function serializeJsonLd(value: object) {
+  const serialized = JSON.stringify(value);
+  return serialized.replace(/[<>&]/g, (character) =>
+    `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
+}

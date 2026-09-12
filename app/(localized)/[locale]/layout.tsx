@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import LayoutShell from '../../layout-shell';
+import '../../globals.css';
+import RootProviders from '../../root-providers';
 import { metadata as siteMetadata } from '../../site-metadata';
 import { languages, resolveLocale } from '../../../lib/i18n';
 
@@ -22,5 +23,11 @@ export default async function LocalizedLayout({
   const { locale: localeParam } = await params;
   const locale = resolveLocale(localeParam);
   if (!locale || locale !== localeParam) notFound();
-  return <LayoutShell locale={locale}>{children}</LayoutShell>;
+  return (
+    <html lang={languages[locale].intl} className="dark">
+      <body>
+        <RootProviders locale={locale}>{children}</RootProviders>
+      </body>
+    </html>
+  );
 }
