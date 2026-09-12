@@ -118,6 +118,16 @@ The repository root includes [`vercel.json`](vercel.json). Import the GitHub rep
 
 Vercel needs a static `dist/client/index.html`. The usual `npm run build` target remains for Sites/Cloudflare Worker output; publishing that Worker target as a Vercel static site results in a root-page 404.
 
+## Google Analytics (optional)
+
+ORBIT can report page views to Google Analytics 4 through `gtag.js`. The script only loads when a Measurement ID is configured, so analytics stays off by default.
+
+1. Set `NEXT_PUBLIC_GA_MEASUREMENT_ID` to your GA4 Measurement ID (for example `G-XXXXXXXXXX`). Copy [`.env.example`](.env.example) to `.env.local` for local development.
+2. On Vercel, add the same variable under Project Settings → Environment Variables. Scope it to Production only, unless you also want Preview deployments tracked.
+3. The variable is read at build time, so the same setup works for both the Vercel static export and the Sites/Cloudflare Worker build target — no other configuration is required.
+
+Leave the variable unset to ship ORBIT without loading any analytics script.
+
 ## Accuracy and model boundaries
 
 ORBIT is an educational tool with explicit assumptions, not a navigation product or professional ephemeris service. Display and event search use the same UTC clock, but each part has a different accuracy envelope:
@@ -142,6 +152,7 @@ The default demonstrative view compresses distances and enlarges bodies so the s
 | 3D rendering            | Three.js, WebGL                                                            |
 | Ephemeris and events    | Astronomy Engine, JPL data, browser Web Worker                             |
 | Styling and interaction | Tailwind CSS, Base UI, Lucide                                              |
+| Analytics               | Google Analytics 4 via `next/script`, optional and env-gated               |
 | Delivery                | Vercel static export, with a separate Sites/Cloudflare Worker build target |
 
 ## Contributing

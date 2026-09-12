@@ -118,6 +118,16 @@ npm run build:vercel
 
 Vercel 静态发布需要 `dist/client/index.html`。常规的 `npm run build` 仍然保留给 Sites/Cloudflare Worker 目标；将其 Worker 产物作为 Vercel 静态站点发布，会造成根路径 404。
 
+## Google Analytics（可选）
+
+ORBIT 可以通过 `gtag.js` 向 Google Analytics 4 上报页面访问。只有配置了 Measurement ID 时脚本才会加载，默认不会启用分析。
+
+1. 将 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 设置为你的 GA4 Measurement ID（例如 `G-XXXXXXXXXX`）。本地开发可将 [`.env.example`](.env.example) 复制为 `.env.local`。
+2. 在 Vercel 中，于 Project Settings → Environment Variables 添加同名变量。建议只作用于 Production；如果也想统计 Preview 部署的流量，再额外勾选 Preview。
+3. 该变量在构建时读取，因此 Vercel 静态导出与 Sites/Cloudflare Worker 构建目标使用同一套配置即可，无需其他调整。
+
+不设置该变量时，ORBIT 不会加载任何分析脚本。
+
 ## 模型边界与准确性
 
 ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历服务。显示和查询共享一个 UTC 时钟，但各部分有不同的精度范围：
@@ -142,6 +152,7 @@ ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历�
 | 3D 渲染    | Three.js、WebGL                                          |
 | 星历与事件 | Astronomy Engine、JPL 数据与浏览器 Web Worker            |
 | 样式与交互 | Tailwind CSS、Base UI、Lucide                            |
+| 数据统计   | Google Analytics 4（`next/script`，环境变量控制）        |
 | 部署       | Vercel 静态导出；也保留 Sites/Cloudflare Worker 构建目标 |
 
 ## 贡献

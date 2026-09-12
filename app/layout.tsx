@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { I18nProvider } from '../lib/i18n/provider';
+import GoogleAnalytics from '../components/google-analytics';
 export const metadata: Metadata = {
   title: 'ORBIT · 太阳系漫游',
   description:
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="dark">
       <body>
+        <GoogleAnalytics />
         <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
