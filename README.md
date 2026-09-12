@@ -170,4 +170,8 @@ For a bug report, include the browser and version, device class, viewport size, 
 
 ## License
 
-This repository does not yet declare a `LICENSE`. Until one is added, the code and assets remain all rights reserved; do not assume permission to redistribute, use commercially, or create derivatives. Before a public open-source release, the maintainer should choose and add a license that is compatible with the project and its third-party assets.
+The source code in this repository is available under the [PolyForm Noncommercial License 1.0.0](LICENSE). It permits personal, educational, research, hobby, and other noncommercial use, including local deployment and noncommercial modifications, subject to the license terms. It does not grant commercial hosting, SaaS, paid distribution, or commercial product rights.
+
+Commercial use requires a separate written agreement; see [Commercial licensing](COMMERCIAL-LICENSE.md). The project name, logo, and official distribution rules are described in [Trademark and official distribution policy](TRADEMARKS.md).
+
+Third-party code, data, and textures keep their own licenses. See the [satellite texture credits](public/textures/satellites/CREDITS.md) and the [texture source manifest](public/textures/source-manifest.json) for asset-specific terms.
