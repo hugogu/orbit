@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { moonRadii } from '../../../../lib/eclipse-shadows';
 import { moonSemimajorKm } from '../../../../lib/satellite-elements';
 import { translator, languages, type Locale } from '../../../../lib/i18n';
+import { curiosities, type Curiosity } from '../../../../lib/curiosities';
+import { extraFacts } from '../../../../lib/physical-facts';
 import { bodies } from '../../../../lib/solar';
 import { comets } from '../../../../lib/comets';
 import { orbitingMoons } from '../../../../lib/moon-orbits';
@@ -110,6 +112,19 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
   ];
 }
 
+function localizedCuriosity(fact: Curiosity, locale: Locale) {
+  const t = translator(locale);
+  return t(
+    fact.text,
+    Object.fromEntries(
+      Object.entries(fact.values ?? {}).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? t(value) : value,
+      ]),
+    ),
+  );
+}
+
 export function generateStaticParams() {
   return seoLocales.flatMap((locale) =>
     catalogEntries().map((entry) => ({ locale, id: entry.data.id })),
@@ -179,10 +194,21 @@ function BodyFacts({ entry, locale }: { entry: CatalogEntry; locale: Locale }) {
         </div>
       ))}
       {entry.kind === 'body' && (
-        <div>
-          <dt>{t('天然卫星')}</dt>
-          <dd>{t(entry.data.moons)}</dd>
-        </div>
+        <>
+          <div>
+            <dt>{t('天然卫星')}</dt>
+            <dd>{t(entry.data.moons)}</dd>
+          </div>
+          {extraFacts(entry.data, locale).map((fact) => (
+            <div key={fact.label}>
+              <dt>{t(fact.label)}</dt>
+              <dd>
+                {t(fact.value)}
+                {fact.unit && <> {t(fact.unit)}</>}
+              </dd>
+            </div>
+          ))}
+        </>
       )}
       {entry.kind === 'moon' && (
         <div>
@@ -191,6 +217,33 @@ function BodyFacts({ entry, locale }: { entry: CatalogEntry; locale: Locale }) {
         </div>
       )}
     </dl>
+  );
+}
+
+function CuriosityList({ entry, locale }: { entry: CatalogEntry; locale: Locale }) {
+  const t = translator(locale);
+  const pool = curiosities[entry.data.id] ?? [];
+  if (pool.length === 0) return null;
+  return (
+    <section className="seo-section seo-knowledge" aria-labelledby="seo-knowledge-heading">
+      <h2 id="seo-knowledge-heading">{t('延伸知识')}</h2>
+      <ol className="seo-knowledge-list">
+        {pool.map((fact, index) => (
+          <li key={`${entry.data.id}-${index}`}>
+            <p>{localizedCuriosity(fact, locale)}</p>
+            <a
+              className="seo-knowledge-source"
+              href={fact.source}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {fact.related ? t('延伸知识') : t('资料与计算依据')} · {index + 1}/
+              {pool.length} ↗
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -314,6 +367,8 @@ export default async function BodyPage({ params }: PageProps) {
             </p>
           )}
         </section>
+
+        <CuriosityList entry={entry} locale={locale} />
 
         <section className="seo-section" aria-labelledby="seo-source-heading">
           <h2 id="seo-source-heading">{t('模型说明与来源')}</h2>
