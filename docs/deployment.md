@@ -18,13 +18,14 @@ The repository root includes [`vercel.json`](../vercel.json), so importing the G
 | Build Command    | `npm run build:vercel` |
 | Output Directory | `dist/client`          |
 | Framework Preset | Other / unset          |
+| Clean URLs       | Enabled                |
 
 ### First-time project setup
 
 1. In Vercel, **Add New → Project** and import this GitHub repository. Keep the root directory as-is.
 2. Confirm Build & Development Settings match the table above (they should be picked up from `vercel.json`; only override manually if Vercel shows something different).
-3. Add any environment variables you want for this deployment — see [Environment variables](#environment-variables) below.
-4. Deploy.
+3. Add the required `NEXT_PUBLIC_SITE_URL` and any optional environment variables — see [Environment variables](#environment-variables) below.
+4. Deploy. The `cleanUrls` setting maps exported files such as `dist/client/zh-CN/bodies/sun.html` to `/zh-CN/bodies/sun`.
 
 ### Redeploying after an environment variable change
 
@@ -34,7 +35,10 @@ Environment variables such as `NEXT_PUBLIC_GA_MEASUREMENT_ID` are read at build 
 
 | Variable                        | Required | Where it's read          | Purpose                                        |
 | ------------------------------- | -------- | ------------------------ | ---------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`          | Yes for public deployments | Build time | Canonical origin for metadata, sitemap, and robots URLs |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | No       | Build time, both targets | Enables Google Analytics 4 when set; see below |
+
+Set `NEXT_PUBLIC_SITE_URL` to the exact public origin, for example `https://www.orbits.observer`, without a path. Redeploy after changing it because static metadata and SEO files are generated during the build.
 
 ### Google Analytics (optional)
 

@@ -3,6 +3,7 @@
   "framework": null,
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "dist/client",
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/_next/static/(.*)",
