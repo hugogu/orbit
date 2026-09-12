@@ -318,7 +318,7 @@ export default async function BodyPage({ params }: PageProps) {
         </nav>
       </header>
       <article className="seo-article">
-        <nav className="seo-breadcrumb" aria-label="Breadcrumb">
+        <nav className="seo-breadcrumb" aria-label={t('面包屑')}>
           <a href={explorerPath(locale)}>{t('返回总览')}</a>
           <span aria-hidden="true">/</span>
           <span>{name}</span>

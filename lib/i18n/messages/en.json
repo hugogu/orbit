@@ -260,6 +260,7 @@
   "在 3D 观测台中观察": "View in the 3D observatory",
   "继续探索": "Continue exploring",
   "所属行星": "Parent planet",
+  "面包屑": "Breadcrumb",
   "ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历服务。": "ORBIT is an educational tool that explains its assumptions; it is not a navigation or professional ephemeris service.",
   "探索": "Explore",
   "探索{{name}}": "Explore {{name}}",

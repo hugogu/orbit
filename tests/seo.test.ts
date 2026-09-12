@@ -6,7 +6,7 @@ import {
   catalogEntries,
   explorerPath,
   seoLocales,
-} from '../lib/seo.ts';
+} from '../lib/seo';
 
 void test('every catalog entry has a unique localized profile URL', () => {
   const entries = catalogEntries();

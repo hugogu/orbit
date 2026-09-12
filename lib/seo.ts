@@ -3,13 +3,24 @@ import { languages, type Locale } from './i18n';
 import { orbitingMoons, type OrbitingMoon } from './moon-orbits';
 import { bodies, type Body } from './solar';
 
+const fallbackSiteOrigin = 'https://orbit-henna-xi.vercel.app';
+
 /**
  * Override this during a production build so canonical and sitemap URLs use
- * the permanent public hostname instead of the demo deployment.
+ * the permanent public hostname instead of the demo deployment. This helper
+ * is also imported by the client entry, so it must not assume `process` exists.
  */
-export const siteOrigin = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://orbit-henna-xi.vercel.app'
-).replace(/\/$/, '');
+function resolveSiteOrigin() {
+  const runtime = globalThis as typeof globalThis & {
+    process?: { env?: Record<string, string | undefined> };
+  };
+  const configured = runtime.process?.env?.NEXT_PUBLIC_SITE_URL;
+  if (configured) return configured.replace(/\/$/, '');
+  if (typeof window !== 'undefined') return window.location.origin;
+  return fallbackSiteOrigin;
+}
+
+export const siteOrigin = resolveSiteOrigin();
 
 export const seoLocales = Object.keys(languages) as Locale[];
 
