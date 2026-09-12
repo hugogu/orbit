@@ -5,6 +5,21 @@ import { bodies, type Body } from './solar';
 
 const fallbackSiteOrigin = 'https://orbit-henna-xi.vercel.app';
 
+export function normalizeSiteOrigin(value: string) {
+  const candidate = value.trim();
+  if (!candidate) return;
+  const withProtocol = /^[a-z][a-z\d+.-]*:\/\//i.test(candidate)
+    ? candidate
+    : `https://${candidate}`;
+  try {
+    const url = new URL(withProtocol);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+    return url.origin;
+  } catch {
+    return;
+  }
+}
+
 /**
  * Override this during a production build so canonical and sitemap URLs use
  * the permanent public hostname instead of the demo deployment. This helper
@@ -15,7 +30,10 @@ function resolveSiteOrigin() {
     process?: { env?: Record<string, string | undefined> };
   };
   const configured = runtime.process?.env?.NEXT_PUBLIC_SITE_URL;
-  if (configured) return configured.replace(/\/$/, '');
+  if (configured) {
+    const normalized = normalizeSiteOrigin(configured);
+    if (normalized) return normalized;
+  }
   if (typeof window !== 'undefined') return window.location.origin;
   return fallbackSiteOrigin;
 }

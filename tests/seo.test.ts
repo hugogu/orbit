@@ -5,6 +5,7 @@ import {
   bodyDetailsPath,
   catalogEntries,
   explorerPath,
+  normalizeSiteOrigin,
   seoLocales,
 } from '../lib/seo';
 
@@ -24,4 +25,11 @@ void test('explorer links keep the language and optional body selection', () => 
   assert.equal(explorerPath('zh-CN'), '/?lang=zh-CN');
   assert.equal(explorerPath('en', 'earth'), '/?lang=en#earth');
   assert.equal(absoluteSiteUrl('/sitemap.xml').endsWith('/sitemap.xml'), true);
+});
+
+void test('site origins normalize scheme-less hosts and discard paths safely', () => {
+  assert.equal(normalizeSiteOrigin('example.com/orbit'), 'https://example.com');
+  assert.equal(normalizeSiteOrigin('https://example.com/orbit/'), 'https://example.com');
+  assert.equal(normalizeSiteOrigin('http://localhost:3000/orbit'), 'http://localhost:3000');
+  assert.equal(normalizeSiteOrigin('not a URL'), undefined);
 });

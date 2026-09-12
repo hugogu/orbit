@@ -87,10 +87,16 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
   if (entry.kind === 'body') {
     const body = entry.data;
+    const orbitalPeriod =
+      body.period > 1000
+        ? `${(body.period / 365.256).toLocaleString(locale, {
+            maximumFractionDigits: 1,
+          })} ${t('年')}`
+        : `${body.period.toLocaleString(locale)} ${t('天')}`;
     return [
       [t('平均半径'), `${body.radius.toLocaleString(locale)} km`],
       [t('平均日距'), body.au ? `${body.au} AU` : '—'],
-      [t('公转周期'), body.period ? `${body.period.toLocaleString(locale)} ${body.period > 1000 ? t('年') : t('天')}` : '—'],
+      [t('公转周期'), body.period ? orbitalPeriod : '—'],
       [t('自转周期'), `${Math.abs(body.day).toFixed(2)} ${t('天')}`],
     ];
   }
