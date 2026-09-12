@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { moonRadii } from '../../lib/eclipse-shadows';
 import { moonSemimajorKm } from '../../lib/satellite-elements';
@@ -19,10 +20,13 @@ import {
   bodyDetailsPath,
   catalogEntries,
   catalogEntry,
+  entryImagePath,
   explorerPath,
+  ogImagePath,
+  profileJsonLd,
   serializeJsonLd,
+  seoSiteName,
   seoLocales,
-  siteOrigin,
   type CatalogEntry,
 } from '../../lib/seo';
 
@@ -149,14 +153,13 @@ export const dynamicParams = false;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, entry } = await resolvePage(params);
-  const t = translator(locale);
   const title = pageTitle(entry, locale);
   const description = entryDescription(entry, locale);
   const canonical = absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id));
   return {
     title,
     description,
-    applicationName: t('ORBIT · 太阳系漫游'),
+    applicationName: seoSiteName,
     alternates: {
       canonical,
       languages: Object.fromEntries(
@@ -177,13 +180,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: canonical,
       title,
       description,
-      siteName: 'ORBIT · Solar System Observatory',
+      siteName: seoSiteName,
       locale: languages[locale].intl.replace('-', '_'),
       images: [
         {
-          url: `${siteOrigin}/og-image.png`,
-          width: 1672,
-          height: 941,
+          url: absoluteSiteUrl(ogImagePath(locale, entry.data.id)),
+          width: 1200,
+          height: 630,
           alt: `${entryName(entry, locale)} · ORBIT`,
         },
       ],
@@ -192,7 +195,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: 'summary_large_image',
       title,
       description,
-      images: [`${siteOrigin}/og-image.png`],
+      images: [absoluteSiteUrl(ogImagePath(locale, entry.data.id))],
     },
   };
 }
@@ -269,48 +272,13 @@ export default async function BodyPage({ params }: PageProps) {
   const title = pageTitle(entry, locale);
   const canonical = absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id));
   const related = relatedEntries(entry);
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    '@id': `${canonical}#webpage`,
-    url: canonical,
-    name: title,
+  const jsonLd = profileJsonLd({
+    entry,
+    locale,
+    title,
     description,
-    inLanguage: languages[locale].intl,
-    isPartOf: {
-      '@type': 'WebSite',
-      name: t('ORBIT · 太阳系漫游'),
-      url: absoluteSiteUrl('/'),
-    },
-    about: {
-      '@type': 'Thing',
-      name,
-      description,
-    },
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'ORBIT',
-          item: absoluteSiteUrl('/'),
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: t('太阳系知识'),
-          item: absoluteSiteUrl(explorerPath(locale)),
-        },
-        {
-          '@type': 'ListItem',
-          position: 3,
-          name,
-          item: canonical,
-        },
-      ],
-    },
-  };
+    canonical,
+  });
 
   return (
     <main className="seo-page">
@@ -350,6 +318,18 @@ export default async function BodyPage({ params }: PageProps) {
           <span>{entry.data.en}</span>
         </p>
         <h1>{name}</h1>
+        <figure className="seo-hero">
+          <Image
+            src={entryImagePath(entry)}
+            alt={`${name} · ORBIT`}
+            width={1200}
+            height={630}
+            loading="eager"
+            // Static profile pages should reference the original local texture directly.
+            unoptimized
+          />
+          <figcaption>{name}</figcaption>
+        </figure>
         <p className="seo-lead">{description}</p>
         <div className="seo-actions">
           <a className="seo-primary-action" href={explorerPath(locale, entry.data.id)}>
@@ -362,6 +342,7 @@ export default async function BodyPage({ params }: PageProps) {
 
         <section className="seo-section" aria-labelledby="seo-facts-heading">
           <h2 id="seo-facts-heading">{t('资料与计算依据')}</h2>
+          <h3 className="seo-subheading">{t('核心参数')}</h3>
           <BodyFacts entry={entry} locale={locale} />
           <p className="seo-copy">
             {t(entry.kind === 'moon' ? entry.data.description : entry.data.fact)}
@@ -386,6 +367,7 @@ export default async function BodyPage({ params }: PageProps) {
 
         <section className="seo-section" aria-labelledby="seo-source-heading">
           <h2 id="seo-source-heading">{t('模型说明与来源')}</h2>
+          <h3 className="seo-subheading">{t('可信来源')}</h3>
           <p className="seo-copy">{t('ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历服务。')}</p>
           <a className="seo-source-link" href={sourceUrl(entry)} target="_blank" rel="noreferrer">
             {entry.kind === 'moon' ? t('阅读 NASA 的{{name}}资料 ↗', { name }) : t('在 NASA 继续探索')}

@@ -722,6 +722,9 @@ export default function Home() {
         className={`catalog glass ${tab === 'explore' ? 'catalog-body' : 'catalog-regions'}`}
         aria-label={tab === 'explore' ? t('选择天体') : t('选择太阳系区域')}
       >
+        <h2 className="sr-only">
+          {tab === 'explore' ? t('天体导航') : t('太阳系结构')}
+        </h2>
         <div className="catalog-title">
           {tab === 'explore' ? t('天体导航') : t('由内向外')}
           <span>{tab === 'explore' ? '01 — 14' : '01 — 07'}</span>

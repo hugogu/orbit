@@ -47,6 +47,75 @@ body {
   font-family: Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   font-size: 16px;
 }
+.not-found {
+  min-height: 100svh;
+  width: min(100% - 48px, 720px);
+  margin-inline: auto;
+  padding: 18vh 0 12vh;
+  background: radial-gradient(circle at 80% 0%, #1c263a 0, transparent 42rem);
+}
+.not-found-code {
+  color: #7c8797;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  margin: 0 0 16px;
+}
+.not-found h1 {
+  color: #e7dfcf;
+  font-size: clamp(38px, 7vw, 68px);
+  font-weight: 400;
+  line-height: 1.12;
+  margin: 0;
+}
+.not-found-copy {
+  color: #b2bbc9;
+  font-size: 17px;
+  line-height: 1.9;
+  margin: 24px 0 44px;
+}
+.not-found-copy p {
+  margin: 4px 0;
+}
+.not-found h2 {
+  color: #d9c49a;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  margin: 0 0 14px;
+}
+.not-found ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 38px;
+  padding: 0;
+}
+.not-found li a,
+.not-found-home {
+  border: 1px solid #ffffff1c;
+  border-radius: 7px;
+  color: #aebbd0;
+  display: inline-block;
+  font-size: 14px;
+  padding: 11px 14px;
+}
+.not-found li a:hover,
+.not-found-home:hover {
+  border-color: #d9c49a66;
+  color: #e7d2a7;
+}
+.not-found-home {
+  background: #d9c49a;
+  border-color: transparent;
+  color: #11151d;
+}
+@media (max-width: 600px) {
+  .not-found {
+    width: min(100% - 32px, 720px);
+    padding-top: 14vh;
+  }
+}
 
 /* Crawlable body pages keep the observatory visual language without loading
    the full WebGL scene before the reader reaches the interactive link. */
@@ -134,6 +203,31 @@ body {
   letter-spacing: 0.04em;
   line-height: 1.12;
   margin: 0;
+}
+.seo-hero {
+  margin: 28px 0 0;
+  max-width: 720px;
+}
+.seo-hero img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #0b1019;
+}
+.seo-hero figcaption {
+  color: #68768a;
+  font-size: 12px;
+  margin-top: 8px;
+}
+.seo-subheading {
+  color: #c5cedc;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  margin: 0 0 14px;
 }
 .seo-lead {
   color: #b2bbc9;
@@ -319,6 +413,17 @@ button {
 a {
   color: inherit;
   text-decoration: none;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 button {
   font: inherit;
@@ -542,6 +647,15 @@ button:disabled {
   flex: 1;
   text-align: left;
 }
+.body-option-heading,
+.moon-children h4 {
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+}
+.body-option {
+  text-decoration: none;
+}
 .moon-expander {
   display: flex;
   align-items: center;
@@ -563,7 +677,8 @@ button:disabled {
   border-left: 1px solid #b7c7db25;
   list-style: none;
 }
-.moon-children button {
+.moon-children button,
+.moon-children a.body-option {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -581,7 +696,9 @@ button:disabled {
   letter-spacing: 0.07em;
 }
 .moon-children button.active,
-.moon-children button:hover {
+.moon-children button:hover,
+.moon-children a.body-option.active,
+.moon-children a.body-option:hover {
   background: #dfc58f12;
   color: #e2c78e;
 }

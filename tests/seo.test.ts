@@ -5,9 +5,14 @@ import {
   absoluteSiteUrl,
   bodyDetailsPath,
   catalogEntries,
+  entryImagePath,
   explorerPath,
+  homeJsonLd,
   normalizeSiteOrigin,
+  ogImagePath,
+  profileJsonLd,
   serializeJsonLd,
+  seoSiteName,
   seoLocales,
 } from '../lib/seo';
 import { localePath, translator } from '../lib/i18n';
@@ -17,11 +22,21 @@ const explorerLayout = readFileSync(
   new URL('../app/(explorer)/layout.tsx', import.meta.url),
   'utf8',
 );
+const explorerPage = readFileSync(
+  new URL('../app/(explorer)/page.tsx', import.meta.url),
+  'utf8',
+);
 const localizedLayout = readFileSync(
   new URL('../app/(localized)/[locale]/layout.tsx', import.meta.url),
   'utf8',
 );
 const bodyPage = readFileSync(new URL('../app/_pages/body-page.tsx', import.meta.url), 'utf8');
+const ogGenerator = readFileSync(new URL('../scripts/generate-og.ts', import.meta.url), 'utf8');
+const bodyNavigation = readFileSync(
+  new URL('../components/body-navigation.tsx', import.meta.url),
+  'utf8',
+);
+const notFoundPage = readFileSync(new URL('../app/not-found.tsx', import.meta.url), 'utf8');
 const vercelConfig = JSON.parse(
   readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'),
 );
@@ -42,6 +57,51 @@ void test('localized profile routes use regional URL segments', () => {
   assert.equal(bodyDetailsPath('zh-CN', 'sun'), '/zh-CN/bodies/sun');
   assert.equal(bodyDetailsPath('en', 'sun'), '/en-US/bodies/sun');
   assert.equal(bodyDetailsPath('ja', 'sun'), '/ja-JP/bodies/sun');
+});
+
+void test('profiles expose local images and unique localized social assets', () => {
+  const entries = catalogEntries();
+  for (const entry of entries) {
+    assert.match(entryImagePath(entry), /^\/textures\//);
+  }
+  for (const locale of seoLocales) {
+    const images = entries.map((entry) => ogImagePath(locale, entry.data.id));
+    assert.equal(new Set(images).size, entries.length);
+    assert.ok(images.every((path) => path.endsWith('.png')));
+  }
+});
+
+void test('OG cards use each locale for their footer and output directory', () => {
+  assert.match(ogGenerator, /observatoryName: t\('太阳系观测台'\)/);
+  assert.match(ogGenerator, /languageName: languages\[locale\]\.name/);
+  assert.doesNotMatch(ogGenerator, /languages\.en\.name/);
+  assert.match(ogGenerator, /mkdirSync\(dirname\(outputPath\)/);
+});
+
+void test('profile JSON-LD describes the learning resource and breadcrumb graph', () => {
+  const entry = catalogEntries().find((item) => item.data.id === 'sun')!;
+  const graph = profileJsonLd({
+    entry,
+    locale: 'en',
+    title: 'Sun · Solar System facts',
+    description: 'A profile of the Sun.',
+    canonical: absoluteSiteUrl(bodyDetailsPath('en', 'sun')),
+  });
+  const nodes = graph['@graph'] as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    nodes.map((node) => node['@type']),
+    ['Organization', 'WebSite', 'AstronomicalBody', 'BreadcrumbList', 'LearningResource', 'WebPage'],
+  );
+  const breadcrumb = nodes.find((node) => node['@type'] === 'BreadcrumbList')!;
+  assert.equal((breadcrumb.itemListElement as Array<unknown>).length, 2);
+  assert.equal((nodes[0] as Record<string, unknown>).name, seoSiteName);
+  assert.equal((nodes[1] as Record<string, unknown>).name, seoSiteName);
+  const resource = nodes.find((node) => node['@type'] === 'LearningResource')!;
+  assert.equal(resource.educationalLevel, 'Beginner');
+  assert.deepEqual(resource.author, resource.provider);
+  const homeNodes = homeJsonLd()['@graph'] as Array<Record<string, unknown>>;
+  assert.equal(homeNodes.length, 3);
+  assert.ok(homeNodes.every((node) => node.name === seoSiteName || node['@type'] === 'Organization'));
 });
 
 void test('sitemap repeats reciprocal hreflang links for every localized profile', () => {
@@ -71,6 +131,7 @@ void test('root layouts emit the route locale before client hydration', () => {
   assert.match(explorerLayout, /<html lang="zh-CN"/);
   assert.match(localizedLayout, /<html lang=\{languages\[locale\]\.intl\}/);
   assert.match(localizedLayout, /generateStaticParams/);
+  assert.match(explorerPage, /homeJsonLd\(\)/);
 });
 
 void test('JSON-LD escapes script-sensitive characters', () => {
@@ -84,6 +145,20 @@ void test('comet metadata labels omit decorative separators', () => {
   for (const locale of seoLocales) {
     assert.doesNotMatch(translator(locale)('彗星档案'), /\/\s*$/);
   }
+});
+
+void test('catalog names are crawlable profile links and headings', () => {
+  assert.match(bodyNavigation, /bodyDetailsPath\(locale, body\.id\)/);
+  assert.match(bodyNavigation, /<h3 className="body-option-heading">/);
+  assert.match(bodyNavigation, /<h4>/);
+});
+
+void test('custom 404 offers noindex metadata and exploration links', () => {
+  assert.match(notFoundPage, /index: false/);
+  assert.match(notFoundPage, /热门天体/);
+  assert.match(notFoundPage, /返回太阳系观测台/);
+  assert.match(notFoundPage, /seoLocales\.map/);
+  assert.match(notFoundPage, /bodyDetailsPath\(locale, id\)/);
 });
 
 void test('Vercel serves extensionless paths for exported HTML profiles', () => {

@@ -41,5 +41,6 @@ next-env.d.ts
 # Generated SEO artifacts (created by the build with the deployment hostname)
 /public/robots.txt
 /public/sitemap.xml
+/public/og/
 
 *.tsbuildinfo
