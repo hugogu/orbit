@@ -21,6 +21,9 @@ const localizedLayout = readFileSync(
   'utf8',
 );
 const bodyPage = readFileSync(new URL('../app/_pages/body-page.tsx', import.meta.url), 'utf8');
+const vercelConfig = JSON.parse(
+  readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'),
+);
 
 void test('every catalog entry has a unique localized profile URL', () => {
   const entries = catalogEntries();
@@ -64,4 +67,8 @@ void test('comet metadata labels omit decorative separators', () => {
   for (const locale of seoLocales) {
     assert.doesNotMatch(translator(locale)('彗星档案'), /\/\s*$/);
   }
+});
+
+void test('Vercel serves extensionless paths for exported HTML profiles', () => {
+  assert.equal(vercelConfig.cleanUrls, true);
 });
