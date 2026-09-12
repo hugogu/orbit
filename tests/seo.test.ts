@@ -43,6 +43,10 @@ const physicalFacts = readFileSync(
   new URL('../components/physical-facts.tsx', import.meta.url),
   'utf8',
 );
+const bodyPage = readFileSync(
+  new URL('../app/_pages/body-page.tsx', import.meta.url),
+  'utf8',
+);
 const notFoundPage = readFileSync(
   new URL('../app/not-found.tsx', import.meta.url),
   'utf8',
@@ -203,7 +207,9 @@ void test('catalog names are crawlable profile links and headings', () => {
 void test('profile navigation separates internal links from external sources', () => {
   assert.match(homePage, /t\('阅读\{\{name\}\}的完整资料'/);
   assert.doesNotMatch(homePage, /阅读\{\{name\}\}的完整资料 ↗/);
-  assert.match(physicalFacts, /NASA 太阳资料[\s\S]*span aria-hidden="true">↗/);
+  assert.match(physicalFacts, /ArrowUpRight[\s\S]*external-arrow/);
+  assert.doesNotMatch(bodyPage, /在 3D 观测台中观察[\s\S]*↗/);
+  assert.doesNotMatch(bodyPage, /entryName\(item, locale\)[\s\S]*↗/);
   assert.match(homePage, /omitSource=\{[\s\S]*body\.id === 'sun'/);
   assert.match(
     homePage,

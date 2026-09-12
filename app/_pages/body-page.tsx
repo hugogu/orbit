@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { ArrowUpRight } from 'lucide-react';
 import { moonRadii } from '../../lib/eclipse-shadows';
 import { moonSemimajorKm } from '../../lib/satellite-elements';
 import {
@@ -309,7 +310,10 @@ function ProfileFactGroup({
               rel="noreferrer"
               aria-label={t('参考资料 {{number}}', { number: sourceIndex + 1 })}
             >
-              {t('资料来源')} {sources.length > 1 ? sourceIndex + 1 : ''} ↗
+              <span>
+                {t('资料来源')} {sources.length > 1 ? sourceIndex + 1 : ''}
+              </span>
+              <ArrowUpRight className="external-arrow" aria-hidden="true" />
             </a>
           ))}
         </div>
@@ -424,7 +428,7 @@ export default async function BodyPage({ params }: PageProps) {
                   className="seo-primary-action"
                   href={explorerPath(locale, entry.data.id)}
                 >
-                  {t('在 3D 观测台中观察')} <span aria-hidden="true">↗</span>
+                  {t('在 3D 观测台中观察')}
                 </a>
                 <ProfileShare locale={locale} title={title} url={canonical} />
               </div>
@@ -522,7 +526,8 @@ export default async function BodyPage({ params }: PageProps) {
                 target="_blank"
                 rel="noreferrer"
               >
-                NASA Science — {name} ↗
+                <span>NASA Science — {name}</span>
+                <ArrowUpRight className="external-arrow" aria-hidden="true" />
               </a>
               <a
                 className="seo-source-link"
@@ -536,7 +541,8 @@ export default async function BodyPage({ params }: PageProps) {
                 target="_blank"
                 rel="noreferrer"
               >
-                JPL — {t('轨道数据')} ↗
+                <span>JPL — {t('轨道数据')}</span>
+                <ArrowUpRight className="external-arrow" aria-hidden="true" />
               </a>
               <div id="image-credits" className="profile-image-credits">
                 <h3>{t('图像与授权')}</h3>
@@ -599,7 +605,6 @@ export default async function BodyPage({ params }: PageProps) {
                       unoptimized
                     />
                     <span>{entryName(item, locale)}</span>
-                    <span aria-hidden="true">↗</span>
                   </a>
                 </li>
               ))}

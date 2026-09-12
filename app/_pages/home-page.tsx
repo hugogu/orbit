@@ -465,7 +465,7 @@ export default function Home() {
         rel="noreferrer"
       >
         {t('在 NASA 继续探索')}
-        <ArrowUpRight size={15} />
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
       <a
         className="source"
@@ -474,7 +474,7 @@ export default function Home() {
         rel="noreferrer"
       >
         {t('轨道参数：JPL 小天体数据库')}
-        <ArrowUpRight size={15} />
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
     </>
   ) : selectedMoon ? (
@@ -565,7 +565,7 @@ export default function Home() {
         rel="noreferrer"
       >
         {t('在 NASA 继续探索')}
-        <ArrowUpRight size={15} />
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
     </>
   ) : (

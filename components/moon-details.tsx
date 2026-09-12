@@ -1,5 +1,6 @@
 'use client';
 import { useI18n } from '../lib/i18n/provider';
+import { ArrowUpRight } from 'lucide-react';
 import type { OrbitingMoon } from '../lib/moon-orbits';
 import { bodies } from '../lib/solar';
 import { moonRadii } from '../lib/eclipse-shadows';
@@ -80,8 +81,8 @@ export default function MoonDetails({
         target="_blank"
         rel="noreferrer"
       >
-        {t('阅读 NASA 的{{name}}资料', { name: t(moon.name) })}{' '}
-        <span aria-hidden="true">↗</span>
+        <span>{t('阅读 NASA 的{{name}}资料', { name: t(moon.name) })}</span>
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
       <a
         className="source"
@@ -89,7 +90,8 @@ export default function MoonDetails({
         target="_blank"
         rel="noreferrer"
       >
-        {t('JPL 卫星物理参数')} <span aria-hidden="true">↗</span>
+        <span>{t('JPL 卫星物理参数')}</span>
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
       <a className="source" href={`#${moon.id}`}>
         {t('此卫星的独立链接')}

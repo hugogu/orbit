@@ -243,7 +243,7 @@ body {
   margin-top: -15px;
 }
 .seo-hero figcaption a {
-  color: #62d69b;
+  color: #aebbd0;
   text-underline-offset: 4px;
   text-decoration: underline;
 }
@@ -483,12 +483,18 @@ body {
   padding: 0 0 20px 20px;
 }
 .profile-group-sources a {
-  color: #62d69b;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #748197;
   font-size: 12px;
 }
 .seo-source-link {
-  display: block;
-  color: #62d69b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #aebbd0;
   font-size: 15px;
   line-height: 1.7;
   margin-top: 12px;
@@ -510,7 +516,7 @@ body {
 }
 .profile-image-credits a,
 .profile-share-panel p a {
-  color: #62d69b;
+  color: #748197;
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -974,8 +980,11 @@ button:disabled {
   display: flex;
   align-items: center;
 }
-.body-branch-row .body-option {
+.body-branch-row .body-option-heading {
   flex: 1;
+  min-width: 0;
+}
+.body-branch-row .body-option {
   min-width: 0;
 }
 .body-branch-row .body-option > span:last-child {
@@ -1773,9 +1782,16 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #62d69b;
+  color: #c6b08b;
   border-top: 1px solid #ffffff10;
   padding-top: 14px;
+}
+.external-arrow {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.8;
 }
 .region-option {
   min-height: 58px;

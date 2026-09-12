@@ -1,5 +1,6 @@
 'use client';
 import { useI18n } from '../lib/i18n/provider';
+import { ArrowUpRight } from 'lucide-react';
 import type { Body } from '../lib/solar';
 import { extraFacts } from '../lib/physical-facts';
 import ConceptHint from './concept-hint';
@@ -45,9 +46,11 @@ export default function PhysicalFacts({ body }: { body: Body }) {
         target="_blank"
         rel="noreferrer"
       >
-        {t('数据来源：')}
-        {body.id === 'sun' ? t('NASA 太阳资料') : t('JPL 行星物理参数')}{' '}
-        <span aria-hidden="true">↗</span>
+        <span>
+          {t('数据来源：')}
+          {body.id === 'sun' ? t('NASA 太阳资料') : t('JPL 行星物理参数')}
+        </span>
+        <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
     </details>
   );
