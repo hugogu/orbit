@@ -10,7 +10,7 @@ import {
   serializeJsonLd,
   seoLocales,
 } from '../lib/seo';
-import { translator } from '../lib/i18n';
+import { localePath, translator } from '../lib/i18n';
 
 const explorerLayout = readFileSync(
   new URL('../app/(explorer)/layout.tsx', import.meta.url),
@@ -30,8 +30,14 @@ void test('every catalog entry has a unique localized profile URL', () => {
   for (const locale of seoLocales) {
     const paths = entries.map((entry) => bodyDetailsPath(locale, entry.data.id));
     assert.equal(new Set(paths).size, entries.length);
-    assert.ok(paths.every((path) => path.startsWith(`/${locale}/bodies/`)));
+    assert.ok(paths.every((path) => path.startsWith(`/${localePath(locale)}/bodies/`)));
   }
+});
+
+void test('localized profile routes use regional URL segments', () => {
+  assert.equal(bodyDetailsPath('zh-CN', 'sun'), '/zh-CN/bodies/sun');
+  assert.equal(bodyDetailsPath('en', 'sun'), '/en-US/bodies/sun');
+  assert.equal(bodyDetailsPath('ja', 'sun'), '/ja-JP/bodies/sun');
 });
 
 void test('explorer links keep the language and optional body selection', () => {

@@ -66,7 +66,7 @@ export function I18nProvider({
     } catch {
       /* Still usable with storage disabled. */
     }
-    // Replace only the language parameter; body links and unrelated query state survive.
+    // Localized profile routes replace their regional segment; the explorer keeps its language query.
     window.history.replaceState(
       window.history.state,
       '',

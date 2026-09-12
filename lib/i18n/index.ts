@@ -5,9 +5,27 @@ import ja from './messages/ja.json';
 
 // Add a catalog here to expose another language throughout the application.
 export const languages = {
-  'zh-CN': { name: '简体中文', short: '中', intl: 'zh-CN', messages: zh },
-  en: { name: 'English', short: 'EN', intl: 'en-US', messages: en },
-  ja: { name: '日本語', short: '日', intl: 'ja-JP', messages: ja },
+  'zh-CN': {
+    name: '简体中文',
+    short: '中',
+    route: 'zh-CN',
+    intl: 'zh-CN',
+    messages: zh,
+  },
+  en: {
+    name: 'English',
+    short: 'EN',
+    route: 'en-US',
+    intl: 'en-US',
+    messages: en,
+  },
+  ja: {
+    name: '日本語',
+    short: '日',
+    route: 'ja-JP',
+    intl: 'ja-JP',
+    messages: ja,
+  },
 } as const;
 export type Locale = keyof typeof languages;
 export const defaultLocale: Locale = 'zh-CN';
@@ -20,6 +38,21 @@ export function resolveLocale(value: unknown): Locale | undefined {
   return (
     codes.find((locale) => locale.toLowerCase() === normalized) ??
     codes.find((locale) => locale.split('-')[0] === normalized.split('-')[0])
+  );
+}
+
+/** The canonical regional segment used by localized static pages. */
+export function localePath(locale: Locale) {
+  return languages[locale].route;
+}
+
+/** Resolve only canonical regional URL segments; language aliases remain for preferences and explorer URLs. */
+export function resolveLocalePath(value: unknown): Locale | undefined {
+  if (typeof value !== 'string') return;
+  const normalized = value.toLowerCase().replaceAll('_', '-');
+  const codes = Object.keys(languages) as Locale[];
+  return codes.find(
+    (locale) => languages[locale].route.toLowerCase() === normalized,
   );
 }
 export function detectLocale(
@@ -61,6 +94,10 @@ export function translator(locale: Locale = defaultLocale): Translate {
 }
 export function languageUrl(href: string, locale: Locale) {
   const url = new URL(href);
-  url.searchParams.set('lang', locale);
+  const segments = url.pathname.split('/');
+  const currentPathLocale = resolveLocalePath(segments[1]);
+  if (currentPathLocale) segments[1] = localePath(locale);
+  else url.searchParams.set('lang', locale);
+  url.pathname = segments.join('/');
   return url.pathname + url.search + url.hash;
 }

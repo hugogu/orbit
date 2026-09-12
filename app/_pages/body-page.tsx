@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { moonRadii } from '../../lib/eclipse-shadows';
 import { moonSemimajorKm } from '../../lib/satellite-elements';
-import { translator, languages, type Locale } from '../../lib/i18n';
+import {
+  localePath,
+  resolveLocalePath,
+  translator,
+  languages,
+  type Locale,
+} from '../../lib/i18n';
 import { curiosities, type Curiosity } from '../../lib/curiosities';
 import { extraFacts } from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
@@ -30,7 +36,8 @@ type ResolvedPage = {
 };
 
 function resolveLocale(value: string): Locale | undefined {
-  return seoLocales.includes(value as Locale) ? (value as Locale) : undefined;
+  const locale = resolveLocalePath(value);
+  return locale && localePath(locale) === value ? locale : undefined;
 }
 
 async function resolvePage(params: PageProps['params']): Promise<ResolvedPage> {
@@ -134,7 +141,7 @@ function localizedCuriosity(fact: Curiosity, locale: Locale) {
 
 export function generateStaticParams() {
   return seoLocales.flatMap((locale) =>
-    catalogEntries().map((entry) => ({ locale, id: entry.data.id })),
+    catalogEntries().map((entry) => ({ locale: localePath(locale), id: entry.data.id })),
   );
 }
 
@@ -155,7 +162,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       languages: Object.fromEntries(
         [
           ...seoLocales.map((item) => [
-            item,
+            languages[item].intl,
             absoluteSiteUrl(bodyDetailsPath(item, entry.data.id)),
           ]),
           [

@@ -1,5 +1,5 @@
 import { comets, type Comet } from './comets';
-import { languages, type Locale } from './i18n';
+import { languages, localePath, type Locale } from './i18n';
 import { orbitingMoons, type OrbitingMoon } from './moon-orbits';
 import { bodies, type Body } from './solar';
 
@@ -60,7 +60,7 @@ export function catalogEntry(id: string): CatalogEntry | undefined {
 }
 
 export function bodyDetailsPath(locale: Locale, id: string) {
-  return `/${locale}/bodies/${encodeURIComponent(id)}`;
+  return `/${localePath(locale)}/bodies/${encodeURIComponent(id)}`;
 }
 
 export function explorerPath(locale: Locale, id?: string) {
