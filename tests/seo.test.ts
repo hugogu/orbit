@@ -18,6 +18,7 @@ import {
 } from '../lib/seo';
 import { localePath, translator } from '../lib/i18n';
 import { renderSitemap, sitemapEntries } from '../lib/sitemap';
+import { htmlTagAttributes } from '../scripts/lib/html-tags';
 
 const explorerLayout = readFileSync(
   new URL('../app/(explorer)/layout.tsx', import.meta.url),
@@ -45,6 +46,10 @@ const physicalFacts = readFileSync(
 );
 const bodyPage = readFileSync(
   new URL('../app/_pages/body-page.tsx', import.meta.url),
+  'utf8',
+);
+const profileShare = readFileSync(
+  new URL('../components/profile-share.tsx', import.meta.url),
   'utf8',
 );
 const notFoundPage = readFileSync(
@@ -215,6 +220,29 @@ void test('profile navigation separates internal links from external sources', (
     homePage,
     /name=\{t\(activeComet\.name\)\}[\s\S]*showSource=\{false\}/,
   );
+});
+
+void test('profile export metadata parsing ignores attribute order and casing', () => {
+  const [link] = htmlTagAttributes(
+    '<LINK HREF="https://example.com/en" hrefLang="en-US" REL="alternate canonical">',
+    'link',
+  );
+  assert.equal(link.get('href'), 'https://example.com/en');
+  assert.equal(link.get('hreflang'), 'en-US');
+  assert.equal(link.get('rel'), 'alternate canonical');
+
+  const meta = htmlTagAttributes(
+    '<meta content="600" property="og:image:width"><META CONTENT="square.jpg" PROPERTY="og:image">',
+    'meta',
+  );
+  const image = meta.find(
+    (attributes) => attributes.get('property')?.toLowerCase() === 'og:image',
+  );
+  assert.equal(image?.get('content'), 'square.jpg');
+});
+
+void test('profile sharing announces copy status changes', () => {
+  assert.match(profileShare, /<output aria-live="polite" aria-atomic="true">/);
 });
 
 void test('custom 404 offers noindex metadata and exploration links', () => {

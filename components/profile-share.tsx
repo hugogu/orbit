@@ -39,7 +39,7 @@ export default function ProfileShare({
       >
         {t('分享档案')}
       </button>
-      <output>
+      <output aria-live="polite" aria-atomic="true">
         {status === 'copied'
           ? t('链接已复制')
           : status === 'manual'

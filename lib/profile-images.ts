@@ -36,7 +36,12 @@ const illustrativeIds = new Set([
 export function isIllustrativePortrait(entry: CatalogEntry) {
   return entry.kind === 'comet' || illustrativeIds.has(entry.data.id);
 }
-export function portraitCredit(entry: CatalogEntry) {
+export type PortraitCredit = {
+  name: string;
+  url: string;
+  license: string;
+};
+export function portraitCredit(entry: CatalogEntry): PortraitCredit {
   if (
     (entry.kind === 'body' && entry.data.id !== 'pluto') ||
     entry.data.id === 'moon-moon'

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp/lib/index.js';
 import type { CatalogEntry } from '../../lib/seo';
 import { absoluteSiteUrl } from '../../lib/seo';
-import type { portraitCredit } from '../../lib/profile-images';
+import type { PortraitCredit } from '../../lib/profile-images';
 
 const fontfile = fileURLToPath(
   new URL('../assets/orbit-share.otf', import.meta.url),
@@ -79,10 +79,7 @@ export async function renderCardLabels(
   );
 }
 
-export function imageAttribution(
-  entry: CatalogEntry,
-  credit: ReturnType<typeof portraitCredit>,
-) {
+export function imageAttribution(entry: CatalogEntry, credit: PortraitCredit) {
   const source = credit.url.startsWith('/')
     ? absoluteSiteUrl(credit.url)
     : credit.url;

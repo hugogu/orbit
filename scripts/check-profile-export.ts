@@ -14,6 +14,7 @@ import {
 import { squareImagePath, portraitCredit } from '../lib/profile-images';
 import { profileContent } from '../lib/profile-content';
 import { languages, translator } from '../lib/i18n';
+import { htmlTagAttributes } from './lib/html-tags';
 
 const output = (path: string) =>
   resolve('dist/client', path.replace(/^\//, ''));
@@ -30,6 +31,10 @@ const escapeHtml = (value: string) =>
       })[c]!,
   );
 const entries = catalogEntries();
+const hasRel = (attributes: ReadonlyMap<string, string>, rel: string) =>
+  (attributes.get('rel') ?? '')
+    .split(/\s+/)
+    .some((value) => value.toLowerCase() === rel);
 for (const entry of entries) {
   const credit = portraitCredit(entry);
   for (const [path, size] of [
@@ -44,57 +49,88 @@ for (const entry of entries) {
   for (const locale of seoLocales) {
     const path = bodyDetailsPath(locale, entry.data.id);
     const html = readFileSync(output(`${path}.html`), 'utf8');
-    const head = html.split('</head>')[0];
+    const head = html.match(/<head\b[^>]*>[\s\S]*?<\/head>/i)?.[0] ?? '';
+    const [htmlTag] = htmlTagAttributes(html, 'html');
+    const linkTags = htmlTagAttributes(head, 'link');
+    const metaTags = htmlTagAttributes(head, 'meta');
     const t = translator(locale);
-    assert.ok(head.includes(`<html lang="${languages[locale].intl}"`), path);
+    assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
     assert.ok(
       head.includes(
-          `<title>${escapeHtml(profileTitle(entry, locale))} | ORBIT</title>`,
+        `<title>${escapeHtml(profileTitle(entry, locale))} | ORBIT</title>`,
       ),
       path,
     );
     assert.ok(
-      head.includes(`rel="canonical" href="${absoluteSiteUrl(path)}"`),
+      linkTags.some(
+        (attributes) =>
+          hasRel(attributes, 'canonical') &&
+          attributes.get('href') === absoluteSiteUrl(path),
+      ),
       path,
     );
     for (const alternate of seoLocales) {
       assert.ok(
-        head.includes(
-          `hrefLang="${languages[alternate].intl}" href="${absoluteSiteUrl(bodyDetailsPath(alternate, entry.data.id))}"`,
+        linkTags.some(
+          (attributes) =>
+            hasRel(attributes, 'alternate') &&
+            attributes.get('hreflang') === languages[alternate].intl &&
+            attributes.get('href') ===
+              absoluteSiteUrl(bodyDetailsPath(alternate, entry.data.id)),
         ),
         path,
       );
     }
-    const ogTags = [
-      ...head.matchAll(/<meta property="og:image(?::[^"]+)?"[^>]*>/g),
-    ].map((m) => m[0]);
-    assert.ok(
-      ogTags[0].includes(absoluteSiteUrl(squareImagePath(entry.data.id))),
+    const ogTags = metaTags.filter((attributes) =>
+      (attributes.get('property') ?? '').toLowerCase().startsWith('og:image'),
+    );
+    assert.equal(
+      ogTags
+        .find(
+          (attributes) =>
+            attributes.get('property')?.toLowerCase() === 'og:image',
+        )
+        ?.get('content'),
+      absoluteSiteUrl(squareImagePath(entry.data.id)),
       path,
     );
     assert.ok(
       ogTags.some(
-        (tag) => tag.includes('og:image:width') && tag.includes('600'),
+        (attributes) =>
+          attributes.get('property')?.toLowerCase() === 'og:image:width' &&
+          attributes.get('content') === '600',
       ),
       path,
     );
     assert.ok(
       ogTags.some(
-        (tag) => tag.includes('og:image:width') && tag.includes('1200'),
+        (attributes) =>
+          attributes.get('property')?.toLowerCase() === 'og:image:width' &&
+          attributes.get('content') === '1200',
       ),
       path,
     );
     assert.ok(
-      ogTags.some((tag) => tag.includes('og:image:alt')),
+      ogTags.some(
+        (attributes) =>
+          attributes.get('property')?.toLowerCase() === 'og:image:alt',
+      ),
       path,
     );
     assert.ok(
-      head.includes('name="twitter:card" content="summary_large_image"'),
+      metaTags.some(
+        (attributes) =>
+          attributes.get('name')?.toLowerCase() === 'twitter:card' &&
+          attributes.get('content') === 'summary_large_image',
+      ),
       path,
     );
     assert.ok(
-      head.includes(
-        `name="twitter:image" content="${absoluteSiteUrl(ogImagePath(locale, entry.data.id))}"`,
+      metaTags.some(
+        (attributes) =>
+          attributes.get('name')?.toLowerCase() === 'twitter:image' &&
+          attributes.get('content') ===
+            absoluteSiteUrl(ogImagePath(locale, entry.data.id)),
       ),
       path,
     );
