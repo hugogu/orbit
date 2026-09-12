@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://orbit-henna-xi.vercel.app/sitemap.xml

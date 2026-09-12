@@ -13,6 +13,7 @@ import {
   languages,
   languageUrl,
   localeStorageKey,
+  resolveLocale,
   translator,
   type Locale,
   type Translate,
@@ -44,9 +45,12 @@ export function I18nProvider({
       } catch {
         /* Device preferences are optional. */
       }
+      const pathLocale = resolveLocale(
+        new URL(window.location.href).pathname.split('/')[1],
+      );
       updateLocale(
         detectLocale(
-          new URL(window.location.href).searchParams.get('lang'),
+          pathLocale ?? new URL(window.location.href).searchParams.get('lang'),
           saved,
           navigator.languages,
         ),

@@ -4,6 +4,7 @@ import type { OrbitingMoon } from '../lib/moon-orbits';
 import { bodies } from '../lib/solar';
 import { moonRadii } from '../lib/eclipse-shadows';
 import { moonSemimajorKm } from '../lib/satellite-elements';
+import { bodyDetailsPath } from '../lib/seo';
 import CuriosityCard from './curiosity-card';
 import ConceptHint from './concept-hint';
 export default function MoonDetails({
@@ -86,6 +87,9 @@ export default function MoonDetails({
       </a>
       <a className="source" href={`#${moon.id}`}>
         {t('此卫星的独立链接 ↗')}
+      </a>
+      <a className="source" href={bodyDetailsPath(locale, moon.id)}>
+        {t('阅读{{name}}的完整资料 ↗', { name: t(moon.name) })}
       </a>
     </article>
   );
