@@ -54,7 +54,7 @@ function pageTitle(entry: CatalogEntry, locale: Locale) {
   const name = entryName(entry, locale);
   if (entry.kind === 'body') return `${name} · ${t('太阳系知识')}`;
   if (entry.kind === 'moon') return `${name} · ${t('天然卫星资料')}`;
-  return `${name} · ${t('彗星档案 /')}`;
+  return `${name} · ${t('彗星档案')}`;
 }
 
 function sourceUrl(entry: CatalogEntry) {

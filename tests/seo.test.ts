@@ -10,6 +10,7 @@ import {
   serializeJsonLd,
   seoLocales,
 } from '../lib/seo';
+import { translator } from '../lib/i18n';
 
 const explorerLayout = readFileSync(
   new URL('../app/(explorer)/layout.tsx', import.meta.url),
@@ -19,6 +20,7 @@ const localizedLayout = readFileSync(
   new URL('../app/(localized)/[locale]/layout.tsx', import.meta.url),
   'utf8',
 );
+const bodyPage = readFileSync(new URL('../app/_pages/body-page.tsx', import.meta.url), 'utf8');
 
 void test('every catalog entry has a unique localized profile URL', () => {
   const entries = catalogEntries();
@@ -55,4 +57,11 @@ void test('JSON-LD escapes script-sensitive characters', () => {
   const serialized = serializeJsonLd({ description: '</script><script>alert(1)</script>' });
   assert.doesNotMatch(serialized, /[<>&]/);
   assert.ok(serialized.includes('\\u003c/script\\u003e'));
+});
+
+void test('comet metadata labels omit decorative separators', () => {
+  assert.match(bodyPage, /return `\$\{name\} · \$\{t\('彗星档案'\)\}`;/);
+  for (const locale of seoLocales) {
+    assert.doesNotMatch(translator(locale)('彗星档案'), /\/\s*$/);
+  }
 });
