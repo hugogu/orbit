@@ -35,11 +35,11 @@
     "filename": "2k_uranus.jpg",
     "width": 2048,
     "height": 1024,
-    "bytes": 53919,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/uranus.jpg",
-    "license": "CC BY-NC-SA 3.0",
+    "bytes": 77751,
+    "url": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+    "license": "CC BY 4.0",
     "path": "2k_uranus.jpg",
-    "note": "Locally downsampled from the 4K map with a restrained contrast lift for close viewing"
+    "note": "Representative atmospheric rendering; colors are enhanced and do not represent live weather"
   },
   {
     "filename": "4k_venus_atmosphere.jpg",
@@ -152,10 +152,11 @@
     "filename": "satellites/4k_europa.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 1440001,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/europa.jpg",
-    "license": "Upstream README attribution; no SPDX declaration",
-    "path": "satellites/4k_europa.jpg"
+    "bytes": 964825,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
+    "license": "CC BY 4.0",
+    "path": "satellites/4k_europa.jpg",
+    "derived": "illustrative-small-body-fallback-v1"
   },
   {
     "filename": "satellites/4k_ganymede.jpg",
@@ -170,10 +171,11 @@
     "filename": "satellites/4k_callisto.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 1931997,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/callisto.jpg",
-    "license": "Upstream README attribution; no SPDX declaration",
-    "path": "satellites/4k_callisto.jpg"
+    "bytes": 964825,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
+    "license": "CC BY 4.0",
+    "path": "satellites/4k_callisto.jpg",
+    "derived": "illustrative-small-body-fallback-v1"
   },
   {
     "filename": "satellites/4k_titan.png",
@@ -188,28 +190,31 @@
     "filename": "satellites/4k_enceladus.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 1891393,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/enceladus.jpg",
-    "license": "Upstream README attribution; no SPDX declaration",
-    "path": "satellites/4k_enceladus.jpg"
+    "bytes": 964825,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
+    "license": "CC BY 4.0",
+    "path": "satellites/4k_enceladus.jpg",
+    "derived": "illustrative-small-body-fallback-v1"
   },
   {
     "filename": "satellites/4k_mimas.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 1122405,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/mimas.jpg",
-    "license": "Upstream README attribution; no SPDX declaration",
-    "path": "satellites/4k_mimas.jpg"
+    "bytes": 964825,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
+    "license": "CC BY 4.0",
+    "path": "satellites/4k_mimas.jpg",
+    "derived": "illustrative-small-body-fallback-v1"
   },
   {
     "filename": "satellites/4k_iapetus.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 1369992,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/iapetus.jpg",
-    "license": "Upstream README attribution; no SPDX declaration",
-    "path": "satellites/4k_iapetus.jpg"
+    "bytes": 964825,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
+    "license": "CC BY 4.0",
+    "path": "satellites/4k_iapetus.jpg",
+    "derived": "illustrative-small-body-fallback-v1"
   },
   {
     "filename": "satellites/4k_miranda.jpg",
@@ -272,15 +277,6 @@
     "derived": "mirror-fill-v1"
   },
   {
-    "filename": "satellites/4k_charon.jpg",
-    "width": 4096,
-    "height": 2048,
-    "bytes": 753376,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/charon.jpg",
-    "license": "CC BY-NC-SA 3.0",
-    "path": "satellites/4k_charon.jpg"
-  },
-  {
     "filename": "satellites/4k_asteroid.jpg",
     "width": 4096,
     "height": 2048,
@@ -288,26 +284,6 @@
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
     "license": "CC BY 4.0",
     "path": "satellites/4k_asteroid.jpg",
-    "note": "Illustrative small-body surface for Nereid and comet nuclei"
-  },
-  {
-    "filename": "4k_uranus.jpg",
-    "width": 4096,
-    "height": 2048,
-    "bytes": 155716,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/uranus.jpg",
-    "license": "CC BY-NC-SA 3.0",
-    "path": "4k_uranus.jpg",
-    "note": "Subtle atmospheric bands and polar cap with a restrained contrast lift for close viewing; representative, not live weather"
-  },
-  {
-    "filename": "2k_pluto.jpg",
-    "width": 2048,
-    "height": 1024,
-    "bytes": 324860,
-    "url": "https://assets.science.nasa.gov/dynamicimage/assets/science/cds/3d/resources/image/pluto/preview.webp?w=2048",
-    "license": "NASA/JPL/Caltech attribution; fictional teaching map, terms not explicitly stated",
-    "path": "2k_pluto.jpg",
-    "note": "Complete illustrative map assembled by David Seal from Pat Rawlings artwork and available observations"
+    "note": "Illustrative small-body surface for Nereid, Pluto, Charon, and comet nuclei"
   }
 ]

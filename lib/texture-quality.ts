@@ -23,21 +23,29 @@ export const highResolutionTextures: Record<
   moon: { file: '8k_moon.jpg', width: 8192 },
   saturn_ring_alpha: { file: '8k_saturn_ring_alpha.png', width: 8192 },
   stars_milky_way: { file: '8k_stars_milky_way.jpg', width: 8192 },
-  // The original Solar System Scope map is a nearly uniform fill. This
-  // CelestiaContent map preserves the subtle atmospheric bands and polar cap.
+  // Solar System Scope publishes this map under CC BY 4.0. It is a
+  // representative atmospheric rendering, not a live weather map.
   uranus: {
-    file: '4k_uranus.jpg',
-    width: 4096,
+    file: '2k_uranus.jpg',
+    width: 2048,
     standardFile: '2k_uranus.jpg',
   },
-  // NASA/JPL's Pluto 3D resource is a complete teaching map assembled from
-  // available observations and artwork; it is intentionally labeled as such.
-  pluto: { file: '2k_pluto.jpg', width: 2048 },
+  // No separately licensed global maps are bundled for Pluto or Charon.
+  // Reuse the CC BY 4.0 illustrative small-body surface and label it as such.
+  pluto: {
+    file: 'satellites/4k_asteroid.jpg',
+    width: 4096,
+    standardFile: 'satellites/2k_asteroid.jpg',
+  },
   // CelestiaContent surface maps. Most originals are 4K; Uranian moon maps
   // are published at 2K and intentionally keep that native resolution. The
   // Voyager maps for Ariel, Miranda, Umbriel, Titania, Oberon and Triton have
   // unmapped regions. Their local files use a mirrored, low-frequency fill so
   // the teaching globe remains continuous instead of showing a flat half.
+  // Europa, Callisto, Enceladus, Mimas, Iapetus, and Charon use the CC BY 4.0
+  // asteroid surface as an explicitly illustrative fallback because the
+  // former bundled sources did not provide clear commercial redistribution
+  // terms. The same fallback is used for Pluto below.
   phobos: {
     file: 'satellites/4k_phobos.jpg',
     width: 4096,
@@ -125,9 +133,9 @@ export const highResolutionTextures: Record<
     revision: 'filled-v1',
   },
   charon: {
-    file: 'satellites/4k_charon.jpg',
+    file: 'satellites/4k_asteroid.jpg',
     width: 4096,
-    standardFile: 'satellites/2k_charon.jpg',
+    standardFile: 'satellites/2k_asteroid.jpg',
   },
   // No complete albedo map is available for Nereid or comet nuclei. This
   // openly licensed, pitted small-body surface is clearly labeled as a

@@ -21,7 +21,7 @@ void test('quality respects device preferences, GPU limits and actual source res
     '/textures/2k_earth_daymap.jpg',
   );
   assert.equal(texturePath('jupiter', true, 4096), '/textures/8k_jupiter.jpg');
-  assert.equal(texturePath('uranus', true, 8192), '/textures/4k_uranus.jpg');
+  assert.equal(texturePath('uranus', true, 8192), '/textures/2k_uranus.jpg');
   const manifest = JSON.parse(
     readFileSync(
       new URL('../public/textures/source-manifest.json', import.meta.url),
