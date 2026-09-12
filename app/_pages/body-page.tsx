@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { moonRadii } from '../../../../lib/eclipse-shadows';
-import { moonSemimajorKm } from '../../../../lib/satellite-elements';
-import { translator, languages, type Locale } from '../../../../lib/i18n';
-import { curiosities, type Curiosity } from '../../../../lib/curiosities';
-import { extraFacts } from '../../../../lib/physical-facts';
-import { bodies } from '../../../../lib/solar';
-import { comets } from '../../../../lib/comets';
-import { orbitingMoons } from '../../../../lib/moon-orbits';
+import { moonRadii } from '../../lib/eclipse-shadows';
+import { moonSemimajorKm } from '../../lib/satellite-elements';
+import { translator, languages, type Locale } from '../../lib/i18n';
+import { curiosities, type Curiosity } from '../../lib/curiosities';
+import { extraFacts } from '../../lib/physical-facts';
+import { bodies } from '../../lib/solar';
+import { comets } from '../../lib/comets';
+import { orbitingMoons } from '../../lib/moon-orbits';
 import {
   absoluteSiteUrl,
   bodyDetailsPath,
@@ -17,7 +17,7 @@ import {
   seoLocales,
   siteOrigin,
   type CatalogEntry,
-} from '../../../../lib/seo';
+} from '../../lib/seo';
 
 type PageProps = {
   params: Promise<{ locale: string; id: string }>;

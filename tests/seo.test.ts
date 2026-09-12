@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   absoluteSiteUrl,
   bodyDetailsPath,
@@ -8,6 +9,15 @@ import {
   normalizeSiteOrigin,
   seoLocales,
 } from '../lib/seo';
+
+const explorerLayout = readFileSync(
+  new URL('../app/(explorer)/layout.tsx', import.meta.url),
+  'utf8',
+);
+const localizedLayout = readFileSync(
+  new URL('../app/(localized)/[locale]/layout.tsx', import.meta.url),
+  'utf8',
+);
 
 void test('every catalog entry has a unique localized profile URL', () => {
   const entries = catalogEntries();
@@ -32,4 +42,10 @@ void test('site origins normalize scheme-less hosts and discard paths safely', (
   assert.equal(normalizeSiteOrigin('https://example.com/orbit/'), 'https://example.com');
   assert.equal(normalizeSiteOrigin('http://localhost:3000/orbit'), 'http://localhost:3000');
   assert.equal(normalizeSiteOrigin('not a URL'), undefined);
+});
+
+void test('root layouts emit the route locale before client hydration', () => {
+  assert.match(explorerLayout, /<LayoutShell>/);
+  assert.match(localizedLayout, /<LayoutShell locale=\{locale\}>/);
+  assert.match(localizedLayout, /generateStaticParams/);
 });

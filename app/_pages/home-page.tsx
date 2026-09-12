@@ -1,5 +1,5 @@
 'use client';
-import { useI18n } from '../lib/i18n/provider';
+import { useI18n } from '../../lib/i18n/provider';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { registerObservatoryTools } from '@/lib/observatory-tools';
@@ -21,7 +21,7 @@ import {
   CalendarDays,
   X,
 } from 'lucide-react';
-import LanguagePicker from '../components/language-picker';
+import LanguagePicker from '../../components/language-picker';
 import SolarScene from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';

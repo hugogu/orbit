@@ -1,7 +1,4 @@
 import type { Metadata } from 'next';
-import './globals.css';
-import { I18nProvider } from '../lib/i18n/provider';
-import GoogleAnalytics from '../components/google-analytics';
 import { siteOrigin } from '../lib/seo';
 
 export const metadata: Metadata = {
@@ -49,17 +46,3 @@ export const metadata: Metadata = {
     follow: true,
   },
 };
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="zh-CN" className="dark">
-      <body>
-        <GoogleAnalytics />
-        <I18nProvider>{children}</I18nProvider>
-      </body>
-    </html>
-  );
-}
