@@ -45,12 +45,11 @@ export function I18nProvider({
       } catch {
         /* Device preferences are optional. */
       }
-      const pathLocale = resolveLocale(
-        new URL(window.location.href).pathname.split('/')[1],
-      );
+      const url = new URL(window.location.href);
+      const pathLocale = resolveLocale(url.pathname.split('/')[1]);
       updateLocale(
         detectLocale(
-          pathLocale ?? new URL(window.location.href).searchParams.get('lang'),
+          pathLocale ?? url.searchParams.get('lang'),
           saved,
           navigator.languages,
         ),

@@ -286,7 +286,7 @@ export default async function BodyPage({ params }: PageProps) {
           '@type': 'ListItem',
           position: 2,
           name: t('太阳系知识'),
-          item: absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id)),
+          item: absoluteSiteUrl(explorerPath(locale)),
         },
         {
           '@type': 'ListItem',

@@ -4,11 +4,12 @@ import { absoluteSiteUrl, bodyDetailsPath, catalogEntries, seoLocales } from '..
 
 const publicDir = resolve('public');
 mkdirSync(publicDir, { recursive: true });
+const entries = catalogEntries();
 
 const sitemapUrls = [
   absoluteSiteUrl('/'),
   ...seoLocales.flatMap((locale) =>
-    catalogEntries().map((entry) => absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id))),
+    entries.map((entry) => absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id))),
   ),
 ];
 
