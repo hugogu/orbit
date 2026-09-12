@@ -3,12 +3,19 @@ import { notFound } from 'next/navigation';
 import '../../globals.css';
 import RootProviders from '../../root-providers';
 import { metadata as siteMetadata } from '../../site-metadata';
-import { languages, resolveLocale } from '../../../lib/i18n';
+import {
+  languages,
+  localePath,
+  resolveLocalePath,
+  type Locale,
+} from '../../../lib/i18n';
 
 export const metadata: Metadata = siteMetadata;
 
 export function generateStaticParams() {
-  return Object.keys(languages).map((locale) => ({ locale }));
+  return (Object.keys(languages) as Locale[]).map((locale) => ({
+    locale: localePath(locale),
+  }));
 }
 
 export const dynamicParams = false;
@@ -21,8 +28,8 @@ export default async function LocalizedLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale: localeParam } = await params;
-  const locale = resolveLocale(localeParam);
-  if (!locale || locale !== localeParam) notFound();
+  const locale = resolveLocalePath(localeParam);
+  if (!locale || localePath(locale) !== localeParam) notFound();
   return (
     <html lang={languages[locale].intl} className="dark">
       <body>

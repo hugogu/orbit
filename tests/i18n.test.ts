@@ -9,7 +9,9 @@ import {
   detectLocale,
   languageUrl,
   languages,
+  localePath,
   resolveLocale,
+  resolveLocalePath,
   translator,
   type Locale,
 } from '../lib/i18n';
@@ -34,9 +36,16 @@ void test('locale selection uses URL, saved preference, browser languages, then 
   assert.equal(detectLocale(null, null, ['zz']), defaultLocale);
   assert.equal(resolveLocale('EN_us'), 'en');
   assert.equal(resolveLocale({}), undefined);
+  assert.equal(resolveLocalePath('en-US'), 'en');
+  assert.equal(resolveLocalePath('en'), undefined);
+  assert.equal(localePath('ja'), 'ja-JP');
   assert.equal(
     languageUrl('https://example.test/?v=build&lang=en#moon-titan', 'ja'),
     '/?v=build&lang=ja#moon-titan',
+  );
+  assert.equal(
+    languageUrl('https://example.test/zh-CN/bodies/sun?ref=nav#facts', 'en'),
+    '/en-US/bodies/sun?ref=nav#facts',
   );
 });
 void test('catalogs cover all source keys and interpolation parameters, allowing language-specific plurals', () => {
