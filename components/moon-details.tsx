@@ -62,7 +62,12 @@ export default function MoonDetails({
           </strong>
         </div>
       </div>
-      <CuriosityCard id={moon.id} index={curiosityIndex} name={t(moon.name)} />
+      <CuriosityCard
+        id={moon.id}
+        index={curiosityIndex}
+        name={t(moon.name)}
+        showSource={false}
+      />
       <button
         className="secondary-action moon-back-action"
         onClick={() => onSelect(parent.id)}
@@ -75,7 +80,8 @@ export default function MoonDetails({
         target="_blank"
         rel="noreferrer"
       >
-        {t('阅读 NASA 的{{name}}资料 ↗', { name: t(moon.name) })}
+        {t('阅读 NASA 的{{name}}资料', { name: t(moon.name) })}{' '}
+        <span aria-hidden="true">↗</span>
       </a>
       <a
         className="source"
@@ -83,13 +89,13 @@ export default function MoonDetails({
         target="_blank"
         rel="noreferrer"
       >
-        {t('JPL 卫星物理参数 ↗')}
+        {t('JPL 卫星物理参数')} <span aria-hidden="true">↗</span>
       </a>
       <a className="source" href={`#${moon.id}`}>
-        {t('此卫星的独立链接 ↗')}
+        {t('此卫星的独立链接')}
       </a>
       <a className="source" href={bodyDetailsPath(locale, moon.id)}>
-        {t('阅读{{name}}的完整资料 ↗', { name: t(moon.name) })}
+        {t('阅读{{name}}的完整资料', { name: t(moon.name) })}
       </a>
     </article>
   );

@@ -6,14 +6,16 @@ import { curiosities } from '../lib/curiosities';
 export function CuriositySource({
   id,
   index = 0,
+  omitSource,
 }: {
   id: string;
   index?: number;
+  omitSource?: string;
 }) {
   const { t } = useI18n();
   const pool = curiosities[id];
   const fact = pool?.[index] ?? pool?.[0];
-  if (!fact) return null;
+  if (!fact || fact.source === omitSource) return null;
   return (
     <a
       className="source curiosity-source"

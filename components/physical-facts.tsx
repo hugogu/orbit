@@ -46,7 +46,8 @@ export default function PhysicalFacts({ body }: { body: Body }) {
         rel="noreferrer"
       >
         {t('数据来源：')}
-        {body.id === 'sun' ? t('NASA 太阳资料') : t('JPL 行星物理参数')} ↗
+        {body.id === 'sun' ? t('NASA 太阳资料') : t('JPL 行星物理参数')}{' '}
+        <span aria-hidden="true">↗</span>
       </a>
     </details>
   );

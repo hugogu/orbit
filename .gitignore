@@ -42,5 +42,6 @@ next-env.d.ts
 /public/robots.txt
 /public/sitemap.xml
 /public/og/
+/public/media/
 
 *.tsbuildinfo
