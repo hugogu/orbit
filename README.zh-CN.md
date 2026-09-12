@@ -106,17 +106,9 @@ npm run build
 npm run build:vercel
 ```
 
-## 部署到 Vercel
+## 部署
 
-仓库根目录已经包含 [`vercel.json`](vercel.json)。在 Vercel 导入 GitHub 仓库时保持根目录不变，配置会自动使用：
-
-| 配置项           | 值                     |
-| ---------------- | ---------------------- |
-| Build Command    | `npm run build:vercel` |
-| Output Directory | `dist/client`          |
-| Framework Preset | Other / 不指定         |
-
-Vercel 静态发布需要 `dist/client/index.html`。常规的 `npm run build` 仍然保留给 Sites/Cloudflare Worker 目标；将其 Worker 产物作为 Vercel 静态站点发布，会造成根路径 404。
+ORBIT 以静态导出方式部署到 Vercel，另有独立的 Cloudflare Worker 构建目标用于 Sites 平台；Google Analytics 为可选功能，通过一个环境变量控制。Vercel 项目配置、构建参数与分析配置请参阅[部署指南](docs/deployment.md)。
 
 ## 模型边界与准确性
 
@@ -142,6 +134,7 @@ ORBIT 是一个透明说明假设的学习工具，并非导航或专业星历�
 | 3D 渲染    | Three.js、WebGL                                          |
 | 星历与事件 | Astronomy Engine、JPL 数据与浏览器 Web Worker            |
 | 样式与交互 | Tailwind CSS、Base UI、Lucide                            |
+| 数据统计   | Google Analytics 4（`next/script`，环境变量控制）        |
 | 部署       | Vercel 静态导出；也保留 Sites/Cloudflare Worker 构建目标 |
 
 ## 贡献

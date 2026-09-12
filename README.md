@@ -106,17 +106,9 @@ The test suite covers the UTC clock, coordinate transforms, Earth day/night orie
 npm run build:vercel
 ```
 
-## Deploy to Vercel
+## Deployment
 
-The repository root includes [`vercel.json`](vercel.json). Import the GitHub repository in Vercel without changing the root directory; the configuration uses:
-
-| Setting          | Value                  |
-| ---------------- | ---------------------- |
-| Build Command    | `npm run build:vercel` |
-| Output Directory | `dist/client`          |
-| Framework Preset | Other / unset          |
-
-Vercel needs a static `dist/client/index.html`. The usual `npm run build` target remains for Sites/Cloudflare Worker output; publishing that Worker target as a Vercel static site results in a root-page 404.
+ORBIT deploys as a static export to Vercel, with a separate Cloudflare Worker build for the Sites platform, and optional Google Analytics configured through one environment variable. See the [deployment guide](docs/deployment.md) for Vercel project setup, build settings, and analytics configuration.
 
 ## Accuracy and model boundaries
 
@@ -142,6 +134,7 @@ The default demonstrative view compresses distances and enlarges bodies so the s
 | 3D rendering            | Three.js, WebGL                                                            |
 | Ephemeris and events    | Astronomy Engine, JPL data, browser Web Worker                             |
 | Styling and interaction | Tailwind CSS, Base UI, Lucide                                              |
+| Analytics               | Google Analytics 4 via `next/script`, optional and env-gated               |
 | Delivery                | Vercel static export, with a separate Sites/Cloudflare Worker build target |
 
 ## Contributing
