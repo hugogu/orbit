@@ -1,8 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { currentLocation } from '../lib/geolocation.ts';
 import { bodies } from '../lib/solar.ts';
 import { extraFacts, physicalParameters } from '../lib/physical-facts.ts';
+import { fallbackSkyLocation } from '../lib/sky-events.ts';
+
+const homePage = readFileSync(
+  new URL('../app/_pages/home-page.tsx', import.meta.url),
+  'utf8',
+);
+
+void test('uses Beijing as the default observer reference until location is requested', () => {
+  assert.deepEqual(fallbackSkyLocation, {
+    latitude: 39.9042,
+    longitude: 116.4074,
+    height: 43,
+    utcOffset: 8,
+  });
+});
+
+void test('keeps browser geolocation opt-in from the sky event planner', () => {
+  assert.doesNotMatch(homePage, /currentLocation|navigator\.geolocation/);
+});
 
 void test('geolocation uses the granted device coordinates without map offsets or fabricated altitude', async () => {
   const geo: Pick<Geolocation, 'getCurrentPosition'> = {

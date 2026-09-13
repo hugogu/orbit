@@ -1,6 +1,6 @@
 'use client';
 import { useI18n } from '../../lib/i18n/provider';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { registerObservatoryTools } from '@/lib/observatory-tools';
 import {
@@ -39,7 +39,6 @@ import LayoutSettings from '@/components/layout-settings';
 import { comets, cometPerihelion } from '@/lib/comets';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
 import { fallbackSkyLocation, type SkyLocation } from '@/lib/sky-events';
-import { currentLocation } from '@/lib/geolocation';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -122,8 +121,7 @@ export default function Home() {
       useState<SkyLocation>(fallbackSkyLocation),
     [observerLocationSource, setObserverLocationSource] = useState<
       'pending' | 'device' | 'manual' | 'fallback'
-    >('pending');
-  const automaticLocation = useRef(true);
+    >('fallback');
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const body = bodies.find(
     (b) => b.id === (selectedMoon?.parentId ?? selected),
@@ -161,39 +159,12 @@ export default function Home() {
         setTextureQuality(preferences.textureQuality);
       const savedLocation = preferences.observerLocation;
       const savedSource = preferences.observerLocationSource;
-      const fallbackLocation = {
-        ...fallbackSkyLocation,
-        utcOffset: -new Date().getTimezoneOffset() / 60,
-      };
-      // A location without an explicit source comes from an older release,
-      // where Beijing was the built-in value. Do not treat that legacy value
-      // as the user's location; start with a neutral fallback while asking
-      // the device for its current position.
       if (savedLocation && savedSource) setObserverLocation(savedLocation);
-      else setObserverLocation(fallbackLocation);
+      else setObserverLocation(fallbackSkyLocation);
       if (savedLocation && savedSource) {
-        automaticLocation.current = false;
         setObserverLocationSource(savedSource);
       } else {
-        const geolocation =
-          typeof navigator === 'undefined' ? undefined : navigator.geolocation;
-        void currentLocation(
-          geolocation,
-          typeof window !== 'undefined' && window.isSecureContext,
-        )
-          .then((fix) => {
-            if (!automaticLocation.current) return;
-            setObserverLocation({
-              ...fallbackLocation,
-              latitude: fix.latitude,
-              longitude: fix.longitude,
-            });
-            setObserverLocationSource('device');
-          })
-          .catch(() => {
-            if (!automaticLocation.current) return;
-            setObserverLocationSource('fallback');
-          });
+        setObserverLocationSource('fallback');
       }
       setPreferencesReady(true);
       let previous: unknown;
@@ -263,7 +234,6 @@ export default function Home() {
     next: SkyLocation,
     source: 'device' | 'manual' = 'manual',
   ) {
-    automaticLocation.current = false;
     setObserverLocation(next);
     setObserverLocationSource(source);
   }
@@ -1199,7 +1169,7 @@ export default function Home() {
                 <p>
                   {t('按太阳上缘和标准大气折射计算')}。{' '}
                   {t(
-                    '设备会尝试提供当前位置，也可手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
+                    '点击“使用当前位置”后，设备会尝试提供当前位置，也可手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
                   )}
                 </p>
                 <p>

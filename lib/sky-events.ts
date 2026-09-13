@@ -26,11 +26,14 @@ export type SkyLocation = Pick<
 >;
 export type DailySunQuery = SkyLocation & { day: string };
 export type DailySunResults = Pick<SkyResults, 'rise' | 'set' | 'daylight'>;
+
+// Use a stable reference point until the user chooses a location in the sky
+// event planner. Browser geolocation is intentionally opt-in.
 export const fallbackSkyLocation: SkyLocation = {
-  latitude: 0,
-  longitude: 0,
-  height: 0,
-  utcOffset: 0,
+  latitude: 39.9042,
+  longitude: 116.4074,
+  height: 43,
+  utcOffset: 8,
 };
 export type SkyEvent = {
   kind: string;
