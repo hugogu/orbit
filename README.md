@@ -42,6 +42,10 @@ Both images above were captured from a running ORBIT observatory. Texture select
 
 ## Controls
 
+The navigator has separate collapsible **Asteroids** and **Comets** groups. Nine named small bodies—Ceres (a dwarf planet), Pallas, Juno, Vesta, Psyche, Eros, Itokawa, Bennu, and Ryugu—can be selected in the scene or opened from their localized profiles. Each has a textured surface, orbital path, physical data, and attributed share images. Only the selected asteroid's label and orbit are shown, to keep the overview readable.
+
+Asteroid elements and physical values are an offline [NASA/JPL SBDB](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html) snapshot retrieved on 2026-09-13. Epoch-aware two-body motion omits perturbations and thermal effects; it is not suitable for close-approach or impact prediction. Size and distance settings also apply to asteroids. Shapes, colours, terrain, spin poles, and rotation phases are illustrative, using the local **cubicApocalypse / CelestiaContent** rocky surface under **CC BY 4.0**; see [credits](public/textures/satellites/CREDITS.md). Asteroids do not participate in eclipse calculations.
+
 | Scene navigation                                                                                           | Time control                                                                              | Astronomy tools                                                     |
 | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | Left-drag to orbit, wheel to zoom, right-drag to pan                                                       | Nine rates, pause, return to now, and seek to a date                                      | Sunrise/sunset, global eclipses, and locally visible solar eclipses |

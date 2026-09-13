@@ -8,6 +8,8 @@ import { bodies, type ScaleMode } from '@/lib/solar';
 import { planetPosition, bodyOrientation } from '@/lib/ephemeris';
 import { DAY_MS, J2000_MS, advanceTime } from '@/lib/simulation-time';
 import { comets } from '@/lib/comets';
+import { asteroids } from '@/lib/asteroids';
+import { createAsteroidSystem } from './asteroid-system';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
 import { moonTextureNames, orbitingMoons } from '@/lib/moon-orbits';
@@ -16,10 +18,7 @@ import { createTextureManager, type RegisterOptions } from './texture-manager';
 import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
-import {
-  createSceneLabel,
-  createSceneLabelOcclusion,
-} from './scene-label';
+import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
 import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
 import type { EclipseProgressEvent } from '@/lib/eclipse-progress';
@@ -260,7 +259,6 @@ export default function SolarScene({
       (id) => latest.current.onSelect(id),
       null,
     );
-    const labelOcclusion = createSceneLabelOcclusion(meshes);
     for (const moon of orbitingMoons) {
       const material = meshes.get(moon.id)!
         .material as THREE.MeshStandardMaterial;
@@ -276,6 +274,17 @@ export default function SolarScene({
       });
     }
     const eclipseSystem = createEclipseSystem(meshes);
+    const asteroidSystem = createAsteroidSystem(
+      scene,
+      roots,
+      meshes,
+      labelLayer,
+      (id) => latest.current.onSelect(id),
+    );
+    textureManager.register('asteroid_surface', (texture) =>
+      asteroidSystem.setTexture(texture),
+    );
+    const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
     const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
     textureManager.register('earth_nightmap', (texture) =>
@@ -496,9 +505,11 @@ export default function SolarScene({
           );
         }
         moonSystem.localize(translate);
+        asteroidSystem.localize(translate);
         lastLocale = s.locale;
       }
       const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
+      const selectedAsteroid = asteroids.find((item) => item.id === s.selected);
       const selectedMoonTexture = selectedMoon?.texture ?? null;
       const cometTexture =
         s.cometId && s.selected === s.cometId ? 'comet_nucleus' : null;
@@ -521,7 +532,11 @@ export default function SolarScene({
         compactStable = compactSignal;
       textureManager.update(
         s.textureQuality,
-        selectedMoonTexture ?? cometTexture ?? focusBody?.texture ?? null,
+        selectedAsteroid?.texture ??
+          selectedMoonTexture ??
+          cometTexture ??
+          focusBody?.texture ??
+          null,
         compactStable,
         !!connection?.saveData,
         s.galaxy,
@@ -578,6 +593,7 @@ export default function SolarScene({
         now,
       );
       moonSystem.update(days, s.scale, s.selected, s.orbits, s.realSizes);
+      asteroidSystem.update(days, s.scale, s.realSizes, s.selected, s.orbits);
       eclipseSystem.update(
         days,
         s.selected,
@@ -636,9 +652,15 @@ export default function SolarScene({
                 )
               : s.view;
         const radius = s.selected
-          ? displayRadius(s.selected, s.scale, s.realSizes)
+          ? displayRadius(s.selected, s.scale, s.realSizes) *
+            (selectedAsteroid
+              ? meshes.get(selectedAsteroid.id)!.geometry.boundingSphere!.radius
+              : 1)
           : 1;
-        if ((s.eclipseView || s.realSizes) && (body || selectedMoon)) {
+        if (
+          ((s.eclipseView || s.realSizes) && (body || selectedMoon)) ||
+          selectedAsteroid
+        ) {
           targetDistance =
             (radius * (s.eclipseView ? 4.5 : 6)) / Math.min(1, camera.aspect);
           if (compactEclipse) {
@@ -657,9 +679,12 @@ export default function SolarScene({
                 Math.min(1, camera.aspect),
             );
         }
-        controls.minDistance = s.realSizes && s.selected ? radius * 1.2 : 1;
+        controls.minDistance =
+          (s.realSizes || selectedAsteroid) && s.selected ? radius * 1.2 : 1;
         camera.near =
-          s.realSizes && s.selected ? Math.max(1e-10, radius * 0.01) : 0.05;
+          (s.realSizes || selectedAsteroid) && s.selected
+            ? Math.max(1e-10, radius * 0.01)
+            : 0.05;
         camera.updateProjectionMatrix();
         transition = 1;
         following = null;
@@ -727,6 +752,14 @@ export default function SolarScene({
         s.solarActivity,
       );
       renderer.render(scene, camera);
+      asteroidSystem.project(
+        camera,
+        width,
+        height,
+        s.selected,
+        s.labels,
+        labelOcclusion.isOccluded,
+      );
       cometSystem.project(
         camera,
         width,

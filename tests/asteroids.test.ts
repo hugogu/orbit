@@ -1,0 +1,246 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { AstroTime } from 'astronomy-engine';
+import * as THREE from 'three';
+import {
+  asteroids,
+  asteroidPosition,
+  asteroidOrbitPoint,
+} from '../lib/asteroids';
+import { displayRadius, kmToScene } from '../lib/display-scale';
+import { bodyFromHash } from '../lib/body-navigation';
+import { catalogEntry, bodyDetailsPath, seoLocales } from '../lib/seo';
+import { texturePath } from '../lib/texture-quality';
+import { existsSync } from 'node:fs';
+import { createAsteroidSystem } from '../components/asteroid-system';
+import { createSceneLabelOcclusion } from '../components/scene-label';
+import BodyNavigation from '../components/body-navigation';
+import AsteroidDetails from '../components/asteroid-details';
+import { I18nProvider } from '../lib/i18n/provider';
+import { translator } from '../lib/i18n';
+import { observatoryTools } from '../lib/observatory-tools';
+
+void test('asteroid snapshots use their own epochs, preserve orbital planes, and close after one period', () => {
+  for (const asteroid of asteroids) {
+    const { epoch, au, e, mean, period, inc, node } = asteroid.orbit;
+    const at = AstroTime.FromTerrestrialTime(epoch - 2451545).ut;
+    const after = AstroTime.FromTerrestrialTime(epoch - 2451545 + period).ut;
+    const position = new THREE.Vector3(
+      ...asteroidPosition(asteroid, at, 'distance'),
+    );
+    const repeat = new THREE.Vector3(
+      ...asteroidPosition(asteroid, after, 'distance'),
+    );
+    assert.ok(position.distanceTo(repeat) < 1e-7, asteroid.id);
+    const peri = new THREE.Vector3(
+      ...asteroidOrbitPoint(asteroid, 0, 'distance'),
+    );
+    const apo = new THREE.Vector3(
+      ...asteroidOrbitPoint(asteroid, Math.PI, 'distance'),
+    );
+    assert.ok(Math.abs(peri.length() - au * (1 - e) * 3.1) < 1e-10);
+    assert.ok(Math.abs(apo.length() - au * (1 + e) * 3.1) < 1e-10);
+    // Independent Kepler solution at the epoch checks that mean anomaly is not reset to zero.
+    let eccentric = (mean * Math.PI) / 180;
+    for (let i = 0; i < 20; i++)
+      eccentric -=
+        (eccentric - e * Math.sin(eccentric) - (mean * Math.PI) / 180) /
+        (1 - e * Math.cos(eccentric));
+    const expected = new THREE.Vector3(
+      ...asteroidOrbitPoint(asteroid, eccentric, 'distance'),
+    );
+    assert.ok(position.distanceTo(expected) < 1e-9);
+    const deg = Math.PI / 180;
+    const normal = new THREE.Vector3(
+      Math.sin(node * deg) * Math.sin(inc * deg),
+      Math.cos(inc * deg),
+      Math.cos(node * deg) * Math.sin(inc * deg),
+    );
+    assert.ok(Math.abs(position.dot(normal)) < 1e-10);
+    const moved = new THREE.Vector3(
+      ...asteroidPosition(asteroid, at + 0.01, 'distance'),
+    );
+    assert.ok(position.clone().cross(moved).dot(normal) > 0);
+    for (const days of [-109572, 0, 73049])
+      assert.ok(
+        asteroidPosition(asteroid, days, 'illustrated').every(Number.isFinite),
+      );
+    for (const scale of ['illustrated', 'distance'] as const)
+      assert.equal(
+        displayRadius(asteroid.id, scale, true),
+        asteroid.radius * kmToScene(scale),
+      );
+  }
+});
+
+void test('every asteroid is addressable from navigation, profiles, textures, and browser tools', () => {
+  assert.equal(asteroids.length, 9);
+  assert.equal(
+    new Set(asteroids.map((item) => item.id)).size,
+    asteroids.length,
+  );
+  assert.equal(asteroids.find((item) => item.id === 'ceres')!.type, '矮行星');
+  let selected = '';
+  const focus = observatoryTools({
+    focus(id) {
+      selected = id;
+    },
+    simulation() {},
+  })[0];
+  for (const asteroid of asteroids) {
+    assert.equal(bodyFromHash(`#${asteroid.id}`), asteroid.id);
+    assert.equal(catalogEntry(asteroid.id)?.kind, 'asteroid');
+    focus.execute({ id: asteroid.id });
+    assert.equal(selected, asteroid.id);
+    assert.ok(
+      existsSync(`public${texturePath(asteroid.texture, false, 2048)}`),
+    );
+    assert.ok(existsSync(`public${texturePath(asteroid.texture, true, 8192)}`));
+    for (const locale of seoLocales) {
+      const t = translator(locale);
+      const html = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { initialLocale: locale },
+          createElement(AsteroidDetails, { asteroid }),
+          createElement(BodyNavigation, {
+            selected: asteroid.id,
+            onSelect() {},
+          }),
+        ),
+      );
+      assert.ok(html.includes(bodyDetailsPath(locale, asteroid.id)));
+      assert.ok(html.includes(t(asteroid.name)));
+      assert.doesNotMatch(html, /NaN|undefined/);
+      if (locale === 'en') assert.doesNotMatch(html, /\p{Script=Han}/u);
+    }
+  }
+});
+
+void test('asteroid and comet groups start collapsed and expand for direct selections', () => {
+  const nav = (selected: string | null) =>
+    renderToStaticMarkup(
+      createElement(BodyNavigation, { selected, onSelect() {} }),
+    );
+  const states = (html: string) =>
+    [
+      ...html.matchAll(
+        /class="small-body-expander" aria-expanded="(true|false)"/g,
+      ),
+    ].map((match) => match[1]);
+  assert.deepEqual(states(nav(null)), ['false', 'false']);
+  assert.deepEqual(states(nav('bennu')), ['true', 'false']);
+  assert.deepEqual(states(nav('halley')), ['false', 'true']);
+  assert.ok(
+    nav(null).includes(bodyDetailsPath('zh-CN', 'ceres')),
+    'collapsed links stay crawlable',
+  );
+});
+
+void test('asteroid scene integrates picking, materials, paused time, true scales, and occlusion', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const labels: {
+    onclick?: () => void;
+    textContent: string;
+    style: Record<string, string>;
+    classList: { toggle(): void };
+    setAttribute(): void;
+  }[] = [];
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+      createElement() {
+        const label = {
+          textContent: '',
+          style: {},
+          classList: { toggle() {} },
+          setAttribute() {},
+        };
+        labels.push(label);
+        return label;
+      },
+    },
+  });
+  const scene = new THREE.Scene(),
+    roots = new Map<string, THREE.Group>(),
+    meshes = new Map<string, THREE.Mesh>();
+  try {
+    let selected = '';
+    const system = createAsteroidSystem(
+      scene,
+      roots,
+      meshes,
+      { appendChild() {} } as unknown as HTMLElement,
+      (id) => {
+        selected = id;
+      },
+    );
+    system.update(0, 'illustrated', false, 'bennu', true);
+    system.localize(translator('en'));
+    const texture = new THREE.Texture();
+    system.setTexture(texture);
+    assert.equal(meshes.size, 9);
+    const bennu = roots.get('bennu')!,
+      mesh = meshes.get('bennu')!;
+    const before = bennu.position.clone(),
+      rotation = mesh.rotation.clone();
+    system.update(0, 'illustrated', false, 'bennu', true);
+    assert.ok(bennu.position.equals(before));
+    assert.ok(mesh.rotation.equals(rotation));
+    assert.equal(
+      (mesh.material as THREE.MeshStandardMaterial).bumpMap,
+      texture,
+    );
+    assert.equal(scene.getObjectByName('bennu-orbit')!.visible, true);
+    assert.equal(scene.getObjectByName('vesta-orbit')!.visible, false);
+    const camera = new THREE.PerspectiveCamera(47, 1, 0.001, 1000);
+    camera.position.copy(bennu.position).add(new THREE.Vector3(0, 0.3, 2));
+    camera.lookAt(bennu.position);
+    camera.updateMatrixWorld();
+    scene.updateMatrixWorld(true);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(), camera);
+    assert.equal(
+      raycaster.intersectObjects([...meshes.values()], false)[0].object.userData
+        .id,
+      'bennu',
+    );
+    const index = asteroids.findIndex((item) => item.id === 'bennu');
+    labels[index].onclick!();
+    assert.equal(selected, 'bennu');
+    const blocker = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4),
+      new THREE.MeshBasicMaterial(),
+    );
+    blocker.position.copy(camera.position).lerp(bennu.position, 0.5);
+    scene.add(blocker);
+    meshes.set('blocker', blocker);
+    const occlusion = createSceneLabelOcclusion(meshes);
+    occlusion.update(camera);
+    system.project(camera, 600, 600, 'bennu', true, occlusion.isOccluded);
+    assert.equal(labels[index].style.display, 'none');
+    blocker.visible = false;
+    occlusion.update(camera);
+    system.project(camera, 600, 600, 'bennu', true, occlusion.isOccluded);
+    assert.equal(labels[index].style.display, 'block');
+    system.localize(translator('ja'));
+    assert.equal(labels[index].textContent, 'ベンヌ');
+    assert.ok(bennu.position.equals(before));
+    system.update(1, 'distance', true, 'bennu', false);
+    assert.notDeepEqual(bennu.position, before);
+    assert.equal(bennu.scale.x, displayRadius('bennu', 'distance', true));
+    assert.equal(scene.getObjectByName('bennu-orbit')!.visible, false);
+    texture.dispose();
+  } finally {
+    scene.traverse((object) => {
+      if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
+        object.geometry.dispose();
+        if (!Array.isArray(object.material)) object.material.dispose();
+      }
+    });
+    if (descriptor) Object.defineProperty(globalThis, 'document', descriptor);
+    else Reflect.deleteProperty(globalThis, 'document');
+  }
+});

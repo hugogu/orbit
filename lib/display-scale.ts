@@ -1,5 +1,6 @@
 import { Vector3 } from 'three';
 import { bodies, type ScaleMode } from './solar';
+import { asteroids } from './asteroids';
 import {
   orbitingMoons,
   type OrbitingMoon,
@@ -22,8 +23,10 @@ export function displayRadius(
 ) {
   const body = bodies.find((b) => b.id === id);
   const moon = orbitingMoons.find((m) => m.id === id);
-  const radius = body?.radius ?? (moon ? moonRadii[moon.en] : 1);
-  const size = body?.size ?? moon?.size ?? 1;
+  const asteroid = asteroids.find((item) => item.id === id);
+  const radius =
+    body?.radius ?? asteroid?.radius ?? (moon ? moonRadii[moon.en] : 1);
+  const size = body?.size ?? asteroid?.size ?? moon?.size ?? 1;
   return realSizes
     ? radius * kmToScene(scale)
     : size * (scale === 'distance' ? (id === 'sun' ? 0.09 : 0.32) : 1);

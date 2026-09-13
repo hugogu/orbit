@@ -1,4 +1,5 @@
 import { comets, type Comet } from './comets';
+import { asteroids, type Asteroid } from './asteroids';
 import { languages, localePath, translator, type Locale } from './i18n';
 import { orbitingMoons, type OrbitingMoon } from './moon-orbits';
 import { bodies, type Body } from './solar';
@@ -49,6 +50,7 @@ export const seoLocales = Object.keys(languages) as Locale[];
 export type CatalogEntry =
   | { kind: 'body'; data: Body }
   | { kind: 'moon'; data: OrbitingMoon }
+  | { kind: 'asteroid'; data: Asteroid }
   | { kind: 'comet'; data: Comet };
 
 export function catalogEntries(): CatalogEntry[] {
@@ -56,6 +58,7 @@ export function catalogEntries(): CatalogEntry[] {
     ...bodies.map((data) => ({ kind: 'body' as const, data })),
     ...orbitingMoons.map((data) => ({ kind: 'moon' as const, data })),
     ...comets.map((data) => ({ kind: 'comet' as const, data })),
+    ...asteroids.map((data) => ({ kind: 'asteroid' as const, data })),
   ];
 }
 

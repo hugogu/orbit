@@ -83,7 +83,16 @@ void test('renders have a lit hemisphere, a dark hemisphere and clean composite 
 });
 
 void test('real licensed textures render to images and carry their attribution', async () => {
-  for (const id of ['sun', 'saturn', 'moon-miranda', 'moon-deimos', '67p']) {
+  for (const id of [
+    'sun',
+    'saturn',
+    'moon-miranda',
+    'moon-deimos',
+    '67p',
+    'ceres',
+    'eros',
+    'bennu',
+  ]) {
     const entry = catalogEntries().find((e) => e.data.id === id)!;
     const credit = portraitCredit(entry);
     const rendered = await renderPortrait(entry, 80);
@@ -97,7 +106,8 @@ void test('real licensed textures render to images and carry their attribution',
     assert.ok(metadata.xmp?.toString().includes(credit.license));
     assert.ok(metadata.xmp?.toString().includes('rendering by ORBIT'));
     if (id === 'moon-miranda') assert.match(credit.license, /by-sa\/4.0/);
-    if (id === '67p') assert.equal(isIllustrativePortrait(entry), true);
+    if (id === '67p' || entry.kind === 'asteroid')
+      assert.equal(isIllustrativePortrait(entry), true);
   }
 });
 

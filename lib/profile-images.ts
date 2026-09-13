@@ -17,7 +17,7 @@ export function entryTexturePath(entry: CatalogEntry) {
   const texture =
     entry.kind === 'body'
       ? (entry.data.texture ?? entry.data.id)
-      : entry.kind === 'moon'
+      : entry.kind === 'moon' || entry.kind === 'asteroid'
         ? entry.data.texture
         : 'comet_nucleus';
   return texturePath(texture, false, 2048);
@@ -34,7 +34,11 @@ const illustrativeIds = new Set([
   'moon-nereid',
 ]);
 export function isIllustrativePortrait(entry: CatalogEntry) {
-  return entry.kind === 'comet' || illustrativeIds.has(entry.data.id);
+  return (
+    entry.kind === 'comet' ||
+    entry.kind === 'asteroid' ||
+    illustrativeIds.has(entry.data.id)
+  );
 }
 export type PortraitCredit = {
   name: string;

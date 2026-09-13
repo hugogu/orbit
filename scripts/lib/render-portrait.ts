@@ -2,6 +2,7 @@ import sharp from 'sharp/lib/index.js';
 import { resolve } from 'node:path';
 import type { CatalogEntry } from '../../lib/seo';
 import { entryTexturePath } from '../../lib/profile-images';
+import { asteroids } from '../../lib/asteroids';
 
 export type SurfaceMap = { data: Uint8Array; width: number; height: number };
 
@@ -35,9 +36,23 @@ export function renderSurface(
   const pixels = Buffer.alloc(size * size * 4);
   const sun = id === 'sun';
   const comet = ['halley', 'encke', '67p', 'hale-bopp'].includes(id);
+  const asteroid = asteroids.find((item) => item.id === id);
+  const tint = asteroid
+    ? [1, 3, 5].map(
+        (at) => parseInt(asteroid.color.slice(at, at + 2), 16) / 255,
+      )
+    : [1, 1, 1];
   const small =
     comet || ['moon-phobos', 'moon-deimos', 'moon-nereid'].includes(id);
-  const radius = size * (ring ? 0.205 : small ? 0.34 : 0.365);
+  const radius =
+    size *
+    (ring
+      ? 0.205
+      : asteroid
+        ? 0.365 / Math.max(...asteroid.axes)
+        : small
+          ? 0.34
+          : 0.365);
   const tilt = ring ? -0.3 : id === 'uranus' ? 1.4 : -0.13;
   const ct = Math.cos(tilt),
     st = Math.sin(tilt);
@@ -56,8 +71,10 @@ export function renderSurface(
       const sy = (size / 2 - row - 0.5) / radius;
       const x = sx * ct - sy * st,
         y = sx * st + sy * ct;
-      const ax = small ? 1.12 : 1,
-        ay = small ? 0.73 : 1;
+      const ridge =
+        asteroid?.surface === 'top' ? 1 + 0.14 * Math.exp(-Math.abs(y) * 8) : 1;
+      const ax = asteroid ? asteroid.axes[0] * ridge : small ? 1.12 : 1,
+        ay = asteroid ? asteroid.axes[1] : small ? 0.73 : 1;
       const q = (x / ax) ** 2 + (y / ay) ** 2;
       const distance = Math.hypot(sx, sy);
       const bg = [7, 12, 21];
@@ -89,7 +106,7 @@ export function renderSurface(
         const shade = sun
           ? 0.68 + 0.32 * z
           : 0.08 + 0.92 * Math.pow(light, 0.75);
-        color = surface.map((n) => n * shade);
+        color = surface.map((n, channel) => n * shade * tint[channel]);
         if (atmosphere) {
           const rim = Math.pow(1 - z, 3) * Math.max(0.05, light) * 0.65;
           color = color.map((n, i) => n * (1 - rim) + atmosphere[i] * rim);

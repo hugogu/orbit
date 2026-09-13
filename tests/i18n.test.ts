@@ -18,6 +18,11 @@ import {
 import { I18nProvider } from '../lib/i18n/provider';
 import { bodies, regions, speedLabel } from '../lib/solar';
 import { comets } from '../lib/comets';
+import {
+  asteroids,
+  asteroidModelNote,
+  asteroidSurfaceNote,
+} from '../lib/asteroids';
 import { moonSystems } from '../lib/moons';
 import { profileContent } from '../lib/profile-content';
 import { curiosities } from '../lib/curiosities';
@@ -85,7 +90,17 @@ void test('all educational data and literal translation keys have catalog entrie
     else if (value && typeof value === 'object')
       Object.values(value).forEach(check);
   };
-  [bodies, regions, comets, moonSystems, curiosities, profileContent].forEach(check);
+  [
+    bodies,
+    regions,
+    comets,
+    asteroids,
+    asteroidModelNote,
+    asteroidSurfaceNote,
+    moonSystems,
+    curiosities,
+    profileContent,
+  ].forEach(check);
   const scan = (directory: string) => {
     for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
       if (item.name === 'i18n' || item.name === 'ui') continue;
@@ -121,10 +136,13 @@ void test('all educational data and literal translation keys have catalog entrie
   };
   ['app', 'components'].forEach(scan);
 });
-void test('every body retains all 30 sourced facts in each language, including numeric comparisons', () => {
+void test('every body retains its complete sourced fact pool in each language, including numeric comparisons', () => {
   for (const locale of codes) {
     for (const [id, pool] of Object.entries(curiosities)) {
-      assert.equal(pool.length, 30);
+      assert.equal(
+        pool.length,
+        asteroids.some((item) => item.id === id) ? 6 : 30,
+      );
       for (let index = 0; index < pool.length; index++) {
         const html = renderToStaticMarkup(
           createElement(
@@ -134,7 +152,7 @@ void test('every body retains all 30 sourced facts in each language, including n
           ),
         );
         assert.ok(html.includes(pool[index].source));
-        assert.ok(html.includes(`${index + 1}/30`));
+        assert.ok(html.includes(`${index + 1}/${pool.length}`));
         assert.doesNotMatch(html, /{{|undefined|NaN|Infinity/);
         if (locale === 'en')
           assert.doesNotMatch(html, /\p{Script=Han}/u, `${id}/${index}`);
@@ -147,21 +165,24 @@ void test('moon profiles and their navigation use localized names and keep stabl
     const t = translator(locale);
     const moon = orbitingMoons.find((m) => m.en === 'Titan')!;
     const markup = renderToStaticMarkup(
-      createElement(I18nProvider, { initialLocale: locale },
-          createElement(MoonDetails, { key: 'details', moon, onSelect() {} }),
-          createElement(BodyNavigation, {
-            key: 'nav',
-            selected: moon.id,
-            onSelect() {},
-          }),
+      createElement(
+        I18nProvider,
+        { initialLocale: locale },
+        createElement(MoonDetails, { key: 'details', moon, onSelect() {} }),
+        createElement(BodyNavigation, {
+          key: 'nav',
+          selected: moon.id,
+          onSelect() {},
+        }),
       ),
     );
     assert.ok(markup.includes(t(moon.name)));
     assert.ok(markup.includes(`href="#${moon.id}"`));
     assert.ok(
       markup.includes(
-        renderToStaticMarkup(createElement('p', null, t(moon.description)))
-          .slice(3, -4),
+        renderToStaticMarkup(
+          createElement('p', null, t(moon.description)),
+        ).slice(3, -4),
       ),
     );
     if (locale === 'en') assert.doesNotMatch(markup, /\p{Script=Han}/u);

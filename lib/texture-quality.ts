@@ -150,6 +150,11 @@ export const highResolutionTextures: Record<
     width: 4096,
     standardFile: 'satellites/2k_asteroid.jpg',
   },
+  asteroid_surface: {
+    file: 'satellites/4k_asteroid.jpg',
+    width: 4096,
+    standardFile: 'satellites/2k_asteroid.jpg',
+  },
 };
 export function texturePath(name: string, high: boolean, maxSize: number) {
   const map = highResolutionTextures[name];

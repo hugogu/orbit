@@ -15,6 +15,12 @@ import { curiosities, type Curiosity } from '../../lib/curiosities';
 import { extraFacts } from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
 import { comets } from '../../lib/comets';
+import {
+  asteroids,
+  asteroidFacts,
+  asteroidModelNote,
+  asteroidSurfaceNote,
+} from '../../lib/asteroids';
 import { profileContent, type ProfileContent } from '../../lib/profile-content';
 import {
   squareImagePath,
@@ -70,6 +76,7 @@ function entryDescription(entry: CatalogEntry, locale: Locale) {
 }
 
 function sourceUrl(entry: CatalogEntry) {
+  if (entry.kind === 'asteroid') return entry.data.source;
   if (entry.kind === 'body') {
     return entry.data.id === 'sun'
       ? 'https://science.nasa.gov/sun/facts/'
@@ -81,6 +88,11 @@ function sourceUrl(entry: CatalogEntry) {
 }
 
 function relatedEntries(entry: CatalogEntry) {
+  if (entry.kind === 'asteroid')
+    return asteroids
+      .filter((item) => item.id !== entry.data.id)
+      .slice(0, 4)
+      .map((data) => ({ kind: 'asteroid' as const, data }));
   if (entry.kind === 'body') {
     const moons = orbitingMoons.filter(
       (moon) => moon.parentId === entry.data.id,
@@ -104,6 +116,11 @@ function relatedEntries(entry: CatalogEntry) {
 
 function coreFacts(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
+  if (entry.kind === 'asteroid')
+    return asteroidFacts(entry.data).map(([label, value, unit]) => [
+      t(label),
+      `${value.toLocaleString(locale, { maximumFractionDigits: value < 1 ? 5 : 3 })} ${t(unit)}`.trim(),
+    ]);
   if (entry.kind === 'body') {
     const body = entry.data;
     const orbitalPeriod =
@@ -412,9 +429,11 @@ export default async function BodyPage({ params }: PageProps) {
                 {t(
                   entry.kind === 'body'
                     ? entry.data.type
-                    : entry.kind === 'moon'
-                      ? '天然卫星'
-                      : '彗星档案',
+                    : entry.kind === 'asteroid'
+                      ? entry.data.type
+                      : entry.kind === 'moon'
+                        ? '天然卫星'
+                        : '彗星档案',
                 )}{' '}
                 <span>{entry.data.en}</span>
               </p>
@@ -505,9 +524,11 @@ export default async function BodyPage({ params }: PageProps) {
                 <summary>{t('数据与计算说明')}</summary>
                 <p>
                   {t(
-                    entry.kind === 'comet'
-                      ? '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。轨道按 AU 比例显示，彗核、旋转与彗尾为示意。'
-                      : '半径采用平均值；轨道数据用于介绍天体的尺度与运动。',
+                    entry.kind === 'asteroid'
+                      ? asteroidModelNote
+                      : entry.kind === 'comet'
+                        ? '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。轨道按 AU 比例显示，彗核、旋转与彗尾为示意。'
+                        : '半径采用平均值；轨道数据用于介绍天体的尺度与运动。',
                   )}
                 </p>
               </details>
@@ -526,28 +547,44 @@ export default async function BodyPage({ params }: PageProps) {
                 target="_blank"
                 rel="noreferrer"
               >
-                <span>NASA Science — {name}</span>
+                <span>
+                  {entry.kind === 'asteroid'
+                    ? entry.data.sourceName
+                    : 'NASA Science'}{' '}
+                  — {name}
+                </span>
                 <ArrowUpRight className="external-arrow" aria-hidden="true" />
               </a>
-              <a
-                className="seo-source-link"
-                href={
-                  entry.kind === 'comet'
-                    ? 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html'
-                    : entry.kind === 'moon'
-                      ? 'https://ssd.jpl.nasa.gov/sats/'
-                      : 'https://ssd.jpl.nasa.gov/planets/'
-                }
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span>JPL — {t('轨道数据')}</span>
-                <ArrowUpRight className="external-arrow" aria-hidden="true" />
-              </a>
+              {!(
+                entry.kind === 'asteroid' &&
+                entry.data.sourceName === 'NASA/JPL SBDB'
+              ) && (
+                <a
+                  className="seo-source-link"
+                  href={
+                    entry.kind === 'asteroid'
+                      ? `https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=${entry.data.number}`
+                      : entry.kind === 'comet'
+                        ? 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html'
+                        : entry.kind === 'moon'
+                          ? 'https://ssd.jpl.nasa.gov/sats/'
+                          : 'https://ssd.jpl.nasa.gov/planets/'
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>JPL — {t('轨道数据')}</span>
+                  <ArrowUpRight className="external-arrow" aria-hidden="true" />
+                </a>
+              )}
               <div id="image-credits" className="profile-image-credits">
                 <h3>{t('图像与授权')}</h3>
                 <p>
-                  {t('图像基于已有贴图重新投影与布光，不代表实时观测照片。')}
+                  {t(
+                    entry.kind === 'asteroid'
+                      ? asteroidSurfaceNote
+                      : '图像基于已有贴图重新投影与布光，不代表实时观测照片。',
+                  )}
                 </p>
                 <p>
                   {t('表面素材')}：<a href={credit.url}>{credit.name}</a> ·{' '}

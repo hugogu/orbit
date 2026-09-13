@@ -37,6 +37,12 @@ import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
 import { comets, cometPerihelion } from '@/lib/comets';
+import {
+  asteroids,
+  asteroidModelNote,
+  asteroidSurfaceNote,
+} from '@/lib/asteroids';
+import AsteroidDetails from '@/components/asteroid-details';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
 import { fallbackSkyLocation, type SkyLocation } from '@/lib/sky-events';
 import { orbitingMoons } from '@/lib/moon-orbits';
@@ -123,6 +129,7 @@ export default function Home() {
       'pending' | 'device' | 'manual' | 'fallback'
     >('fallback');
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
+  const selectedAsteroid = asteroids.find((item) => item.id === selected);
   const body = bodies.find(
     (b) => b.id === (selectedMoon?.parentId ?? selected),
   );
@@ -449,6 +456,11 @@ export default function Home() {
         <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
     </>
+  ) : selectedAsteroid ? (
+    <AsteroidDetails
+      asteroid={selectedAsteroid}
+      curiosityIndex={curiosityPicks[selectedAsteroid.id]}
+    />
   ) : selectedMoon ? (
     <MoonDetails
       moon={selectedMoon}
@@ -721,7 +733,11 @@ export default function Home() {
         </h2>
         <div className="catalog-title">
           {tab === 'explore' ? t('天体导航') : t('由内向外')}
-          <span>{tab === 'explore' ? '01 — 14' : '01 — 07'}</span>
+          <span>
+            {tab === 'explore'
+              ? `01 — ${bodies.length + comets.length + asteroids.length}`
+              : '01 — 07'}
+          </span>
         </div>
         {tab === 'explore' ? (
           <BodyNavigation selected={selected} onSelect={select} />
@@ -806,13 +822,15 @@ export default function Home() {
                   v0: t(cometClose ? '正在跟随' : '轨道全景'),
                   v1: t(activeComet.name),
                 })
-              : body
-                ? t('正在跟随 · {{v0}}', {
-                    v0: t(selectedMoon?.name ?? body.name),
-                  })
-                : tab === 'structure'
-                  ? t(activeRegion.name)
-                  : t('太阳系全景')}
+              : selectedAsteroid
+                ? t('正在跟随 · {{v0}}', { v0: t(selectedAsteroid.name) })
+                : body
+                  ? t('正在跟随 · {{v0}}', {
+                      v0: t(selectedMoon?.name ?? body.name),
+                    })
+                  : tab === 'structure'
+                    ? t(activeRegion.name)
+                    : t('太阳系全景')}
           </span>
           <span className="scale-status">
             {realSizes
@@ -1156,6 +1174,8 @@ export default function Home() {
             <TabsContent value="model" className="help-tab-panel">
               <div className="model-explainer">
                 <h3>{t('理解模型')}</h3>
+                <p>{t(asteroidModelNote)}</p>
+                <p>{t(asteroidSurfaceNote)}</p>
                 <p>
                   {t(
                     '太阳、八大行星、冥王星和月球的位置由 Astronomy Engine 按 UTC 日期计算，以固定 J2000 黄道坐标显示几何位置，不含光行时。自转轴和本初子午线使用天文模型；地球采用地球定向转换。纹理经度未全部校准，云层纹理不代表实时天气。高速时自转会出现视觉混叠。',
@@ -1296,7 +1316,12 @@ export default function Home() {
           <SheetTitle>
             {isComet
               ? t(activeComet.name)
-              : t(selectedMoon?.name ?? body?.name ?? '太阳系知识')}
+              : t(
+                  selectedAsteroid?.name ??
+                    selectedMoon?.name ??
+                    body?.name ??
+                    '太阳系知识',
+                )}
           </SheetTitle>
           <SheetDescription>{t('探索天体的特征与运行规律。')}</SheetDescription>
           {tab === 'structure' && !body ? (
