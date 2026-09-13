@@ -19,6 +19,8 @@ import { createObserverMarker } from './observer-marker';
 import { createSceneLabel } from './scene-label';
 import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
+import type { EclipseProgressEvent } from '@/lib/eclipse-progress';
+import { createEclipsePath } from './eclipse-path';
 export type SceneState = {
   locale: Locale;
   speed: number;
@@ -38,6 +40,7 @@ export type SceneState = {
   shadows: boolean;
   shadowGuides: boolean;
   eclipseView: boolean;
+  activeEclipse: EclipseProgressEvent | null;
   galaxy: boolean;
   solarActivity: boolean;
   cometTails: boolean;
@@ -71,6 +74,7 @@ export default function SolarScene({
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
+        stencil: true,
         powerPreference: 'high-performance',
       });
     } catch {
@@ -268,6 +272,8 @@ export default function SolarScene({
       });
     }
     const eclipseSystem = createEclipseSystem(meshes);
+    const eclipsePath = createEclipsePath(meshes.get('earth')!);
+    const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
     textureManager.register('earth_nightmap', (texture) =>
       eclipseSystem.setEarthNightMap(texture),
     );
@@ -424,6 +430,7 @@ export default function SolarScene({
       lastRealSizes = false,
       lastSystemView = false,
       lastCameraAspect = 0,
+      lastEclipseFraming = '',
       lastTop = false,
       lastComet = '',
       highResolutionReadyAt = 0,
@@ -458,6 +465,18 @@ export default function SolarScene({
         dt = Math.min((now - previous) / 1000, 0.08);
       previous = now;
       if (document.hidden) return;
+      const compactEclipse =
+        s.eclipseView && !!s.activeEclipse && width <= 600 && height < 720;
+      const framingKey = `${compactEclipse}-${width}-${height}`;
+      const framingChanged = framingKey !== lastEclipseFraming;
+      if (framingChanged) {
+        // On short portrait screens, frame the body between the collapsed
+        // progress card and playback controls instead of behind the card.
+        if (compactEclipse)
+          camera.setViewOffset(width, height, 0, -63, width, height);
+        else camera.clearViewOffset();
+        lastEclipseFraming = framingKey;
+      }
       const translate = translator(s.locale);
       if (s.locale !== lastLocale) {
         renderer.domElement.setAttribute(
@@ -494,7 +513,8 @@ export default function SolarScene({
         compactSignal = compactScreen.matches;
         compactChangedAt = now;
       }
-      if (now - compactChangedAt > compactDebounceMs) compactStable = compactSignal;
+      if (now - compactChangedAt > compactDebounceMs)
+        compactStable = compactSignal;
       textureManager.update(
         s.textureQuality,
         selectedMoonTexture ?? cometTexture ?? focusBody?.texture ?? null,
@@ -554,7 +574,20 @@ export default function SolarScene({
         now,
       );
       moonSystem.update(days, s.scale, s.selected, s.orbits, s.realSizes);
-      eclipseSystem.update(days, s.selected, s.shadows, s.shadowGuides, seek);
+      eclipseSystem.update(
+        days,
+        s.selected,
+        s.shadows,
+        s.shadowGuides,
+        seek,
+        !!s.activeEclipse?.path,
+      );
+      eclipsePath.update(
+        s.activeEclipse,
+        time,
+        s.shadows && s.shadowGuides && s.selected === 'earth',
+        earthDisplayRadius,
+      );
       belt.visible = s.belts && s.scale === 'illustrated';
       kuiper.visible = s.belts && s.scale === 'illustrated';
       scattered.visible = s.belts && s.view >= 350 && s.scale === 'illustrated';
@@ -580,6 +613,7 @@ export default function SolarScene({
         s.realSizes !== lastRealSizes ||
         s.systemView !== lastSystemView ||
         camera.aspect !== lastCameraAspect ||
+        framingChanged ||
         cometKey !== lastComet
       ) {
         const body = bodies.find((b) => b.id === s.selected);
@@ -601,7 +635,17 @@ export default function SolarScene({
           ? displayRadius(s.selected, s.scale, s.realSizes)
           : 1;
         if ((s.eclipseView || s.realSizes) && (body || selectedMoon)) {
-          targetDistance = (radius * 6) / Math.min(1, camera.aspect);
+          targetDistance =
+            (radius * (s.eclipseView ? 4.5 : 6)) / Math.min(1, camera.aspect);
+          if (compactEclipse) {
+            const pixelRadius = Math.max(24, (height - 436) * 0.42);
+            const focalLength =
+              height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+            targetDistance = Math.max(
+              targetDistance,
+              radius * Math.hypot(1, focalLength / pixelRadius),
+            );
+          }
           if (s.systemView && body)
             targetDistance = Math.max(
               targetDistance,
@@ -713,6 +757,7 @@ export default function SolarScene({
       window.removeEventListener('keydown', onKey);
       controls.dispose();
       eclipseSystem.dispose();
+      eclipsePath.dispose();
       observerMarker?.dispose();
       scene.traverse((o) => {
         if (

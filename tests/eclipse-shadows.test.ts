@@ -196,6 +196,14 @@ void test('scene guides update, hide on disable, and clean up GPU geometry', () 
       (o) => (o as THREE.LineSegments).geometry.drawRange.count > 0,
     ),
   );
+  system.update(d, 'earth', true, true, false, true);
+  for (let i = 3; i < system.guideRoot.children.length; i += 4) {
+    assert.equal(
+      (system.guideRoot.children[i] as THREE.LineSegments).geometry.drawRange
+        .count,
+      0,
+    );
+  }
   system.update(d + 0.1, 'earth', false, true);
   assert.equal(system.guideRoot.visible, false);
   system.update(d, 'moon-moon', true, true);

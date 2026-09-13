@@ -782,6 +782,196 @@ button:disabled {
   overflow: hidden;
   background: #05080e;
 }
+.eclipse-progress,
+.eclipse-retry {
+  position: absolute;
+  z-index: 5;
+  top: 204px;
+  right: 32px;
+  width: 300px;
+  border: 1px solid #bba78055;
+  border-radius: 12px;
+  background: #0b1019f5;
+  color: #d9dfe9;
+  padding: 16px;
+  font-size: 14px;
+}
+.eclipse-progress {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 400px);
+}
+.observatory[data-eclipse-active='true'] .info-panel {
+  visibility: hidden;
+}
+.observatory[data-eclipse-active='true'] .mobile-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  color: #c8b590;
+}
+@media (min-width: 901px) and (min-height: 601px) {
+  .observatory[data-eclipse-active='true'] .scene-meta {
+    margin-right: 0;
+  }
+}
+.eclipse-progress-heading {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  border: 0;
+  padding: 0 0 10px;
+  background: transparent;
+  color: #dfc89e;
+  text-align: start;
+  flex-shrink: 0;
+}
+.eclipse-progress-heading strong {
+  display: block;
+  font-weight: 500;
+  font-size: 15px;
+}
+.eclipse-progress-heading small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8e9bac;
+}
+.eclipse-progress-heading > svg {
+  flex-shrink: 0;
+}
+.eclipse-progress[data-expanded='true'] .eclipse-progress-heading > svg {
+  transform: rotate(180deg);
+}
+.eclipse-progress [data-slot='progress-track'] {
+  background: #d9c49a22;
+}
+.eclipse-progress [data-slot='progress-indicator'] {
+  background: #d9c49a;
+  transition: none;
+}
+.eclipse-progress-phase {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  color: #9daabd;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.eclipse-progress-details {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  margin-top: 12px;
+}
+.eclipse-progress[data-expanded='false'] .eclipse-progress-details {
+  display: none;
+}
+.eclipse-circumstances {
+  margin: 0 0 12px;
+}
+.eclipse-circumstances > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.eclipse-circumstances dt {
+  color: #8e9bac;
+}
+.eclipse-circumstances dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.eclipse-contacts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.eclipse-contacts button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: start;
+  width: 100%;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 0;
+  border: 0;
+  border-top: 1px solid #ffffff0d;
+  background: transparent;
+  color: #abb7c8;
+}
+.eclipse-contacts [data-past='true'] button {
+  color: #dfc89e;
+}
+.eclipse-contacts time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.eclipse-progress button:focus-visible {
+  outline: 2px solid #dfc89e;
+  outline-offset: 2px;
+}
+.eclipse-contacts button:hover {
+  background: #d9c49a0c;
+}
+.eclipse-progress-note {
+  font-size: 12px;
+  color: #8593a8;
+  line-height: 1.65;
+  margin: 12px 0;
+}
+.eclipse-observe {
+  min-height: 44px;
+  border: 1px solid #bba78055;
+  border-radius: 6px;
+  background: #d9c49a10;
+  color: #dfc89e;
+  padding: 6px 12px;
+  width: 100%;
+}
+@media (max-width: 900px), (max-height: 600px) {
+  .eclipse-progress,
+  .eclipse-retry {
+    top: 164px;
+    right: max(12px, env(safe-area-inset-right));
+    width: 280px;
+    padding: 12px;
+  }
+  .eclipse-progress[data-expanded='false'] .eclipse-progress-details {
+    display: none;
+  }
+  .eclipse-progress {
+    max-height: calc(100dvh - 344px);
+  }
+}
+@media (max-width: 600px) {
+  .eclipse-progress,
+  .eclipse-retry {
+    left: max(12px, env(safe-area-inset-left));
+    width: auto;
+  }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .eclipse-progress,
+  .eclipse-retry {
+    top: 112px;
+    left: auto;
+    width: 270px;
+  }
+  .eclipse-progress {
+    max-height: calc(100dvh - 192px);
+  }
+}
 .scene {
   position: absolute;
   inset: 0;

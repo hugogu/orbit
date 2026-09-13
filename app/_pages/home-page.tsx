@@ -33,6 +33,8 @@ import CuriosityCard, { CuriositySource } from '@/components/curiosity-card';
 import ConceptHint from '@/components/concept-hint';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
+import EclipseProgressPanel from '@/components/eclipse-progress-panel';
+import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
 import { comets, cometPerihelion } from '@/lib/comets';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
@@ -613,8 +615,9 @@ export default function Home() {
       </div>
     </>
   );
+  const eclipse = useEclipseProgress(time);
   return (
-    <main className="observatory">
+    <main className="observatory" data-eclipse-active={!!eclipse.event}>
       <SolarScene
         state={{
           locale,
@@ -635,6 +638,7 @@ export default function Home() {
           shadows,
           shadowGuides,
           eclipseView,
+          activeEclipse: eclipse.event,
           galaxy,
           solarActivity,
           cometTails,
@@ -650,6 +654,25 @@ export default function Home() {
         onAssetStatus={setNotice}
       />
       <div className="vignette" />
+      {eclipse.event && time !== null && (
+        <EclipseProgressPanel
+          key={eclipse.event.id}
+          event={eclipse.event}
+          time={time}
+          onSeek={seekTime}
+          onObserve={() => {
+            select(eclipse.event!.type === 'solar' ? 'earth' : 'moon-moon');
+            setShadows(true);
+            setShadowGuides(true);
+            setEclipseView(true);
+          }}
+        />
+      )}
+      {eclipse.error && eclipseView && (
+        <button className="eclipse-retry panel" onClick={eclipse.retry}>
+          {t('天象进度计算失败，点击重试')}
+        </button>
+      )}
       <header className="topbar">
         <button
           className="brand"
@@ -1026,7 +1049,9 @@ export default function Home() {
                 <span className="umbra-key">{t('本影')}</span>
                 <span className="penumbra-key">{t('半影')}</span>
                 <span className="antumbra-key">{t('伪本影（环食）')}</span>
-                <span>{t('细线：过去 90 分钟影轴轨迹')}</span>
+                <span>
+                  {t('日食：完整食带与中心线；其他食影：过去 90 分钟轨迹')}
+                </span>
               </div>
             </TabsContent>
             <TabsContent value="textures" className="settings-tab-panel">
@@ -1217,7 +1242,7 @@ export default function Home() {
                     '星空采用 Solar System Scope 的银河全景贴图，位于无限远背景；未按观测地点校准为实时星图。高清源文件中的未测绘区域也可能为示意填充。',
                   )}{' '}
                   {t(
-                    '动态食影按有限大小的太阳与遮挡天体计算，独立于画面中的放大比例；地月及伽利略卫星使用星历，其他卫星沿用近似轨道。轮廓表示当前影区边界，细线记录过去 90 分钟影轴在自转表面上的轨迹，偏食未必有中心轨迹。模型采用球形天体、均匀日面，未计入大气折射、太阳临边昏暗和月缘地形；月全食保留微弱亮度作示意，颜色不预测真实红月亮。星环及彗核不参与食影计算。',
+                    '动态食影按有限大小的太阳与遮挡天体计算，独立于画面中的放大比例；地月及伽利略卫星使用星历，其他卫星沿用近似轨道。轮廓表示当前影区边界，日食显示完整食带与中心线，纯偏食显示覆盖区；其他食影保留过去 90 分钟的影轴轨迹。模型采用球形天体、均匀日面，未计入大气折射、太阳临边昏暗和月缘地形；月全食保留微弱亮度作示意，颜色不预测真实红月亮。星环及彗核不参与食影计算。',
                   )}
                 </p>
               </div>
