@@ -68,7 +68,7 @@ export default function SunriseSunset({
               <ConceptHint
                 label={t(
                   locationSource === 'fallback'
-                    ? '无法获取设备位置，当前显示参考坐标。可在“天象推演”中手动设置。'
+                    ? '当前使用北京参考坐标，可在“天象推演”中修改观测地点。'
                     : '可在“天象推演”中修改观测地点。',
                 )}
               />
@@ -82,7 +82,7 @@ export default function SunriseSunset({
           </p>
         </>
       ) : (
-        <p className="little-note">{t('正在获取当前位置…')}</p>
+        <p className="little-note">{t('正在加载观测点…')}</p>
       )}
     </section>
   );
