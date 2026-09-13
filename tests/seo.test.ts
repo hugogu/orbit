@@ -180,6 +180,19 @@ void test('root layouts emit the route locale before client hydration', () => {
   assert.match(explorerPage, /homeJsonLd\(\)/);
 });
 
+void test('locale hydration preserves route-owned profile titles and descriptions', () => {
+  const provider = readFileSync(
+    new URL('../lib/i18n/provider.tsx', import.meta.url),
+    'utf8',
+  );
+  const guard = provider.indexOf(
+    "if (window.location.pathname !== '/') return;",
+  );
+  assert.ok(guard > provider.indexOf('document.documentElement.lang ='));
+  assert.ok(guard < provider.indexOf('document.title ='));
+  assert.ok(guard < provider.indexOf('meta[name="description"]'));
+});
+
 void test('JSON-LD escapes script-sensitive characters', () => {
   const serialized = serializeJsonLd({
     description: '</script><script>alert(1)</script>',
