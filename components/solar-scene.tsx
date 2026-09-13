@@ -16,7 +16,10 @@ import { createTextureManager, type RegisterOptions } from './texture-manager';
 import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
-import { createSceneLabel } from './scene-label';
+import {
+  createSceneLabel,
+  createSceneLabelOcclusion,
+} from './scene-label';
 import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
 import type { EclipseProgressEvent } from '@/lib/eclipse-progress';
@@ -257,6 +260,7 @@ export default function SolarScene({
       (id) => latest.current.onSelect(id),
       null,
     );
+    const labelOcclusion = createSceneLabelOcclusion(meshes);
     for (const moon of orbitingMoons) {
       const material = meshes.get(moon.id)!
         .material as THREE.MeshStandardMaterial;
@@ -715,6 +719,7 @@ export default function SolarScene({
         following = newTarget.clone();
       }
       controls.update();
+      if (s.labels) labelOcclusion.update(camera);
       sunEffects?.update(
         days,
         camera,
@@ -722,8 +727,21 @@ export default function SolarScene({
         s.solarActivity,
       );
       renderer.render(scene, camera);
-      cometSystem.project(camera, width, height, s.labels);
-      moonSystem.project(camera, width, height, s.selected, s.labels);
+      cometSystem.project(
+        camera,
+        width,
+        height,
+        s.labels,
+        s.labels ? labelOcclusion.isOccluded : undefined,
+      );
+      moonSystem.project(
+        camera,
+        width,
+        height,
+        s.selected,
+        s.labels,
+        s.labels ? labelOcclusion.isOccluded : undefined,
+      );
       for (const body of bodies) {
         projected.copy(roots.get(body.id)!.position);
         projected.y += displayRadius(body.id, s.scale, s.realSizes) * 1.2;
@@ -734,6 +752,9 @@ export default function SolarScene({
           height,
           s.labels,
           body.id === s.selected,
+          s.labels
+            ? labelOcclusion.isOccluded(body.id, roots.get(body.id)!.position)
+            : false,
         );
       }
       if (now - lastReport > 350) {
