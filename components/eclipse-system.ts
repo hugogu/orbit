@@ -77,6 +77,7 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
     lastShadowDay = NaN,
     lastShadowEnabled = true,
     lastMaterialDay = NaN;
+  let lastFullEarthPath = false;
   let frame = shadowFrame(0);
   // Cache physical positions for at most one simulated second, but transform
   // them into the current rotating surface frame on every simulation update.
@@ -98,6 +99,7 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
       enabled: boolean,
       showGuides: boolean,
       seek = false,
+      fullEarthPath = false,
     ) {
       const refreshShadows =
         seek ||
@@ -146,6 +148,7 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
       if (
         !seek &&
         selected === lastSelected &&
+        fullEarthPath === lastFullEarthPath &&
         Number.isFinite(lastGuideDay) &&
         Math.abs(days - lastGuideDay) < shadowUpdateStepDays
       )
@@ -154,6 +157,7 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
       const key = casters.map((c) => c.id).join('/');
       const refreshTrack =
         selected !== lastSelected ||
+        fullEarthPath !== lastFullEarthPath ||
         key !== lastCasterKey ||
         !Number.isFinite(lastTrackDay) ||
         Math.abs(days - lastTrackDay) > 1 / 1440 ||
@@ -179,17 +183,20 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
             : [];
           draw(guide[kind], points, target.size * 1.002);
         }
-        if (caster && refreshTrack)
+        if (caster && refreshTrack && !(fullEarthPath && target.id === 'earth'))
           trackCache.set(caster.id, shadowTrack(target.id, caster.id, days));
         draw(
           guide.track,
-          caster ? (trackCache.get(caster.id) ?? []) : [],
+          caster && !(fullEarthPath && target.id === 'earth')
+            ? (trackCache.get(caster.id) ?? [])
+            : [],
           target.size * 1.003,
         );
       });
       lastGuideDay = days;
       lastSelected = selected;
       lastCasterKey = key;
+      lastFullEarthPath = fullEarthPath;
     },
     focusDirection(id: string) {
       const target = frame.get(id);
