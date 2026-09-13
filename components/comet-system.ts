@@ -118,9 +118,17 @@ export function createCometSystem(
       width: number,
       height: number,
       show: boolean,
+      isOccluded?: (id: string | null, center: THREE.Vector3) => boolean,
     ) {
       projected.copy(position).project(camera);
-      projectLabel(projected, width, height, group.visible && show);
+      projectLabel(
+        projected,
+        width,
+        height,
+        group.visible && show,
+        false,
+        isOccluded?.(null, position) ?? false,
+      );
     },
   };
 }

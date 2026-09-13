@@ -124,6 +124,7 @@ export function createMoonSystem(
       height: number,
       selected: string | null,
       labels: boolean,
+      isOccluded?: (id: string, center: THREE.Vector3) => boolean,
     ) {
       const parentId =
         orbitingMoons.find((m) => m.id === selected)?.parentId ?? selected;
@@ -137,6 +138,7 @@ export function createMoonSystem(
           height,
           labels && parentId === moon.parentId,
           selected === moon.id,
+          isOccluded?.(moon.id, root.position) ?? false,
         );
       }
     },

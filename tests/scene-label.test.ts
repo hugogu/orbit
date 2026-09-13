@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSceneLabel } from '../components/scene-label';
+import * as THREE from 'three';
+import {
+  createSceneLabel,
+  createSceneLabelOcclusion,
+} from '../components/scene-label';
 
 function labelFixture() {
   const writes: [string, unknown][] = [];
@@ -49,4 +53,35 @@ void test('hidden labels skip positions and selection until shown again', () => 
   assert.match(style.transform, /200\.0px,400\.0px/);
   project({ x: 0, y: 0, z: 0 }, 400, 800, false);
   assert.equal(style.display, 'none');
+});
+
+void test('labels are hidden when another body is between them and the camera', () => {
+  const camera = new THREE.PerspectiveCamera();
+  camera.position.set(0, 0, 10);
+  camera.lookAt(0, 0, 0);
+  camera.updateMatrixWorld();
+  const foreground = new THREE.Mesh(new THREE.SphereGeometry(2));
+  foreground.position.z = 4;
+  const background = new THREE.Mesh(new THREE.SphereGeometry(1));
+  background.position.z = 0;
+  const meshes = new Map([
+    ['foreground', foreground],
+    ['background', background],
+  ]);
+  const occlusion = createSceneLabelOcclusion(meshes);
+  occlusion.update(camera);
+
+  assert.equal(occlusion.isOccluded('background', background.position), true);
+  assert.equal(occlusion.isOccluded('foreground', foreground.position), false);
+  assert.equal(
+    occlusion.isOccluded('background', new THREE.Vector3(4, 0, 0)),
+    false,
+  );
+});
+
+void test('scene labels accept the occluded state', () => {
+  const { writes, project, style } = labelFixture();
+  project({ x: 0, y: 0, z: 0 }, 1000, 500, true, false, true);
+  assert.equal(style.display, 'none');
+  assert.deepEqual(writes, [['display', 'none']]);
 });
