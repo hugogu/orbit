@@ -3,7 +3,7 @@ import type { CatalogEntry } from './seo';
 import { texturePath } from './texture-quality';
 
 // Versioned paths let crawlers distinguish redesigned images from cached cards.
-export const profileImageVersion = 'v2';
+export const profileImageVersion = 'v3';
 export function portraitPath(id: string) {
   return `/media/${profileImageVersion}/bodies/${encodeURIComponent(id)}.webp`;
 }
@@ -54,9 +54,9 @@ export function portraitCredit(entry: CatalogEntry): PortraitCredit {
         license: 'https://pds.nasa.gov/',
       },
       pallas: {
-        name: 'Vernazza et al. (2021), VLT/SPHERE',
-        url: 'https://doi.org/10.1051/0004-6361/202141781',
-        license: 'https://creativecommons.org/licenses/by/4.0/',
+        name: 'Carry et al. (2009) K-band map / DAMIT model 102',
+        url: 'https://damit.cuni.cz/projects/damit/asteroid_models/view/102',
+        license: 'https://arxiv.org/abs/0912.3626',
       },
       juno: {
         name: 'Vernazza et al. (2021), VLT/SPHERE',
@@ -69,8 +69,8 @@ export function portraitCredit(entry: CatalogEntry): PortraitCredit {
         license: 'https://pds.nasa.gov/',
       },
       psyche: {
-        name: 'Shepard et al. (2021)',
-        url: 'https://doi.org/10.3847/PSJ/abfdba',
+        name: 'Viikinkoski et al. (2018) / DAMIT model 1806 shape and facet albedo',
+        url: 'https://damit.cuni.cz/projects/damit/asteroid_models/view/1806',
         license: 'https://creativecommons.org/licenses/by/4.0/',
       },
       eros: {

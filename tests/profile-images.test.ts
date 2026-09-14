@@ -10,6 +10,7 @@ import {
   sampleSurface,
   renderSurface,
   renderPortrait,
+  renderAsteroidModel,
   type SurfaceMap,
 } from '../scripts/lib/render-portrait';
 import { renderCardLabels, imageAttribution } from '../scripts/lib/share-card';
@@ -58,6 +59,33 @@ const white: SurfaceMap = {
   height: 1,
   data: new Uint8Array([255, 255, 255, 255]),
 };
+void test('model portraits retain mesh silhouettes and sample facet atlas texels without blending', () => {
+  const model = {
+    positions: new Float32Array([-1, -1, 0, 1, -1, 0, 0, 1, 0]),
+    normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+    uvs: new Float32Array([0.25, 0.25, 0.25, 0.25, 0.25, 0.25]),
+    indices: new Uint32Array([0, 1, 2]),
+  };
+  const atlas: SurfaceMap = {
+    width: 2,
+    height: 2,
+    data: new Uint8Array([
+      0, 255, 0, 255, 255, 255, 255, 255, 255, 0, 0, 255, 0, 0, 255, 255,
+    ]),
+  };
+  const size = 80;
+  const pixels = renderAsteroidModel(atlas, model, size, true);
+  const center = (40 * size + 40) * 4;
+  assert.ok(pixels[center] > 0);
+  assert.equal(pixels[center + 1], 0);
+  assert.equal(pixels[center + 2], 0);
+  assert.deepEqual([...pixels.subarray(0, 4)], [7, 12, 21, 255]);
+  const narrower = {
+    ...model,
+    positions: model.positions.map((n, i) => (i % 3 === 0 ? n * 0.4 : n)),
+  };
+  assert.notDeepEqual(renderAsteroidModel(atlas, narrower, size, true), pixels);
+});
 void test('renders have a lit hemisphere, a dark hemisphere and clean composite edges', () => {
   const size = 100;
   const pixels = renderSurface(white, 'mercury', size);
@@ -92,6 +120,7 @@ void test('real licensed textures render to images and carry their attribution',
     'ceres',
     'eros',
     'bennu',
+    'pallas',
     'psyche',
   ]) {
     const entry = catalogEntries().find((e) => e.data.id === id)!;
@@ -112,6 +141,13 @@ void test('real licensed textures render to images and carry their attribution',
         credit.license,
         'https://creativecommons.org/licenses/by/4.0/',
       );
+    if (id === 'psyche' || id === 'pallas') {
+      assert.ok(credit.url.endsWith(id === 'pallas' ? '/102' : '/1806'));
+      assert.match(
+        credit.name,
+        id === 'pallas' ? /Carry.*K-band/ : /Viikinkoski.*facet albedo/,
+      );
+    }
     if (id === '67p' || entry.kind === 'asteroid')
       assert.equal(isIllustrativePortrait(entry), true);
   }
