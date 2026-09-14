@@ -26,6 +26,7 @@ ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计�
 | 🌑  | 查询下一次日食、月食与下一次当地可见的日食                        | 食象发生时刻、最大食分附近的几何关系 |
 | 🌗  | 显示天体昼夜分界、地球夜间灯光，以及日食时的本影、半影与影轴轨迹  | 日照、月食和日食的空间几何           |
 | ✨  | 在自动、标准 2K 与最高 8K 纹理之间选择；银河背景可单独开关        | 视觉质量与设备性能之间的取舍         |
+| 🗺️  | 可选：仅在跟随水星、金星、地球或火星时加载 2K 真实地形光照  | 公开地形数据增强近距离明暗起伏，但不改变球体网格 |
 | 📱  | 支持桌面鼠标和键盘、触屏手势、手机横屏与竖屏布局                  | 不同设备上的连续探索                 |
 | 🌐  | 支持简体中文、英语、日语，自动识别浏览器语言并记住手动选择         | 天体介绍、知识卡片、场景标签与天象工具完整翻译 |
 
@@ -40,7 +41,13 @@ ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计�
 
 两张图片均从本项目实际运行的观测台截取。项目提供高分辨率日间与夜间纹理；会按设置、设备类型、节省流量偏好和 GPU 纹理限制选择加载质量。高分辨率材质只在需要时为当前跟随天体加载，并会在替换后释放上一份资源。
 
+行星基础形状按观测扁率构建，并保持资料中的体积平均半径。“观测设置 → 材质”提供独立的“真实地形光照”和“真实地形几何”开关：两者采用统一经纬度的公开高程数据，起伏做 6 倍视觉增强。光照选项使用 2K 物体空间法线；几何选项重建当前跟随行星的 256×128 网格，并同步更新法线、包围范围和鼠标拾取。支持水星、金星、地球、火星；地球海平面以下按海面展示，金星显示去云地形及示意底色。两者均不计算山体投影，巨行星保留大气外观。详见[数据来源与生成方法](public/textures/planets/CREDITS.md)。
+
 ## 交互方式
+
+导航中新增独立折叠的**小行星**与**彗星**分组。谷神星（矮行星）、智神星、婚神星、灶神星、灵神星、爱神星、丝川、贝努和龙宫均可在场景内定位，也有三语独立资料页、物理数据与带署名的分享图。为保持全景清晰，仅显示当前选中小行星的标签与轨道。
+
+小行星轨道和物理参数来自 2026-09-13 获取的 [NASA/JPL SBDB](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html) 离线快照。带历元二体近似未计入行星摄动与热辐射效应，不用于交会或撞击预测；真实大小与距离设置同样适用于小行星。场景使用来自任务、PDS、Dawn、隼鸟/隼鸟二号、OSIRIS-REx、VLT/SPHERE 和 DAMIT 的独立形状数据；谷神星保留观测到的近球形，并使用 Dawn 贴图与地形法线。智神星使用 Carry 等公开、覆盖约 80% 表面的 K 波段相对反照率图，并采样到匹配的 DAMIT 形状模型上；灵神星使用与 DAMIT 1806 形状模型逐面对应的相对反照率数据。婚神星没有可下载的全球反照率图，因此保留自己的 JPL 几何反照率与光谱类别驱动的材质，不混用通用贴图。详见[形状数据署名](public/models/asteroids/CREDITS.md)与[表面贴图署名](public/textures/asteroids/CREDITS.md)。小行星不参与食影计算。
 
 | 场景导航                                                                    | 时间控制                                   | 天文计算                              |
 | --------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------- |
@@ -160,7 +167,9 @@ ORBIT 用于天文学习，并在界面中说明模型的假设与适用范围�
 - [NASA 日食几何](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy)（MIT）
 - 行星纹理主要来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形；银河全景是沉浸式背景，不是观测地点的实时星图。
+- 可选的行星真实表面细节来自公开 NASA/USGS 地形数据，经固定版本的 CelestiaContent 法线贴图处理并下采样；详见 [`public/textures/planets/CREDITS.md`](public/textures/planets/CREDITS.md)。这些 2K 贴图只提供光照起伏，不进行几何位移；气态巨行星没有固体表面，仍使用大气表现。
 - 卫星贴图来自 [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent)，各文件采用的 CC BY 或 CC BY-SA 条款记录在 [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md)。天卫一、天卫五、天卫二、天卫三、天卫四和海卫一的 Voyager 贴图存在未测绘区域；本地副本用邻近的已观测纹理镜像填补缺口，避免近距离观察时出现单色半球。由于缺少完整全球反照率地图，海卫二、冥王星、冥卫一与彗核使用 CC BY 4.0 的 `asteroid.jpg` 作为明确标注的科普示意材质。
+- 小行星贴图与转换后的形状资产分别记录在 [`public/textures/asteroids/CREDITS.md`](public/textures/asteroids/CREDITS.md) 和 [`public/models/asteroids/CREDITS.md`](public/models/asteroids/CREDITS.md)；命名小行星目录不再使用通用 `asteroid.jpg`。
 - 天王星使用 Solar System Scope 的 CC BY 4.0 大气示意图。原先禁止商业使用的天王星与冥卫一文件，以及再分发条款不明确的 NASA/JPL 冥王星示意图，已不再使用或随项目分发。
 
 ## 许可证

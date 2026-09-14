@@ -132,6 +132,59 @@ export const highResolutionTextures: Record<
     standardFile: 'satellites/2k_triton.jpg',
     revision: 'filled-v1',
   },
+  // Asteroid maps are body-specific Dawn, NEAR, Hayabusa, OSIRIS-REx, and
+  // DAMIT products. They are kept separate so a selected asteroid never
+  // inherits another body's surface.
+  asteroid_ceres: {
+    file: 'asteroids/4k_ceres.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_ceres.jpg',
+  },
+  asteroid_ceres_normal: {
+    file: 'asteroids/4k_ceres-normal.png',
+    width: 4096,
+    standardFile: 'asteroids/2k_ceres-normal.png',
+  },
+  asteroid_vesta: {
+    file: 'asteroids/4k_vesta.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_vesta.jpg',
+  },
+  asteroid_eros: {
+    file: 'asteroids/4k_eros.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_eros.jpg',
+  },
+  asteroid_itokawa: {
+    file: 'asteroids/4k_itokawa.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_itokawa.jpg',
+  },
+  asteroid_bennu: {
+    file: 'asteroids/4k_bennu.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_bennu.jpg',
+  },
+  asteroid_ryugu: {
+    file: 'asteroids/4k_ryugu.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_ryugu.jpg',
+  },
+  // DAMIT model 1806 stores one relative albedo value for every triangle.
+  // The native atlas is intentionally small because it is a data lookup, not
+  // a fabricated high-resolution surface image.
+  asteroid_psyche: {
+    file: 'asteroids/psyche-albedo.png',
+    width: 256,
+    standardFile: 'asteroids/psyche-albedo.png',
+  },
+  // Carry et al. (2009) published a partial K-band relative-albedo map for
+  // Pallas; the atlas is sampled onto the matching DAMIT model 102 faces.
+  asteroid_pallas: {
+    file: 'asteroids/pallas-k-albedo.png',
+    width: 256,
+    standardFile: 'asteroids/pallas-k-albedo.png',
+  },
   charon: {
     file: 'satellites/4k_asteroid.jpg',
     width: 4096,
@@ -149,6 +202,64 @@ export const highResolutionTextures: Record<
     file: 'satellites/4k_asteroid.jpg',
     width: 4096,
     standardFile: 'satellites/2k_asteroid.jpg',
+  },
+  asteroid_surface: {
+    file: 'satellites/4k_asteroid.jpg',
+    width: 4096,
+    standardFile: 'satellites/2k_asteroid.jpg',
+  },
+  // These 2K object-space normal maps share the georeferenced height fields.
+  // They are opt-in and loaded only for the focused terrestrial
+  // planet, so the default scene pays no additional GPU cost.
+  surface_mercury_normal: {
+    file: 'planets/2k_mercury-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_mercury-normal.png',
+    revision: 'terrain-v2',
+  },
+  surface_venus_normal: {
+    file: 'planets/2k_venus-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_venus-normal.png',
+    revision: 'terrain-v2',
+  },
+  surface_earth_normal: {
+    file: 'planets/2k_earth-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_earth-normal.png',
+    revision: 'terrain-v2',
+  },
+  surface_mars_normal: {
+    file: 'planets/2k_mars-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_mars-normal.png',
+    revision: 'terrain-v2',
+  },
+  // Packed RG16 heights are decoded once into CPU geometry for the focused
+  // terrestrial planet. NoColorSpace preserves data rather than color values.
+  terrain_mercury: {
+    file: 'planets/2k_mercury-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_mercury-height.png',
+    revision: 'terrain-v2',
+  },
+  terrain_venus: {
+    file: 'planets/2k_venus-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_venus-height.png',
+    revision: 'terrain-v2',
+  },
+  terrain_earth: {
+    file: 'planets/2k_earth-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_earth-height.png',
+    revision: 'terrain-v2',
+  },
+  terrain_mars: {
+    file: 'planets/2k_mars-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_mars-height.png',
+    revision: 'terrain-v2',
   },
 };
 export function texturePath(name: string, high: boolean, maxSize: number) {

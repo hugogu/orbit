@@ -3,7 +3,7 @@ import type { CatalogEntry } from './seo';
 import { texturePath } from './texture-quality';
 
 // Versioned paths let crawlers distinguish redesigned images from cached cards.
-export const profileImageVersion = 'v2';
+export const profileImageVersion = 'v3';
 export function portraitPath(id: string) {
   return `/media/${profileImageVersion}/bodies/${encodeURIComponent(id)}.webp`;
 }
@@ -13,14 +13,14 @@ export function squareImagePath(id: string) {
 export function wideImagePath(locale: Locale, id: string) {
   return `/og/${profileImageVersion}/${localePath(locale)}/bodies/${encodeURIComponent(id)}.jpg`;
 }
-export function entryTexturePath(entry: CatalogEntry) {
+export function entryTexturePath(entry: CatalogEntry): string | null {
   const texture =
     entry.kind === 'body'
       ? (entry.data.texture ?? entry.data.id)
-      : entry.kind === 'moon'
+      : entry.kind === 'moon' || entry.kind === 'asteroid'
         ? entry.data.texture
         : 'comet_nucleus';
-  return texturePath(texture, false, 2048);
+  return texture ? texturePath(texture, false, 2048) : null;
 }
 
 const illustrativeIds = new Set([
@@ -34,7 +34,11 @@ const illustrativeIds = new Set([
   'moon-nereid',
 ]);
 export function isIllustrativePortrait(entry: CatalogEntry) {
-  return entry.kind === 'comet' || illustrativeIds.has(entry.data.id);
+  return (
+    entry.kind === 'comet' ||
+    entry.kind === 'asteroid' ||
+    illustrativeIds.has(entry.data.id)
+  );
 }
 export type PortraitCredit = {
   name: string;
@@ -42,6 +46,59 @@ export type PortraitCredit = {
   license: string;
 };
 export function portraitCredit(entry: CatalogEntry): PortraitCredit {
+  if (entry.kind === 'asteroid') {
+    const credits: Record<string, PortraitCredit> = {
+      ceres: {
+        name: 'NASA Dawn / USGS; CelestiaContent',
+        url: 'https://sbn.psi.edu/pds/resource/dawn/dwncfcshape.html',
+        license: 'https://pds.nasa.gov/',
+      },
+      pallas: {
+        name: 'Carry et al. (2009) K-band map / DAMIT model 102',
+        url: 'https://damit.cuni.cz/projects/damit/asteroid_models/view/102',
+        license: 'https://arxiv.org/abs/0912.3626',
+      },
+      juno: {
+        name: 'Vernazza et al. (2021), VLT/SPHERE',
+        url: 'https://doi.org/10.1051/0004-6361/202141781',
+        license: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+      vesta: {
+        name: 'NASA Dawn / USGS; CelestiaContent',
+        url: 'https://sbn.psi.edu/pds/resource/dawn/dwnvfcshape.html',
+        license: 'https://pds.nasa.gov/',
+      },
+      psyche: {
+        name: 'Viikinkoski et al. (2018) / DAMIT model 1806 shape and facet albedo',
+        url: 'https://damit.cuni.cz/projects/damit/asteroid_models/view/1806',
+        license: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+      eros: {
+        name: 'NEAR / Phil Stooke / NASA PDS',
+        url: 'https://sbn.psi.edu/pds/resource/erosshape.html',
+        license: 'https://creativecommons.org/licenses/by/3.0/',
+      },
+      itokawa: {
+        name: 'Hayabusa / Phil Stooke / NASA PDS',
+        url: 'https://sbn.psi.edu/pds/resource/itokawashape.html',
+        license: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      },
+      bennu: {
+        name: 'OSIRIS-REx Altimetry Working Group / USGS',
+        url: 'https://arcnav.psi.edu/urn:nasa:pds:orex.altimetry:data_derived_altimetry_global_models',
+        license: 'https://creativecommons.org/licenses/by/3.0/',
+      },
+      ryugu: {
+        name: 'Hayabusa2 / ISAS-JAXA',
+        url: 'https://data.darts.isas.jaxa.jp/pub/hayabusa2/paper/Watanabe_2019/README.html',
+        license: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+    };
+    const credit = credits[entry.data.id];
+    if (!credit)
+      throw new Error(`Missing asteroid portrait credit for ${entry.data.id}`);
+    return credit;
+  }
   if (
     (entry.kind === 'body' && entry.data.id !== 'pluto') ||
     entry.data.id === 'moon-moon'

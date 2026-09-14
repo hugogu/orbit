@@ -1,4 +1,5 @@
 import { bodies } from './solar';
+import { asteroids } from './asteroids';
 import { comets } from './comets';
 import { orbitingMoons } from './moon-orbits';
 
@@ -513,6 +514,40 @@ for (const moon of orbitingMoons)
     ),
     ...moonLessons,
   ];
+
+for (const asteroid of asteroids)
+  curiosities[asteroid.id] = entries(
+    [
+      {
+        text: '{{v0}}的等效直径约 {{v1}} 公里，表示与它体积相同的球的直径。',
+        values: { v0: asteroid.name, v1: asteroid.diameter },
+      },
+      {
+        text: '{{v0}}一年约相当于 {{v1}} 个地球年。',
+        values: {
+          v0: asteroid.name,
+          v1: (asteroid.orbit.period / 365.256).toFixed(2),
+        },
+      },
+      {
+        text: '按本站轨道参数估算，{{v0}}近日点距太阳约 {{v1}} AU。',
+        values: {
+          v0: asteroid.name,
+          v1: (asteroid.orbit.au * (1 - asteroid.orbit.e)).toFixed(3),
+        },
+      },
+      {
+        text: '按本站轨道参数估算，{{v0}}远日点距太阳约 {{v1}} AU。',
+        values: {
+          v0: asteroid.name,
+          v1: (asteroid.orbit.au * (1 + asteroid.orbit.e)).toFixed(3),
+        },
+      },
+      '轨道快照描述指定历元附近的运动；行星引力会使真实轨道随时间改变。',
+      '近地小行星是轨道分类，并不意味着该天体即将撞击地球。',
+    ],
+    `https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=${asteroid.number}`,
+  );
 
 export function pickCuriosities(
   previous: unknown,

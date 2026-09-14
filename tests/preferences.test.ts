@@ -24,6 +24,8 @@ void test('preferences are validated and persisted as one versioned record', () 
         cometTails: false,
         scale: 'distance',
         textureQuality: 'ultra',
+        realSurface: true,
+        realTerrain: true,
         labels: true,
         observerLocation: {
           latitude: 31.23,
@@ -43,6 +45,8 @@ void test('preferences are validated and persisted as one versioned record', () 
     cometTails: false,
     scale: 'distance',
     textureQuality: 'ultra',
+    realSurface: true,
+    realTerrain: true,
     labels: true,
     observerLocation: {
       latitude: 31.23,

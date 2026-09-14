@@ -1,8 +1,9 @@
 import type { Translate } from './i18n';
 import { bodies, speeds } from './solar';
 import { comets } from './comets';
+import { asteroids } from './asteroids';
 import { orbitingMoons } from './moon-orbits';
-const catalog = [...bodies, ...orbitingMoons, ...comets];
+const catalog = [...bodies, ...orbitingMoons, ...comets, ...asteroids];
 export interface ObservatoryActions {
   focus: (id: string) => void;
   simulation: (speedIndex: number, paused: boolean) => void;

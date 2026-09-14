@@ -37,6 +37,12 @@ import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
 import { comets, cometPerihelion } from '@/lib/comets';
+import {
+  asteroids,
+  asteroidModelNote,
+  asteroidSurfaceNote,
+} from '@/lib/asteroids';
+import AsteroidDetails from '@/components/asteroid-details';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
 import { fallbackSkyLocation, type SkyLocation } from '@/lib/sky-events';
 import { orbitingMoons } from '@/lib/moon-orbits';
@@ -109,6 +115,8 @@ export default function Home() {
     [solarActivity, setSolarActivity] = useState(true),
     [cometTails, setCometTails] = useState(true),
     [realSizes, setRealSizes] = useState(false),
+    [realSurface, setRealSurface] = useState(false),
+    [realTerrain, setRealTerrain] = useState(false),
     [systemView, setSystemView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
@@ -123,6 +131,7 @@ export default function Home() {
       'pending' | 'device' | 'manual' | 'fallback'
     >('fallback');
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
+  const selectedAsteroid = asteroids.find((item) => item.id === selected);
   const body = bodies.find(
     (b) => b.id === (selectedMoon?.parentId ?? selected),
   );
@@ -155,6 +164,10 @@ export default function Home() {
         setCometTails(preferences.cometTails);
       if (preferences.realSizes !== undefined)
         setRealSizes(preferences.realSizes);
+      if (preferences.realSurface !== undefined)
+        setRealSurface(preferences.realSurface);
+      if (preferences.realTerrain !== undefined)
+        setRealTerrain(preferences.realTerrain);
       if (preferences.textureQuality !== undefined)
         setTextureQuality(preferences.textureQuality);
       const savedLocation = preferences.observerLocation;
@@ -197,6 +210,8 @@ export default function Home() {
       solarActivity,
       cometTails,
       realSizes,
+      realSurface,
+      realTerrain,
       textureQuality,
     };
     if (
@@ -219,6 +234,8 @@ export default function Home() {
     solarActivity,
     cometTails,
     realSizes,
+    realSurface,
+    realTerrain,
     textureQuality,
     observerLocation,
     observerLocationSource,
@@ -449,6 +466,11 @@ export default function Home() {
         <ArrowUpRight className="external-arrow" aria-hidden="true" />
       </a>
     </>
+  ) : selectedAsteroid ? (
+    <AsteroidDetails
+      asteroid={selectedAsteroid}
+      curiosityIndex={curiosityPicks[selectedAsteroid.id]}
+    />
   ) : selectedMoon ? (
     <MoonDetails
       moon={selectedMoon}
@@ -613,6 +635,8 @@ export default function Home() {
           solarActivity,
           cometTails,
           realSizes,
+          realSurface,
+          realTerrain,
           systemView,
           observerLocation,
           observerLocationReady:
@@ -721,7 +745,11 @@ export default function Home() {
         </h2>
         <div className="catalog-title">
           {tab === 'explore' ? t('天体导航') : t('由内向外')}
-          <span>{tab === 'explore' ? '01 — 14' : '01 — 07'}</span>
+          <span>
+            {tab === 'explore'
+              ? `01 — ${bodies.length + comets.length + asteroids.length}`
+              : '01 — 07'}
+          </span>
         </div>
         {tab === 'explore' ? (
           <BodyNavigation selected={selected} onSelect={select} />
@@ -806,13 +834,15 @@ export default function Home() {
                   v0: t(cometClose ? '正在跟随' : '轨道全景'),
                   v1: t(activeComet.name),
                 })
-              : body
-                ? t('正在跟随 · {{v0}}', {
-                    v0: t(selectedMoon?.name ?? body.name),
-                  })
-                : tab === 'structure'
-                  ? t(activeRegion.name)
-                  : t('太阳系全景')}
+              : selectedAsteroid
+                ? t('正在跟随 · {{v0}}', { v0: t(selectedAsteroid.name) })
+                : body
+                  ? t('正在跟随 · {{v0}}', {
+                      v0: t(selectedMoon?.name ?? body.name),
+                    })
+                  : tab === 'structure'
+                    ? t(activeRegion.name)
+                    : t('太阳系全景')}
           </span>
           <span className="scale-status">
             {realSizes
@@ -1049,9 +1079,40 @@ export default function Home() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="setting-row">
+                <label htmlFor="real-surface">{t('真实地形光照')}</label>
+                <Switch
+                  id="real-surface"
+                  checked={realSurface}
+                  onCheckedChange={setRealSurface}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '依据真实高程呈现山脊与坑洼的精细明暗，单独开启不改变轮廓，也不计算山体投影。与几何开关可独立使用；仅为正在跟随的类地行星加载。',
+                )}
+              </p>
+              <div className="setting-row">
+                <label htmlFor="real-terrain">{t('真实地形几何')}</label>
+                <Switch
+                  id="real-terrain"
+                  checked={realTerrain}
+                  onCheckedChange={setRealTerrain}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '根据真实高程改变地表和轮廓，起伏做 6 倍视觉增强，近看更明显。仅为正在跟随的水星、金星、地球或火星加载，增加内存与渲染开销。',
+                )}
+              </p>
               <p className="model-note">
                 {t(
                   '高清按需加载到正在跟随的天体和银河背景，切换目标会释放旧高清材质。自动模式在手机或省流量环境使用 2K。超清更耗显存与流量。',
+                )}
+              </p>
+              <p className="model-note">
+                {t(
+                  '地球海平面以下按海面显示；金星启用任一地形选项后显示去云地形，底色为示意。巨行星采用观测扁率和大气外观，没有固体地形。',
                 )}
               </p>
               <p className="model-note">
@@ -1156,6 +1217,8 @@ export default function Home() {
             <TabsContent value="model" className="help-tab-panel">
               <div className="model-explainer">
                 <h3>{t('理解模型')}</h3>
+                <p>{t(asteroidModelNote)}</p>
+                <p>{t(asteroidSurfaceNote)}</p>
                 <p>
                   {t(
                     '太阳、八大行星、冥王星和月球的位置由 Astronomy Engine 按 UTC 日期计算，以固定 J2000 黄道坐标显示几何位置，不含光行时。自转轴和本初子午线使用天文模型；地球采用地球定向转换。纹理经度未全部校准，云层纹理不代表实时天气。高速时自转会出现视觉混叠。',
@@ -1282,6 +1345,41 @@ export default function Home() {
                   </a>
                   。{t('纹理含增强色彩及未测绘区域的示意填充。')}
                 </p>
+                <h3>{t('真实地形：')}</h3>
+                <p>
+                  <a
+                    href="https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('USGS MESSENGER 水星 DEM')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://planetarymaps.usgs.gov/mosaic/Venus_Magellan_Topography_Global_4641m_v02.tif"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('USGS Magellan 金星地形')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2/ETOPO2v2-2006/ETOPO2v2g/raw_binary/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NOAA ETOPO2 全球地形')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://pds-geosciences.wustl.edu/missions/mgs/megdr.html"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NASA PDS MOLA 火星地形')}
+                  </a>
+                  。{t('本地高程图仅在开启几何开关并跟随类地行星时加载。')}
+                </p>
               </div>
             </TabsContent>
           </Tabs>
@@ -1296,7 +1394,12 @@ export default function Home() {
           <SheetTitle>
             {isComet
               ? t(activeComet.name)
-              : t(selectedMoon?.name ?? body?.name ?? '太阳系知识')}
+              : t(
+                  selectedAsteroid?.name ??
+                    selectedMoon?.name ??
+                    body?.name ??
+                    '太阳系知识',
+                )}
           </SheetTitle>
           <SheetDescription>{t('探索天体的特征与运行规律。')}</SheetDescription>
           {tab === 'structure' && !body ? (

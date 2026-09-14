@@ -285,5 +285,238 @@
     "license": "CC BY 4.0",
     "path": "satellites/4k_asteroid.jpg",
     "note": "Illustrative small-body surface for Nereid, Pluto, Charon, and comet nuclei"
+  },
+  {
+    "filename": "asteroids/4k_ceres.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1021305,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/4k_ceres.jpg"
+  },
+  {
+    "filename": "asteroids/2k_ceres.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 227173,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/2k_ceres.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_ceres-normal.png",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 10366021,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres-normal.png",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/4k_ceres-normal.png"
+  },
+  {
+    "filename": "asteroids/2k_ceres-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 3610242,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres-normal.png",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/2k_ceres-normal.png",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_vesta.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 968192,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/vesta.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/4k_vesta.jpg"
+  },
+  {
+    "filename": "asteroids/2k_vesta.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 273200,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/vesta.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/2k_vesta.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_eros.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 698402,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/eros.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/4k_eros.jpg"
+  },
+  {
+    "filename": "asteroids/2k_eros.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 256697,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/eros.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/2k_eros.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_itokawa.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 539333,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/itokawa.jpg",
+    "license": "CC0 1.0",
+    "path": "asteroids/4k_itokawa.jpg"
+  },
+  {
+    "filename": "asteroids/2k_itokawa.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 225667,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/itokawa.jpg",
+    "license": "CC0 1.0",
+    "path": "asteroids/2k_itokawa.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_bennu.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1366625,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/bennu.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/4k_bennu.jpg"
+  },
+  {
+    "filename": "asteroids/2k_bennu.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 377841,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/bennu.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/2k_bennu.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_ryugu.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 604415,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ryugu.jpg",
+    "license": "CC BY 4.0",
+    "path": "asteroids/4k_ryugu.jpg"
+  },
+  {
+    "filename": "asteroids/2k_ryugu.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 76518,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ryugu.jpg",
+    "license": "CC BY 4.0",
+    "path": "asteroids/2k_ryugu.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/pallas-k-albedo.png",
+    "width": 256,
+    "height": 52,
+    "bytes": 994,
+    "url": "https://arxiv.org/abs/0912.3626",
+    "license": "Source publication; see attribution",
+    "path": "asteroids/pallas-k-albedo.png",
+    "derived": "Carry-2009-K-band-map-mean-fill-v1"
+  },
+  {
+    "filename": "asteroids/psyche-albedo.png",
+    "width": 256,
+    "height": 88,
+    "bytes": 2814,
+    "url": "https://damit.cuni.cz/projects/damit/stored_files/open/105/albedo",
+    "license": "CC BY 4.0",
+    "path": "asteroids/psyche-albedo.png",
+    "derived": "DAMIT-model-1806-facet-atlas-v1"
+  },
+  {
+    "filename": "planets/2k_mercury-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 5779423,
+    "url": "https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif",
+    "license": "Public domain NASA/USGS source data",
+    "path": "planets/2k_mercury-normal.png",
+    "derived": "ORBIT-mercury-georeferenced-object-normal-v2"
+  },
+  {
+    "filename": "planets/2k_venus-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 3458948,
+    "url": "https://planetarymaps.usgs.gov/mosaic/Venus_Magellan_Topography_Global_4641m_v02.tif",
+    "license": "Public domain NASA/USGS source data",
+    "path": "planets/2k_venus-normal.png",
+    "derived": "ORBIT-venus-georeferenced-object-normal-v2"
+  },
+  {
+    "filename": "planets/2k_earth-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 1738059,
+    "url": "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2/ETOPO2v2-2006/ETOPO2v2g/raw_binary/ETOPO2v2g_i2_MSB.zip",
+    "license": "Public domain NOAA/NCEI source data",
+    "path": "planets/2k_earth-normal.png",
+    "derived": "ORBIT-earth-georeferenced-object-normal-v2"
+  },
+  {
+    "filename": "planets/2k_mars-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 3986316,
+    "url": "https://pds-geosciences.wustl.edu/mgs/urn-nasa-pds-mgs_mola_topography_derived/meg004/megt90n000cb.img",
+    "license": "Public domain NASA/PDS source data",
+    "path": "planets/2k_mars-normal.png",
+    "derived": "ORBIT-mars-georeferenced-object-normal-v2"
+  },
+  {
+    "filename": "planets/2k_mercury-height.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 4620845,
+    "url": "https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif",
+    "license": "Public domain NASA/USGS source data",
+    "path": "planets/2k_mercury-height.png",
+    "derived": "ORBIT-mercury-georeferenced-RG16-v2"
+  },
+  {
+    "filename": "planets/2k_venus-height.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 3940394,
+    "url": "https://planetarymaps.usgs.gov/mosaic/Venus_Magellan_Topography_Global_4641m_v02.tif",
+    "license": "Public domain NASA/USGS source data",
+    "path": "planets/2k_venus-height.png",
+    "derived": "ORBIT-venus-georeferenced-RG16-v2"
+  },
+  {
+    "filename": "planets/2k_earth-height.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 4290950,
+    "url": "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2/ETOPO2v2-2006/ETOPO2v2g/raw_binary/ETOPO2v2g_i2_MSB.zip",
+    "license": "Public domain NOAA/NCEI source data",
+    "path": "planets/2k_earth-height.png",
+    "derived": "ORBIT-earth-georeferenced-RG16-v2"
+  },
+  {
+    "filename": "planets/2k_mars-height.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 3960270,
+    "url": "https://pds-geosciences.wustl.edu/mgs/urn-nasa-pds-mgs_mola_topography_derived/meg004/megt90n000cb.img",
+    "license": "Public domain NASA/PDS source data",
+    "path": "planets/2k_mars-height.png",
+    "derived": "ORBIT-mars-georeferenced-RG16-v2"
   }
 ]

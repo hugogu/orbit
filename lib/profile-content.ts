@@ -1,3 +1,4 @@
+import { asteroids } from './asteroids';
 /** Editorial profiles. Text keys are translated by the shared catalogs. Fact indices refer to lib/curiosities.ts. */
 export type ProfileContent = {
   headline: string;
@@ -7,6 +8,23 @@ export type ProfileContent = {
 };
 
 export const profileContent: Record<string, ProfileContent> = {
+  ...Object.fromEntries(
+    asteroids.map((asteroid) => [
+      asteroid.id,
+      {
+        headline: asteroid.type,
+        intro: asteroid.intro,
+        sections: [
+          { heading: '形态与组成', text: asteroid.feature },
+          { heading: '认识与探索', text: asteroid.fact },
+        ],
+        groups: [
+          { heading: '尺度与轨道', indices: [0, 1, 2, 3] },
+          { heading: '理解轨道模型', indices: [4, 5] },
+        ],
+      },
+    ]),
+  ),
   sun: {
     headline: '一颗恒星，照亮整个太阳系',
     intro:

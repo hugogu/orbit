@@ -1006,6 +1006,37 @@ button:disabled {
   color: #edd5a6;
   border-color: #d9c49a77;
 }
+.small-body-group {
+  border-top: 1px solid #ffffff12;
+  margin-top: 8px;
+  padding-top: 5px;
+}
+.small-body-group h3 {
+  margin: 0;
+}
+.small-body-expander {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #b8c3d2;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.small-body-expander small {
+  margin-left: auto;
+  color: #8090a6;
+  font-variant-numeric: tabular-nums;
+}
+.small-body-expander:hover,
+.small-body-expander:focus-visible {
+  background: #ffffff08;
+  color: #edd5a6;
+}
 .scene-error {
   position: absolute;
   inset: 35% 25%;
@@ -1787,6 +1818,9 @@ button:disabled {
   font-size: 30px;
   font-weight: 400;
   margin: 0;
+}
+.asteroid-heading {
+  flex-wrap: wrap;
 }
 .type-chip {
   font-size: 12px;
