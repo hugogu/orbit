@@ -285,5 +285,138 @@
     "license": "CC BY 4.0",
     "path": "satellites/4k_asteroid.jpg",
     "note": "Illustrative small-body surface for Nereid, Pluto, Charon, and comet nuclei"
+  },
+  {
+    "filename": "asteroids/4k_ceres.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1021305,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/4k_ceres.jpg"
+  },
+  {
+    "filename": "asteroids/2k_ceres.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 227173,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/2k_ceres.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_ceres-normal.png",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 10366021,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres-normal.png",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/4k_ceres-normal.png"
+  },
+  {
+    "filename": "asteroids/2k_ceres-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 3610242,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ceres-normal.png",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/2k_ceres-normal.png",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_vesta.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 968192,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/vesta.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/4k_vesta.jpg"
+  },
+  {
+    "filename": "asteroids/2k_vesta.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 273200,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/vesta.jpg",
+    "license": "NASA PDS source terms",
+    "path": "asteroids/2k_vesta.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_eros.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 698402,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/eros.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/4k_eros.jpg"
+  },
+  {
+    "filename": "asteroids/2k_eros.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 256697,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/eros.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/2k_eros.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_itokawa.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 539333,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/itokawa.jpg",
+    "license": "CC0 1.0",
+    "path": "asteroids/4k_itokawa.jpg"
+  },
+  {
+    "filename": "asteroids/2k_itokawa.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 225667,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/itokawa.jpg",
+    "license": "CC0 1.0",
+    "path": "asteroids/2k_itokawa.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_bennu.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 1366625,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/bennu.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/4k_bennu.jpg"
+  },
+  {
+    "filename": "asteroids/2k_bennu.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 377841,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/bennu.jpg",
+    "license": "CC BY 3.0",
+    "path": "asteroids/2k_bennu.jpg",
+    "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/4k_ryugu.jpg",
+    "width": 4096,
+    "height": 2048,
+    "bytes": 604415,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ryugu.jpg",
+    "license": "CC BY 4.0",
+    "path": "asteroids/4k_ryugu.jpg"
+  },
+  {
+    "filename": "asteroids/2k_ryugu.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 76518,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/ryugu.jpg",
+    "license": "CC BY 4.0",
+    "path": "asteroids/2k_ryugu.jpg",
+    "derived": "native-source-downscale-v1"
   }
 ]

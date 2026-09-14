@@ -161,8 +161,23 @@ async function loadMap(path: string): Promise<SurfaceMap> {
     .toBuffer({ resolveWithObject: true });
   return { data, width: info.width, height: info.height };
 }
+function bodyColorMap(id: string): SurfaceMap {
+  const asteroid = asteroids.find((item) => item.id === id);
+  const color = asteroid?.color ?? '#ffffff';
+  return {
+    width: 1,
+    height: 1,
+    data: new Uint8Array([
+      parseInt(color.slice(1, 3), 16),
+      parseInt(color.slice(3, 5), 16),
+      parseInt(color.slice(5, 7), 16),
+      255,
+    ]),
+  };
+}
 export async function renderPortrait(entry: CatalogEntry, size = 1000) {
-  const map = await loadMap(entryTexturePath(entry));
+  const texture = entryTexturePath(entry);
+  const map = texture ? await loadMap(texture) : bodyColorMap(entry.data.id);
   const ring =
     entry.data.id === 'saturn'
       ? await loadMap('/textures/2k_saturn_ring_alpha.png')

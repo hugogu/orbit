@@ -21,7 +21,16 @@ export type Asteroid = {
   size: number;
   surface: 'round' | 'rock' | 'top';
   spectral: string;
-  texture: string;
+  /** A normalized mission/PDS shape model asset; Ceres uses its near-spherical fallback. */
+  shapeModel: string | null;
+  /** A body-specific global map, when one is available. */
+  texture: string | null;
+  normalTexture?: string;
+  /** Geometric albedo from the JPL SBDB snapshot, when published. */
+  albedo: number | null;
+  roughness: number;
+  metalness: number;
+  visualSource: string;
   source: string;
   sourceName: string;
   description: string;
@@ -59,10 +68,16 @@ export const asteroids: Asteroid[] = [
     size: 0.65,
     surface: 'round',
     spectral: 'C',
+    shapeModel: null,
     source: 'https://science.nasa.gov/dwarf-planets/ceres/facts/',
     sourceName: 'NASA Science',
     radius: 469.7,
-    texture: 'asteroid_surface',
+    texture: 'asteroid_ceres',
+    normalTexture: 'asteroid_ceres_normal',
+    albedo: 0.09,
+    roughness: 0.98,
+    metalness: 0,
+    visualSource: 'NASA Dawn color-filter mosaic and USGS-derived topography',
     description:
       '小行星带中最大的天体，也是内太阳系唯一的矮行星。岩石与冰共同塑造了这个世界。',
     intro:
@@ -94,10 +109,15 @@ export const asteroids: Asteroid[] = [
     size: 0.52,
     surface: 'rock',
     spectral: 'B',
+    shapeModel: 'pallas',
     source: 'https://www.eso.org/public/images/potw2008a/',
     sourceName: 'ESO',
     radius: 256.5,
-    texture: 'asteroid_surface',
+    texture: null,
+    albedo: 0.155,
+    roughness: 0.96,
+    metalness: 0,
+    visualSource: 'VLT/SPHERE optical shape model; JPL SBDB geometric albedo',
     description: '一颗大型主带小行星，以高度倾斜的轨道和密集的撞击坑著称。',
     intro:
       '智神星的轨道明显偏离多数主带天体所在的平面。把镜头拉远，可以看到它在黄道上下穿行的轨迹。',
@@ -128,10 +148,15 @@ export const asteroids: Asteroid[] = [
     size: 0.4,
     surface: 'rock',
     spectral: 'Sk',
+    shapeModel: 'juno',
     source: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=3',
     sourceName: 'NASA/JPL SBDB',
     radius: 123.298,
-    texture: 'asteroid_surface',
+    texture: null,
+    albedo: 0.214,
+    roughness: 0.92,
+    metalness: 0,
+    visualSource: 'VLT/SPHERE optical shape model; JPL SBDB geometric albedo',
     description: '编号为 3 的岩质主带小行星，沿较为偏心的椭圆轨道绕太阳运行。',
     intro:
       '婚神星展示了主带轨道的多样性。它在近日点与远日点之间有明显的日距变化，可与更接近圆形轨道的灶神星比较。',
@@ -162,10 +187,15 @@ export const asteroids: Asteroid[] = [
     size: 0.54,
     surface: 'rock',
     spectral: 'V',
+    shapeModel: 'vesta',
     source: 'https://science.nasa.gov/solar-system/asteroids/4-vesta/',
     sourceName: 'NASA Science',
     radius: 261.385,
-    texture: 'asteroid_surface',
+    texture: 'asteroid_vesta',
+    albedo: 0.4228,
+    roughness: 0.94,
+    metalness: 0,
+    visualSource: 'NASA Dawn color-filter mosaic and USGS topography',
     description:
       '一颗保留早期分层与火山活动痕迹的大型主带天体，是黎明号曾经绕行的目标。',
     intro:
@@ -197,10 +227,15 @@ export const asteroids: Asteroid[] = [
     size: 0.42,
     surface: 'rock',
     spectral: 'X',
+    shapeModel: 'psyche',
     source: 'https://science.nasa.gov/solar-system/asteroids/16-psyche/',
     sourceName: 'NASA Science',
     radius: 111,
-    texture: 'asteroid_surface',
+    texture: null,
+    albedo: 0.1203,
+    roughness: 0.84,
+    metalness: 0.05,
+    visualSource: 'Radar/optical shape model from Shepard et al. (2021); JPL SBDB albedo',
     description: '一颗富含金属的主带小行星，可能保留着早期天体内部演化的线索。',
     intro:
       '灵神星的金属与岩石混合物使它成为特殊的探索目标。研究它，可以检验原行星内部物质如何形成与暴露的假说。',
@@ -231,10 +266,15 @@ export const asteroids: Asteroid[] = [
     size: 0.3,
     surface: 'rock',
     spectral: 'S',
+    shapeModel: 'eros',
     source: 'https://science.nasa.gov/solar-system/asteroids/433-eros/',
     sourceName: 'NASA Science',
     radius: 8.42,
-    texture: 'asteroid_surface',
+    texture: 'asteroid_eros',
+    albedo: 0.25,
+    roughness: 0.93,
+    metalness: 0,
+    visualSource: 'NEAR/PDS shape model and Stooke/NEAR global map',
     description:
       '形状细长的近地小行星，人类首次绕小行星运行与在其表面着陆的目标。',
     intro:
@@ -265,10 +305,15 @@ export const asteroids: Asteroid[] = [
     size: 0.23,
     surface: 'rock',
     spectral: 'S(IV)',
+    shapeModel: 'itokawa',
     source: 'https://science.nasa.gov/solar-system/asteroids/25143-itokawa/',
     sourceName: 'NASA Science',
     radius: 0.165,
-    texture: 'asteroid_surface',
+    texture: 'asteroid_itokawa',
+    albedo: null,
+    roughness: 0.96,
+    metalness: 0,
+    visualSource: 'Hayabusa/PDS shape model and Stooke global map',
     description: '由岩块聚集而成的小型近地天体，隼鸟号曾把它的尘埃带回地球。',
     intro:
       '丝川的外形像不规则的双瓣岩块。探测器观测与返回样本一起，揭示了碎石堆天体和普通球粒陨石之间的联系。',
@@ -299,11 +344,16 @@ export const asteroids: Asteroid[] = [
     size: 0.25,
     surface: 'top',
     spectral: 'B',
+    shapeModel: 'bennu',
     source:
       'https://science.nasa.gov/solar-system/asteroids/101955-bennu/facts/',
     sourceName: 'NASA Science',
     radius: 0.24222,
-    texture: 'asteroid_surface',
+    texture: 'asteroid_bennu',
+    albedo: 0.044,
+    roughness: 0.98,
+    metalness: 0,
+    visualSource: 'OSIRIS-REx SPOv54 shape model and USGS albedo map',
     description: '一颗富碳、近似陀螺形的近地小行星，是 OSIRIS-REx 的采样目标。',
     intro:
       '贝努是由许多岩块在引力作用下聚集而成的碎石堆。它暗淡而崎岖的表面，保存着早期太阳系物质的线索。',
@@ -333,10 +383,15 @@ export const asteroids: Asteroid[] = [
     size: 0.28,
     surface: 'top',
     spectral: 'Cb',
+    shapeModel: 'ryugu',
     source: 'https://www.isas.jaxa.jp/en/topics/002893.html',
     sourceName: 'JAXA / ISAS',
     radius: 0.448,
-    texture: 'asteroid_surface',
+    texture: 'asteroid_ryugu',
+    albedo: 0.045,
+    roughness: 0.98,
+    metalness: 0,
+    visualSource: 'Hayabusa2/JAXA shape model and normal-albedo map',
     description:
       '隼鸟二号探访的富碳近地小行星，具有明显的赤道隆起与碎石堆结构。',
     intro:
@@ -358,9 +413,9 @@ export const asteroids: Asteroid[] = [
 ];
 
 export const asteroidModelNote =
-  '小行星位置由 JPL 带历元轨道快照作二体近似计算，未计入行星摄动与热辐射效应，不用于近距离交会或撞击预测。形状、色彩、地貌与自转轴为示意；真实大小采用等效半径，小行星不参与食影计算。';
+  '小行星位置由 JPL 带历元轨道快照作二体近似计算，未计入行星摄动与热辐射效应，不用于近距离交会或撞击预测。除谷神星采用其近球形的观测半径外，场景形状来自任务/PDS 形状模型；真实大小采用等效半径，小行星不参与食影计算。';
 export const asteroidSurfaceNote =
-  '采用 cubicApocalypse / CelestiaContent 的 CC BY 4.0 岩质贴图；色彩、凹凸与外形为教学示意，不是该天体的实测全球地图。';
+  '有公开全球图的天体使用各自的任务/观测贴图；没有全球图的智神星、婚神星和灵神星使用各自 JPL 几何反照率与光谱类别驱动的独立材料，不再共享通用小行星贴图。';
 
 function elements(asteroid: Asteroid) {
   const orbit = asteroid.orbit;

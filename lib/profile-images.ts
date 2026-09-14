@@ -13,14 +13,14 @@ export function squareImagePath(id: string) {
 export function wideImagePath(locale: Locale, id: string) {
   return `/og/${profileImageVersion}/${localePath(locale)}/bodies/${encodeURIComponent(id)}.jpg`;
 }
-export function entryTexturePath(entry: CatalogEntry) {
+export function entryTexturePath(entry: CatalogEntry): string | null {
   const texture =
     entry.kind === 'body'
       ? (entry.data.texture ?? entry.data.id)
       : entry.kind === 'moon' || entry.kind === 'asteroid'
         ? entry.data.texture
         : 'comet_nucleus';
-  return texturePath(texture, false, 2048);
+  return texture ? texturePath(texture, false, 2048) : null;
 }
 
 const illustrativeIds = new Set([
@@ -46,6 +46,56 @@ export type PortraitCredit = {
   license: string;
 };
 export function portraitCredit(entry: CatalogEntry): PortraitCredit {
+  if (entry.kind === 'asteroid') {
+    const credits: Record<string, PortraitCredit> = {
+      ceres: {
+        name: 'NASA Dawn / USGS; CelestiaContent',
+        url: 'https://sbn.psi.edu/pds/resource/dawn/dwncfcshape.html',
+        license: 'https://pds.nasa.gov/',
+      },
+      pallas: {
+        name: 'Vernazza et al. (2021), VLT/SPHERE',
+        url: 'https://doi.org/10.1051/0004-6361/202141781',
+        license: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+      juno: {
+        name: 'Vernazza et al. (2021), VLT/SPHERE',
+        url: 'https://doi.org/10.1051/0004-6361/202141781',
+        license: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+      vesta: {
+        name: 'NASA Dawn / USGS; CelestiaContent',
+        url: 'https://sbn.psi.edu/pds/resource/dawn/dwnvfcshape.html',
+        license: 'https://pds.nasa.gov/',
+      },
+      psyche: {
+        name: 'Shepard et al. (2021)',
+        url: 'https://doi.org/10.3847/PSJ/abfdba',
+        license: 'https://doi.org/10.3847/PSJ/abfdba',
+      },
+      eros: {
+        name: 'NEAR / Phil Stooke / NASA PDS',
+        url: 'https://sbn.psi.edu/pds/resource/erosshape.html',
+        license: 'https://creativecommons.org/licenses/by/3.0/',
+      },
+      itokawa: {
+        name: 'Hayabusa / Phil Stooke / NASA PDS',
+        url: 'https://sbn.psi.edu/pds/resource/itokawashape.html',
+        license: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      },
+      bennu: {
+        name: 'OSIRIS-REx Altimetry Working Group / USGS',
+        url: 'https://arcnav.psi.edu/urn:nasa:pds:orex.altimetry:data_derived_altimetry_global_models',
+        license: 'https://creativecommons.org/licenses/by/3.0/',
+      },
+      ryugu: {
+        name: 'Hayabusa2 / ISAS-JAXA',
+        url: 'https://data.darts.isas.jaxa.jp/pub/hayabusa2/paper/Watanabe_2019/README.html',
+        license: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+    };
+    return credits[entry.data.id];
+  }
   if (
     (entry.kind === 'body' && entry.data.id !== 'pluto') ||
     entry.data.id === 'moon-moon'

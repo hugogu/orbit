@@ -281,9 +281,27 @@ export default function SolarScene({
       labelLayer,
       (id) => latest.current.onSelect(id),
     );
-    textureManager.register('asteroid_surface', (texture) =>
-      asteroidSystem.setTexture(texture),
-    );
+    for (const asteroid of asteroids) {
+      if (asteroid.texture)
+        textureManager.register(
+          asteroid.texture,
+          (texture) => asteroidSystem.setTexture(asteroid.id, texture),
+          {
+            lazy: true,
+            clear: () => asteroidSystem.clearTexture(asteroid.id),
+          },
+        );
+      if (asteroid.normalTexture)
+        textureManager.register(
+          asteroid.normalTexture,
+          (texture) => asteroidSystem.setNormalTexture(asteroid.id, texture),
+          {
+            lazy: true,
+            clear: () => asteroidSystem.clearNormalTexture(asteroid.id),
+          },
+        );
+    }
+    void asteroidSystem.loadModels();
     const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
     const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
@@ -511,6 +529,11 @@ export default function SolarScene({
       const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
       const selectedAsteroid = asteroids.find((item) => item.id === s.selected);
       const selectedMoonTexture = selectedMoon?.texture ?? null;
+      const selectedAsteroidTextures = selectedAsteroid
+        ? [selectedAsteroid.texture, selectedAsteroid.normalTexture].filter(
+            (name): name is string => !!name,
+          )
+        : [];
       const cometTexture =
         s.cometId && s.selected === s.cometId ? 'comet_nucleus' : null;
       const focusBody = bodies.find(
@@ -540,9 +563,11 @@ export default function SolarScene({
         compactStable,
         !!connection?.saveData,
         s.galaxy,
-        selectedMoonTexture || cometTexture
-          ? [selectedMoonTexture ?? cometTexture!]
-          : [],
+        selectedAsteroidTextures.length > 0
+          ? selectedAsteroidTextures
+          : selectedMoonTexture || cometTexture
+            ? [selectedMoonTexture ?? cometTexture!]
+            : [],
         navigating,
       );
       scene.background = s.galaxy ? (galaxyTexture ?? emptySky) : emptySky;
@@ -813,6 +838,7 @@ export default function SolarScene({
       eclipseSystem.dispose();
       eclipsePath.dispose();
       observerMarker?.dispose();
+      asteroidSystem.dispose();
       scene.traverse((o) => {
         if (
           o instanceof THREE.Mesh ||

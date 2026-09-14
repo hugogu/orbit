@@ -44,7 +44,7 @@ ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计�
 
 导航中新增独立折叠的**小行星**与**彗星**分组。谷神星（矮行星）、智神星、婚神星、灶神星、灵神星、爱神星、丝川、贝努和龙宫均可在场景内定位，也有三语独立资料页、物理数据与带署名的分享图。为保持全景清晰，仅显示当前选中小行星的标签与轨道。
 
-小行星轨道和物理参数来自 2026-09-13 获取的 [NASA/JPL SBDB](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html) 离线快照。带历元二体近似未计入行星摄动与热辐射效应，不用于交会或撞击预测；真实大小与距离设置同样适用于小行星。外形、颜色、地貌、自转轴与自转相位为示意，使用 **cubicApocalypse / CelestiaContent** 的本地 **CC BY 4.0** 岩质贴图，详见[素材署名](public/textures/satellites/CREDITS.md)。小行星不参与食影计算。
+小行星轨道和物理参数来自 2026-09-13 获取的 [NASA/JPL SBDB](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html) 离线快照。带历元二体近似未计入行星摄动与热辐射效应，不用于交会或撞击预测；真实大小与距离设置同样适用于小行星。场景使用来自任务、PDS、Dawn、隼鸟/隼鸟二号、OSIRIS-REx 和 VLT/SPHERE 的独立形状数据；谷神星保留观测到的近球形，并使用 Dawn 贴图与地形法线。没有公开全球图的智神星、婚神星和灵神星，改用各自 JPL 几何反照率与光谱类别驱动的材质，不再混用通用贴图。详见[形状数据署名](public/models/asteroids/CREDITS.md)与[表面贴图署名](public/textures/asteroids/CREDITS.md)。小行星不参与食影计算。
 
 | 场景导航                                                                    | 时间控制                                   | 天文计算                              |
 | --------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------- |
@@ -165,6 +165,7 @@ ORBIT 用于天文学习，并在界面中说明模型的假设与适用范围�
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy)（MIT）
 - 行星纹理主要来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形；银河全景是沉浸式背景，不是观测地点的实时星图。
 - 卫星贴图来自 [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent)，各文件采用的 CC BY 或 CC BY-SA 条款记录在 [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md)。天卫一、天卫五、天卫二、天卫三、天卫四和海卫一的 Voyager 贴图存在未测绘区域；本地副本用邻近的已观测纹理镜像填补缺口，避免近距离观察时出现单色半球。由于缺少完整全球反照率地图，海卫二、冥王星、冥卫一与彗核使用 CC BY 4.0 的 `asteroid.jpg` 作为明确标注的科普示意材质。
+- 小行星贴图与转换后的形状资产分别记录在 [`public/textures/asteroids/CREDITS.md`](public/textures/asteroids/CREDITS.md) 和 [`public/models/asteroids/CREDITS.md`](public/models/asteroids/CREDITS.md)；命名小行星目录不再使用通用 `asteroid.jpg`。
 - 天王星使用 Solar System Scope 的 CC BY 4.0 大气示意图。原先禁止商业使用的天王星与冥卫一文件，以及再分发条款不明确的 NASA/JPL 冥王星示意图，已不再使用或随项目分发。
 
 ## 许可证

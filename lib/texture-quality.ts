@@ -132,6 +132,44 @@ export const highResolutionTextures: Record<
     standardFile: 'satellites/2k_triton.jpg',
     revision: 'filled-v1',
   },
+  // Asteroid maps are body-specific Dawn, NEAR, Hayabusa, and OSIRIS-REx
+  // products. They are kept separate so a selected asteroid never inherits
+  // another body's surface.
+  asteroid_ceres: {
+    file: 'asteroids/4k_ceres.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_ceres.jpg',
+  },
+  asteroid_ceres_normal: {
+    file: 'asteroids/4k_ceres-normal.png',
+    width: 4096,
+    standardFile: 'asteroids/2k_ceres-normal.png',
+  },
+  asteroid_vesta: {
+    file: 'asteroids/4k_vesta.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_vesta.jpg',
+  },
+  asteroid_eros: {
+    file: 'asteroids/4k_eros.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_eros.jpg',
+  },
+  asteroid_itokawa: {
+    file: 'asteroids/4k_itokawa.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_itokawa.jpg',
+  },
+  asteroid_bennu: {
+    file: 'asteroids/4k_bennu.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_bennu.jpg',
+  },
+  asteroid_ryugu: {
+    file: 'asteroids/4k_ryugu.jpg',
+    width: 4096,
+    standardFile: 'asteroids/2k_ryugu.jpg',
+  },
   charon: {
     file: 'satellites/4k_asteroid.jpg',
     width: 4096,

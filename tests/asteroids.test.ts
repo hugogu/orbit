@@ -13,7 +13,8 @@ import { displayRadius, kmToScene } from '../lib/display-scale';
 import { bodyFromHash } from '../lib/body-navigation';
 import { catalogEntry, bodyDetailsPath, seoLocales } from '../lib/seo';
 import { texturePath } from '../lib/texture-quality';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { parseAsteroidModel } from '../lib/asteroid-model';
 import { createAsteroidSystem } from '../components/asteroid-system';
 import { createSceneLabelOcclusion } from '../components/scene-label';
 import BodyNavigation from '../components/body-navigation';
@@ -94,10 +95,22 @@ void test('every asteroid is addressable from navigation, profiles, textures, an
     assert.equal(catalogEntry(asteroid.id)?.kind, 'asteroid');
     focus.execute({ id: asteroid.id });
     assert.equal(selected, asteroid.id);
-    assert.ok(
-      existsSync(`public${texturePath(asteroid.texture, false, 2048)}`),
+    if (asteroid.texture) {
+      assert.ok(
+        existsSync(`public${texturePath(asteroid.texture, false, 2048)}`),
+      );
+      assert.ok(
+        existsSync(`public${texturePath(asteroid.texture, true, 8192)}`),
+      );
+    }
+    if (asteroid.normalTexture)
+      assert.ok(
+        existsSync(`public${texturePath(asteroid.normalTexture, false, 2048)}`),
+      );
+    assert.equal(
+      asteroid.shapeModel === null ? asteroid.id === 'ceres' : true,
+      true,
     );
-    assert.ok(existsSync(`public${texturePath(asteroid.texture, true, 8192)}`));
     for (const locale of seoLocales) {
       const t = translator(locale);
       const html = renderToStaticMarkup(
@@ -117,6 +130,31 @@ void test('every asteroid is addressable from navigation, profiles, textures, an
       if (locale === 'en') assert.doesNotMatch(html, /\p{Script=Han}/u);
     }
   }
+});
+
+void test('mission shape exports and surface sources stay body-specific', () => {
+  const models = new Set<string>();
+  const textures = new Set<string>();
+  for (const asteroid of asteroids) {
+    assert.notEqual(asteroid.texture, 'asteroid_surface', asteroid.id);
+    if (asteroid.texture) textures.add(asteroid.texture);
+    if (!asteroid.shapeModel) {
+      assert.equal(asteroid.id, 'ceres');
+      continue;
+    }
+    models.add(asteroid.shapeModel);
+    const bytes = readFileSync(`public/models/asteroids/${asteroid.shapeModel}.bin`);
+    const buffer = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    );
+    const model = parseAsteroidModel(buffer);
+    assert.ok(model.positions.length >= 3 * 1000, asteroid.id);
+    assert.ok(model.indices.length >= 3 * 1000, asteroid.id);
+    assert.ok(model.uvs.some((value) => value !== 0), asteroid.id);
+  }
+  assert.equal(models.size, 8);
+  assert.equal(textures.size, 6);
 });
 
 void test('asteroid and comet groups start collapsed and expand for direct selections', () => {
@@ -180,7 +218,7 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
     system.update(0, 'illustrated', false, 'bennu', true);
     system.localize(translator('en'));
     const texture = new THREE.Texture();
-    system.setTexture(texture);
+    system.setTexture('bennu', texture);
     assert.equal(meshes.size, 9);
     const bennu = roots.get('bennu')!,
       mesh = meshes.get('bennu')!;
@@ -190,7 +228,7 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
     assert.ok(bennu.position.equals(before));
     assert.ok(mesh.rotation.equals(rotation));
     assert.equal(
-      (mesh.material as THREE.MeshStandardMaterial).bumpMap,
+      (mesh.material as THREE.MeshStandardMaterial).map,
       texture,
     );
     assert.equal(scene.getObjectByName('bennu-orbit')!.visible, true);

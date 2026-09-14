@@ -53,8 +53,14 @@ export default function AsteroidDetails({
         <summary>{t('数据与计算说明')}</summary>
         <p className="little-note">{t(asteroidModelNote)}</p>
         <p className="little-note">{t(asteroidSurfaceNote)}</p>
-        <a className="source" href={'/textures/satellites/CREDITS.md'}>
+        {/* These are public asset documents, not application routes. */}
+        {/* oxlint-disable-next-line nextjs/no-html-link-for-pages */}
+        <a className="source" href="/textures/asteroids/CREDITS.md">
           {t('图像与授权')}
+        </a>
+        {/* oxlint-disable-next-line nextjs/no-html-link-for-pages */}
+        <a className="source" href="/models/asteroids/CREDITS.md">
+          {t('形状模型来源')}
         </a>
       </details>
       <a className="source" href={bodyDetailsPath(locale, asteroid.id)}>
