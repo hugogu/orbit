@@ -1074,7 +1074,7 @@ export default function Home() {
                 </Select>
               </div>
               <div className="setting-row">
-                <label htmlFor="real-surface">{t('真实表面细节')}</label>
+                <label htmlFor="real-surface">{t('真实地形光照')}</label>
                 <Switch
                   id="real-surface"
                   checked={realSurface}
@@ -1083,7 +1083,7 @@ export default function Home() {
               </div>
               <p className="model-note">
                 {t(
-                  '仅在跟随水星、金星、地球或火星时按需加载公开地形数据派生的法线贴图；不会改变球体轮廓。开启后会增加显存与着色开销。木星、土星、天王星和海王星没有固体表面，仍显示云顶或大气。',
+                  '仍使用球体网格；仅在跟随水星、金星、地球或火星时按需加载公开地形数据派生的法线贴图，改变近距离逐像素光照中的坑洼与山脊明暗，不会移动顶点或改变轮廓。开启后会增加显存与着色开销。木星、土星、天王星和海王星没有固体表面，仍显示云顶或大气。',
                 )}
               </p>
               <p className="model-note">

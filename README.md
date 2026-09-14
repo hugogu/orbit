@@ -41,7 +41,7 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 
 Both images above were captured from a running ORBIT observatory. Texture selection considers the user setting, device class, data-saving preference, and GPU texture limits. High-resolution maps are loaded for the focused body only when needed, then the previous map is released.
 
-The base scene uses a spherical mesh for every planet; color maps add imagery or clouds. **Observation settings → Textures → Real surface detail** optionally loads body-specific 2K normal maps derived from published topography for Mercury, Venus, Earth, and Mars. It is off by default and loads for the focused planet only; it changes lighting relief, not silhouette or mesh geometry. Jupiter, Saturn, Uranus, and Neptune have no solid surface, so their atmospheric maps stay unchanged.
+The base scene uses a spherical mesh for every planet; color maps add imagery or clouds. **Observation settings → Textures → Real terrain lighting** optionally loads body-specific 2K normal maps derived from published topography for Mercury, Venus, Earth, and Mars. It is off by default and loads for the focused planet only; it changes close-up pixel-level lighting on craters and ridges, not silhouette or mesh geometry. Jupiter, Saturn, Uranus, and Neptune have no solid surface, so their atmospheric maps stay unchanged.
 
 ## Controls
 

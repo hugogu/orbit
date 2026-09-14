@@ -181,7 +181,10 @@ export default function SolarScene({
             });
       if (body.texture) applyMap(material, body.texture);
       if (body.surfaceTexture && material instanceof THREE.MeshStandardMaterial) {
-        const standardNormalScale = new THREE.Vector2(0.65, 0.65);
+        // These are lighting-derived maps rather than height fields. A gain
+        // above the neutral 1:1 value keeps the published relief readable at
+        // the scene's illustrative scale without changing the sphere mesh.
+        const standardNormalScale = new THREE.Vector2(1.5, 1.5);
         textureManager.register(
           body.surfaceTexture,
           (texture) => {
