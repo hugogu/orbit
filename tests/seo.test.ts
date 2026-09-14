@@ -185,12 +185,17 @@ void test('locale hydration preserves route-owned profile titles and description
     new URL('../lib/i18n/provider.tsx', import.meta.url),
     'utf8',
   );
-  const guard = provider.indexOf(
-    "if (window.location.pathname !== '/') return;",
+  const find = (pattern: RegExp) => {
+    const position = provider.search(pattern);
+    assert.ok(position >= 0, `Missing provider source pattern: ${pattern}`);
+    return position;
+  };
+  const guard = find(
+    /if\s*\(\s*window\.location\.pathname\s*!==\s*['"]\/['"]\s*\)\s*return\s*;/,
   );
-  assert.ok(guard > provider.indexOf('document.documentElement.lang ='));
-  assert.ok(guard < provider.indexOf('document.title ='));
-  assert.ok(guard < provider.indexOf('meta[name="description"]'));
+  assert.ok(guard > find(/document\.documentElement\.lang\s*=/));
+  assert.ok(guard < find(/document\.title\s*=/));
+  assert.ok(guard < find(/meta\[name\s*=\s*['"]description['"]\s*\]/));
 });
 
 void test('JSON-LD escapes script-sensitive characters', () => {

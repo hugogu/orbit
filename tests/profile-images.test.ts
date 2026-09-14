@@ -106,6 +106,11 @@ void test('real licensed textures render to images and carry their attribution',
     assert.ok(metadata.xmp?.toString().includes(credit.license));
     assert.ok(metadata.xmp?.toString().includes('rendering by ORBIT'));
     if (id === 'moon-miranda') assert.match(credit.license, /by-sa\/4.0/);
+    if (id === 'psyche')
+      assert.equal(
+        credit.license,
+        'https://creativecommons.org/licenses/by/4.0/',
+      );
     if (id === '67p' || entry.kind === 'asteroid')
       assert.equal(isIllustrativePortrait(entry), true);
   }

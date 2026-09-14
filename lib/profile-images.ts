@@ -71,7 +71,7 @@ export function portraitCredit(entry: CatalogEntry): PortraitCredit {
       psyche: {
         name: 'Shepard et al. (2021)',
         url: 'https://doi.org/10.3847/PSJ/abfdba',
-        license: 'https://doi.org/10.3847/PSJ/abfdba',
+        license: 'https://creativecommons.org/licenses/by/4.0/',
       },
       eros: {
         name: 'NEAR / Phil Stooke / NASA PDS',
@@ -94,7 +94,10 @@ export function portraitCredit(entry: CatalogEntry): PortraitCredit {
         license: 'https://creativecommons.org/licenses/by/4.0/',
       },
     };
-    return credits[entry.data.id];
+    const credit = credits[entry.data.id];
+    if (!credit)
+      throw new Error(`Missing asteroid portrait credit for ${entry.data.id}`);
+    return credit;
   }
   if (
     (entry.kind === 'body' && entry.data.id !== 'pluto') ||

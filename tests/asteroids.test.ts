@@ -211,8 +211,9 @@ void test('asteroid and comet groups start collapsed and expand for direct selec
   );
 });
 
-void test('asteroid scene integrates picking, materials, paused time, true scales, and occlusion', () => {
+void test('asteroid scene integrates picking, materials, paused time, true scales, and occlusion', async () => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const fetchDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
   const labels: {
     onclick?: () => void;
     textContent: string;
@@ -235,6 +236,22 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
       },
     },
   });
+  Object.defineProperty(globalThis, 'fetch', {
+    configurable: true,
+    value: async (input: string) => {
+      const path = new URL(input, 'http://localhost').pathname;
+      const bytes = readFileSync(`public${path}`);
+      return {
+        ok: true,
+        async arrayBuffer() {
+          return bytes.buffer.slice(
+            bytes.byteOffset,
+            bytes.byteOffset + bytes.byteLength,
+          );
+        },
+      };
+    },
+  });
   const scene = new THREE.Scene(),
     roots = new Map<string, THREE.Group>(),
     meshes = new Map<string, THREE.Mesh>();
@@ -249,6 +266,17 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
         selected = id;
       },
     );
+    await system.loadModels();
+    for (const id of ['pallas', 'psyche']) {
+      const asteroid = asteroids.find((item) => item.id === id)!;
+      assert.ok(
+        Math.abs(
+          meshes.get(id)!.geometry.boundingSphere!.radius -
+            Math.max(...asteroid.axes),
+        ) < 1e-5,
+        id,
+      );
+    }
     system.update(0, 'illustrated', false, 'bennu', true);
     system.localize(translator('en'));
     const texture = new THREE.Texture();
@@ -311,5 +339,8 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
     });
     if (descriptor) Object.defineProperty(globalThis, 'document', descriptor);
     else Reflect.deleteProperty(globalThis, 'document');
+    if (fetchDescriptor)
+      Object.defineProperty(globalThis, 'fetch', fetchDescriptor);
+    else Reflect.deleteProperty(globalThis, 'fetch');
   }
 });

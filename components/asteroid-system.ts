@@ -140,6 +140,12 @@ export function createAsteroidSystem(
                 new THREE.BufferAttribute(data.uvs, 2),
               );
               geometry.setIndex(new THREE.BufferAttribute(data.indices, 1));
+              // The conversion pipeline normalizes model vertices to a unit
+              // circumradius. Match the placeholder's outer radius without
+              // applying the axes again; imported mission shapes already
+              // carry their own measured aspect ratios.
+              const modelScale = Math.max(...asteroid.axes);
+              geometry.scale(modelScale, modelScale, modelScale);
               geometry.computeBoundingSphere();
               geometry.computeBoundingBox();
               const previous = mesh.geometry;
