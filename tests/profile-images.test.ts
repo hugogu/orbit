@@ -92,6 +92,7 @@ void test('real licensed textures render to images and carry their attribution',
     'ceres',
     'eros',
     'bennu',
+    'psyche',
   ]) {
     const entry = catalogEntries().find((e) => e.data.id === id)!;
     const credit = portraitCredit(entry);

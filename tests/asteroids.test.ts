@@ -22,6 +22,7 @@ import AsteroidDetails from '../components/asteroid-details';
 import { I18nProvider } from '../lib/i18n/provider';
 import { translator } from '../lib/i18n';
 import { observatoryTools } from '../lib/observatory-tools';
+import { normalizeModel } from '../scripts/convert-asteroid-models';
 
 void test('asteroid snapshots use their own epochs, preserve orbital planes, and close after one period', () => {
   for (const asteroid of asteroids) {
@@ -189,6 +190,16 @@ void test('mission shape exports and surface sources stay body-specific', () => 
   assert.equal(psyche.texture, 'asteroid_psyche');
   assert.equal(psycheModel.indices.length / 3, 1352);
   assert.equal(psycheModel.positions.length / 3, psycheModel.indices.length);
+});
+
+void test('model normal fallback applies one face normal to each face vertex', () => {
+  const model = normalizeModel(
+    [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    Array.from({ length: 12 }, () => 0),
+    Array.from({ length: 8 }, () => NaN),
+    [0, 1, 2, 0, 2, 3],
+  );
+  assert.deepEqual(Array.from(model.normals.slice(9, 12)), [1, 0, 0]);
 });
 
 void test('asteroid and comet groups start collapsed and expand for direct selections', () => {

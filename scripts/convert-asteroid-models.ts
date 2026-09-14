@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   encodeAsteroidModel,
   type AsteroidModelData,
@@ -202,7 +203,7 @@ function triangulate(
   }
 }
 
-function normalizeModel(
+export function normalizeModel(
   positions: number[],
   normals: number[],
   uvs: number[],
@@ -258,15 +259,18 @@ function normalizeModel(
       const bx = positions[ic] - positions[ia],
         by = positions[ic + 1] - positions[ia + 1],
         bz = positions[ic + 2] - positions[ia + 2];
-      normals[ia] += ay * bz - az * by;
-      normals[ia + 1] += az * bx - ax * bz;
-      normals[ia + 2] += ax * by - ay * bx;
-      normals[ib] += normals[ia];
-      normals[ib + 1] += normals[ia + 1];
-      normals[ib + 2] += normals[ia + 2];
-      normals[ic] += normals[ia];
-      normals[ic + 1] += normals[ia + 1];
-      normals[ic + 2] += normals[ia + 2];
+      const nx = ay * bz - az * by,
+        ny = az * bx - ax * bz,
+        nz = ax * by - ay * bx;
+      normals[ia] += nx;
+      normals[ia + 1] += ny;
+      normals[ia + 2] += nz;
+      normals[ib] += nx;
+      normals[ib + 1] += ny;
+      normals[ib + 2] += nz;
+      normals[ic] += nx;
+      normals[ic + 1] += ny;
+      normals[ic + 2] += nz;
     }
   }
   for (let i = 0; i < normals.length; i += 3) {
@@ -347,26 +351,34 @@ function readCmod(bytes: Uint8Array): AsteroidModelData {
   return normalizeModel(positions, normals, uvs, indices);
 }
 
-const inputRoot = resolve(process.argv[2] ?? '.');
-const outputRoot = resolve(process.argv[3] ?? 'public/models/asteroids');
-const names = [
-  'bennu',
-  'eros',
-  'itokawa',
-  'juno',
-  'pallas',
-  'psyche',
-  'ryugu',
-  'vesta',
-];
-mkdirSync(outputRoot, { recursive: true });
-for (const name of names) {
-  const model = readCmod(
-    new Uint8Array(readFileSync(resolve(inputRoot, 'models', `${name}.cmod`))),
-  );
-  const target = resolve(outputRoot, `${name}.bin`);
-  writeFileSync(target, encodeAsteroidModel(model));
-  console.log(
-    `${name}: ${model.positions.length / 3} vertices, ${model.indices.length / 3} triangles -> ${target}`,
-  );
+function main() {
+  const inputRoot = resolve(process.argv[2] ?? '.');
+  const outputRoot = resolve(process.argv[3] ?? 'public/models/asteroids');
+  const names = [
+    'bennu',
+    'eros',
+    'itokawa',
+    'juno',
+    'pallas',
+    'psyche',
+    'ryugu',
+    'vesta',
+  ];
+  mkdirSync(outputRoot, { recursive: true });
+  for (const name of names) {
+    const model = readCmod(
+      new Uint8Array(readFileSync(resolve(inputRoot, 'models', `${name}.cmod`))),
+    );
+    const target = resolve(outputRoot, `${name}.bin`);
+    writeFileSync(target, encodeAsteroidModel(model));
+    console.log(
+      `${name}: ${model.positions.length / 3} vertices, ${model.indices.length / 3} triangles -> ${target}`,
+    );
+  }
 }
+
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+)
+  main();
