@@ -305,7 +305,7 @@ export function normalizeModel(
   };
 }
 
-function readCmod(bytes: Uint8Array): AsteroidModelData {
+export function readCmod(bytes: Uint8Array): AsteroidModelData {
   const header = new TextDecoder().decode(bytes.subarray(0, HEADER_BYTES));
   if (header !== '#celmodel_binary') throw new Error('Expected binary CMOD');
   const reader = new Reader(bytes);

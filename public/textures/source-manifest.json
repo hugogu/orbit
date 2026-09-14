@@ -284,7 +284,7 @@
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/asteroid.jpg",
     "license": "CC BY 4.0",
     "path": "satellites/4k_asteroid.jpg",
-    "note": "Illustrative small-body surface for Nereid, Pluto, Charon, and comet nuclei"
+    "note": "Illustrative small-body surface for Nereid, Pluto, and Charon"
   },
   {
     "filename": "asteroids/4k_ceres.jpg",

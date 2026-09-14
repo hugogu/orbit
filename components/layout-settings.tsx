@@ -41,7 +41,7 @@ export default function LayoutSettings({
       </div>
       <p className="model-note layout-note">
         {t(
-          '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星、卫星与小行星会使用同一物理尺度。彗核、彗尾和光晕仍为示意。',
+          '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星、卫星与小行星会使用同一物理尺度。彗核形状使用公开模型或观测约束的明确近似；彗核表面、彗尾和光晕仍为示意。',
         )}
       </p>
       {distanceLocked && (

@@ -14,7 +14,7 @@ import {
 import { curiosities, type Curiosity } from '../../lib/curiosities';
 import { extraFacts } from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
-import { comets } from '../../lib/comets';
+import { comets, cometModelNote, cometVisualNote } from '../../lib/comets';
 import {
   asteroids,
   asteroidFacts,
@@ -527,7 +527,7 @@ export default async function BodyPage({ params }: PageProps) {
                     entry.kind === 'asteroid'
                       ? asteroidModelNote
                       : entry.kind === 'comet'
-                        ? '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。轨道按 AU 比例显示，彗核、旋转与彗尾为示意。'
+                        ? cometModelNote
                         : '半径采用平均值；轨道数据用于介绍天体的尺度与运动。',
                   )}
                 </p>
@@ -583,6 +583,8 @@ export default async function BodyPage({ params }: PageProps) {
                   {t(
                     entry.kind === 'asteroid'
                       ? asteroidSurfaceNote
+                      : entry.kind === 'comet'
+                        ? cometVisualNote
                       : '图像基于已有贴图重新投影与布光，不代表实时观测照片。',
                   )}
                 </p>

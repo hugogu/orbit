@@ -36,7 +36,7 @@ import AstronomyPanel from '@/components/astronomy-panel';
 import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
-import { comets, cometPerihelion } from '@/lib/comets';
+import { comets, cometModelNote, cometPerihelion } from '@/lib/comets';
 import {
   asteroids,
   asteroidModelNote,
@@ -367,11 +367,7 @@ export default function Home() {
       </div>
       <div className="detail-heading comet-detail-heading">
         <h2>{t(activeComet.name)}</h2>
-        <ConceptHint
-          label={t(
-            '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。轨道按 AU 比例显示，彗核、旋转与彗尾为示意。',
-          )}
-        />
+        <ConceptHint label={t(cometModelNote)} />
       </div>
       <p className="description">{t(activeComet.description)}</p>
       <div className="facts">
@@ -1226,7 +1222,7 @@ export default function Home() {
                 </p>
                 <p>
                   {t(
-                    '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星与卫星会使用同一物理尺度。彗核、彗尾和光晕仍为示意。月球及四颗伽利略卫星使用含摄动的模型，其余 14 颗卫星用 JPL 固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用 JPL 带历元的二体轨道，远离历元时误差增大。',
+                    '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星与卫星会使用同一物理尺度。彗核形状使用公开模型或观测约束的明确近似；彗核表面、彗尾和光晕仍为示意。月球及四颗伽利略卫星使用含摄动的模型，其余 14 颗卫星用 JPL 固定平均轨道近似推进，未计入进动与共振，不能作为准确星历。其他卫星的自转朝向为同步示意。未纳入全部卫星和冥王星双星质心运动；外围粒子为示意。彗星采用 JPL 带历元的二体轨道，远离历元时误差增大。',
                   )}
                 </p>
                 <p>

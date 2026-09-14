@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import {
   comets,
@@ -11,6 +12,7 @@ import { J2000_MS, DAY_MS } from '../lib/simulation-time.ts';
 import { bodies, eccentricPosition, orbitPosition } from '../lib/solar.ts';
 import { moonSystems } from '../lib/moons.ts';
 import { createCometSystem } from '../components/comet-system.ts';
+import { parseAsteroidModel } from '../lib/asteroid-model.ts';
 
 void test('all eight planets have satellite information, including the two without moons', () => {
   for (const body of bodies.filter((b) => b.id !== 'sun' && b.id !== 'pluto')) {
@@ -70,6 +72,72 @@ void test('Halley is retrograde and speeds up near perihelion', () => {
     Math.hypot(...q.map((v, i) => v - p[i])) /
     Math.hypot(...b.map((v, i) => v - a[i]));
   assert.ok(Math.abs(ratio - (1 + c.e) / (1 - c.e)) < 0.001);
+});
+
+void test('comet nucleus meshes are body-specific and loaded shapes stay cached', async (t) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+      createElement: () => ({
+        className: '',
+        style: { display: '' },
+        setAttribute() {},
+        textContent: '',
+      }),
+    },
+  });
+  t.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, 'document', descriptor);
+    else Reflect.deleteProperty(globalThis, 'document');
+  });
+  const requests: { resolve: (value: Response) => void }[] = [];
+  t.mock.method(
+    globalThis,
+    'fetch',
+    () =>
+      new Promise<Response>((resolve) => {
+        requests.push({ resolve });
+      }),
+  );
+  const modelBytes = new Map(
+    comets.map((comet) => {
+      const bytes = readFileSync(
+        `public/models/comets/${comet.shapeModel}.bin`,
+      );
+      return [
+        comet.id,
+        bytes.buffer.slice(
+          bytes.byteOffset,
+          bytes.byteOffset + bytes.byteLength,
+        ),
+      ] as const;
+    }),
+  );
+  const scene = new THREE.Scene();
+  const system = createCometSystem(scene, {
+    appendChild() {},
+  } as unknown as HTMLElement);
+  system.update('halley', 0, false);
+  assert.equal(requests.length, 1);
+  requests[0].resolve(new Response(modelBytes.get('halley')));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const halleyGeometry = system.nucleus.geometry;
+  system.update('67p', 0, false);
+  assert.equal(requests.length, 2);
+  requests[1].resolve(new Response(modelBytes.get('67p')));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const sixtySevenGeometry = system.nucleus.geometry;
+  assert.notEqual(sixtySevenGeometry, halleyGeometry);
+  system.update('halley', 0, false);
+  assert.equal(system.nucleus.geometry, halleyGeometry);
+  assert.equal(requests.length, 2, 'revisit reuses the loaded comet mesh');
+  for (const comet of comets) {
+    const model = parseAsteroidModel(modelBytes.get(comet.id)!);
+    assert.ok(model.positions.length > 0, comet.id);
+    assert.ok(model.indices.length > 0, comet.id);
+  }
+  system.dispose();
 });
 
 void test('comet scene preserves the absolute date across selections and keeps its tail antisolar', () => {
