@@ -14,7 +14,11 @@ import { bodyFromHash } from '../lib/body-navigation';
 import { catalogEntry, bodyDetailsPath, seoLocales } from '../lib/seo';
 import { texturePath } from '../lib/texture-quality';
 import { existsSync, readFileSync } from 'node:fs';
-import { parseAsteroidModel } from '../lib/asteroid-model';
+import {
+  parseAsteroidModel,
+  asteroidModelScale,
+  encodeAsteroidModel,
+} from '../lib/asteroid-model';
 import { createAsteroidSystem } from '../components/asteroid-system';
 import { createSceneLabelOcclusion } from '../components/scene-label';
 import BodyNavigation from '../components/body-navigation';
@@ -200,6 +204,141 @@ void test('model normal fallback applies one face normal to each face vertex', (
     [0, 1, 2, 0, 2, 3],
   );
   assert.deepEqual(Array.from(model.normals.slice(9, 12)), [1, 0, 0]);
+  const mixed = normalizeModel(
+    [0, 0, 0, 1, 0, 0, 0, 1, 0],
+    [0, 0, 1, NaN, 0, 0, 0, 0, 0],
+    Array(6).fill(NaN),
+    [0, 1, 2],
+  );
+  assert.deepEqual([...mixed.normals], [0, 0, 1, 0, 0, 1, 0, 0, 1]);
+  const corrupt = encodeAsteroidModel(mixed);
+  new DataView(corrupt.buffer).setFloat32(16, NaN, true);
+  assert.throws(
+    () => parseAsteroidModel(new Uint8Array(corrupt).buffer),
+    /non-finite/,
+  );
+});
+
+void test('observed asteroid shapes retain volume-based sizes and DAMIT north is the Y axis', () => {
+  for (const asteroid of asteroids.filter((a) => a.shapeModel)) {
+    const bytes = readFileSync(
+      `public/models/asteroids/${asteroid.shapeModel}.bin`,
+    );
+    const model = parseAsteroidModel(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    );
+    const scale = asteroidModelScale(model);
+    let volume = 0;
+    const a = new THREE.Vector3(),
+      b = new THREE.Vector3(),
+      c = new THREE.Vector3();
+    for (let i = 0; i < model.indices.length; i += 3) {
+      a.fromArray(model.positions, model.indices[i] * 3).multiplyScalar(scale);
+      b.fromArray(model.positions, model.indices[i + 1] * 3).multiplyScalar(
+        scale,
+      );
+      c.fromArray(model.positions, model.indices[i + 2] * 3).multiplyScalar(
+        scale,
+      );
+      volume += a.dot(b.cross(c)) / 6;
+    }
+    assert.ok(
+      Math.abs(Math.abs(volume) - (4 * Math.PI) / 3) < 1e-6,
+      asteroid.id,
+    );
+    if (asteroid.id === 'pallas' || asteroid.id === 'psyche') {
+      const box = new THREE.Box3().setFromBufferAttribute(
+        new THREE.BufferAttribute(model.positions, 3),
+      );
+      const extent = box.getSize(new THREE.Vector3());
+      assert.ok(
+        extent.y < extent.x && extent.y < extent.z,
+        `${asteroid.id} polar axis`,
+      );
+    }
+  }
+});
+
+void test('asteroid model loading is focused, cancellable, and leaves recoverable fallback shapes', async (t) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+      createElement: () => ({
+        style: {},
+        classList: { toggle() {} },
+        setAttribute() {},
+      }),
+    },
+  });
+  t.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, 'document', descriptor);
+    else Reflect.deleteProperty(globalThis, 'document');
+  });
+  const requests: {
+    signal: AbortSignal;
+    resolve: (value: Response) => void;
+  }[] = [];
+  t.mock.method(
+    globalThis,
+    'fetch',
+    (_url: string, options: RequestInit) =>
+      new Promise<Response>((resolve) =>
+        requests.push({ signal: options.signal!, resolve }),
+      ),
+  );
+  const scene = new THREE.Scene(),
+    roots = new Map<string, THREE.Group>(),
+    meshes = new Map<string, THREE.Mesh>();
+  let errors = 0;
+  const system = createAsteroidSystem(
+    scene,
+    roots,
+    meshes,
+    { appendChild() {} } as unknown as HTMLElement,
+    () => {},
+    () => errors++,
+  );
+  assert.equal(requests.length, 0);
+  const base = meshes.get('pallas')!.geometry;
+  const first = system.setFocus('pallas');
+  assert.equal(requests.length, 1);
+  assert.equal(system.setFocus('pallas'), first);
+  const second = system.setFocus('psyche');
+  assert.equal(requests[0].signal.aborted, true);
+  const bytes = readFileSync('public/models/asteroids/pallas.bin');
+  requests[0].resolve(new Response(bytes));
+  await first;
+  assert.equal(meshes.get('pallas')!.geometry, base);
+  requests[1].resolve(new Response(null, { status: 503 }));
+  await second;
+  assert.equal(errors, 1);
+  await system.setFocus(null);
+  const retry = system.setFocus('pallas');
+  assert.equal(requests.length, 3);
+  requests[2].resolve(new Response(bytes));
+  await retry;
+  const loaded = meshes.get('pallas')!.geometry;
+  const dispose = t.mock.method(loaded, 'dispose');
+  assert.notEqual(loaded, base);
+  await system.setFocus(null);
+  assert.equal(meshes.get('pallas')!.geometry, loaded);
+  assert.equal(dispose.mock.callCount(), 0);
+  await system.setFocus('pallas');
+  assert.equal(requests.length, 3, 'revisit reuses the loaded model');
+  const late = system.setFocus('psyche');
+  system.dispose();
+  assert.equal(dispose.mock.callCount(), 1);
+  assert.equal(requests[3].signal.aborted, true);
+  requests[3].resolve(new Response(bytes));
+  await late;
+  assert.equal(errors, 1);
+  scene.traverse((object) => {
+    if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
+      object.geometry.dispose();
+      (object.material as THREE.Material).dispose();
+    }
+  });
 });
 
 void test('asteroid and comet groups start collapsed and expand for direct selections', () => {
@@ -277,17 +416,24 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
         selected = id;
       },
     );
-    await system.loadModels();
     for (const id of ['pallas', 'psyche']) {
-      const asteroid = asteroids.find((item) => item.id === id)!;
-      assert.ok(
-        Math.abs(
-          meshes.get(id)!.geometry.boundingSphere!.radius -
-            Math.max(...asteroid.axes),
-        ) < 1e-5,
-        id,
+      const atlas = new THREE.Texture();
+      system.setTexture(id, atlas);
+      assert.equal(
+        (meshes.get(id)!.material as THREE.MeshStandardMaterial).map,
+        null,
       );
+      await system.setFocus(id);
+      assert.equal(
+        (meshes.get(id)!.material as THREE.MeshStandardMaterial).map,
+        atlas,
+      );
+      assert.equal(atlas.generateMipmaps, false);
+      assert.ok(meshes.get(id)!.geometry.boundingSphere!.radius > 1, id);
+      system.clearTexture(id);
+      atlas.dispose();
     }
+    await system.setFocus('bennu');
     system.update(0, 'illustrated', false, 'bennu', true);
     system.localize(translator('en'));
     const texture = new THREE.Texture();
@@ -341,6 +487,7 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
     assert.equal(bennu.scale.x, displayRadius('bennu', 'distance', true));
     assert.equal(scene.getObjectByName('bennu-orbit')!.visible, false);
     texture.dispose();
+    system.dispose();
   } finally {
     scene.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.Line) {

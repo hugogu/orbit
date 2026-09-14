@@ -26,3 +26,14 @@ where CelestiaContent provides them. The Pallas DAMIT export has 402 source
 vertices and 800 triangles; the Psyche export has 678 source vertices and 1,352
 triangles. Conversion metadata and source links are kept here because the
 browser assets use a different file format.
+
+DAMIT's Z-north coordinates are rotated to ORBIT's Y-north convention using
+`(x, y, z) → (x, z, −y)`, for both vertices and normals; face ordering and atlas
+correspondence are preserved. The scene scales each closed model to the
+catalog's volumetric mean radius. Imported shapes load only for the focused
+asteroid. Unfinished requests are cancelled on navigation, but loaded models
+and standard surface maps remain attached until scene teardown, so visible
+neighbors do not lose their shape or texture. Unfocused high-resolution maps
+can downgrade to standard quality without showing an untextured frame.
+Fallback ellipsoids are approximate and use the same mean-radius convention.
+Detailed portraits and share cards rasterize these same models and UVs.

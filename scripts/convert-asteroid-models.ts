@@ -119,7 +119,12 @@ function readTypedValue(reader: Reader) {
     case CmodType.float3:
       return [reader.float32(), reader.float32(), reader.float32()];
     case CmodType.float4:
-      return [reader.float32(), reader.float32(), reader.float32(), reader.float32()];
+      return [
+        reader.float32(),
+        reader.float32(),
+        reader.float32(),
+        reader.float32(),
+      ];
     case CmodType.color:
       return [reader.float32(), reader.float32(), reader.float32()];
     case CmodType.string: {
@@ -223,11 +228,7 @@ export function normalizeModel(
     maxY = Math.max(maxY, positions[i + 1]);
     maxZ = Math.max(maxZ, positions[i + 2]);
   }
-  const center = [
-    (minX + maxX) / 2,
-    (minY + maxY) / 2,
-    (minZ + maxZ) / 2,
-  ];
+  const center = [(minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2];
   let radius = 0;
   for (let i = 0; i < positions.length; i += 3) {
     positions[i] -= center[0];
@@ -242,13 +243,16 @@ export function normalizeModel(
     throw new Error('CMOD model has no spatial extent');
   for (let i = 0; i < positions.length; i++) positions[i] /= radius;
 
-  let hasNormals = false;
-  for (let i = 0; i < normals.length; i++) {
-    if (Math.abs(normals[i]) > 1e-6) hasNormals = true;
-    normals[i] = Number.isFinite(normals[i]) ? normals[i] : 0;
-  }
-  if (!hasNormals) normals.fill(0);
-  if (!hasNormals) {
+  const missing = Array.from({ length: normals.length / 3 }, (_, i) => {
+    const length = Math.hypot(
+      normals[i * 3],
+      normals[i * 3 + 1],
+      normals[i * 3 + 2],
+    );
+    return !Number.isFinite(length) || length < 1e-6;
+  });
+  if (missing.some(Boolean)) {
+    const accumulated = Array(normals.length).fill(0) as number[];
     for (let i = 0; i < indices.length; i += 3) {
       const ia = indices[i] * 3,
         ib = indices[i + 1] * 3,
@@ -262,16 +266,18 @@ export function normalizeModel(
       const nx = ay * bz - az * by,
         ny = az * bx - ax * bz,
         nz = ax * by - ay * bx;
-      normals[ia] += nx;
-      normals[ia + 1] += ny;
-      normals[ia + 2] += nz;
-      normals[ib] += nx;
-      normals[ib + 1] += ny;
-      normals[ib + 2] += nz;
-      normals[ic] += nx;
-      normals[ic + 1] += ny;
-      normals[ic + 2] += nz;
+      for (const index of [ia, ib, ic]) {
+        accumulated[index] += nx;
+        accumulated[index + 1] += ny;
+        accumulated[index + 2] += nz;
+      }
     }
+    for (let i = 0; i < normals.length; i += 3)
+      if (missing[i / 3]) {
+        normals[i] = accumulated[i];
+        normals[i + 1] = accumulated[i + 1];
+        normals[i + 2] = accumulated[i + 2];
+      }
   }
   for (let i = 0; i < normals.length; i += 3) {
     const length = Math.hypot(normals[i], normals[i + 1], normals[i + 2]) || 1;
@@ -285,8 +291,10 @@ export function normalizeModel(
       const x = positions[p * 3];
       const y = positions[p * 3 + 1];
       const z = positions[p * 3 + 2];
-      uvs[i] = 0.5 + Math.atan2(x, z) / (Math.PI * 2);
-      uvs[i + 1] = 0.5 - Math.asin(Math.max(-1, Math.min(1, y))) / Math.PI;
+      const length = Math.hypot(x, y, z) || 1;
+      uvs[i] = 0.5 + Math.atan2(-z, x) / (Math.PI * 2);
+      uvs[i + 1] =
+        0.5 + Math.asin(Math.max(-1, Math.min(1, y / length))) / Math.PI;
     }
   }
   return {
@@ -312,7 +320,8 @@ function readCmod(bytes: Uint8Array): AsteroidModelData {
       readMaterial(reader);
       continue;
     }
-    if (token !== CmodToken.mesh) throw new Error(`Unsupported CMOD token ${token}`);
+    if (token !== CmodToken.mesh)
+      throw new Error(`Unsupported CMOD token ${token}`);
     if (reader.int16() !== CmodToken.vertexDesc)
       throw new Error('CMOD vertex description is missing');
     const attributes: { semantic: number; format: number }[] = [];
@@ -367,7 +376,9 @@ function main() {
   mkdirSync(outputRoot, { recursive: true });
   for (const name of names) {
     const model = readCmod(
-      new Uint8Array(readFileSync(resolve(inputRoot, 'models', `${name}.cmod`))),
+      new Uint8Array(
+        readFileSync(resolve(inputRoot, 'models', `${name}.cmod`)),
+      ),
     );
     const target = resolve(outputRoot, `${name}.bin`);
     writeFileSync(target, encodeAsteroidModel(model));

@@ -295,6 +295,8 @@ export default function SolarScene({
       meshes,
       labelLayer,
       (id) => latest.current.onSelect(id),
+      () =>
+        latest.current.onAssetStatus('部分小行星模型加载失败，暂用近似形状。'),
     );
     for (const asteroid of asteroids) {
       if (asteroid.texture)
@@ -303,6 +305,8 @@ export default function SolarScene({
           (texture) => asteroidSystem.setTexture(asteroid.id, texture),
           {
             lazy: true,
+            preload: false,
+            retainOnNavigation: true,
             clear: () => asteroidSystem.clearTexture(asteroid.id),
           },
         );
@@ -312,11 +316,13 @@ export default function SolarScene({
           (texture) => asteroidSystem.setNormalTexture(asteroid.id, texture),
           {
             lazy: true,
+            preload: false,
+            retainOnNavigation: true,
+            colorSpace: THREE.NoColorSpace,
             clear: () => asteroidSystem.clearNormalTexture(asteroid.id),
           },
         );
     }
-    void asteroidSystem.loadModels();
     const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
     const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
@@ -543,6 +549,7 @@ export default function SolarScene({
       }
       const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
       const selectedAsteroid = asteroids.find((item) => item.id === s.selected);
+      void asteroidSystem.setFocus(selectedAsteroid?.id ?? null);
       const selectedMoonTexture = selectedMoon?.texture ?? null;
       const selectedAsteroidTextures = selectedAsteroid
         ? [selectedAsteroid.texture, selectedAsteroid.normalTexture].filter(

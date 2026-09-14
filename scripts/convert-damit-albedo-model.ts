@@ -56,7 +56,13 @@ function buildModel(
     throw new Error(
       `Shape has ${sourceFaces.length} faces but albedo has ${albedo.length} values`,
     );
-  const vertices = normalizeDamitVertices(sourceVertices);
+  // DAMIT is Z-north; ORBIT and the CMOD exports are Y-north. This proper
+  // rotation preserves winding and the face/albedo correspondence.
+  const vertices = normalizeDamitVertices(sourceVertices).map(([x, y, z]) => [
+    x,
+    z,
+    -y,
+  ]);
   const positions: number[] = [],
     normals: number[] = [],
     uvs: number[] = [],

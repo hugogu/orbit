@@ -9,6 +9,24 @@ export type AsteroidModelData = {
   indices: Uint32Array;
 };
 
+/** Scale a closed model to unit volumetric radius, retaining its measured shape. */
+export function asteroidModelScale(model: AsteroidModelData) {
+  const p = model.positions;
+  let volume6 = 0;
+  for (let i = 0; i < model.indices.length; i += 3) {
+    const a = model.indices[i] * 3,
+      b = model.indices[i + 1] * 3,
+      c = model.indices[i + 2] * 3;
+    volume6 +=
+      p[a] * (p[b + 1] * p[c + 2] - p[b + 2] * p[c + 1]) +
+      p[a + 1] * (p[b + 2] * p[c] - p[b] * p[c + 2]) +
+      p[a + 2] * (p[b] * p[c + 1] - p[b + 1] * p[c]);
+  }
+  if (!Number.isFinite(volume6) || Math.abs(volume6) < 1e-12)
+    throw modelError('model has no enclosed volume');
+  return Math.cbrt((8 * Math.PI) / Math.abs(volume6));
+}
+
 function modelError(message: string): Error {
   return new Error(`Invalid asteroid model: ${message}`);
 }
@@ -43,6 +61,13 @@ export function parseAsteroidModel(buffer: ArrayBuffer): AsteroidModelData {
   const uvs = new Float32Array(buffer, offset, vertexCount * 2);
   offset += uvs.byteLength;
   const indices = new Uint32Array(buffer, offset, indexCount);
+  for (const values of [positions, normals, uvs])
+    for (const value of values)
+      if (!Number.isFinite(value))
+        throw modelError('geometry contains non-finite values');
+  for (let i = 0; i < normals.length; i += 3)
+    if (Math.hypot(normals[i], normals[i + 1], normals[i + 2]) < 1e-6)
+      throw modelError('geometry contains a zero normal');
   for (const index of indices) {
     if (index >= vertexCount) throw modelError('index is out of range');
   }
@@ -75,19 +100,35 @@ export function encodeAsteroidModel(model: AsteroidModelData): Uint8Array {
   view.setUint32(12, indexCount, true);
   let offset = MODEL_HEADER_BYTES;
   new Uint8Array(buffer, offset, model.positions.byteLength).set(
-    new Uint8Array(model.positions.buffer, model.positions.byteOffset, model.positions.byteLength),
+    new Uint8Array(
+      model.positions.buffer,
+      model.positions.byteOffset,
+      model.positions.byteLength,
+    ),
   );
   offset += model.positions.byteLength;
   new Uint8Array(buffer, offset, model.normals.byteLength).set(
-    new Uint8Array(model.normals.buffer, model.normals.byteOffset, model.normals.byteLength),
+    new Uint8Array(
+      model.normals.buffer,
+      model.normals.byteOffset,
+      model.normals.byteLength,
+    ),
   );
   offset += model.normals.byteLength;
   new Uint8Array(buffer, offset, model.uvs.byteLength).set(
-    new Uint8Array(model.uvs.buffer, model.uvs.byteOffset, model.uvs.byteLength),
+    new Uint8Array(
+      model.uvs.buffer,
+      model.uvs.byteOffset,
+      model.uvs.byteLength,
+    ),
   );
   offset += model.uvs.byteLength;
   new Uint8Array(buffer, offset, model.indices.byteLength).set(
-    new Uint8Array(model.indices.buffer, model.indices.byteOffset, model.indices.byteLength),
+    new Uint8Array(
+      model.indices.buffer,
+      model.indices.byteOffset,
+      model.indices.byteLength,
+    ),
   );
   return new Uint8Array(buffer);
 }

@@ -222,6 +222,164 @@ void test('opt-in height maps skip preload and keep data color space', async (t)
   manager.dispose();
 });
 
+void test('Ceres retains visited color and normal maps after selecting Mars, with seamless quality downgrades', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const manager = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  const material = new THREE.MeshStandardMaterial();
+  const clear = t.mock.fn();
+  const options = {
+    lazy: true,
+    preload: false,
+    retainOnNavigation: true,
+    clear,
+  };
+  manager.register(
+    'asteroid_ceres',
+    (texture) => {
+      material.map = texture;
+    },
+    options,
+  );
+  manager.register(
+    'asteroid_ceres_normal',
+    (texture) => {
+      material.normalMap = texture;
+    },
+    {
+      ...options,
+      colorSpace: THREE.NoColorSpace,
+    },
+  );
+  manager.register('asteroid_bennu', () => {}, options);
+  manager.preload();
+  manager.update('standard', 'mars', false, false);
+  assert.equal(pending.size, 0, 'unvisited asteroids remain lazy');
+  const active = ['asteroid_ceres', 'asteroid_ceres_normal'];
+  manager.update('standard', null, false, false, true, active);
+  const color = new THREE.Texture(),
+    normal = new THREE.Texture();
+  const colorDispose = t.mock.method(color, 'dispose');
+  const normalDispose = t.mock.method(normal, 'dispose');
+  pending.get('/textures/asteroids/2k_ceres.jpg')!(color);
+  pending.get('/textures/asteroids/2k_ceres-normal.png')!(normal);
+  pending.clear();
+  await new Promise((resolve) => setImmediate(resolve));
+  manager.update('standard', 'mars', false, false);
+  assert.equal(material.map, color);
+  assert.equal(material.normalMap, normal);
+  assert.equal(normal.colorSpace, THREE.NoColorSpace);
+  assert.equal(clear.mock.callCount(), 0);
+  assert.equal(colorDispose.mock.callCount(), 0);
+  assert.equal(normalDispose.mock.callCount(), 0);
+  assert.equal(pending.size, 0);
+
+  manager.update('ultra', null, false, false, true, active);
+  const highColor = new THREE.Texture(),
+    highNormal = new THREE.Texture();
+  const highDispose = t.mock.method(highColor, 'dispose');
+  pending.get('/textures/asteroids/4k_ceres.jpg')!(highColor);
+  pending.get('/textures/asteroids/4k_ceres-normal.png')!(highNormal);
+  pending.clear();
+  await new Promise((resolve) => setImmediate(resolve));
+  manager.update('ultra', 'mars', false, false);
+  assert.equal(
+    material.map,
+    highColor,
+    'keep the old map until its replacement is ready',
+  );
+  assert.equal(highDispose.mock.callCount(), 0);
+  const fallbackColor = new THREE.Texture(),
+    fallbackNormal = new THREE.Texture();
+  const fallbackDispose = t.mock.method(fallbackColor, 'dispose');
+  pending.get('/textures/asteroids/2k_ceres.jpg')!(fallbackColor);
+  pending.get('/textures/asteroids/2k_ceres-normal.png')!(fallbackNormal);
+  pending.clear();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(material.map, fallbackColor);
+  assert.equal(material.normalMap, fallbackNormal);
+  assert.equal(highDispose.mock.callCount(), 1);
+  assert.equal(clear.mock.callCount(), 0);
+  manager.dispose();
+  assert.equal(fallbackDispose.mock.callCount(), 1);
+  material.dispose();
+  const scene = readFileSync('components/solar-scene.tsx', 'utf8');
+  for (const method of ['clearTexture', 'clearNormalTexture'])
+    assert.match(
+      scene,
+      new RegExp(`retainOnNavigation: true,[^}]*asteroidSystem\\.${method}`),
+    );
+});
+
+void test('rapid terrain toggles retain a shared pending texture and decoding failures release it', async (t) => {
+  let finish!: (texture: THREE.Texture) => void;
+  const loader = t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    () =>
+      new Promise<THREE.Texture>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+  } as THREE.WebGLRenderer;
+  const notice = t.mock.fn();
+  const manager = createTextureManager(renderer, notice);
+  const apply = t.mock.fn();
+  manager.register('terrain_earth', apply, { lazy: true, preload: false });
+  const update = (active: boolean) =>
+    manager.update(
+      'standard',
+      null,
+      false,
+      false,
+      true,
+      active ? ['terrain_earth'] : [],
+    );
+  update(true);
+  update(false);
+  update(true);
+  assert.equal(loader.mock.callCount(), 1);
+  const texture = new THREE.Texture();
+  const dispose = t.mock.method(texture, 'dispose');
+  finish(texture);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(apply.mock.callCount(), 1);
+  assert.equal(dispose.mock.callCount(), 0);
+  update(false);
+  assert.equal(dispose.mock.callCount(), 1);
+
+  manager.register(
+    'terrain_mars',
+    () => {
+      throw new Error('decode failed');
+    },
+    {
+      lazy: true,
+      preload: false,
+    },
+  );
+  manager.update('standard', null, false, false, true, ['terrain_mars']);
+  const invalid = new THREE.Texture();
+  const invalidDispose = t.mock.method(invalid, 'dispose');
+  finish(invalid);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(invalidDispose.mock.callCount(), 1);
+  assert.equal(notice.mock.callCount(), 1);
+  manager.dispose();
+});
+
 void test('async texture swaps retain visible maps, discard stale loads and recover from failure', async (t) => {
   const pending = new Map<
     string,

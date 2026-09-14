@@ -4,7 +4,7 @@ import {
   asteroidPosition,
   asteroidOrbitPoint,
 } from '../lib/asteroids';
-import { parseAsteroidModel } from '../lib/asteroid-model';
+import { parseAsteroidModel, asteroidModelScale } from '../lib/asteroid-model';
 import { displayRadius } from '../lib/display-scale';
 import type { ScaleMode } from '../lib/solar';
 import type { Translate } from '../lib/i18n';
@@ -16,6 +16,7 @@ export function createAsteroidSystem(
   meshes: Map<string, THREE.Mesh>,
   layer: HTMLElement,
   onSelect: (id: string) => void,
+  onModelError: () => void = () => {},
 ) {
   const entries = asteroids.map((asteroid) => {
     const root = new THREE.Group();
@@ -26,7 +27,14 @@ export function createAsteroidSystem(
     // deliberately stays near-spherical because its observed shape is close
     // to hydrostatic equilibrium and no bundled mesh is needed for it.
     const geometry: THREE.BufferGeometry = new THREE.SphereGeometry(1, 32, 20);
-    geometry.scale(asteroid.axes[0], asteroid.axes[1], asteroid.axes[2]);
+    const axisScale = Math.cbrt(
+      1 / (asteroid.axes[0] * asteroid.axes[1] * asteroid.axes[2]),
+    );
+    geometry.scale(
+      asteroid.axes[0] * axisScale,
+      asteroid.axes[1] * axisScale,
+      asteroid.axes[2] * axisScale,
+    );
     geometry.computeBoundingSphere();
     const mesh = new THREE.Mesh(
       geometry,
@@ -59,6 +67,8 @@ export function createAsteroidSystem(
       asteroid,
       root,
       mesh,
+      baseGeometry: geometry,
+      surfaceTexture: null as THREE.Texture | null,
       path,
       label,
       projectLabel: createSceneLabel(label, -130),
@@ -66,14 +76,27 @@ export function createAsteroidSystem(
   });
   let disposed = false;
   let modelPromise: Promise<void> | null = null;
+  let focusedId: string | null = null;
+  let modelController: AbortController | null = null;
   let lastScale: ScaleMode | undefined;
   const projected = new THREE.Vector3();
   const applySurfaceTexture = (id: string, texture: THREE.Texture) => {
     const entry = entries.find((item) => item.asteroid.id === id);
     if (!entry) return;
     const material = entry.mesh.material as THREE.MeshStandardMaterial;
-    material.map = texture;
-    material.color.set(0xffffff);
+    entry.surfaceTexture = texture;
+    // A facet atlas only has meaning on its paired model, never a fallback sphere.
+    const atlas = id === 'pallas' || id === 'psyche';
+    if (atlas) {
+      texture.generateMipmaps = false;
+      texture.minFilter = THREE.NearestFilter;
+      texture.magFilter = THREE.NearestFilter;
+      texture.anisotropy = 1;
+      texture.needsUpdate = true;
+    }
+    material.map =
+      atlas && entry.mesh.geometry === entry.baseGeometry ? null : texture;
+    material.color.set(material.map ? 0xffffff : entry.asteroid.color);
     material.needsUpdate = true;
   };
   const applyNormalTexture = (id: string, texture: THREE.Texture) => {
@@ -86,14 +109,8 @@ export function createAsteroidSystem(
     material.needsUpdate = true;
   };
   return {
-    setTexture(idOrTexture: string | THREE.Texture, texture?: THREE.Texture) {
-      if (typeof idOrTexture === 'string') {
-        if (texture) applySurfaceTexture(idOrTexture, texture);
-        return;
-      }
-      // Kept for the scene unit test and for callers from older integrations;
-      // production registration always targets the matching asteroid.
-      for (const { asteroid } of entries) applySurfaceTexture(asteroid.id, idOrTexture);
+    setTexture(id: string, texture: THREE.Texture) {
+      applySurfaceTexture(id, texture);
     },
     setNormalTexture(id: string, texture: THREE.Texture) {
       applyNormalTexture(id, texture);
@@ -102,6 +119,7 @@ export function createAsteroidSystem(
       const entry = entries.find((item) => item.asteroid.id === id);
       if (!entry) return;
       const material = entry.mesh.material as THREE.MeshStandardMaterial;
+      entry.surfaceTexture = null;
       material.map = null;
       material.color.set(entry.asteroid.color);
       material.needsUpdate = true;
@@ -113,49 +131,56 @@ export function createAsteroidSystem(
       material.normalMap = null;
       material.needsUpdate = true;
     },
-    loadModels() {
-      if (modelPromise) return modelPromise;
-      modelPromise = Promise.all(
-        entries
-          .filter(({ asteroid }) => asteroid.shapeModel)
-          .map(async ({ asteroid, mesh }) => {
-            try {
-              const response = await fetch(
-                `/models/asteroids/${asteroid.shapeModel}.bin`,
-              );
-              if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              const data = parseAsteroidModel(await response.arrayBuffer());
-              if (disposed) return;
-              const geometry = new THREE.BufferGeometry();
-              geometry.setAttribute(
-                'position',
-                new THREE.BufferAttribute(data.positions, 3),
-              );
-              geometry.setAttribute(
-                'normal',
-                new THREE.BufferAttribute(data.normals, 3),
-              );
-              geometry.setAttribute(
-                'uv',
-                new THREE.BufferAttribute(data.uvs, 2),
-              );
-              geometry.setIndex(new THREE.BufferAttribute(data.indices, 1));
-              // The conversion pipeline normalizes model vertices to a unit
-              // circumradius. Match the placeholder's outer radius without
-              // applying the axes again; imported mission shapes already
-              // carry their own measured aspect ratios.
-              const modelScale = Math.max(...asteroid.axes);
-              geometry.scale(modelScale, modelScale, modelScale);
-              geometry.computeBoundingSphere();
-              geometry.computeBoundingBox();
-              const previous = mesh.geometry;
-              mesh.geometry = geometry;
-              previous.dispose();
-            } catch {
-              // The sphere remains a safe fallback if an optional model fails.
-            }
-          }),
-      ).then(() => undefined);
+    setFocus(id: string | null) {
+      if (disposed || focusedId === id)
+        return modelPromise ?? Promise.resolve();
+      modelController?.abort();
+      focusedId = id;
+      const entry = entries.find(({ asteroid }) => asteroid.id === id);
+      modelPromise = null;
+      // Loaded shapes remain visible alongside other bodies and can be revisited
+      // without changing their silhouette. Only unfinished requests are aborted.
+      if (
+        !entry?.asteroid.shapeModel ||
+        entry.mesh.geometry !== entry.baseGeometry
+      )
+        return Promise.resolve();
+      const { asteroid, mesh } = entry;
+      const controller = new AbortController();
+      modelController = controller;
+      modelPromise = (async () => {
+        try {
+          const response = await fetch(
+            `/models/asteroids/${asteroid.shapeModel}.bin?v=shape-v2`,
+            { signal: controller.signal },
+          );
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = parseAsteroidModel(await response.arrayBuffer());
+          if (disposed || controller.signal.aborted) return;
+          const modelScale = asteroidModelScale(data);
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute(
+            'position',
+            new THREE.BufferAttribute(data.positions, 3),
+          );
+          geometry.setAttribute(
+            'normal',
+            new THREE.BufferAttribute(data.normals, 3),
+          );
+          geometry.setAttribute('uv', new THREE.BufferAttribute(data.uvs, 2));
+          geometry.setIndex(new THREE.BufferAttribute(data.indices, 1));
+          // Normalize volume to the catalog mean radius, not an unrelated
+          // placeholder axis; otherwise true-size mode silently changes size.
+          geometry.scale(modelScale, modelScale, modelScale);
+          geometry.computeBoundingSphere();
+          geometry.computeBoundingBox();
+          mesh.geometry = geometry;
+          if (entry.surfaceTexture)
+            applySurfaceTexture(asteroid.id, entry.surfaceTexture);
+        } catch {
+          if (!disposed && !controller.signal.aborted) onModelError();
+        }
+      })();
       return modelPromise;
     },
     localize(t: Translate) {
@@ -229,6 +254,12 @@ export function createAsteroidSystem(
     },
     dispose() {
       disposed = true;
+      modelController?.abort();
+      for (const entry of entries)
+        if (entry.mesh.geometry !== entry.baseGeometry) {
+          entry.mesh.geometry.dispose();
+          entry.mesh.geometry = entry.baseGeometry;
+        }
     },
   };
 }
