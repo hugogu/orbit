@@ -23,7 +23,7 @@ export type Asteroid = {
   spectral: string;
   /** A normalized mission/PDS shape model asset; Ceres uses its near-spherical fallback. */
   shapeModel: string | null;
-  /** A body-specific global map, when one is available. */
+  /** A body-specific surface or albedo map, when one is available. */
   texture: string | null;
   normalTexture?: string;
   /** Geometric albedo from the JPL SBDB snapshot, when published. */
@@ -113,11 +113,12 @@ export const asteroids: Asteroid[] = [
     source: 'https://www.eso.org/public/images/potw2008a/',
     sourceName: 'ESO',
     radius: 256.5,
-    texture: null,
+    texture: 'asteroid_pallas',
     albedo: 0.155,
     roughness: 0.96,
     metalness: 0,
-    visualSource: 'VLT/SPHERE optical shape model; JPL SBDB geometric albedo',
+    visualSource:
+      'DAMIT model 102 shape and Carry et al. (2009) K-band relative albedo map; JPL SBDB geometric albedo',
     description: '一颗大型主带小行星，以高度倾斜的轨道和密集的撞击坑著称。',
     intro:
       '智神星的轨道明显偏离多数主带天体所在的平面。把镜头拉远，可以看到它在黄道上下穿行的轨迹。',
@@ -231,11 +232,12 @@ export const asteroids: Asteroid[] = [
     source: 'https://science.nasa.gov/solar-system/asteroids/16-psyche/',
     sourceName: 'NASA Science',
     radius: 111,
-    texture: null,
+    texture: 'asteroid_psyche',
     albedo: 0.1203,
     roughness: 0.84,
     metalness: 0.05,
-    visualSource: 'Radar/optical shape model from Shepard et al. (2021); JPL SBDB albedo',
+    visualSource:
+      'DAMIT model 1806 shape and facet albedo; JPL SBDB geometric albedo',
     description: '一颗富含金属的主带小行星，可能保留着早期天体内部演化的线索。',
     intro:
       '灵神星的金属与岩石混合物使它成为特殊的探索目标。研究它，可以检验原行星内部物质如何形成与暴露的假说。',
@@ -415,7 +417,7 @@ export const asteroids: Asteroid[] = [
 export const asteroidModelNote =
   '小行星位置由 JPL 带历元轨道快照作二体近似计算，未计入行星摄动与热辐射效应，不用于近距离交会或撞击预测。除谷神星采用其近球形的观测半径外，场景形状来自任务/PDS 形状模型；真实大小采用等效半径，小行星不参与食影计算。';
 export const asteroidSurfaceNote =
-  '有公开全球图的天体使用各自的任务/观测贴图；没有全球图的智神星、婚神星和灵神星使用各自 JPL 几何反照率与光谱类别驱动的独立材料，不再共享通用小行星贴图。';
+  '已公开且能与形状模型对应的全球或逐面反照率数据，只应用于对应天体。智神星使用 Carry 等（2009）公布、覆盖约 80% 表面的 K 波段相对反照率图，未观测区域以平均值补齐；灵神星使用 DAMIT 1806 模型配套的逐三角面相对反照率图。婚神星目前没有可下载的全球反照率图，因此不借用别的天体贴图，只保留自己的形状模型、JPL 几何反照率和光谱类别。';
 
 function elements(asteroid: Asteroid) {
   const orbit = asteroid.orbit;

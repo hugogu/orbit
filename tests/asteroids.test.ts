@@ -143,18 +143,52 @@ void test('mission shape exports and surface sources stay body-specific', () => 
       continue;
     }
     models.add(asteroid.shapeModel);
-    const bytes = readFileSync(`public/models/asteroids/${asteroid.shapeModel}.bin`);
+    const bytes = readFileSync(
+      `public/models/asteroids/${asteroid.shapeModel}.bin`,
+    );
     const buffer = bytes.buffer.slice(
       bytes.byteOffset,
       bytes.byteOffset + bytes.byteLength,
     );
     const model = parseAsteroidModel(buffer);
     assert.ok(model.positions.length >= 3 * 1000, asteroid.id);
-    assert.ok(model.indices.length >= 3 * 1000, asteroid.id);
-    assert.ok(model.uvs.some((value) => value !== 0), asteroid.id);
+    assert.ok(
+      model.indices.length >= (asteroid.id === 'pallas' ? 3 * 800 : 3 * 1000),
+      asteroid.id,
+    );
+    assert.ok(
+      model.uvs.some((value) => value !== 0),
+      asteroid.id,
+    );
   }
   assert.equal(models.size, 8);
-  assert.equal(textures.size, 6);
+  assert.equal(textures.size, 8);
+  const pallas = asteroids.find((item) => item.id === 'pallas')!;
+  const pallasBytes = readFileSync(
+    `public/models/asteroids/${pallas.shapeModel}.bin`,
+  );
+  const pallasModel = parseAsteroidModel(
+    pallasBytes.buffer.slice(
+      pallasBytes.byteOffset,
+      pallasBytes.byteOffset + pallasBytes.byteLength,
+    ),
+  );
+  assert.equal(pallas.texture, 'asteroid_pallas');
+  assert.equal(pallasModel.indices.length / 3, 800);
+  assert.equal(pallasModel.positions.length / 3, pallasModel.indices.length);
+  const psyche = asteroids.find((item) => item.id === 'psyche')!;
+  const psycheBytes = readFileSync(
+    `public/models/asteroids/${psyche.shapeModel}.bin`,
+  );
+  const psycheModel = parseAsteroidModel(
+    psycheBytes.buffer.slice(
+      psycheBytes.byteOffset,
+      psycheBytes.byteOffset + psycheBytes.byteLength,
+    ),
+  );
+  assert.equal(psyche.texture, 'asteroid_psyche');
+  assert.equal(psycheModel.indices.length / 3, 1352);
+  assert.equal(psycheModel.positions.length / 3, psycheModel.indices.length);
 });
 
 void test('asteroid and comet groups start collapsed and expand for direct selections', () => {
@@ -227,10 +261,7 @@ void test('asteroid scene integrates picking, materials, paused time, true scale
     system.update(0, 'illustrated', false, 'bennu', true);
     assert.ok(bennu.position.equals(before));
     assert.ok(mesh.rotation.equals(rotation));
-    assert.equal(
-      (mesh.material as THREE.MeshStandardMaterial).map,
-      texture,
-    );
+    assert.equal((mesh.material as THREE.MeshStandardMaterial).map, texture);
     assert.equal(scene.getObjectByName('bennu-orbit')!.visible, true);
     assert.equal(scene.getObjectByName('vesta-orbit')!.visible, false);
     const camera = new THREE.PerspectiveCamera(47, 1, 0.001, 1000);

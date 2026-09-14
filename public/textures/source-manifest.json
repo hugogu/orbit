@@ -418,5 +418,25 @@
     "license": "CC BY 4.0",
     "path": "asteroids/2k_ryugu.jpg",
     "derived": "native-source-downscale-v1"
+  },
+  {
+    "filename": "asteroids/pallas-k-albedo.png",
+    "width": 256,
+    "height": 52,
+    "bytes": 994,
+    "url": "https://arxiv.org/abs/0912.3626",
+    "license": "Source publication; see attribution",
+    "path": "asteroids/pallas-k-albedo.png",
+    "derived": "Carry-2009-K-band-map-mean-fill-v1"
+  },
+  {
+    "filename": "asteroids/psyche-albedo.png",
+    "width": 256,
+    "height": 88,
+    "bytes": 2814,
+    "url": "https://damit.cuni.cz/projects/damit/stored_files/open/105/albedo",
+    "license": "CC BY 4.0",
+    "path": "asteroids/psyche-albedo.png",
+    "derived": "DAMIT-model-1806-facet-atlas-v1"
   }
 ]

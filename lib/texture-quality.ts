@@ -132,9 +132,9 @@ export const highResolutionTextures: Record<
     standardFile: 'satellites/2k_triton.jpg',
     revision: 'filled-v1',
   },
-  // Asteroid maps are body-specific Dawn, NEAR, Hayabusa, and OSIRIS-REx
-  // products. They are kept separate so a selected asteroid never inherits
-  // another body's surface.
+  // Asteroid maps are body-specific Dawn, NEAR, Hayabusa, OSIRIS-REx, and
+  // DAMIT products. They are kept separate so a selected asteroid never
+  // inherits another body's surface.
   asteroid_ceres: {
     file: 'asteroids/4k_ceres.jpg',
     width: 4096,
@@ -169,6 +169,21 @@ export const highResolutionTextures: Record<
     file: 'asteroids/4k_ryugu.jpg',
     width: 4096,
     standardFile: 'asteroids/2k_ryugu.jpg',
+  },
+  // DAMIT model 1806 stores one relative albedo value for every triangle.
+  // The native atlas is intentionally small because it is a data lookup, not
+  // a fabricated high-resolution surface image.
+  asteroid_psyche: {
+    file: 'asteroids/psyche-albedo.png',
+    width: 256,
+    standardFile: 'asteroids/psyche-albedo.png',
+  },
+  // Carry et al. (2009) published a partial K-band relative-albedo map for
+  // Pallas; the atlas is sampled onto the matching DAMIT model 102 faces.
+  asteroid_pallas: {
+    file: 'asteroids/pallas-k-albedo.png',
+    width: 256,
+    standardFile: 'asteroids/pallas-k-albedo.png',
   },
   charon: {
     file: 'satellites/4k_asteroid.jpg',
