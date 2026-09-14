@@ -16,6 +16,7 @@ export type ObservatoryPreferences = {
   cometTails: boolean;
   realSizes: boolean;
   realSurface: boolean;
+  realTerrain: boolean;
   textureQuality: TextureQuality;
   observerLocation: SkyLocation;
   observerLocationSource: 'device' | 'manual';
@@ -34,6 +35,7 @@ const booleanKeys = [
   'cometTails',
   'realSizes',
   'realSurface',
+  'realTerrain',
 ] as const;
 
 export function sanitizePreferences(value: unknown): StoredPreferences {

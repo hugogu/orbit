@@ -7,6 +7,10 @@ export type Body = {
   color: string;
   texture?: string;
   surfaceTexture?: string;
+  heightTexture?: string;
+  terrainMinKm?: number;
+  terrainMaxKm?: number;
+  flattening?: number;
   radius: number;
   au: number;
   period: number;
@@ -54,6 +58,10 @@ export const bodies: Body[] = [
     color: '#b6aaa0',
     texture: 'mercury',
     surfaceTexture: 'surface_mercury_normal',
+    heightTexture: 'terrain_mercury',
+    terrainMinKm: -10.764,
+    terrainMaxKm: 8.994,
+    flattening: 0.00002,
     radius: 2439.7,
     au: 0.387,
     period: 87.969,
@@ -78,6 +86,10 @@ export const bodies: Body[] = [
     color: '#dfbc7c',
     texture: 'venus_atmosphere',
     surfaceTexture: 'surface_venus_normal',
+    heightTexture: 'terrain_venus',
+    terrainMinKm: -2.951,
+    terrainMaxKm: 11.687,
+    flattening: 0.00001,
     radius: 6051.8,
     au: 0.723,
     period: 224.701,
@@ -102,6 +114,10 @@ export const bodies: Body[] = [
     color: '#6eafff',
     texture: 'earth_daymap',
     surfaceTexture: 'surface_earth_normal',
+    heightTexture: 'terrain_earth',
+    terrainMinKm: -10.722,
+    terrainMaxKm: 8.046,
+    flattening: 0.0033528,
     radius: 6371,
     au: 1,
     period: 365.256,
@@ -126,6 +142,10 @@ export const bodies: Body[] = [
     color: '#d78b68',
     texture: 'mars',
     surfaceTexture: 'surface_mars_normal',
+    heightTexture: 'terrain_mars',
+    terrainMinKm: -8.068,
+    terrainMaxKm: 21.134,
+    flattening: 0.00589,
     radius: 3389.5,
     au: 1.524,
     period: 686.98,
@@ -149,6 +169,7 @@ export const bodies: Body[] = [
     type: '气态巨行星',
     color: '#cead8d',
     texture: 'jupiter',
+    flattening: 0.06487,
     radius: 69911,
     au: 5.203,
     period: 4332.59,
@@ -172,6 +193,7 @@ export const bodies: Body[] = [
     type: '气态巨行星',
     color: '#e7cf98',
     texture: 'saturn',
+    flattening: 0.09796,
     radius: 58232,
     au: 9.537,
     period: 10759.22,
@@ -195,6 +217,7 @@ export const bodies: Body[] = [
     type: '冰巨行星',
     color: '#a0dcd9',
     texture: 'uranus',
+    flattening: 0.02293,
     radius: 25362,
     au: 19.191,
     period: 30688.5,
@@ -218,6 +241,7 @@ export const bodies: Body[] = [
     type: '冰巨行星',
     color: '#6b91e9',
     texture: 'neptune',
+    flattening: 0.01708,
     radius: 24622,
     au: 30.069,
     period: 60182,

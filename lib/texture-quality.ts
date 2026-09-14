@@ -231,6 +231,29 @@ export const highResolutionTextures: Record<
     width: 2048,
     standardFile: 'planets/2k_mars-normal.png',
   },
+  // Grayscale height maps are sampled by MeshStandardMaterial's displacement
+  // shader only for the focused terrestrial planet. They are source-data
+  // maps, not color textures, so the scene keeps them in NoColorSpace.
+  terrain_mercury: {
+    file: 'planets/2k_mercury-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_mercury-height.png',
+  },
+  terrain_venus: {
+    file: 'planets/2k_venus-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_venus-height.png',
+  },
+  terrain_earth: {
+    file: 'planets/2k_earth-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_earth-height.png',
+  },
+  terrain_mars: {
+    file: 'planets/2k_mars-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_mars-height.png',
+  },
 };
 export function texturePath(name: string, high: boolean, maxSize: number) {
   const map = highResolutionTextures[name];

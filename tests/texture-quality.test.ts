@@ -90,6 +90,34 @@ void test('terrestrial surface maps are body-specific and locally available', ()
   }
 });
 
+void test('terrestrial height maps have physical ranges and local fallbacks', () => {
+  const terrainBodies = bodies.filter((body) => body.heightTexture);
+  assert.deepEqual(
+    terrainBodies.map((body) => body.id),
+    ['mercury', 'venus', 'earth', 'mars'],
+  );
+  for (const body of terrainBodies) {
+    const name = body.heightTexture!;
+    assert.ok(highResolutionTextures[name], `${body.id} terrain catalog entry`);
+    assert.ok(
+      body.terrainMinKm !== undefined && body.terrainMaxKm !== undefined,
+      `${body.id} terrain range`,
+    );
+    assert.ok(body.terrainMaxKm! > body.terrainMinKm!, `${body.id} terrain order`);
+    assert.ok(body.flattening !== undefined, `${body.id} physical flattening`);
+    assert.equal(
+      texturePath(name, false, 8192),
+      `/textures/planets/2k_${body.id}-height.png`,
+    );
+    assert.ok(
+      existsSync(
+        new URL(`../public${texturePath(name, false, 8192)}`, import.meta.url),
+      ),
+      `${body.id} height map`,
+    );
+  }
+});
+
 void test('gapped moon maps use a cache-busted continuous revision', () => {
   const repaired = [
     'ariel',
@@ -150,6 +178,48 @@ void test('opt-in surface maps skip preload and keep data color space', async (t
   ]);
   const texture = new THREE.Texture();
   pending.get('/textures/planets/2k_earth-normal.png')!(texture);
+  pending.clear();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(visible, texture);
+  assert.equal(texture.colorSpace, THREE.NoColorSpace);
+  manager.dispose();
+});
+
+void test('opt-in height maps skip preload and keep data color space', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+  } as THREE.WebGLRenderer;
+  const manager = createTextureManager(renderer, () => {});
+  let visible: THREE.Texture | undefined;
+  manager.register(
+    'terrain_earth',
+    (texture) => {
+      visible = texture;
+    },
+    { lazy: true, preload: false, colorSpace: THREE.NoColorSpace },
+  );
+  manager.preload();
+  assert.equal(pending.size, 0);
+  manager.update(
+    'standard',
+    'earth_daymap',
+    false,
+    false,
+    true,
+    ['terrain_earth'],
+  );
+  assert.deepEqual([...pending.keys()], [
+    '/textures/planets/2k_earth-height.png',
+  ]);
+  const texture = new THREE.Texture();
+  pending.get('/textures/planets/2k_earth-height.png')!(texture);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(visible, texture);

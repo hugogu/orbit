@@ -116,6 +116,7 @@ export default function Home() {
     [cometTails, setCometTails] = useState(true),
     [realSizes, setRealSizes] = useState(false),
     [realSurface, setRealSurface] = useState(false),
+    [realTerrain, setRealTerrain] = useState(false),
     [systemView, setSystemView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
@@ -165,6 +166,8 @@ export default function Home() {
         setRealSizes(preferences.realSizes);
       if (preferences.realSurface !== undefined)
         setRealSurface(preferences.realSurface);
+      if (preferences.realTerrain !== undefined)
+        setRealTerrain(preferences.realTerrain);
       if (preferences.textureQuality !== undefined)
         setTextureQuality(preferences.textureQuality);
       const savedLocation = preferences.observerLocation;
@@ -208,6 +211,7 @@ export default function Home() {
       cometTails,
       realSizes,
       realSurface,
+      realTerrain,
       textureQuality,
     };
     if (
@@ -231,6 +235,7 @@ export default function Home() {
     cometTails,
     realSizes,
     realSurface,
+    realTerrain,
     textureQuality,
     observerLocation,
     observerLocationSource,
@@ -631,6 +636,7 @@ export default function Home() {
           cometTails,
           realSizes,
           realSurface,
+          realTerrain,
           systemView,
           observerLocation,
           observerLocationReady:
@@ -1083,7 +1089,20 @@ export default function Home() {
               </div>
               <p className="model-note">
                 {t(
-                  '仍使用球体网格；仅在跟随水星、金星、地球或火星时按需加载公开地形数据派生的法线贴图，改变近距离逐像素光照中的坑洼与山脊明暗，不会移动顶点或改变轮廓。开启后会增加显存与着色开销。木星、土星、天王星和海王星没有固体表面，仍显示云顶或大气。',
+                  '只负责逐像素明暗，不会移动顶点；在跟随水星、金星、地球或火星时按需加载公开地形数据派生的法线贴图，让坑洼与山脊的近距离光照更明显。开启后会增加显存与着色开销。木星、土星、天王星和海王星没有固体表面，仍显示云顶或大气。',
+                )}
+              </p>
+              <div className="setting-row">
+                <label htmlFor="real-terrain">{t('真实地形几何')}</label>
+                <Switch
+                  id="real-terrain"
+                  checked={realTerrain}
+                  onCheckedChange={setRealTerrain}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '仅在跟随水星、金星、地球或火星时按需加载真实全球高程，并用高密度网格移动顶点；地形高度按真实数据换算后做 6 倍视觉增强，开启后会增加显存、顶点和渲染开销。八大行星的扁球体形状始终启用；木星、土星、天王星和海王星只有云顶或大气，没有固体地形。',
                 )}
               </p>
               <p className="model-note">
@@ -1320,6 +1339,41 @@ export default function Home() {
                     CC BY 4.0
                   </a>
                   。{t('纹理含增强色彩及未测绘区域的示意填充。')}
+                </p>
+                <h3>{t('真实地形：')}</h3>
+                <p>
+                  <a
+                    href="https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('USGS MESSENGER 水星 DEM')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://planetarymaps.usgs.gov/mosaic/Venus_Magellan_Topography_Global_4641m_v02.tif"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('USGS Magellan 金星地形')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2/ETOPO2v2-2006/ETOPO2v2g/raw_binary/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NOAA ETOPO2 全球地形')}
+                  </a>
+                  {' · '}
+                  <a
+                    href="https://pds-geosciences.wustl.edu/missions/mgs/megdr.html"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NASA PDS MOLA 火星地形')}
+                  </a>
+                  。{t('本地高程图仅在开启几何开关并跟随类地行星时加载。')}
                 </p>
               </div>
             </TabsContent>
