@@ -9,7 +9,9 @@ import {
   entryImagePath,
   ogImagePath,
   profileTitle,
+  seoSiteName,
   seoLocales,
+  siteOrigin,
 } from '../lib/seo';
 import { squareImagePath, portraitCredit } from '../lib/profile-images';
 import { profileContent } from '../lib/profile-content';
@@ -152,9 +154,30 @@ for (const entry of entries) {
     const webpage = graph.find(
       (node: Record<string, unknown>) => node['@type'] === 'WebPage',
     );
-    assert.equal(webpage.primaryImageOfPage.license, credit.license, path);
+    const primaryImage = webpage.primaryImageOfPage as Record<string, unknown>;
+    assert.equal(primaryImage.license, credit.license, path);
     assert.equal(
-      webpage.primaryImageOfPage.contentUrl,
+      primaryImage.acquireLicensePage,
+      new URL(credit.url, `${siteOrigin}/`).toString(),
+      path,
+    );
+    assert.deepEqual(
+      primaryImage.creator,
+      {
+        '@type': 'Organization',
+        name: seoSiteName,
+        url: siteOrigin,
+      },
+      path,
+    );
+    assert.match(String(primaryImage.copyrightNotice), /Source attribution/);
+    assert.equal(
+      primaryImage.creditText,
+      `${credit.name}; rendered by ORBIT`,
+      path,
+    );
+    assert.equal(
+      primaryImage.contentUrl,
       absoluteSiteUrl(entryImagePath(entry)),
       path,
     );
