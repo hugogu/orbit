@@ -44,6 +44,7 @@ type LabelOccluder = {
   mesh: THREE.Mesh;
   center: THREE.Vector3;
   localRadius: number;
+  geometry: THREE.BufferGeometry;
   radius: number;
   visible: boolean;
 };
@@ -53,9 +54,7 @@ type LabelOccluder = {
  * rendered body with its world-space bounding sphere so labels disappear when
  * their body is behind another rendered body.
  */
-export function createSceneLabelOcclusion(
-  meshes: Map<string, THREE.Mesh>,
-) {
+export function createSceneLabelOcclusion(meshes: Map<string, THREE.Mesh>) {
   const cameraPosition = new THREE.Vector3();
   const viewDirection = new THREE.Vector3();
   const candidateToCamera = new THREE.Vector3();
@@ -67,6 +66,7 @@ export function createSceneLabelOcclusion(
       mesh,
       center: new THREE.Vector3(),
       localRadius: mesh.geometry.boundingSphere?.radius ?? 0,
+      geometry: mesh.geometry,
       radius: 0,
       visible: false,
     };
@@ -76,7 +76,16 @@ export function createSceneLabelOcclusion(
     update(camera: THREE.Camera) {
       camera.getWorldPosition(cameraPosition);
       for (const candidate of occluders) {
-        candidate.mesh.getWorldPosition(candidate.center);
+        if (candidate.geometry !== candidate.mesh.geometry) {
+          candidate.geometry = candidate.mesh.geometry;
+          candidate.geometry.computeBoundingSphere();
+          candidate.localRadius =
+            candidate.geometry.boundingSphere?.radius ?? 0;
+        }
+        candidate.center.copy(
+          candidate.geometry.boundingSphere?.center ?? new THREE.Vector3(),
+        );
+        candidate.mesh.localToWorld(candidate.center);
         candidate.mesh.getWorldScale(scale);
         candidate.radius =
           candidate.localRadius * Math.max(scale.x, scale.y, scale.z);

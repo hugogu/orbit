@@ -41,7 +41,7 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 
 Both images above were captured from a running ORBIT observatory. Texture selection considers the user setting, device class, data-saving preference, and GPU texture limits. High-resolution maps are loaded for the focused body only when needed, then the previous map is released.
 
-The base scene uses a high-quality sphere mesh with each planet's measured oblate flattening; color maps add imagery or clouds. **Observation settings → Textures → Real terrain lighting** optionally loads body-specific 2K normal maps derived from published topography for Mercury, Venus, Earth, and Mars. **Real terrain geometry** is a separate opt-in switch: it loads a 2K grayscale global elevation map for the focused terrestrial planet and displaces a 256×128 mesh, with a clearly noted 6× visual exaggeration so relief is visible at the observatory scale. Jupiter, Saturn, Uranus, and Neptune have no solid surface, so their atmospheric maps stay unchanged.
+The base scene preserves each planet's volumetric mean radius while applying observed flattening. **Observation settings → Textures → Real terrain lighting** and **Real terrain geometry** are independent options for Mercury, Venus, Earth, and Mars. Both use the same georeferenced public elevation data with 6× vertical exaggeration: lighting adds 2K object-space normals; geometry rebuilds the focused body's 256×128 mesh, including normals, bounds, and picking. Earth retains sea-level oceans. Venus switches to a cloud-free terrain view with an illustrative base color. Neither option computes terrain self-shadows. Giants keep their atmospheric appearances. See [data and regeneration](public/textures/planets/CREDITS.md).
 
 ## Controls
 

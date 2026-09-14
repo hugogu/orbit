@@ -10,6 +10,7 @@ type Slot = {
   clear?: () => void;
   lazy: boolean;
   preload: boolean;
+  retainOnNavigation: boolean;
   colorSpace: THREE.ColorSpace;
   path: string;
   loadedPath: string;
@@ -25,6 +26,8 @@ export type RegisterOptions = {
   lazy?: boolean;
   /** Keep opt-in maps out of the idle preload queue. */
   preload?: boolean;
+  /** Keep a visited surface attached at standard quality after focus moves away. */
+  retainOnNavigation?: boolean;
   /** Use `NoColorSpace` for data maps such as normal maps. */
   colorSpace?: THREE.ColorSpace;
   /** Clear the material map when a lazy surface is released. */
@@ -107,7 +110,12 @@ export function createTextureManager(
     try {
       const texture = await loadTexture(path);
       if (disposed || version !== slot.version) {
-        if (!disposed && !textureCache.has(path)) texture.dispose();
+        if (
+          !disposed &&
+          !textureCache.has(path) &&
+          !slots.some((s) => s.path === path)
+        )
+          texture.dispose();
         return;
       }
       configure(texture, slot.colorSpace);
@@ -115,7 +123,12 @@ export function createTextureManager(
         textureCache.set(path, texture);
         warm(texture);
       }
-      slot.apply(texture);
+      try {
+        slot.apply(texture);
+      } catch (error) {
+        if (!textureCache.has(path)) texture.dispose();
+        throw error;
+      }
       if (
         previousTexture &&
         previousTexture !== texture &&
@@ -191,6 +204,7 @@ export function createTextureManager(
         clear: options.clear,
         lazy: !!options.lazy,
         preload: options.preload !== false,
+        retainOnNavigation: !!options.retainOnNavigation,
         colorSpace: options.colorSpace ?? THREE.SRGBColorSpace,
         path: '',
         loadedPath: '',
@@ -259,7 +273,9 @@ export function createTextureManager(
           !activeTextures.includes(slot.name) &&
           slot.name !== focus
         ) {
-          if (!textureCache.has(standardPath)) {
+          const visited =
+            slot.retainOnNavigation && (slot.texture || slot.path);
+          if (!visited && !textureCache.has(standardPath)) {
             release(slot);
             continue;
           }
@@ -271,8 +287,7 @@ export function createTextureManager(
           (slot.name === 'stars_milky_way' && galaxy) ||
           (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
           (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
-        const alreadyHigh =
-          slot.path === highPath && highPath !== standardPath;
+        const alreadyHigh = slot.path === highPath && highPath !== standardPath;
         const upgrade = eligible && (alreadyHigh ? keepHigh : high);
         if (
           !deferHighResolution &&

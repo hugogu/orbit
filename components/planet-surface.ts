@@ -1,0 +1,113 @@
+import * as THREE from 'three';
+import type { Body } from '../lib/solar';
+import { createTerrainGeometry, type HeightField } from '../lib/planet-terrain';
+import type { createTextureManager } from './texture-manager';
+
+function readHeightField(texture: THREE.Texture): HeightField {
+  const image = texture.image as HTMLImageElement;
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) throw new Error('Terrain image decoding is unavailable');
+  context.drawImage(image, 0, 0);
+  return {
+    data: context.getImageData(0, 0, canvas.width, canvas.height).data,
+    width: canvas.width,
+    height: canvas.height,
+    channels: 4,
+  };
+}
+
+/** Own the base/terrain transition, including late color-map upgrades. */
+export function registerPlanetSurface(
+  body: Body,
+  mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>,
+  textures: ReturnType<typeof createTextureManager>,
+  decodeHeight: (texture: THREE.Texture) => HeightField = readHeightField,
+) {
+  const base = mesh.geometry,
+    material = mesh.material;
+  let colorMap: THREE.Texture | null = null;
+  let lighting = false,
+    terrain = false;
+  const updateAppearance = () => {
+    const ground = body.id === 'venus' && (lighting || terrain);
+    material.map = ground ? null : colorMap;
+    material.color.set(
+      ground
+        ? '#b5a18a'
+        : body.texture && body.id !== 'uranus'
+          ? '#ffffff'
+          : body.color,
+    );
+    material.needsUpdate = true;
+  };
+  if (body.texture)
+    textures.register(body.texture, (texture) => {
+      colorMap = texture;
+      updateAppearance();
+    });
+  if (body.surfaceTexture)
+    textures.register(
+      body.surfaceTexture,
+      (texture) => {
+        texture.wrapS = THREE.RepeatWrapping;
+        material.normalMap = texture;
+        material.normalMapType = THREE.ObjectSpaceNormalMap;
+        lighting = true;
+        updateAppearance();
+      },
+      {
+        lazy: true,
+        preload: false,
+        colorSpace: THREE.NoColorSpace,
+        clear: () => {
+          lighting = false;
+          material.normalMap = null;
+          updateAppearance();
+        },
+      },
+    );
+  const restoreGeometry = () => {
+    if (mesh.geometry !== base) {
+      mesh.geometry.dispose();
+      mesh.geometry = base;
+    }
+    terrain = false;
+    updateAppearance();
+  };
+  if (
+    body.heightTexture &&
+    body.terrainMinKm !== undefined &&
+    body.terrainMaxKm !== undefined
+  ) {
+    const parameters = {
+      id: body.id,
+      radius: body.radius,
+      terrainMinKm: body.terrainMinKm,
+      terrainMaxKm: body.terrainMaxKm,
+    };
+    textures.register(
+      body.heightTexture,
+      (texture) => {
+        const geometry = createTerrainGeometry(
+          decodeHeight(texture),
+          parameters,
+          body.size,
+        );
+        if (mesh.geometry !== base) mesh.geometry.dispose();
+        mesh.geometry = geometry;
+        terrain = true;
+        updateAppearance();
+      },
+      {
+        lazy: true,
+        preload: false,
+        colorSpace: THREE.NoColorSpace,
+        clear: restoreGeometry,
+      },
+    );
+  }
+  return { dispose: restoreGeometry };
+}

@@ -208,51 +208,58 @@ export const highResolutionTextures: Record<
     width: 4096,
     standardFile: 'satellites/2k_asteroid.jpg',
   },
-  // These 2K equirectangular normal maps are derived from published planetary
-  // elevation data. They are opt-in and loaded only for the focused terrestrial
+  // These 2K object-space normal maps share the georeferenced height fields.
+  // They are opt-in and loaded only for the focused terrestrial
   // planet, so the default scene pays no additional GPU cost.
   surface_mercury_normal: {
     file: 'planets/2k_mercury-normal.png',
     width: 2048,
     standardFile: 'planets/2k_mercury-normal.png',
+    revision: 'terrain-v2',
   },
   surface_venus_normal: {
     file: 'planets/2k_venus-normal.png',
     width: 2048,
     standardFile: 'planets/2k_venus-normal.png',
+    revision: 'terrain-v2',
   },
   surface_earth_normal: {
     file: 'planets/2k_earth-normal.png',
     width: 2048,
     standardFile: 'planets/2k_earth-normal.png',
+    revision: 'terrain-v2',
   },
   surface_mars_normal: {
     file: 'planets/2k_mars-normal.png',
     width: 2048,
     standardFile: 'planets/2k_mars-normal.png',
+    revision: 'terrain-v2',
   },
-  // Grayscale height maps are sampled by MeshStandardMaterial's displacement
-  // shader only for the focused terrestrial planet. They are source-data
-  // maps, not color textures, so the scene keeps them in NoColorSpace.
+  // Packed RG16 heights are decoded once into CPU geometry for the focused
+  // terrestrial planet. NoColorSpace preserves data rather than color values.
   terrain_mercury: {
     file: 'planets/2k_mercury-height.png',
     width: 2048,
     standardFile: 'planets/2k_mercury-height.png',
+    revision: 'terrain-v2',
   },
   terrain_venus: {
     file: 'planets/2k_venus-height.png',
     width: 2048,
     standardFile: 'planets/2k_venus-height.png',
+    revision: 'terrain-v2',
   },
   terrain_earth: {
     file: 'planets/2k_earth-height.png',
     width: 2048,
     standardFile: 'planets/2k_earth-height.png',
+    revision: 'terrain-v2',
   },
   terrain_mars: {
     file: 'planets/2k_mars-height.png',
     width: 2048,
     standardFile: 'planets/2k_mars-height.png',
+    revision: 'terrain-v2',
   },
 };
 export function texturePath(name: string, high: boolean, maxSize: number) {

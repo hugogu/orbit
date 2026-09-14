@@ -443,80 +443,80 @@
     "filename": "planets/2k_mercury-normal.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 2573111,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/mercury-normal.png",
-    "license": "Public domain source data; processed map by CelestiaContent",
+    "bytes": 5779423,
+    "url": "https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif",
+    "license": "Public domain NASA/USGS source data",
     "path": "planets/2k_mercury-normal.png",
-    "derived": "downsampled-from-4k-v1"
+    "derived": "ORBIT-mercury-georeferenced-object-normal-v2"
   },
   {
     "filename": "planets/2k_venus-normal.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 974907,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/venus-normal.png",
-    "license": "Public domain source data; processed map by CelestiaContent",
+    "bytes": 3458948,
+    "url": "https://planetarymaps.usgs.gov/mosaic/Venus_Magellan_Topography_Global_4641m_v02.tif",
+    "license": "Public domain NASA/USGS source data",
     "path": "planets/2k_venus-normal.png",
-    "derived": "downsampled-from-4k-v1"
+    "derived": "ORBIT-venus-georeferenced-object-normal-v2"
   },
   {
     "filename": "planets/2k_earth-normal.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 771455,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/earth-normal.png",
-    "license": "Public domain source data; processed map by CelestiaContent",
+    "bytes": 1738059,
+    "url": "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2/ETOPO2v2-2006/ETOPO2v2g/raw_binary/ETOPO2v2g_i2_MSB.zip",
+    "license": "Public domain NOAA/NCEI source data",
     "path": "planets/2k_earth-normal.png",
-    "derived": "downsampled-from-4k-v1"
+    "derived": "ORBIT-earth-georeferenced-object-normal-v2"
   },
   {
     "filename": "planets/2k_mars-normal.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 1781856,
-    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/mars-normal.png",
-    "license": "Public domain source data; processed map by CelestiaContent",
+    "bytes": 3986316,
+    "url": "https://pds-geosciences.wustl.edu/mgs/urn-nasa-pds-mgs_mola_topography_derived/meg004/megt90n000cb.img",
+    "license": "Public domain NASA/PDS source data",
     "path": "planets/2k_mars-normal.png",
-    "derived": "downsampled-from-4k-v1"
+    "derived": "ORBIT-mars-georeferenced-object-normal-v2"
   },
   {
     "filename": "planets/2k_mercury-height.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 1572706,
+    "bytes": 4620845,
     "url": "https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif",
     "license": "Public domain NASA/USGS source data",
     "path": "planets/2k_mercury-height.png",
-    "derived": "USGS-MESSENGER-665m-global-DEM-normalized-v1"
+    "derived": "ORBIT-mercury-georeferenced-RG16-v2"
   },
   {
     "filename": "planets/2k_venus-height.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 1059084,
+    "bytes": 3940394,
     "url": "https://planetarymaps.usgs.gov/mosaic/Venus_Magellan_Topography_Global_4641m_v02.tif",
     "license": "Public domain NASA/USGS source data",
     "path": "planets/2k_venus-height.png",
-    "derived": "USGS-Magellan-4641m-global-topography-normalized-v1"
+    "derived": "ORBIT-venus-georeferenced-RG16-v2"
   },
   {
     "filename": "planets/2k_earth-height.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 1193067,
+    "bytes": 4290950,
     "url": "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO2/ETOPO2v2-2006/ETOPO2v2g/raw_binary/ETOPO2v2g_i2_MSB.zip",
     "license": "Public domain NOAA/NCEI source data",
     "path": "planets/2k_earth-height.png",
-    "derived": "ETOPO2v2-2-minute-global-relief-normalized-v1"
+    "derived": "ORBIT-earth-georeferenced-RG16-v2"
   },
   {
     "filename": "planets/2k_mars-height.png",
     "width": 2048,
     "height": 1024,
-    "bytes": 514848,
+    "bytes": 3960270,
     "url": "https://pds-geosciences.wustl.edu/mgs/urn-nasa-pds-mgs_mola_topography_derived/meg004/megt90n000cb.img",
     "license": "Public domain NASA/PDS source data",
     "path": "planets/2k_mars-height.png",
-    "derived": "MGS-MOLA-0.25-degree-global-topography-normalized-v1"
+    "derived": "ORBIT-mars-georeferenced-RG16-v2"
   }
 ]

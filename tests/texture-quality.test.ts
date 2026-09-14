@@ -79,7 +79,7 @@ void test('terrestrial surface maps are body-specific and locally available', ()
     assert.ok(highResolutionTextures[name], `${body.id} surface catalog entry`);
     assert.equal(
       texturePath(name, false, 8192),
-      `/textures/planets/2k_${body.id}-normal.png`,
+      `/textures/planets/2k_${body.id}-normal.png?v=terrain-v2`,
     );
     assert.ok(
       existsSync(
@@ -103,11 +103,14 @@ void test('terrestrial height maps have physical ranges and local fallbacks', ()
       body.terrainMinKm !== undefined && body.terrainMaxKm !== undefined,
       `${body.id} terrain range`,
     );
-    assert.ok(body.terrainMaxKm! > body.terrainMinKm!, `${body.id} terrain order`);
+    assert.ok(
+      body.terrainMaxKm! > body.terrainMinKm!,
+      `${body.id} terrain order`,
+    );
     assert.ok(body.flattening !== undefined, `${body.id} physical flattening`);
     assert.equal(
       texturePath(name, false, 8192),
-      `/textures/planets/2k_${body.id}-height.png`,
+      `/textures/planets/2k_${body.id}-height.png?v=terrain-v2`,
     );
     assert.ok(
       existsSync(
@@ -165,19 +168,15 @@ void test('opt-in surface maps skip preload and keep data color space', async (t
   );
   manager.preload();
   assert.equal(pending.size, 0);
-  manager.update(
-    'standard',
-    'earth_daymap',
-    false,
-    false,
-    true,
-    ['surface_earth_normal'],
-  );
-  assert.deepEqual([...pending.keys()], [
-    '/textures/planets/2k_earth-normal.png',
+  manager.update('standard', 'earth_daymap', false, false, true, [
+    'surface_earth_normal',
   ]);
+  assert.deepEqual(
+    [...pending.keys()],
+    ['/textures/planets/2k_earth-normal.png?v=terrain-v2'],
+  );
   const texture = new THREE.Texture();
-  pending.get('/textures/planets/2k_earth-normal.png')!(texture);
+  pending.get('/textures/planets/2k_earth-normal.png?v=terrain-v2')!(texture);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(visible, texture);
@@ -207,19 +206,15 @@ void test('opt-in height maps skip preload and keep data color space', async (t)
   );
   manager.preload();
   assert.equal(pending.size, 0);
-  manager.update(
-    'standard',
-    'earth_daymap',
-    false,
-    false,
-    true,
-    ['terrain_earth'],
-  );
-  assert.deepEqual([...pending.keys()], [
-    '/textures/planets/2k_earth-height.png',
+  manager.update('standard', 'earth_daymap', false, false, true, [
+    'terrain_earth',
   ]);
+  assert.deepEqual(
+    [...pending.keys()],
+    ['/textures/planets/2k_earth-height.png?v=terrain-v2'],
+  );
   const texture = new THREE.Texture();
-  pending.get('/textures/planets/2k_earth-height.png')!(texture);
+  pending.get('/textures/planets/2k_earth-height.png?v=terrain-v2')!(texture);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(visible, texture);

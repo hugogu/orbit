@@ -15,6 +15,8 @@ import { createMoonSystem } from './moon-system';
 import { moonTextureNames, orbitingMoons } from '@/lib/moon-orbits';
 import { displayRadius, displaySystemExtent } from '@/lib/display-scale';
 import { createTextureManager, type RegisterOptions } from './texture-manager';
+import { registerPlanetSurface } from './planet-surface';
+import { oblateScale } from '@/lib/planet-terrain';
 import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
@@ -141,10 +143,10 @@ export default function SolarScene({
     scene.backgroundRotation.y = Math.PI / 2;
     const roots = new Map<string, THREE.Group>(),
       meshes = new Map<string, THREE.Mesh>(),
-      baseGeometries = new Map<string, THREE.BufferGeometry>(),
       orbitLines = new Map<string, THREE.Line>(),
       labels = new Map<string, HTMLButtonElement>(),
       projectLabels = new Map<string, ReturnType<typeof createSceneLabel>>();
+    const planetSurfaces: ReturnType<typeof registerPlanetSurface>[] = [];
     let sunEffects: ReturnType<typeof createSunEffects> | null = null,
       observerMarker: ReturnType<typeof createObserverMarker> | null = null,
       earthPivot: THREE.Group | null = null;
@@ -181,75 +183,24 @@ export default function SolarScene({
                 body.texture && body.id !== 'uranus' ? 0xffffff : body.color,
               roughness: 1,
             });
-      if (body.texture) applyMap(material, body.texture);
-      if (body.surfaceTexture && material instanceof THREE.MeshStandardMaterial) {
-        // These are lighting-derived maps rather than height fields. A gain
-        // above the neutral 1:1 value keeps the published relief readable at
-        // the scene's illustrative scale without changing the sphere mesh.
-        const standardNormalScale = new THREE.Vector2(1.5, 1.5);
-        textureManager.register(
-          body.surfaceTexture,
-          (texture) => {
-            material.normalMap = texture;
-            material.normalScale.copy(standardNormalScale);
-            material.needsUpdate = true;
-          },
-          {
-            lazy: true,
-            preload: false,
-            colorSpace: THREE.NoColorSpace,
-            clear: () => {
-              material.normalMap = null;
-              material.normalScale.set(1, 1);
-              material.needsUpdate = true;
-            },
-          },
-        );
-      }
-      if (
-        body.heightTexture &&
-        material instanceof THREE.MeshStandardMaterial &&
-        body.terrainMinKm !== undefined &&
-        body.terrainMaxKm !== undefined
-      ) {
-        const terrainExaggeration = 6;
-        const displacementScale =
-          ((body.terrainMaxKm - body.terrainMinKm) / body.radius) *
-          body.size *
-          terrainExaggeration;
-        const displacementBias =
-          (body.terrainMinKm / body.radius) * body.size * terrainExaggeration;
-        textureManager.register(
-          body.heightTexture,
-          (texture) => {
-            material.displacementMap = texture;
-            material.displacementScale = displacementScale;
-            material.displacementBias = displacementBias;
-            material.needsUpdate = true;
-          },
-          {
-            lazy: true,
-            preload: false,
-            colorSpace: THREE.NoColorSpace,
-            clear: () => {
-              material.displacementMap = null;
-              material.displacementScale = 0;
-              material.displacementBias = 0;
-              material.needsUpdate = true;
-            },
-          },
-        );
-      }
       const baseGeometry = new THREE.SphereGeometry(body.size, 96, 64);
-      const mesh = new THREE.Mesh(
-        baseGeometry,
-        material,
-      );
-      if (body.flattening) mesh.scale.y = 1 - body.flattening;
+      const mesh = new THREE.Mesh(baseGeometry, material);
+      mesh.scale.copy(oblateScale(body.flattening));
+      if (material instanceof THREE.MeshStandardMaterial)
+        planetSurfaces.push(
+          registerPlanetSurface(
+            body,
+            mesh as THREE.Mesh<
+              THREE.BufferGeometry,
+              THREE.MeshStandardMaterial
+            >,
+            textureManager,
+          ),
+        );
+      else if (body.texture) applyMap(material, body.texture);
       mesh.userData.id = body.id;
       pivot.add(mesh);
       meshes.set(body.id, mesh);
-      baseGeometries.set(body.id, baseGeometry);
       if (body.id === 'sun') {
         sunEffects = createSunEffects(
           body.size,
@@ -554,24 +505,6 @@ export default function SolarScene({
       navigator as Navigator & { connection?: { saveData?: boolean } }
     ).connection;
     let lastLocale: Locale | undefined;
-    let activeTerrainBody: string | null = null;
-    const setTerrainGeometry = (body: (typeof bodies)[number] | null) => {
-      const nextId = body?.heightTexture ? body.id : null;
-      if (nextId === activeTerrainBody) return;
-      if (activeTerrainBody) {
-        const previousMesh = meshes.get(activeTerrainBody);
-        const previousGeometry = baseGeometries.get(activeTerrainBody);
-        if (previousMesh && previousGeometry) {
-          previousMesh.geometry.dispose();
-          previousMesh.geometry = previousGeometry;
-        }
-      }
-      if (body && nextId) {
-        const mesh = meshes.get(body.id);
-        if (mesh) mesh.geometry = new THREE.SphereGeometry(body.size, 256, 128);
-      }
-      activeTerrainBody = nextId;
-    };
     const animate = (now: number) => {
       frame = requestAnimationFrame(animate);
       const s = latest.current.state,
@@ -626,7 +559,7 @@ export default function SolarScene({
       );
       const surfaceTexture =
         s.realSurface && !selectedMoon && !selectedAsteroid && !cometTexture
-          ? focusBody?.surfaceTexture ?? null
+          ? (focusBody?.surfaceTexture ?? null)
           : null;
       const terrainBody =
         s.realTerrain &&
@@ -636,7 +569,6 @@ export default function SolarScene({
         focusBody?.heightTexture
           ? focusBody
           : null;
-      setTerrainGeometry(terrainBody);
       const terrainTexture = terrainBody?.heightTexture ?? null;
       const activeBodyTextures = [
         ...(selectedAsteroidTextures.length > 0
@@ -940,9 +872,7 @@ export default function SolarScene({
       eclipsePath.dispose();
       observerMarker?.dispose();
       asteroidSystem.dispose();
-      baseGeometries.forEach((geometry, id) => {
-        if (meshes.get(id)?.geometry !== geometry) geometry.dispose();
-      });
+      planetSurfaces.forEach((surface) => surface.dispose());
       scene.traverse((o) => {
         if (
           o instanceof THREE.Mesh ||
