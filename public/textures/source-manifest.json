@@ -438,5 +438,45 @@
     "license": "CC BY 4.0",
     "path": "asteroids/psyche-albedo.png",
     "derived": "DAMIT-model-1806-facet-atlas-v1"
+  },
+  {
+    "filename": "planets/2k_mercury-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 2573111,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/mercury-normal.png",
+    "license": "Public domain source data; processed map by CelestiaContent",
+    "path": "planets/2k_mercury-normal.png",
+    "derived": "downsampled-from-4k-v1"
+  },
+  {
+    "filename": "planets/2k_venus-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 974907,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/venus-normal.png",
+    "license": "Public domain source data; processed map by CelestiaContent",
+    "path": "planets/2k_venus-normal.png",
+    "derived": "downsampled-from-4k-v1"
+  },
+  {
+    "filename": "planets/2k_earth-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 771455,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/earth-normal.png",
+    "license": "Public domain source data; processed map by CelestiaContent",
+    "path": "planets/2k_earth-normal.png",
+    "derived": "downsampled-from-4k-v1"
+  },
+  {
+    "filename": "planets/2k_mars-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 1781856,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/51ceb06be30a4eeb91de691b4230aa9cdeac2b7a/textures/hires/mars-normal.png",
+    "license": "Public domain source data; processed map by CelestiaContent",
+    "path": "planets/2k_mars-normal.png",
+    "derived": "downsampled-from-4k-v1"
   }
 ]

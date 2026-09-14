@@ -47,6 +47,7 @@ export type SceneState = {
   solarActivity: boolean;
   cometTails: boolean;
   realSizes: boolean;
+  realSurface: boolean;
   systemView: boolean;
   observerLocation: SkyLocation;
   observerLocationReady: boolean;
@@ -179,6 +180,27 @@ export default function SolarScene({
               roughness: 1,
             });
       if (body.texture) applyMap(material, body.texture);
+      if (body.surfaceTexture && material instanceof THREE.MeshStandardMaterial) {
+        const standardNormalScale = new THREE.Vector2(0.65, 0.65);
+        textureManager.register(
+          body.surfaceTexture,
+          (texture) => {
+            material.normalMap = texture;
+            material.normalScale.copy(standardNormalScale);
+            material.needsUpdate = true;
+          },
+          {
+            lazy: true,
+            preload: false,
+            colorSpace: THREE.NoColorSpace,
+            clear: () => {
+              material.normalMap = null;
+              material.normalScale.set(1, 1);
+              material.needsUpdate = true;
+            },
+          },
+        );
+      }
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(body.size, 96, 64),
         material,
@@ -542,6 +564,18 @@ export default function SolarScene({
           (orbitingMoons.find((m) => m.id === s.selected)?.parentId ??
             s.selected),
       );
+      const surfaceTexture =
+        s.realSurface && !selectedMoon && !selectedAsteroid && !cometTexture
+          ? focusBody?.surfaceTexture ?? null
+          : null;
+      const activeBodyTextures = [
+        ...(selectedAsteroidTextures.length > 0
+          ? selectedAsteroidTextures
+          : selectedMoonTexture || cometTexture
+            ? [selectedMoonTexture ?? cometTexture!]
+            : []),
+        ...(surfaceTexture ? [surfaceTexture] : []),
+      ];
       const navigationChanged =
         s.selected !== lastSelected || s.reset !== lastReset;
       if (navigationChanged)
@@ -563,11 +597,7 @@ export default function SolarScene({
         compactStable,
         !!connection?.saveData,
         s.galaxy,
-        selectedAsteroidTextures.length > 0
-          ? selectedAsteroidTextures
-          : selectedMoonTexture || cometTexture
-            ? [selectedMoonTexture ?? cometTexture!]
-            : [],
+        activeBodyTextures,
         navigating,
       );
       scene.background = s.galaxy ? (galaxyTexture ?? emptySky) : emptySky;

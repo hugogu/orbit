@@ -6,6 +6,7 @@ export type Body = {
   type: string;
   color: string;
   texture?: string;
+  surfaceTexture?: string;
   radius: number;
   au: number;
   period: number;
@@ -52,6 +53,7 @@ export const bodies: Body[] = [
     type: '类地行星',
     color: '#b6aaa0',
     texture: 'mercury',
+    surfaceTexture: 'surface_mercury_normal',
     radius: 2439.7,
     au: 0.387,
     period: 87.969,
@@ -75,6 +77,7 @@ export const bodies: Body[] = [
     type: '类地行星',
     color: '#dfbc7c',
     texture: 'venus_atmosphere',
+    surfaceTexture: 'surface_venus_normal',
     radius: 6051.8,
     au: 0.723,
     period: 224.701,
@@ -98,6 +101,7 @@ export const bodies: Body[] = [
     type: '类地行星',
     color: '#6eafff',
     texture: 'earth_daymap',
+    surfaceTexture: 'surface_earth_normal',
     radius: 6371,
     au: 1,
     period: 365.256,
@@ -121,6 +125,7 @@ export const bodies: Body[] = [
     type: '类地行星',
     color: '#d78b68',
     texture: 'mars',
+    surfaceTexture: 'surface_mars_normal',
     radius: 3389.5,
     au: 1.524,
     period: 686.98,

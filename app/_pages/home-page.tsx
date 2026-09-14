@@ -115,6 +115,7 @@ export default function Home() {
     [solarActivity, setSolarActivity] = useState(true),
     [cometTails, setCometTails] = useState(true),
     [realSizes, setRealSizes] = useState(false),
+    [realSurface, setRealSurface] = useState(false),
     [systemView, setSystemView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
@@ -162,6 +163,8 @@ export default function Home() {
         setCometTails(preferences.cometTails);
       if (preferences.realSizes !== undefined)
         setRealSizes(preferences.realSizes);
+      if (preferences.realSurface !== undefined)
+        setRealSurface(preferences.realSurface);
       if (preferences.textureQuality !== undefined)
         setTextureQuality(preferences.textureQuality);
       const savedLocation = preferences.observerLocation;
@@ -204,6 +207,7 @@ export default function Home() {
       solarActivity,
       cometTails,
       realSizes,
+      realSurface,
       textureQuality,
     };
     if (
@@ -226,6 +230,7 @@ export default function Home() {
     solarActivity,
     cometTails,
     realSizes,
+    realSurface,
     textureQuality,
     observerLocation,
     observerLocationSource,
@@ -625,6 +630,7 @@ export default function Home() {
           solarActivity,
           cometTails,
           realSizes,
+          realSurface,
           systemView,
           observerLocation,
           observerLocationReady:
@@ -1067,6 +1073,19 @@ export default function Home() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="setting-row">
+                <label htmlFor="real-surface">{t('真实表面细节')}</label>
+                <Switch
+                  id="real-surface"
+                  checked={realSurface}
+                  onCheckedChange={setRealSurface}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '仅在跟随水星、金星、地球或火星时按需加载公开地形数据派生的法线贴图；不会改变球体轮廓。开启后会增加显存与着色开销。木星、土星、天王星和海王星没有固体表面，仍显示云顶或大气。',
+                )}
+              </p>
               <p className="model-note">
                 {t(
                   '高清按需加载到正在跟随的天体和银河背景，切换目标会释放旧高清材质。自动模式在手机或省流量环境使用 2K。超清更耗显存与流量。',

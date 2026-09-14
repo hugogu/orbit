@@ -208,6 +208,29 @@ export const highResolutionTextures: Record<
     width: 4096,
     standardFile: 'satellites/2k_asteroid.jpg',
   },
+  // These 2K equirectangular normal maps are derived from published planetary
+  // elevation data. They are opt-in and loaded only for the focused terrestrial
+  // planet, so the default scene pays no additional GPU cost.
+  surface_mercury_normal: {
+    file: 'planets/2k_mercury-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_mercury-normal.png',
+  },
+  surface_venus_normal: {
+    file: 'planets/2k_venus-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_venus-normal.png',
+  },
+  surface_earth_normal: {
+    file: 'planets/2k_earth-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_earth-normal.png',
+  },
+  surface_mars_normal: {
+    file: 'planets/2k_mars-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_mars-normal.png',
+  },
 };
 export function texturePath(name: string, high: boolean, maxSize: number) {
   const map = highResolutionTextures[name];

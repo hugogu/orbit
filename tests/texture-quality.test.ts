@@ -68,6 +68,28 @@ void test('every body texture is registered and has a local fallback', () => {
   }
 });
 
+void test('terrestrial surface maps are body-specific and locally available', () => {
+  const surfaceBodies = bodies.filter((body) => body.surfaceTexture);
+  assert.deepEqual(
+    surfaceBodies.map((body) => body.id),
+    ['mercury', 'venus', 'earth', 'mars'],
+  );
+  for (const body of surfaceBodies) {
+    const name = body.surfaceTexture!;
+    assert.ok(highResolutionTextures[name], `${body.id} surface catalog entry`);
+    assert.equal(
+      texturePath(name, false, 8192),
+      `/textures/planets/2k_${body.id}-normal.png`,
+    );
+    assert.ok(
+      existsSync(
+        new URL(`../public${texturePath(name, false, 8192)}`, import.meta.url),
+      ),
+      `${body.id} surface map`,
+    );
+  }
+});
+
 void test('gapped moon maps use a cache-busted continuous revision', () => {
   const repaired = [
     'ariel',
@@ -91,6 +113,48 @@ void test('gapped moon maps use a cache-busted continuous revision', () => {
       `${name} high map cache key`,
     );
   }
+});
+
+void test('opt-in surface maps skip preload and keep data color space', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const renderer = {
+    capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+  } as THREE.WebGLRenderer;
+  const manager = createTextureManager(renderer, () => {});
+  let visible: THREE.Texture | undefined;
+  manager.register(
+    'surface_earth_normal',
+    (texture) => {
+      visible = texture;
+    },
+    { lazy: true, preload: false, colorSpace: THREE.NoColorSpace },
+  );
+  manager.preload();
+  assert.equal(pending.size, 0);
+  manager.update(
+    'standard',
+    'earth_daymap',
+    false,
+    false,
+    true,
+    ['surface_earth_normal'],
+  );
+  assert.deepEqual([...pending.keys()], [
+    '/textures/planets/2k_earth-normal.png',
+  ]);
+  const texture = new THREE.Texture();
+  pending.get('/textures/planets/2k_earth-normal.png')!(texture);
+  pending.clear();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(visible, texture);
+  assert.equal(texture.colorSpace, THREE.NoColorSpace);
+  manager.dispose();
 });
 
 void test('async texture swaps retain visible maps, discard stale loads and recover from failure', async (t) => {

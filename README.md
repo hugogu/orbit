@@ -26,6 +26,7 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 | 🌑  | Find the next solar eclipse, lunar eclipse, and locally visible solar eclipse                            | Event timing and eclipse geometry                             |
 | 🌗  | See terminators, Earth’s city lights at night, and solar-eclipse umbra, penumbra, and shadow-axis tracks | Illumination and eclipse geometry                             |
 | ✨  | Choose automatic, standard 2K, or ultra textures up to 8K; the Milky Way can be toggled separately       | A practical balance between detail and device performance     |
+| 🗺️  | Optionally load 2K real-surface relief for Mercury, Venus, Earth, and Mars only when focused              | Published topography adds lighting detail without changing the sphere mesh |
 | 📱  | Navigate with mouse, keyboard, touch gestures, and responsive portrait or landscape layouts              | Continuous exploration across desktop and mobile              |
 | 🌐  | Switch between Simplified Chinese, English, and Japanese; your language choice is remembered            | Translated profiles, fact cards, scene labels, and astronomy tools |
 
@@ -39,6 +40,8 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 </table>
 
 Both images above were captured from a running ORBIT observatory. Texture selection considers the user setting, device class, data-saving preference, and GPU texture limits. High-resolution maps are loaded for the focused body only when needed, then the previous map is released.
+
+The base scene uses a spherical mesh for every planet; color maps add imagery or clouds. **Observation settings → Textures → Real surface detail** optionally loads body-specific 2K normal maps derived from published topography for Mercury, Venus, Earth, and Mars. It is off by default and loads for the focused planet only; it changes lighting relief, not silhouette or mesh geometry. Jupiter, Saturn, Uranus, and Neptune have no solid surface, so their atmospheric maps stay unchanged.
 
 ## Controls
 
@@ -164,6 +167,7 @@ For a bug report, include the browser and version, device class, viewport size, 
 - [NASA eclipse geometry](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) (MIT)
 - Most planetary textures come from [Solar System Scope Textures](https://www.solarsystemscope.com/textures/), used under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). File dimensions, download sources, and license information are recorded in [`public/textures/source-manifest.json`](public/textures/source-manifest.json). Some maps use enhanced colour or illustrative terrain; the Milky Way panorama is an immersive background, not a live sky chart for the observer’s location.
+- Optional planetary surface relief maps are derived from published NASA/USGS elevation data through the pinned CelestiaContent normal maps; see [`public/textures/planets/CREDITS.md`](public/textures/planets/CREDITS.md). They are 2K lighting derivatives only, not displaced geometry. Gas giants have no solid surface and keep their atmospheric rendering.
 - Satellite maps are redistributed from [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent) under the individual CC BY or CC BY-SA terms recorded in [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md). The Voyager-derived maps for Ariel, Miranda, Umbriel, Titania, Oberon, and Triton contain unmapped regions; the local copies fill those gaps by mirroring nearby observed texture so a close-up globe does not show a flat half. Nereid, Pluto, Charon, and comet nuclei use the CC BY 4.0 `asteroid.jpg` surface as explicitly illustrative teaching textures because complete global albedo maps are not available.
 - Asteroid maps and converted shape assets come from the sources listed in [`public/textures/asteroids/CREDITS.md`](public/textures/asteroids/CREDITS.md) and [`public/models/asteroids/CREDITS.md`](public/models/asteroids/CREDITS.md). The generic `asteroid.jpg` fallback is no longer used by the named asteroid catalog.
 - Uranus uses Solar System Scope's CC BY 4.0 atmospheric rendering. The former non-commercial Uranus and Charon files, and the former NASA/JPL Pluto teaching map with unclear redistribution terms, are not used or redistributed.

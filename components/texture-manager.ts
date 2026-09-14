@@ -9,6 +9,8 @@ type Slot = {
   apply: (texture: THREE.Texture) => void;
   clear?: () => void;
   lazy: boolean;
+  preload: boolean;
+  colorSpace: THREE.ColorSpace;
   path: string;
   loadedPath: string;
   texture: THREE.Texture | null;
@@ -21,6 +23,10 @@ const preloadConcurrency = 2;
 export type RegisterOptions = {
   /** Defer loading until this map is the selected/focused surface. */
   lazy?: boolean;
+  /** Keep opt-in maps out of the idle preload queue. */
+  preload?: boolean;
+  /** Use `NoColorSpace` for data maps such as normal maps. */
+  colorSpace?: THREE.ColorSpace;
   /** Clear the material map when a lazy surface is released. */
   clear?: () => void;
 };
@@ -38,8 +44,11 @@ export function createTextureManager(
   let disposed = false,
     failed = new Set<string>(),
     activePreloads = 0;
-  const configure = (texture: THREE.Texture) => {
-    texture.colorSpace = THREE.SRGBColorSpace;
+  const configure = (
+    texture: THREE.Texture,
+    colorSpace: THREE.ColorSpace = THREE.SRGBColorSpace,
+  ) => {
+    texture.colorSpace = colorSpace;
     texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
     texture.generateMipmaps = true;
     texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -101,7 +110,7 @@ export function createTextureManager(
         if (!disposed && !textureCache.has(path)) texture.dispose();
         return;
       }
-      configure(texture);
+      configure(texture, slot.colorSpace);
       if (cacheRequests.has(path)) {
         textureCache.set(path, texture);
         warm(texture);
@@ -181,6 +190,8 @@ export function createTextureManager(
         apply,
         clear: options.clear,
         lazy: !!options.lazy,
+        preload: options.preload !== false,
+        colorSpace: options.colorSpace ?? THREE.SRGBColorSpace,
         path: '',
         loadedPath: '',
         texture: null,
@@ -198,6 +209,7 @@ export function createTextureManager(
     preload() {
       if (disposed) return;
       for (const slot of slots) {
+        if (!slot.preload) continue;
         const path = texturePath(
           slot.name,
           false,
@@ -255,6 +267,7 @@ export function createTextureManager(
         if (!slot.texture && slot.path) continue;
         const eligible =
           slot.name === focus ||
+          activeTextures.includes(slot.name) ||
           (slot.name === 'stars_milky_way' && galaxy) ||
           (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
           (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
