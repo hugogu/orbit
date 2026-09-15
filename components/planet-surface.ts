@@ -29,17 +29,10 @@ export function registerPlanetSurface(
   const base = mesh.geometry,
     material = mesh.material;
   let colorMap: THREE.Texture | null = null;
-  let lighting = false,
-    terrain = false;
   const updateAppearance = () => {
-    const ground = body.id === 'venus' && (lighting || terrain);
-    material.map = ground ? null : colorMap;
+    material.map = colorMap;
     material.color.set(
-      ground
-        ? '#b5a18a'
-        : body.texture && body.id !== 'uranus'
-          ? '#ffffff'
-          : body.color,
+      body.texture && body.id !== 'uranus' ? '#ffffff' : body.color,
     );
     material.needsUpdate = true;
   };
@@ -55,7 +48,6 @@ export function registerPlanetSurface(
         texture.wrapS = THREE.RepeatWrapping;
         material.normalMap = texture;
         material.normalMapType = THREE.ObjectSpaceNormalMap;
-        lighting = true;
         updateAppearance();
       },
       {
@@ -63,7 +55,6 @@ export function registerPlanetSurface(
         preload: false,
         colorSpace: THREE.NoColorSpace,
         clear: () => {
-          lighting = false;
           material.normalMap = null;
           updateAppearance();
         },
@@ -74,7 +65,6 @@ export function registerPlanetSurface(
       mesh.geometry.dispose();
       mesh.geometry = base;
     }
-    terrain = false;
     updateAppearance();
   };
   if (
@@ -98,7 +88,6 @@ export function registerPlanetSurface(
         );
         if (mesh.geometry !== base) mesh.geometry.dispose();
         mesh.geometry = geometry;
-        terrain = true;
         updateAppearance();
       },
       {

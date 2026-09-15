@@ -194,7 +194,7 @@ void test('oblate planets preserve volumetric mean radius and measured flattenin
   }
 });
 
-void test('independent planet surface toggles restore meshes, reject late loads, and hide Venus clouds', async (t) => {
+void test('independent planet surface toggles restore meshes, reject late loads, and preserve the Venus texture', async (t) => {
   const pending = new Map<string, (texture: THREE.Texture) => void>();
   t.mock.method(
     THREE.TextureLoader.prototype,
@@ -231,15 +231,16 @@ void test('independent planet surface toggles restore meshes, reject late loads,
   const disposed = t.mock.method(dense, 'dispose');
   assert.notEqual(dense, base);
   assert.equal(material.normalMap, null);
-  assert.equal(material.map, null);
+  assert.equal(material.map, clouds);
   update([venus.heightTexture!, venus.surfaceTexture!]);
   await finish(venus.surfaceTexture!);
   assert.equal(mesh.geometry, dense);
   assert.equal(material.normalMapType, THREE.ObjectSpaceNormalMap);
+  assert.equal(material.map, clouds);
   update([venus.surfaceTexture!]);
   assert.equal(mesh.geometry, base);
   assert.equal(disposed.mock.callCount(), 1);
-  assert.equal(material.map, null);
+  assert.equal(material.map, clouds);
   update([]);
   assert.equal(material.map, clouds);
   assert.equal(material.normalMap, null);
