@@ -34,6 +34,10 @@ const localizedLayout = readFileSync(
   new URL('../app/(localized)/[locale]/layout.tsx', import.meta.url),
   'utf8',
 );
+const rootProviders = readFileSync(
+  new URL('../app/root-providers.tsx', import.meta.url),
+  'utf8',
+);
 const bodyNavigation = readFileSync(
   new URL('../components/body-navigation.tsx', import.meta.url),
   'utf8',
@@ -194,6 +198,11 @@ void test('root layouts emit the route locale before client hydration', () => {
   assert.match(localizedLayout, /<html lang=\{languages\[locale\]\.intl\}/);
   assert.match(localizedLayout, /generateStaticParams/);
   assert.match(explorerPage, /homeJsonLd\(\)/);
+});
+
+void test('shared root providers mount Vercel Analytics for every route group', () => {
+  assert.match(rootProviders, /from '@vercel\/analytics\/next'/);
+  assert.match(rootProviders, /<Analytics \/>/);
 });
 
 void test('locale hydration preserves route-owned profile titles and descriptions', () => {
