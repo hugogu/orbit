@@ -16,16 +16,18 @@ export function createOrbitLine(
 ) {
   const geometry = new LineGeometry();
   if (points.length > 0) geometry.setFromPoints(points);
-  // Adjacent screen-space segments overlap at oblique angles. Keep the depth
-  // test so bodies hide the far side, but never let one segment occlude another.
+  // Draw guide paths before opaque bodies. This keeps a continuous line free
+  // of segment self-occlusion, while bodies still hide their far-side arcs.
+  const dimmedColor = new THREE.Color(color).multiplyScalar(opacity);
   const material = new LineMaterial({
-    color,
-    transparent: true,
-    opacity,
+    color: dimmedColor,
+    depthTest: false,
     depthWrite: false,
   });
   (material as WideLineMaterial).linewidth = DEFAULT_ORBIT_LINE_WIDTH;
-  return new Line2(geometry, material);
+  const line = new Line2(geometry, material);
+  line.renderOrder = -1;
+  return line;
 }
 
 export function setOrbitLinePoints(line: OrbitLine, points: THREE.Vector3[]) {
