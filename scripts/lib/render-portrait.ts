@@ -42,9 +42,9 @@ export function renderSurface(
 ) {
   const pixels = Buffer.alloc(size * size * 4);
   const sun = id === 'sun';
-  const isComet = ['halley', 'encke', '67p', 'hale-bopp'].includes(id);
   const asteroid = asteroids.find((item) => item.id === id);
   const comet = comets.find((item) => item.id === id);
+  const isComet = Boolean(comet);
   const color = asteroid?.color ?? comet?.surfaceColor;
   const tint = color
     ? [1, 3, 5].map((at) => parseInt(color.slice(at, at + 2), 16) / 255)

@@ -17,7 +17,7 @@ import {
 } from '../lib/i18n';
 import { I18nProvider } from '../lib/i18n/provider';
 import { bodies, regions, speedLabel } from '../lib/solar';
-import { comets } from '../lib/comets';
+import { comets, cometModelNote } from '../lib/comets';
 import {
   asteroids,
   asteroidModelNote,
@@ -135,6 +135,18 @@ void test('all educational data and literal translation keys have catalog entrie
     }
   };
   ['app', 'components'].forEach(scan);
+});
+void test('comet model notes and load notices are translated in every locale', () => {
+  const keys = [cometModelNote, '部分彗星模型加载失败，暂用近似形状。'];
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const key of keys) {
+      const translated = t(key);
+      assert.ok(translated.trim().length > 0, `${locale}: ${key}`);
+      if (locale !== defaultLocale) assert.notEqual(translated, key);
+      if (locale === 'en') assert.doesNotMatch(translated, /\p{Script=Han}/u);
+    }
+  }
 });
 void test('every body retains its complete sourced fact pool in each language, including numeric comparisons', () => {
   for (const locale of codes) {
