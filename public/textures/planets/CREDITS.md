@@ -18,7 +18,7 @@ Exact source URLs, file sizes and derivation versions are in
 Regenerate from those downloads using:
 
 ```sh
-node --import tsx scripts/generate-planet-terrain.ts <source-directory>
+node --import tsx scripts/generate-planet-terrain.ts <source-directory> [body ...]
 ```
 
 The source directory contains `Mercury_Messenger_USGS_DEM_Global_665m_v2.tif`,

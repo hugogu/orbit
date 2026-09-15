@@ -12,7 +12,10 @@ import {
   type HeightField,
   type TerrainParameters,
 } from '../lib/planet-terrain';
-import { resampleElevation } from '../scripts/generate-planet-terrain';
+import {
+  resampleElevation,
+  terrainDerivedTag,
+} from '../scripts/generate-planet-terrain';
 import {
   registerPlanetSurface,
   registerTerrainGeometry,
@@ -78,6 +81,17 @@ void test('resampling respects source longitude, cell averages, nodata, and grid
   assert.deepEqual(
     [...resampleElevation(gridline, 4, 2)],
     [5, 15, 25, 15, 5, 15, 25, 15],
+  );
+});
+
+void test('terrain regeneration preserves existing derivation versions', () => {
+  assert.equal(
+    terrainDerivedTag('ORBIT-earth-georeferenced-RG16-v2', 'earth', 'height'),
+    'ORBIT-earth-georeferenced-RG16-v2',
+  );
+  assert.equal(
+    terrainDerivedTag(undefined, 'moon', 'normal'),
+    'ORBIT-moon-georeferenced-object-normal-v1',
   );
 });
 

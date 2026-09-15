@@ -25,6 +25,17 @@ const width = 2048,
   height = 1024;
 const wrap = (n: number, size: number) => ((n % size) + size) % size;
 
+export function terrainDerivedTag(
+  existing: string | undefined,
+  assetId: string,
+  kind: 'height' | 'normal',
+) {
+  return (
+    existing ??
+    `ORBIT-${assetId}-georeferenced-${kind === 'height' ? 'RG16' : 'object-normal'}-v1`
+  );
+}
+
 /** Box-average cell data; interpolate when the source resolution is lower. */
 export function resampleElevation(
   source: ElevationGrid,
@@ -283,7 +294,7 @@ async function main() {
       entry.bytes = statSync(output).size;
       entry.url = heightEntry.url;
       entry.license = heightEntry.license;
-      entry.derived = `ORBIT-${assetId}-georeferenced-${kind === 'height' ? 'RG16' : 'object-normal'}-v1`;
+      entry.derived = terrainDerivedTag(entry.derived, assetId, kind);
     }
     console.log(
       `${body.id}: ${source.width}x${source.height}, western longitude ${source.west} -> georeferenced height + object-space normals`,
