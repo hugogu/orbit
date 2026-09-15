@@ -68,6 +68,18 @@ void test('every body texture is registered and has a local fallback', () => {
   }
 });
 
+void test('asteroid maps load without waiting for a focused selection', () => {
+  const scene = readFileSync('components/solar-scene.tsx', 'utf8');
+  assert.match(
+    scene,
+    /asteroidSystem\.setTexture\(asteroid\.id, texture\)[\s\S]*?lazy: false/,
+  );
+  assert.match(
+    scene,
+    /asteroidSystem\.setNormalTexture\(asteroid\.id, texture\)[\s\S]*?lazy: false/,
+  );
+});
+
 void test('terrestrial surface maps are body-specific and locally available', () => {
   const surfaceBodies = bodies.filter((body) => body.surfaceTexture);
   assert.deepEqual(

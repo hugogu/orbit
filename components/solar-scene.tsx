@@ -296,8 +296,10 @@ export default function SolarScene({
           asteroid.texture,
           (texture) => asteroidSystem.setTexture(asteroid.id, texture),
           {
-            lazy: true,
-            preload: false,
+            // These are ordinary body materials, not opt-in terrain data.
+            // Attach the local standard map even before an asteroid is focused;
+            // the selected body can still upgrade to the high-resolution map.
+            lazy: false,
             retainOnNavigation: true,
             clear: () => asteroidSystem.clearTexture(asteroid.id),
           },
@@ -307,8 +309,8 @@ export default function SolarScene({
           asteroid.normalTexture,
           (texture) => asteroidSystem.setNormalTexture(asteroid.id, texture),
           {
-            lazy: true,
-            preload: false,
+            // Keep normal maps aligned with their body-specific color maps.
+            lazy: false,
             retainOnNavigation: true,
             colorSpace: THREE.NoColorSpace,
             clear: () => asteroidSystem.clearNormalTexture(asteroid.id),
