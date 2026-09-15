@@ -31,7 +31,7 @@ void test('terrain lighting and geometry default to enabled for new users', () =
     source,
     /\[orbitLineWidth, setOrbitLineWidth\] = useState\(DEFAULT_ORBIT_LINE_WIDTH\)/,
   );
-  assert.equal(DEFAULT_ORBIT_LINE_WIDTH, 2.5);
+  assert.equal(DEFAULT_ORBIT_LINE_WIDTH, 1);
   assert.ok(isOrbitLineWidth(1));
   assert.ok(isOrbitLineWidth(6));
   assert.ok(!isOrbitLineWidth(2.25));
