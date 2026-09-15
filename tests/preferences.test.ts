@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import {
   loadPreferences,
   preferencesStorageKey,
@@ -14,6 +15,15 @@ function memoryStorage(initial: Record<string, string> = {}) {
     setItem: (key: string, value: string) => void values.set(key, value),
   } as Storage;
 }
+
+void test('terrain lighting and geometry default to enabled for new users', () => {
+  const source = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /\[realSurface, setRealSurface\] = useState\(true\)/);
+  assert.match(source, /\[realTerrain, setRealTerrain\] = useState\(true\)/);
+});
 
 void test('preferences are validated and persisted as one versioned record', () => {
   const storage = memoryStorage();
