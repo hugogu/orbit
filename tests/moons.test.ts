@@ -9,6 +9,7 @@ import {
   moonSystemExtent,
 } from '../lib/moon-orbits.ts';
 import { createMoonSystem } from '../components/moon-system.ts';
+import { createTextureManager } from '../components/texture-manager.ts';
 import { displayRadius, moonDisplayOffset } from '../lib/display-scale';
 
 void test('every published moon has a unique orbit and stays outside its parent', () => {
@@ -81,7 +82,13 @@ void test('rendered moon entities move with their parents, remain pickable and r
   try {
     const scene = new THREE.Scene(),
       roots = new Map<string, THREE.Group>(),
-      meshes = new Map<string, THREE.Mesh>();
+      meshes = new Map<string, THREE.Mesh>(),
+      textures = createTextureManager(
+        {
+          capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 1 },
+        } as THREE.WebGLRenderer,
+        () => {},
+      );
     for (const b of bodies) {
       const root = new THREE.Group();
       roots.set(b.id, root);
@@ -97,6 +104,7 @@ void test('rendered moon entities move with their parents, remain pickable and r
         selected = id;
       },
       new THREE.Texture(),
+      textures,
     );
     system.update(0, 'illustrated', 'jupiter', true);
     const io = roots.get('moon-io')!,
@@ -144,6 +152,8 @@ void test('rendered moon entities move with their parents, remain pickable and r
     );
     system.update(0.1, 'distance', 'moon-io', true, false);
     assert.equal(io.scale.x, 0.32);
+    system.dispose();
+    textures.dispose();
   } finally {
     if (descriptor) Object.defineProperty(globalThis, 'document', descriptor);
     else Reflect.deleteProperty(globalThis, 'document');

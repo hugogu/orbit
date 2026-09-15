@@ -267,6 +267,7 @@ export default function SolarScene({
       labelLayer,
       (id) => latest.current.onSelect(id),
       null,
+      textureManager,
     );
     for (const moon of orbitingMoons) {
       const material = meshes.get(moon.id)!
@@ -547,6 +548,10 @@ export default function SolarScene({
       const selectedAsteroid = asteroids.find((item) => item.id === s.selected);
       void asteroidSystem.setFocus(selectedAsteroid?.id ?? null);
       const selectedMoonTexture = selectedMoon?.texture ?? null;
+      const selectedMoonSurface =
+        s.realSurface ? (selectedMoon?.surfaceTexture ?? null) : null;
+      const selectedMoonTerrain =
+        s.realTerrain ? (selectedMoon?.heightTexture ?? null) : null;
       const selectedAsteroidTextures = selectedAsteroid
         ? [selectedAsteroid.texture, selectedAsteroid.normalTexture].filter(
             (name): name is string => !!name,
@@ -578,6 +583,8 @@ export default function SolarScene({
             : []),
         ...(surfaceTexture ? [surfaceTexture] : []),
         ...(terrainTexture ? [terrainTexture] : []),
+        ...(selectedMoonSurface ? [selectedMoonSurface] : []),
+        ...(selectedMoonTerrain ? [selectedMoonTerrain] : []),
       ];
       const navigationChanged =
         s.selected !== lastSelected || s.reset !== lastReset;
@@ -890,6 +897,7 @@ export default function SolarScene({
       asteroidSystem.dispose();
       cometSystem.dispose();
       planetSurfaces.forEach((surface) => surface.dispose());
+      moonSystem.dispose();
       scene.traverse((o) => {
         if (
           o instanceof THREE.Mesh ||

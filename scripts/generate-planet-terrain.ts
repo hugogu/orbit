@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { fromFile } from 'geotiff';
 import sharp from 'sharp/lib/index.js';
 import { bodies } from '../lib/solar';
+import { lunarTerrain } from '../lib/moon-orbits';
 import {
   terrainNormal,
   type HeightField,
@@ -18,6 +19,7 @@ type ElevationGrid = {
   west: number;
   gridline?: boolean;
   nodata?: number;
+  elevationScaleKm?: number;
 };
 const width = 2048,
   height = 1024;
@@ -111,6 +113,27 @@ async function readDem(path: string): Promise<ElevationGrid> {
   try {
     const image = await tiff.getImage();
     const keys = image.getGeoKeys();
+    const origin = image.getOrigin(),
+      step = image.getResolution();
+    const geographic = keys.GTModelTypeGeoKey === 2;
+    if (geographic) {
+      if (
+        Math.abs(step[0] * image.getWidth() - 360) > 1e-5 ||
+        step[1] >= 0
+      )
+        throw new Error('Geographic DEM must cover 360 degrees with north at the top');
+      const data = await image.readRasters({ samples: [0], interleave: true });
+      return {
+        data: data as ArrayLike<number>,
+        width: image.getWidth(),
+        height: image.getHeight(),
+        west: Math.round(origin[0]),
+        nodata: image.getGDALNoData() ?? undefined,
+        // LOLA's GeoTIFF metadata reports the range in km, while raster
+        // samples are stored in metres.
+        elevationScaleKm: 0.001,
+      };
+    }
     if (
       keys.ProjCoordTransGeoKey !== 17 ||
       keys.ProjCenterLatGeoKey !== 0 ||
@@ -118,8 +141,6 @@ async function readDem(path: string): Promise<ElevationGrid> {
     )
       throw new Error('Expected a global equatorial equirectangular DEM');
     const radius = keys.GeogSemiMajorAxisGeoKey!;
-    const origin = image.getOrigin(),
-      step = image.getResolution();
     const west =
       keys.ProjCenterLongGeoKey! + ((origin[0] / radius) * 180) / Math.PI;
     if (
@@ -129,7 +150,7 @@ async function readDem(path: string): Promise<ElevationGrid> {
       throw new Error('DEM must cover 360 degrees with north at the top');
     const data = await image.readRasters({ samples: [0], interleave: true });
     return {
-      data: data as Int16Array,
+      data: data as ArrayLike<number>,
       width: image.getWidth(),
       height: image.getHeight(),
       west: Math.round(west),
@@ -150,7 +171,7 @@ async function main() {
   const sourceRoot = process.argv[2];
   if (!sourceRoot)
     throw new Error(
-      'Usage: node --import tsx scripts/generate-planet-terrain.ts <source-directory>',
+      'Usage: node --import tsx scripts/generate-planet-terrain.ts <source-directory> [body ...]',
     );
   const manifestPath = resolve('public/textures/source-manifest.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
@@ -160,15 +181,25 @@ async function main() {
     derived?: string;
     license?: string;
   }[];
-  for (const body of bodies.filter((b) => b.heightTexture)) {
+  const requestedBodies = new Set(process.argv.slice(3));
+  const terrainBodies = [
+    ...bodies.filter((body) => body.heightTexture),
+    lunarTerrain,
+  ].filter((body) => {
+    const assetId = body.id === 'moon-moon' ? 'moon' : body.id;
+    return requestedBodies.size === 0 || requestedBodies.has(assetId);
+  });
+  for (const body of terrainBodies) {
     let source: ElevationGrid;
-    if (body.id === 'mercury' || body.id === 'venus')
+    if (body.id === 'mercury' || body.id === 'venus' || body.id === 'moon-moon')
       source = await readDem(
         resolve(
           sourceRoot,
           body.id === 'mercury'
             ? 'Mercury_Messenger_USGS_DEM_Global_665m_v2.tif'
-            : 'Venus_Magellan_Topography_Global_4641m_v02.tif',
+            : body.id === 'venus'
+              ? 'Venus_Magellan_Topography_Global_4641m_v02.tif'
+              : 'LDEM64_PA_pixel_202405.tif',
         ),
       );
     else if (body.id === 'mars')
@@ -199,6 +230,7 @@ async function main() {
         gridline: true,
       };
     const elevations = resampleElevation(source, width, height);
+    const assetId = body.id === 'moon-moon' ? 'moon' : body.id;
     const params: TerrainParameters = {
       id: body.id,
       radius: body.radius,
@@ -212,7 +244,8 @@ async function main() {
           0,
           Math.min(
             1,
-            (elevations[i] / 1000 - params.terrainMinKm) /
+            (elevations[i] * (source.elevationScaleKm ?? 0.001) -
+              params.terrainMinKm) /
               (params.terrainMaxKm - params.terrainMinKm),
           ),
         ) * 65535,
@@ -235,13 +268,13 @@ async function main() {
         normals[(y * width + x) * 3 + 2] = Math.round((n.z + 1) * 127.5);
       }
     const heightEntry = manifest.find(
-      (m) => m.filename === `planets/2k_${body.id}-height.png`,
+      (m) => m.filename === `planets/2k_${assetId}-height.png`,
     )!;
     for (const [kind, pixels] of [
       ['height', packed],
       ['normal', normals],
     ] as const) {
-      const filename = `planets/2k_${body.id}-${kind}.png`;
+      const filename = `planets/2k_${assetId}-${kind}.png`;
       const output = resolve('public/textures', filename);
       await sharp(pixels, { raw: { width, height, channels: 3 } })
         .png({ compressionLevel: 9 })
@@ -250,7 +283,7 @@ async function main() {
       entry.bytes = statSync(output).size;
       entry.url = heightEntry.url;
       entry.license = heightEntry.license;
-      entry.derived = `ORBIT-${body.id}-georeferenced-${kind === 'height' ? 'RG16' : 'object-normal'}-v2`;
+      entry.derived = `ORBIT-${assetId}-georeferenced-${kind === 'height' ? 'RG16' : 'object-normal'}-v1`;
     }
     console.log(
       `${body.id}: ${source.width}x${source.height}, western longitude ${source.west} -> georeferenced height + object-space normals`,

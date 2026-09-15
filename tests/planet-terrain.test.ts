@@ -13,10 +13,14 @@ import {
   type TerrainParameters,
 } from '../lib/planet-terrain';
 import { resampleElevation } from '../scripts/generate-planet-terrain';
-import { registerPlanetSurface } from '../components/planet-surface';
+import {
+  registerPlanetSurface,
+  registerTerrainGeometry,
+} from '../components/planet-surface';
 import { createTextureManager } from '../components/texture-manager';
 import { texturePath } from '../lib/texture-quality';
 import { createSceneLabelOcclusion } from '../components/scene-label';
+import { orbitingMoons } from '../lib/moon-orbits';
 
 function fieldFrom(values: number[], width: number): HeightField {
   const data = new Uint8Array(values.length * 3);
@@ -125,6 +129,34 @@ void test('published terrain landmarks occupy the correct hemisphere and normals
   }
 });
 
+void test('LOLA terrain preserves the South Pole–Aitken basin in the Moon geometry', async () => {
+  const moon = orbitingMoons.find((body) => body.en === 'Moon')!;
+  const { data, info } = await sharp(
+    'public/textures/planets/2k_moon-height.png',
+  )
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const field = {
+    data,
+    width: info.width,
+    height: info.height,
+    channels: info.channels,
+  };
+  const elevation = terrainElevationKm(
+    sampleTerrainHeight(field, (180 + 180) / 360, (-53 + 90) / 180),
+    {
+      id: moon.id,
+      radius: moon.radius!,
+      terrainMinKm: moon.terrainMinKm!,
+      terrainMaxKm: moon.terrainMaxKm!,
+    },
+  );
+  assert.ok(
+    elevation > -6 && elevation < -3,
+    `South Pole–Aitken elevation: ${elevation} km`,
+  );
+});
+
 void test('terrain geometry updates bounds and picking, closes poles/seams, and shades its slopes', () => {
   const uniform = fieldFrom(Array(32).fill(1), 8);
   const geometry = createTerrainGeometry(uniform, testBody, 1);
@@ -194,7 +226,7 @@ void test('oblate planets preserve volumetric mean radius and measured flattenin
   }
 });
 
-void test('independent planet surface toggles restore meshes, reject late loads, and hide Venus clouds', async (t) => {
+void test('independent planet surface toggles restore meshes, reject late loads, and preserve the Venus texture', async (t) => {
   const pending = new Map<string, (texture: THREE.Texture) => void>();
   t.mock.method(
     THREE.TextureLoader.prototype,
@@ -231,15 +263,16 @@ void test('independent planet surface toggles restore meshes, reject late loads,
   const disposed = t.mock.method(dense, 'dispose');
   assert.notEqual(dense, base);
   assert.equal(material.normalMap, null);
-  assert.equal(material.map, null);
+  assert.equal(material.map, clouds);
   update([venus.heightTexture!, venus.surfaceTexture!]);
   await finish(venus.surfaceTexture!);
   assert.equal(mesh.geometry, dense);
   assert.equal(material.normalMapType, THREE.ObjectSpaceNormalMap);
+  assert.equal(material.map, clouds);
   update([venus.surfaceTexture!]);
   assert.equal(mesh.geometry, base);
   assert.equal(disposed.mock.callCount(), 1);
-  assert.equal(material.map, null);
+  assert.equal(material.map, clouds);
   update([]);
   assert.equal(material.map, clouds);
   assert.equal(material.normalMap, null);
@@ -250,6 +283,53 @@ void test('independent planet surface toggles restore meshes, reject late loads,
   assert.notEqual(material.map, stale);
   textures.dispose();
   surface.dispose();
+  base.dispose();
+  material.dispose();
+});
+
+void test('the Moon replaces and restores only its focused terrain geometry', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const textures = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 1 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  const moon = orbitingMoons.find((body) => body.en === 'Moon')!;
+  const base = new THREE.SphereGeometry(moon.size, 64, 48);
+  const material = new THREE.MeshStandardMaterial();
+  const mesh = new THREE.Mesh(base, material);
+  const surface = registerTerrainGeometry(
+    {
+      id: moon.id,
+      heightTexture: moon.heightTexture!,
+      terrainMinKm: moon.terrainMinKm!,
+      terrainMaxKm: moon.terrainMaxKm!,
+      radius: moon.radius!,
+      size: moon.size,
+    },
+    mesh,
+    textures,
+    () => fieldFrom(Array(32).fill(1), 8),
+  );
+  textures.update('standard', moon.texture, false, false, true, [
+    moon.heightTexture!,
+  ]);
+  const texture = new THREE.Texture();
+  pending.get(texturePath(moon.heightTexture!, false, 8192))!(texture);
+  await new Promise((resolve) => setImmediate(resolve));
+  const dense = mesh.geometry;
+  assert.notEqual(dense, base);
+  textures.update('standard', moon.texture, false, false, true, []);
+  assert.equal(mesh.geometry, base);
+  surface.dispose();
+  textures.dispose();
   base.dispose();
   material.dispose();
 });

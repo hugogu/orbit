@@ -1,9 +1,13 @@
 import * as THREE from 'three';
 import type { Body } from '../lib/solar';
-import { createTerrainGeometry, type HeightField } from '../lib/planet-terrain';
+import {
+  createTerrainGeometry,
+  type HeightField,
+  type TerrainParameters,
+} from '../lib/planet-terrain';
 import type { createTextureManager } from './texture-manager';
 
-function readHeightField(texture: THREE.Texture): HeightField {
+export function readHeightField(texture: THREE.Texture): HeightField {
   const image = texture.image as HTMLImageElement;
   const canvas = document.createElement('canvas');
   canvas.width = image.width;
@@ -19,6 +23,46 @@ function readHeightField(texture: THREE.Texture): HeightField {
   };
 }
 
+export type TerrainSurface = TerrainParameters & {
+  heightTexture: string;
+  size: number;
+};
+
+/** Register a focused body's on-demand terrain geometry and its base restore. */
+export function registerTerrainGeometry(
+  body: TerrainSurface,
+  mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>,
+  textures: ReturnType<typeof createTextureManager>,
+  decodeHeight: (texture: THREE.Texture) => HeightField = readHeightField,
+) {
+  const base = mesh.geometry;
+  const restore = () => {
+    if (mesh.geometry !== base) {
+      mesh.geometry.dispose();
+      mesh.geometry = base;
+    }
+  };
+  textures.register(
+    body.heightTexture,
+    (texture) => {
+      const geometry = createTerrainGeometry(
+        decodeHeight(texture),
+        body,
+        body.size,
+      );
+      if (mesh.geometry !== base) mesh.geometry.dispose();
+      mesh.geometry = geometry;
+    },
+    {
+      lazy: true,
+      preload: false,
+      colorSpace: THREE.NoColorSpace,
+      clear: restore,
+    },
+  );
+  return { dispose: restore };
+}
+
 /** Own the base/terrain transition, including late color-map upgrades. */
 export function registerPlanetSurface(
   body: Body,
@@ -29,17 +73,10 @@ export function registerPlanetSurface(
   const base = mesh.geometry,
     material = mesh.material;
   let colorMap: THREE.Texture | null = null;
-  let lighting = false,
-    terrain = false;
   const updateAppearance = () => {
-    const ground = body.id === 'venus' && (lighting || terrain);
-    material.map = ground ? null : colorMap;
+    material.map = colorMap;
     material.color.set(
-      ground
-        ? '#b5a18a'
-        : body.texture && body.id !== 'uranus'
-          ? '#ffffff'
-          : body.color,
+      body.texture && body.id !== 'uranus' ? '#ffffff' : body.color,
     );
     material.needsUpdate = true;
   };
@@ -55,7 +92,6 @@ export function registerPlanetSurface(
         texture.wrapS = THREE.RepeatWrapping;
         material.normalMap = texture;
         material.normalMapType = THREE.ObjectSpaceNormalMap;
-        lighting = true;
         updateAppearance();
       },
       {
@@ -63,7 +99,6 @@ export function registerPlanetSurface(
         preload: false,
         colorSpace: THREE.NoColorSpace,
         clear: () => {
-          lighting = false;
           material.normalMap = null;
           updateAppearance();
         },
@@ -74,7 +109,6 @@ export function registerPlanetSurface(
       mesh.geometry.dispose();
       mesh.geometry = base;
     }
-    terrain = false;
     updateAppearance();
   };
   if (
@@ -98,7 +132,6 @@ export function registerPlanetSurface(
         );
         if (mesh.geometry !== base) mesh.geometry.dispose();
         mesh.geometry = geometry;
-        terrain = true;
         updateAppearance();
       },
       {
