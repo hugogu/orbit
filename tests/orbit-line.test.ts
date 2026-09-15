@@ -21,6 +21,7 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
     (line.material as typeof line.material & { linewidth: number }).linewidth,
     DEFAULT_ORBIT_LINE_WIDTH,
   );
+  assert.equal(line.material.depthWrite, false);
   const before = line.geometry;
   setOrbitLineWidth(line, 5);
   setOrbitLinePoints(line, [

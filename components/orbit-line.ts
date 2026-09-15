@@ -16,7 +16,14 @@ export function createOrbitLine(
 ) {
   const geometry = new LineGeometry();
   if (points.length > 0) geometry.setFromPoints(points);
-  const material = new LineMaterial({ color, transparent: true, opacity });
+  // Adjacent screen-space segments overlap at oblique angles. Keep the depth
+  // test so bodies hide the far side, but never let one segment occlude another.
+  const material = new LineMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+  });
   (material as WideLineMaterial).linewidth = DEFAULT_ORBIT_LINE_WIDTH;
   return new Line2(geometry, material);
 }
