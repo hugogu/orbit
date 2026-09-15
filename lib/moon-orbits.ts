@@ -50,6 +50,16 @@ export const moonTextureNames: Record<string, string> = {
   Nereid: 'nereid',
   Charon: 'charon',
 };
+
+export const lunarTerrain = {
+  id: 'moon-moon',
+  surfaceTexture: 'surface_moon_normal',
+  heightTexture: 'terrain_moon',
+  terrainMinKm: -9.125,
+  terrainMaxKm: 10.766,
+  radius: 1737.4,
+};
+
 export const orbitingMoons = Object.entries(moonSystems).flatMap(
   ([parentId, system]) =>
     system.moons.map((moon, index) => {
@@ -66,6 +76,7 @@ export const orbitingMoons = Object.entries(moonSystems).flatMap(
         inc,
         e,
         texture: moonTextureNames[moon.en] ?? 'nereid',
+        ...(moon.en === 'Moon' ? lunarTerrain : {}),
         phase: 0.7 + index * 1.7,
         au: 0,
       };

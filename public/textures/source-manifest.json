@@ -518,5 +518,25 @@
     "license": "Public domain NASA/PDS source data",
     "path": "planets/2k_mars-height.png",
     "derived": "ORBIT-mars-georeferenced-RG16-v2"
+  },
+  {
+    "filename": "planets/2k_moon-height.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 4619172,
+    "url": "https://pgda.gsfc.nasa.gov/data/LOLA_PA/LDEM64_PA_pixel_202405.tif",
+    "license": "NASA Goddard dataset; cite Neumann (2024)",
+    "path": "planets/2k_moon-height.png",
+    "derived": "ORBIT-moon-georeferenced-RG16-v1"
+  },
+  {
+    "filename": "planets/2k_moon-normal.png",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 5821657,
+    "url": "https://pgda.gsfc.nasa.gov/data/LOLA_PA/LDEM64_PA_pixel_202405.tif",
+    "license": "NASA Goddard dataset; cite Neumann (2024)",
+    "path": "planets/2k_moon-normal.png",
+    "derived": "ORBIT-moon-georeferenced-object-normal-v1"
   }
 ]

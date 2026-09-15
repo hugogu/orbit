@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { readFileSync, existsSync } from 'node:fs';
 import { createTextureManager } from '../components/texture-manager';
 import { bodies } from '../lib/solar';
+import { orbitingMoons } from '../lib/moon-orbits';
 import {
   highResolutionTextures,
   texturePath,
@@ -134,6 +135,39 @@ void test('terrestrial height maps have physical ranges and local fallbacks', ()
       `${body.id} height map`,
     );
   }
+});
+
+void test('the Moon has an on-demand LOLA terrain map with physical bounds', () => {
+  const moon = orbitingMoons.find((body) => body.en === 'Moon')!;
+  assert.equal(moon.heightTexture, 'terrain_moon');
+  assert.equal(moon.surfaceTexture, 'surface_moon_normal');
+  assert.equal(moon.radius, 1737.4);
+  assert.ok(moon.terrainMinKm! < 0);
+  assert.ok(moon.terrainMaxKm! > 0);
+  assert.equal(
+    texturePath(moon.heightTexture!, false, 8192),
+    '/textures/planets/2k_moon-height.png?v=terrain-v1',
+  );
+  assert.ok(
+    existsSync(
+      new URL(
+        `../public${texturePath(moon.heightTexture!, false, 8192)}`,
+        import.meta.url,
+      ),
+    ),
+  );
+  assert.equal(
+    texturePath(moon.surfaceTexture!, false, 8192),
+    '/textures/planets/2k_moon-normal.png?v=terrain-v1',
+  );
+  const scene = readFileSync(
+    new URL('../components/solar-scene.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    scene,
+    /selectedMoonSurface[\s\S]*?selectedMoonTerrain[\s\S]*?activeBodyTextures/,
+  );
 });
 
 void test('gapped moon maps use a cache-busted continuous revision', () => {

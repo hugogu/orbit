@@ -12,6 +12,8 @@ import {
   setOrbitLineWidth,
 } from './orbit-line';
 import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
+import { registerTerrainGeometry } from './planet-surface';
+import type { createTextureManager } from './texture-manager';
 
 export function createMoonSystem(
   scene: THREE.Scene,
@@ -20,7 +22,9 @@ export function createMoonSystem(
   layer: HTMLElement,
   onSelect: (id: string) => void,
   moonTexture: THREE.Texture | null,
+  textures: ReturnType<typeof createTextureManager>,
 ) {
+  const terrainSurfaces: ReturnType<typeof registerTerrainGeometry>[] = [];
   const entries = orbitingMoons.map((moon) => {
     const root = new THREE.Group();
     root.name = moon.id;
@@ -41,6 +45,45 @@ export function createMoonSystem(
     mesh.userData.id = moon.id;
     root.add(mesh);
     meshes.set(moon.id, mesh);
+    if (moon.surfaceTexture)
+      textures.register(
+        moon.surfaceTexture,
+        (texture) => {
+          texture.wrapS = THREE.RepeatWrapping;
+          mesh.material.normalMap = texture;
+          mesh.material.normalMapType = THREE.ObjectSpaceNormalMap;
+          mesh.material.needsUpdate = true;
+        },
+        {
+          lazy: true,
+          preload: false,
+          colorSpace: THREE.NoColorSpace,
+          clear: () => {
+            mesh.material.normalMap = null;
+            mesh.material.needsUpdate = true;
+          },
+        },
+      );
+    if (
+      moon.heightTexture &&
+      moon.terrainMinKm !== undefined &&
+      moon.terrainMaxKm !== undefined &&
+      moon.radius !== undefined
+    )
+      terrainSurfaces.push(
+        registerTerrainGeometry(
+          {
+            id: moon.id,
+            heightTexture: moon.heightTexture,
+            terrainMinKm: moon.terrainMinKm,
+            terrainMaxKm: moon.terrainMaxKm,
+            radius: moon.radius,
+            size: moon.size,
+          },
+          mesh,
+          textures,
+        ),
+      );
     const path = createOrbitLine(moon.color, 0.3);
     path.name = `${moon.id}-orbit`;
     scene.add(path);
@@ -142,6 +185,9 @@ export function createMoonSystem(
           isOccluded?.(moon.id, root.position) ?? false,
         );
       }
+    },
+    dispose() {
+      terrainSurfaces.forEach((surface) => surface.dispose());
     },
   };
 }

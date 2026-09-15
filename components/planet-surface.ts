@@ -1,9 +1,13 @@
 import * as THREE from 'three';
 import type { Body } from '../lib/solar';
-import { createTerrainGeometry, type HeightField } from '../lib/planet-terrain';
+import {
+  createTerrainGeometry,
+  type HeightField,
+  type TerrainParameters,
+} from '../lib/planet-terrain';
 import type { createTextureManager } from './texture-manager';
 
-function readHeightField(texture: THREE.Texture): HeightField {
+export function readHeightField(texture: THREE.Texture): HeightField {
   const image = texture.image as HTMLImageElement;
   const canvas = document.createElement('canvas');
   canvas.width = image.width;
@@ -17,6 +21,46 @@ function readHeightField(texture: THREE.Texture): HeightField {
     height: canvas.height,
     channels: 4,
   };
+}
+
+export type TerrainSurface = TerrainParameters & {
+  heightTexture: string;
+  size: number;
+};
+
+/** Register a focused body's on-demand terrain geometry and its base restore. */
+export function registerTerrainGeometry(
+  body: TerrainSurface,
+  mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>,
+  textures: ReturnType<typeof createTextureManager>,
+  decodeHeight: (texture: THREE.Texture) => HeightField = readHeightField,
+) {
+  const base = mesh.geometry;
+  const restore = () => {
+    if (mesh.geometry !== base) {
+      mesh.geometry.dispose();
+      mesh.geometry = base;
+    }
+  };
+  textures.register(
+    body.heightTexture,
+    (texture) => {
+      const geometry = createTerrainGeometry(
+        decodeHeight(texture),
+        body,
+        body.size,
+      );
+      if (mesh.geometry !== base) mesh.geometry.dispose();
+      mesh.geometry = geometry;
+    },
+    {
+      lazy: true,
+      preload: false,
+      colorSpace: THREE.NoColorSpace,
+      clear: restore,
+    },
+  );
+  return { dispose: restore };
 }
 
 /** Own the base/terrain transition, including late color-map upgrades. */

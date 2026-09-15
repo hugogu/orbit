@@ -1097,7 +1097,7 @@ export default function Home() {
               </div>
               <p className="model-note">
                 {t(
-                  '依据真实高程呈现山脊与坑洼的精细明暗，单独开启不改变轮廓，也不计算山体投影。与几何开关可独立使用；仅为正在跟随的类地行星加载。',
+                  '依据真实高程呈现山脊与坑洼的精细明暗，单独开启不改变轮廓，也不计算山体投影。与几何开关可独立使用；仅为正在跟随的类地行星或月球加载。',
                 )}
               </p>
               <div className="setting-row">
@@ -1110,7 +1110,7 @@ export default function Home() {
               </div>
               <p className="model-note">
                 {t(
-                  '根据真实高程改变地表和轮廓，起伏做 6 倍视觉增强，近看更明显。仅为正在跟随的水星、金星、地球或火星加载，增加内存与渲染开销。',
+                  '根据真实高程改变地表和轮廓，起伏做 6 倍视觉增强，近看更明显。仅为正在跟随的水星、金星、地球、火星或月球加载，增加内存与渲染开销。',
                 )}
               </p>
               <p className="model-note">
@@ -1408,7 +1408,15 @@ export default function Home() {
                   >
                     {t('NASA PDS MOLA 火星地形')}
                   </a>
-                  。{t('本地高程图仅在开启几何开关并跟随类地行星时加载。')}
+                  {' · '}
+                  <a
+                    href="https://pgda.gsfc.nasa.gov/products/95"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('NASA Goddard LOLA 月球地形')}
+                  </a>
+                  。{t('本地高程图仅在开启几何开关并跟随支持地形的天体时加载。')}
                 </p>
               </div>
             </TabsContent>

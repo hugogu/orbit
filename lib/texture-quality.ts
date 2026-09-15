@@ -236,6 +236,12 @@ export const highResolutionTextures: Record<
     standardFile: 'planets/2k_mars-normal.png',
     revision: 'terrain-v2',
   },
+  surface_moon_normal: {
+    file: 'planets/2k_moon-normal.png',
+    width: 2048,
+    standardFile: 'planets/2k_moon-normal.png',
+    revision: 'terrain-v1',
+  },
   // Packed RG16 heights are decoded once into CPU geometry for the focused
   // terrestrial planet. NoColorSpace preserves data rather than color values.
   terrain_mercury: {
@@ -261,6 +267,12 @@ export const highResolutionTextures: Record<
     width: 2048,
     standardFile: 'planets/2k_mars-height.png',
     revision: 'terrain-v2',
+  },
+  terrain_moon: {
+    file: 'planets/2k_moon-height.png',
+    width: 2048,
+    standardFile: 'planets/2k_moon-height.png',
+    revision: 'terrain-v1',
   },
 };
 export function texturePath(name: string, high: boolean, maxSize: number) {
