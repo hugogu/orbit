@@ -190,14 +190,15 @@ export const highResolutionTextures: Record<
     width: 4096,
     standardFile: 'satellites/2k_asteroid.jpg',
   },
-  // No complete albedo map is available for Nereid or comet nuclei. This
-  // openly licensed, pitted small-body surface is clearly labeled as a
-  // teaching illustration in the UI and metadata.
+  // No complete albedo map is available for Nereid. This openly licensed,
+  // pitted small-body surface is clearly labeled as a teaching illustration.
   nereid: {
     file: 'satellites/4k_asteroid.jpg',
     width: 4096,
     standardFile: 'satellites/2k_asteroid.jpg',
   },
+  // Kept for compatibility with old saved asset references; the comet scene
+  // now uses neutral per-body materials beside its body-specific meshes.
   comet_nucleus: {
     file: 'satellites/4k_asteroid.jpg',
     width: 4096,

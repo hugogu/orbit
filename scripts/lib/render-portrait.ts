@@ -9,6 +9,7 @@ import {
 import type { CatalogEntry } from '../../lib/seo';
 import { entryTexturePath } from '../../lib/profile-images';
 import { asteroids } from '../../lib/asteroids';
+import { comets } from '../../lib/comets';
 
 export type SurfaceMap = { data: Uint8Array; width: number; height: number };
 
@@ -41,15 +42,15 @@ export function renderSurface(
 ) {
   const pixels = Buffer.alloc(size * size * 4);
   const sun = id === 'sun';
-  const comet = ['halley', 'encke', '67p', 'hale-bopp'].includes(id);
   const asteroid = asteroids.find((item) => item.id === id);
-  const tint = asteroid
-    ? [1, 3, 5].map(
-        (at) => parseInt(asteroid.color.slice(at, at + 2), 16) / 255,
-      )
+  const comet = comets.find((item) => item.id === id);
+  const isComet = Boolean(comet);
+  const color = asteroid?.color ?? comet?.surfaceColor;
+  const tint = color
+    ? [1, 3, 5].map((at) => parseInt(color.slice(at, at + 2), 16) / 255)
     : [1, 1, 1];
   const small =
-    comet || ['moon-phobos', 'moon-deimos', 'moon-nereid'].includes(id);
+    isComet || ['moon-phobos', 'moon-deimos', 'moon-nereid'].includes(id);
   const radius =
     size *
     (ring
@@ -169,7 +170,8 @@ async function loadMap(path: string): Promise<SurfaceMap> {
 }
 function bodyColorMap(id: string): SurfaceMap {
   const asteroid = asteroids.find((item) => item.id === id);
-  const color = asteroid?.color ?? '#ffffff';
+  const comet = comets.find((item) => item.id === id);
+  const color = asteroid?.color ?? comet?.surfaceColor ?? '#ffffff';
   return {
     width: 1,
     height: 1,
@@ -284,9 +286,13 @@ export function renderAsteroidModel(
 export async function renderPortrait(entry: CatalogEntry, size = 1000) {
   const texture = entryTexturePath(entry);
   const map = texture ? await loadMap(texture) : bodyColorMap(entry.data.id);
-  if (entry.kind === 'asteroid' && entry.data.shapeModel) {
+  if (
+    (entry.kind === 'asteroid' || entry.kind === 'comet') &&
+    entry.data.shapeModel
+  ) {
+    const directory = entry.kind === 'asteroid' ? 'asteroids' : 'comets';
     const bytes = readFileSync(
-      resolve('public/models/asteroids', `${entry.data.shapeModel}.bin`),
+      resolve('public/models', directory, `${entry.data.shapeModel}.bin`),
     );
     const model = parseAsteroidModel(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),

@@ -153,21 +153,13 @@ export default function SolarScene({
     const labelLayer = document.createElement('div');
     labelLayer.className = 'scene-labels';
     container.appendChild(labelLayer);
-    const cometSystem = createCometSystem(scene, labelLayer, (id) =>
-      latest.current.onSelect(id),
+    const cometSystem = createCometSystem(
+      scene,
+      labelLayer,
+      (id) => latest.current.onSelect(id),
+      () =>
+        latest.current.onAssetStatus('部分彗星模型加载失败，暂用近似形状。'),
     );
-    const cometMaterial = cometSystem.nucleus
-      .material as THREE.MeshStandardMaterial;
-    const cometFallbackColor = cometMaterial.color.getHex();
-    applyMap(cometMaterial, 'comet_nucleus', {
-      lazy: true,
-      mapColor: 0xffffff,
-      clear: () => {
-        cometMaterial.map = null;
-        cometMaterial.color.setHex(cometFallbackColor);
-        cometMaterial.needsUpdate = true;
-      },
-    });
     for (const body of bodies) {
       const root = new THREE.Group();
       scene.add(root);
@@ -304,8 +296,10 @@ export default function SolarScene({
           asteroid.texture,
           (texture) => asteroidSystem.setTexture(asteroid.id, texture),
           {
-            lazy: true,
-            preload: false,
+            // These are ordinary body materials, not opt-in terrain data.
+            // Attach the local standard map even before an asteroid is focused;
+            // the selected body can still upgrade to the high-resolution map.
+            lazy: false,
             retainOnNavigation: true,
             clear: () => asteroidSystem.clearTexture(asteroid.id),
           },
@@ -315,8 +309,8 @@ export default function SolarScene({
           asteroid.normalTexture,
           (texture) => asteroidSystem.setNormalTexture(asteroid.id, texture),
           {
-            lazy: true,
-            preload: false,
+            // Keep normal maps aligned with their body-specific color maps.
+            lazy: false,
             retainOnNavigation: true,
             colorSpace: THREE.NoColorSpace,
             clear: () => asteroidSystem.clearNormalTexture(asteroid.id),
@@ -556,8 +550,6 @@ export default function SolarScene({
             (name): name is string => !!name,
           )
         : [];
-      const cometTexture =
-        s.cometId && s.selected === s.cometId ? 'comet_nucleus' : null;
       const focusBody = bodies.find(
         (b) =>
           b.id ===
@@ -565,14 +557,13 @@ export default function SolarScene({
             s.selected),
       );
       const surfaceTexture =
-        s.realSurface && !selectedMoon && !selectedAsteroid && !cometTexture
+        s.realSurface && !selectedMoon && !selectedAsteroid
           ? (focusBody?.surfaceTexture ?? null)
           : null;
       const terrainBody =
         s.realTerrain &&
         !selectedMoon &&
         !selectedAsteroid &&
-        !cometTexture &&
         focusBody?.heightTexture
           ? focusBody
           : null;
@@ -580,8 +571,8 @@ export default function SolarScene({
       const activeBodyTextures = [
         ...(selectedAsteroidTextures.length > 0
           ? selectedAsteroidTextures
-          : selectedMoonTexture || cometTexture
-            ? [selectedMoonTexture ?? cometTexture!]
+          : selectedMoonTexture
+            ? [selectedMoonTexture]
             : []),
         ...(surfaceTexture ? [surfaceTexture] : []),
         ...(terrainTexture ? [terrainTexture] : []),
@@ -601,7 +592,6 @@ export default function SolarScene({
         s.textureQuality,
         selectedAsteroid?.texture ??
           selectedMoonTexture ??
-          cometTexture ??
           focusBody?.texture ??
           null,
         compactStable,
@@ -879,6 +869,7 @@ export default function SolarScene({
       eclipsePath.dispose();
       observerMarker?.dispose();
       asteroidSystem.dispose();
+      cometSystem.dispose();
       planetSurfaces.forEach((surface) => surface.dispose());
       scene.traverse((o) => {
         if (

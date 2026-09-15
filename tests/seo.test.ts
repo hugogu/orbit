@@ -13,9 +13,11 @@ import {
   profileJsonLd,
   profileTitle,
   serializeJsonLd,
+  siteOrigin,
   seoSiteName,
   seoLocales,
 } from '../lib/seo';
+import { portraitCredit } from '../lib/profile-images';
 import { localePath, translator } from '../lib/i18n';
 import { renderSitemap, sitemapEntries } from '../lib/sitemap';
 import { htmlTagAttributes } from '../scripts/lib/html-tags';
@@ -122,6 +124,20 @@ void test('profile JSON-LD describes the learning resource and breadcrumb graph'
   const resource = nodes.find((node) => node['@type'] === 'LearningResource')!;
   assert.equal(resource.educationalLevel, 'Beginner');
   assert.deepEqual(resource.author, resource.provider);
+  const webpage = nodes.find((node) => node['@type'] === 'WebPage')!;
+  const image = webpage.primaryImageOfPage as Record<string, unknown>;
+  const credit = portraitCredit(entry);
+  assert.equal(
+    image.acquireLicensePage,
+    new URL(credit.url, `${siteOrigin}/`).toString(),
+  );
+  assert.deepEqual(image.creator, {
+    '@type': 'Organization',
+    name: seoSiteName,
+    url: siteOrigin,
+  });
+  assert.match(String(image.copyrightNotice), /Source attribution/);
+  assert.equal(image.creditText, `${credit.name}; rendered by ORBIT`);
   const homeNodes = homeJsonLd()['@graph'] as Array<Record<string, unknown>>;
   assert.equal(homeNodes.length, 3);
   assert.ok(

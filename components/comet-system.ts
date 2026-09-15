@@ -2,13 +2,57 @@ import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
 import { createCometAtmosphere } from './comet-atmosphere';
 import * as THREE from 'three';
-import { comets, cometPosition, cometOrbitPoint } from '../lib/comets';
+import {
+  comets,
+  cometPosition,
+  cometOrbitPoint,
+  type Comet,
+} from '../lib/comets';
+import {
+  asteroidModelScale,
+  parseAsteroidModel,
+  type AsteroidModelData,
+} from '../lib/asteroid-model';
 const untranslated: Translate = (key) => key;
+
+function fallbackGeometry(comet: Comet) {
+  const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const scale =
+    comet.id === 'encke'
+      ? [1.42, 0.8, 0.76]
+      : comet.id === 'hale-bopp'
+        ? [1.55, 0.94, 0.84]
+        : comet.id === '67p'
+          ? [1.3, 0.9, 0.8]
+          : [1.4, 0.82, 0.72];
+  geometry.scale(scale[0], scale[1], scale[2]);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function modelGeometry(model: AsteroidModelData) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(model.positions, 3),
+  );
+  geometry.setAttribute('normal', new THREE.BufferAttribute(model.normals, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(model.uvs, 2));
+  geometry.setIndex(new THREE.BufferAttribute(model.indices, 1));
+  // Keep the model's measured silhouette while normalizing its volume to one
+  // mean radius, matching the display convention used by asteroid meshes.
+  const scale = asteroidModelScale(model);
+  geometry.scale(scale, scale, scale);
+  geometry.computeBoundingSphere();
+  geometry.computeBoundingBox();
+  return geometry;
+}
 
 export function createCometSystem(
   scene: THREE.Scene,
   labelLayer: HTMLElement,
   onSelect?: (id: string) => void,
+  onModelError: () => void = () => {},
 ) {
   const group = new THREE.Group();
   group.name = 'comet-system';
@@ -44,11 +88,18 @@ export function createCometSystem(
   );
   group.add(head);
   head.name = 'comet-head';
-  const nucleus = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.24, 1),
-    new THREE.MeshStandardMaterial({ color: '#8c847b', roughness: 1 }),
+  const nucleus = new THREE.Mesh<
+    THREE.BufferGeometry,
+    THREE.MeshStandardMaterial
+  >(
+    fallbackGeometry(comets[0]),
+    new THREE.MeshStandardMaterial({
+      color: comets[0].surfaceColor,
+      roughness: 0.98,
+      metalness: 0,
+    }),
   );
-  nucleus.scale.set(1.5, 0.85, 1);
+  nucleus.scale.setScalar(0.24);
   nucleus.name = 'comet-nucleus';
   group.add(nucleus);
   const atmosphere = createCometAtmosphere();
@@ -74,6 +125,61 @@ export function createCometSystem(
   const position = new THREE.Vector3(),
     center = new THREE.Vector3(),
     projected = new THREE.Vector3();
+  const modelCache = new Map<string, THREE.BufferGeometry>();
+  const fallbackCache = new Map<string, THREE.BufferGeometry>();
+  const pendingModels = new Map<string, Promise<void>>();
+  let activeId: string | null = null;
+  let loadingId: string | null = null;
+  let modelController: AbortController | null = null;
+  let disposed = false;
+  const setGeometry = (comet: Comet, geometry: THREE.BufferGeometry) => {
+    if (activeId === comet.id) nucleus.geometry = geometry;
+  };
+  const getFallback = (comet: Comet) => {
+    let geometry = fallbackCache.get(comet.id);
+    if (!geometry) {
+      geometry = fallbackGeometry(comet);
+      fallbackCache.set(comet.id, geometry);
+    }
+    return geometry;
+  };
+  const ensureModel = (comet: Comet) => {
+    const cached = modelCache.get(comet.id);
+    if (cached) {
+      setGeometry(comet, cached);
+      return;
+    }
+    const pending = pendingModels.get(comet.id);
+    if (pending) return;
+    const controller = new AbortController();
+    modelController = controller;
+    loadingId = comet.id;
+    const request = (async () => {
+      try {
+        const response = await fetch(
+          `/models/comets/${encodeURIComponent(comet.shapeModel)}.bin?v=comet-shape-v1`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const model = parseAsteroidModel(await response.arrayBuffer());
+        if (disposed || controller.signal.aborted) return;
+        const geometry = modelGeometry(model);
+        modelCache.set(comet.id, geometry);
+        setGeometry(comet, geometry);
+      } catch {
+        if (!disposed && !controller.signal.aborted) {
+          setGeometry(comet, getFallback(comet));
+          onModelError();
+        }
+      }
+    })();
+    pendingModels.set(comet.id, request);
+    void request.finally(() => {
+      if (pendingModels.get(comet.id) === request)
+        pendingModels.delete(comet.id);
+      if (loadingId === comet.id) loadingId = null;
+    });
+  };
   return {
     position,
     center,
@@ -89,7 +195,15 @@ export function createCometSystem(
         comet = comets[index];
       group.visible = !!comet;
       if (!comet) {
+        activeId = null;
         return;
+      }
+      if (activeId !== comet.id) {
+        modelController?.abort();
+        if (loadingId) pendingModels.delete(loadingId);
+        activeId = comet.id;
+        nucleus.geometry = modelCache.get(comet.id) ?? getFallback(comet);
+        ensureModel(comet);
       }
       paths.forEach((path, i) => {
         path.visible = i === index && orbits;
@@ -100,6 +214,9 @@ export function createCometSystem(
       head.visible = !close;
       nucleus.position.copy(position);
       nucleus.rotation.y = days * 2;
+      (nucleus.material as THREE.MeshStandardMaterial).color.set(
+        comet.surfaceColor,
+      );
       nucleus.userData.id = comet.id;
       atmosphere.update(position, orbitFrames[index].normal, days, tails);
       if (lastComet !== comet.id || lastTranslate !== t) {
@@ -129,6 +246,38 @@ export function createCometSystem(
         false,
         isOccluded?.(null, position) ?? false,
       );
+    },
+    dispose() {
+      disposed = true;
+      modelController?.abort();
+      modelController = null;
+      loadingId = null;
+      activeId = null;
+      pendingModels.clear();
+      const geometries = new Set<THREE.BufferGeometry>([
+        ...modelCache.values(),
+        ...fallbackCache.values(),
+      ]);
+      const materials = new Set<THREE.Material>();
+      group.traverse((object) => {
+        if (
+          object instanceof THREE.Mesh ||
+          object instanceof THREE.Line ||
+          object instanceof THREE.Points
+        ) {
+          geometries.add(object.geometry);
+          const objectMaterials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+          objectMaterials.forEach((material) => materials.add(material));
+        }
+      });
+      group.removeFromParent();
+      geometries.forEach((geometry) => geometry.dispose());
+      materials.forEach((material) => material.dispose());
+      modelCache.clear();
+      fallbackCache.clear();
+      label.remove();
     },
   };
 }

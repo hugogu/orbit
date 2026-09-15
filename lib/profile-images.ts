@@ -19,7 +19,7 @@ export function entryTexturePath(entry: CatalogEntry): string | null {
       ? (entry.data.texture ?? entry.data.id)
       : entry.kind === 'moon' || entry.kind === 'asteroid'
         ? entry.data.texture
-        : 'comet_nucleus';
+        : null;
   return texture ? texturePath(texture, false, 2048) : null;
 }
 
@@ -46,6 +46,22 @@ export type PortraitCredit = {
   license: string;
 };
 export function portraitCredit(entry: CatalogEntry): PortraitCredit {
+  if (entry.kind === 'comet') {
+    if (entry.data.shapeKind === 'measured')
+      return {
+        name: entry.data.shapeSource,
+        url: entry.data.shapeSourceUrl,
+        license:
+          entry.data.id === '67p'
+            ? 'https://archives.esac.esa.int/psa/'
+            : 'https://pds.nasa.gov/',
+      };
+    return {
+      name: `${entry.data.shapeSource}; ORBIT shape approximation`,
+      url: entry.data.shapeSourceUrl,
+      license: 'https://polyformproject.org/licenses/noncommercial/1.0.0/',
+    };
+  }
   if (entry.kind === 'asteroid') {
     const credits: Record<string, PortraitCredit> = {
       ceres: {

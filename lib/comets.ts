@@ -11,10 +11,23 @@ export type Comet = OrbitalElements & {
   name: string;
   en: string;
   color: string;
+  /** Neutral low-albedo nucleus color; the brighter color is reserved for paths and activity. */
+  surfaceColor: string;
+  /** Local normalized mesh key. The model is fetched only when this comet is selected. */
+  shapeModel: string;
+  /** Whether the bundled mesh is measured from observations or an explicit approximation. */
+  shapeKind: 'measured' | 'observational-approximation';
+  shapeSource: string;
+  shapeSourceUrl: string;
   description: string;
   fact: string;
   source: string;
 };
+
+export const cometModelNote =
+  '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。哈雷和 67P 使用公开观测形状模型，恩克和海尔—波普使用观测尺寸约束的独立近似；彗核表面、旋转与彗尾仍为示意。';
+export const cometVisualNote =
+  '彗核形状使用公开观测模型，或在缺少完整全球模型时使用观测尺寸约束的独立近似；没有可用的全球彗核反照率图，因此材质、彗发和彗尾为示意，不代表实时观测。';
 
 // Rounded JPL SBDB osculating elements retrieved 2026-09-07.
 // The epoch-aware solutions below retain the full precision SBDB snapshot.
@@ -24,6 +37,11 @@ export const comets: Comet[] = [
     name: '哈雷彗星',
     en: '1P / HALLEY',
     color: '#8de5ed',
+    surfaceColor: '#5b564e',
+    shapeModel: 'halley',
+    shapeKind: 'measured',
+    shapeSource: 'Phil Stooke / NASA PDS Small Body Shape Models V2.0',
+    shapeSourceUrl: 'https://sbn.psi.edu/pds/resource/stkshape.html',
     au: 17.9,
     e: 0.968,
     inc: 162,
@@ -40,6 +58,12 @@ export const comets: Comet[] = [
     name: '恩克彗星',
     en: '2P / ENCKE',
     color: '#b2e9be',
+    surfaceColor: '#514d46',
+    shapeModel: 'encke',
+    shapeKind: 'observational-approximation',
+    shapeSource:
+      'JPL SBDB physical constraints; no public global nucleus model',
+    shapeSourceUrl: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=2P',
     au: 2.22,
     e: 0.847,
     inc: 11.4,
@@ -56,6 +80,12 @@ export const comets: Comet[] = [
     name: '67P 彗星',
     en: '67P / CHURYUMOV–GERASIMENKO',
     color: '#f3c88e',
+    surfaceColor: '#62584b',
+    shapeModel: '67p',
+    shapeKind: 'measured',
+    shapeSource: 'ESA/RMOC SPC-ESA MTP009 / ESA Planetary Science Archive',
+    shapeSourceUrl:
+      'https://archives.esac.esa.int/psa/ftp/INTERNATIONAL-ROSETTA-MISSION/SHAPE/RO-C-MULTI-5-67P-SHAPE-V1.0/',
     au: 3.46,
     e: 0.641,
     inc: 7.04,
@@ -72,6 +102,13 @@ export const comets: Comet[] = [
     name: '海尔—波普彗星',
     en: 'C/1995 O1 / HALE–BOPP',
     color: '#b7b6ff',
+    surfaceColor: '#5e5952',
+    shapeModel: 'hale-bopp',
+    shapeKind: 'observational-approximation',
+    shapeSource:
+      'NASA Science observed nucleus size; no public global nucleus model',
+    shapeSourceUrl:
+      'https://science.nasa.gov/solar-system/comets/c-1995-o1-hale-bopp/',
     au: 177,
     e: 0.995,
     inc: 89.3,

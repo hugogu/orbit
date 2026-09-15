@@ -13,15 +13,15 @@ The following files originate from the pinned
 `licenses/` sidecars and the source paths are recorded in
 `../source-manifest.json`.
 
-| ORBIT body | Files | Copyright / attribution | License | Notes |
-| --- | --- | --- | --- | --- |
-| Phobos | `4k_phobos.jpg`, `2k_phobos.jpg` | Askaniy Anpilogov; Stooke Small Bodies Maps V3.0, Phil Stooke / NASA PDS | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | Attribution required |
-| Deimos | `4k_deimos.jpg`, `2k_deimos.jpg` | Phil Stooke / NASA PDS | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | No attribution required; credit retained |
-| Io | `4k_io.png`, `2k_io.png` | ItzImcool; NASA/JPL-Caltech/ASI/USGS; NASA/JPL/SwRI/MSSS contributors; AstroChara | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Attribution required |
-| Ganymede | `4k_ganymede.jpg`, `2k_ganymede.jpg` | Askaniy Anpilogov; NASA/JPL-Caltech/ASI/USGS; Björn Jónsson; Brian Swift | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | Attribution required |
-| Titan | `4k_titan.png`, `2k_titan.png` | Askaniy Anpilogov; Pedro Garcia; AstroChara; Martonchik & Orton; Karkoschka et al.; Seignovert et al.; NASA/JPL-Caltech/ASI/USGS; Caltech-JPL/University of Arizona/LPG-University of Nantes-CNRS | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | Radar/infrared-informed colors are not visible-light photography |
-| Miranda, Ariel, Umbriel, Titania, Oberon | matching `4k_*.jpg` or `2k_*.jpg` | ItzImcool; Paul Schenk; NASA/JPL/Ted Stryk; Phil Stooke (Umbriel) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | ORBIT's `mirror-fill-v1` files are adaptations and remain CC BY-SA 4.0 |
-| Triton | `4k_triton.jpg`, `2k_triton.jpg` | Askaniy Anpilogov; NASA/JPL-Caltech/ASI/USGS | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | ORBIT's `mirror-fill-v1` fill is identified in the manifest |
+| ORBIT body                               | Files                                | Copyright / attribution                                                                                                                                                                           | License                                                         | Notes                                                                  |
+| ---------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Phobos                                   | `4k_phobos.jpg`, `2k_phobos.jpg`     | Askaniy Anpilogov; Stooke Small Bodies Maps V3.0, Phil Stooke / NASA PDS                                                                                                                          | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)       | Attribution required                                                   |
+| Deimos                                   | `4k_deimos.jpg`, `2k_deimos.jpg`     | Phil Stooke / NASA PDS                                                                                                                                                                            | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)   | No attribution required; credit retained                               |
+| Io                                       | `4k_io.png`, `2k_io.png`             | ItzImcool; NASA/JPL-Caltech/ASI/USGS; NASA/JPL/SwRI/MSSS contributors; AstroChara                                                                                                                 | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)       | Attribution required                                                   |
+| Ganymede                                 | `4k_ganymede.jpg`, `2k_ganymede.jpg` | Askaniy Anpilogov; NASA/JPL-Caltech/ASI/USGS; Björn Jónsson; Brian Swift                                                                                                                          | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)       | Attribution required                                                   |
+| Titan                                    | `4k_titan.png`, `2k_titan.png`       | Askaniy Anpilogov; Pedro Garcia; AstroChara; Martonchik & Orton; Karkoschka et al.; Seignovert et al.; NASA/JPL-Caltech/ASI/USGS; Caltech-JPL/University of Arizona/LPG-University of Nantes-CNRS | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)       | Radar/infrared-informed colors are not visible-light photography       |
+| Miranda, Ariel, Umbriel, Titania, Oberon | matching `4k_*.jpg` or `2k_*.jpg`    | ItzImcool; Paul Schenk; NASA/JPL/Ted Stryk; Phil Stooke (Umbriel)                                                                                                                                 | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | ORBIT's `mirror-fill-v1` files are adaptations and remain CC BY-SA 4.0 |
+| Triton                                   | `4k_triton.jpg`, `2k_triton.jpg`     | Askaniy Anpilogov; NASA/JPL-Caltech/ASI/USGS                                                                                                                                                      | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)       | ORBIT's `mirror-fill-v1` fill is identified in the manifest            |
 
 ## Commercially safe illustrative fallback
 
@@ -33,12 +33,15 @@ the openly licensed `asteroid.jpg` surface. The files keep their body-specific
 names for stable application paths, but are explicitly illustrative and are
 not cartographic maps of those bodies.
 
-| Files | Source / attribution | License |
-| --- | --- | --- |
+| Files                                                                                                                                      | Source / attribution                                             | License                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------- |
 | `4k_asteroid.jpg`, `2k_asteroid.jpg` and the body-named fallback copies for Europa, Callisto, Enceladus, Mimas, Iapetus, Charon, and Pluto | cubicApocalypse; source file from CelestiaContent revision above | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 
-Nereid and comet nuclei also use this same surface as a schematic teaching
-texture because complete global albedo maps are unavailable.
+Nereid uses this same surface as a schematic teaching texture because a
+complete global albedo map is unavailable. Comet nuclei no longer reference
+this fallback in the scene or profile renderer; their shape assets and the
+limits of their surface data are documented in
+`../../models/comets/CREDITS.md`.
 
 ## Other bundled sources
 
@@ -76,7 +79,8 @@ The rendered images of Miranda, Ariel, Umbriel, Titania, and Oberon remain
 CC0 license as their source texture, as identified above. The ORBIT source
 code's noncommercial license does **not** apply to these images. Planetary
 renders use Solar System Scope's CC BY 4.0 material; the Sun's view and glow
-are illustrative. Fallback body maps and comet shapes remain schematic.
+are illustrative. Comet portraits use the documented body-specific meshes,
+but their neutral albedo and activity effects remain schematic.
 
 Generated WebP and JPEG files embed XMP creator, source, adaptation, and
 license information. Each profile also displays attribution and links to the

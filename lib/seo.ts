@@ -107,6 +107,27 @@ function entryLocalizedName(entry: CatalogEntry, locale: Locale) {
   return translator(locale)(entry.data.name);
 }
 
+function profileImageMetadata(
+  image: string,
+  credit: ReturnType<typeof portraitCredit>,
+) {
+  return {
+    '@type': 'ImageObject',
+    contentUrl: image,
+    width: 1000,
+    height: 1000,
+    acquireLicensePage: absoluteSiteUrl(credit.url),
+    license: credit.license,
+    creator: {
+      '@type': 'Organization',
+      name: seoSiteName,
+      url: siteOrigin,
+    },
+    copyrightNotice: `Source attribution: ${credit.name}; adapted and rendered by ORBIT.`,
+    creditText: `${credit.name}; rendered by ORBIT`,
+  };
+}
+
 /** Structured data shared by every crawlable celestial profile. */
 export function profileJsonLd({
   entry,
@@ -199,14 +220,7 @@ export function profileJsonLd({
         description,
         inLanguage: languages[locale].intl,
         isPartOf: { '@id': websiteId },
-        primaryImageOfPage: {
-          '@type': 'ImageObject',
-          contentUrl: image,
-          width: 1000,
-          height: 1000,
-          creditText: `${credit.name}; rendered by ORBIT`,
-          license: credit.license,
-        },
+        primaryImageOfPage: profileImageMetadata(image, credit),
         about: { '@id': celestialId },
         breadcrumb: { '@id': breadcrumbId },
       },
