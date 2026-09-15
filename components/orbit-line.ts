@@ -11,14 +11,16 @@ type WideLineMaterial = LineMaterial & { linewidth: number };
 
 export function createOrbitLine(
   color: THREE.ColorRepresentation,
-  opacity: number,
+  brightness: number,
   points: THREE.Vector3[] = [],
 ) {
   const geometry = new LineGeometry();
   if (points.length > 0) geometry.setFromPoints(points);
   // Draw guide paths before opaque bodies. This keeps a continuous line free
   // of segment self-occlusion, while bodies still hide their far-side arcs.
-  const dimmedColor = new THREE.Color(color).multiplyScalar(opacity);
+  // Line2 inherits LineSegments2.onBeforeRender, which updates the material
+  // resolution from the active renderer viewport on every render.
+  const dimmedColor = new THREE.Color(color).multiplyScalar(brightness);
   const material = new LineMaterial({
     color: dimmedColor,
     depthTest: false,

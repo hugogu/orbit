@@ -18,6 +18,10 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
   ]);
   assert.ok(isOrbitLine(line));
   assert.equal(
+    line.material.color.getHex(),
+    new THREE.Color(0xffffff).multiplyScalar(0.3).getHex(),
+  );
+  assert.equal(
     (line.material as typeof line.material & { linewidth: number }).linewidth,
     DEFAULT_ORBIT_LINE_WIDTH,
   );
@@ -25,6 +29,12 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
   assert.equal(line.material.depthTest, false);
   assert.equal(line.material.depthWrite, false);
   assert.equal(line.renderOrder, -1);
+  line.onBeforeRender({
+    getViewport(target: THREE.Vector4) {
+      return target.set(0, 0, 1920, 1080);
+    },
+  } as unknown as THREE.WebGLRenderer);
+  assert.deepEqual(line.material.resolution.toArray(), [1920, 1080]);
   const before = line.geometry;
   setOrbitLineWidth(line, 5);
   setOrbitLinePoints(line, [
