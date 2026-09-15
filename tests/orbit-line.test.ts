@@ -4,12 +4,14 @@ import * as THREE from 'three';
 import {
   createOrbitLine,
   isOrbitLine,
+  ORBIT_PATH_SEGMENTS,
   setOrbitLinePoints,
   setOrbitLineWidth,
 } from '../components/orbit-line';
 import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
 
 void test('orbit lines use a wide-line material and accept a configured pixel width', () => {
+  assert.equal(ORBIT_PATH_SEGMENTS, 2048);
   const line = createOrbitLine(0xffffff, 0.3, [
     new THREE.Vector3(0, 0, 0),
     new THREE.Vector3(1, 0, 0),

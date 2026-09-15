@@ -16,6 +16,7 @@ import {
 import {
   createOrbitLine,
   isOrbitLine,
+  ORBIT_PATH_SEGMENTS,
   setOrbitLineWidth,
 } from './orbit-line';
 import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
@@ -66,9 +67,14 @@ export function createCometSystem(
   const paths = comets.map((comet) => {
     // Sample eccentric anomaly so even very elongated ellipses remain smooth.
     const points = Array.from(
-      { length: 513 },
+      { length: ORBIT_PATH_SEGMENTS + 1 },
       (_, i) =>
-        new THREE.Vector3(...cometOrbitPoint(comet, (i / 512) * Math.PI * 2)),
+        new THREE.Vector3(
+          ...cometOrbitPoint(
+            comet,
+            (i / ORBIT_PATH_SEGMENTS) * Math.PI * 2,
+          ),
+        ),
     );
     const line = createOrbitLine(comet.color, 0.7, points);
     group.add(line);

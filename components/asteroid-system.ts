@@ -11,6 +11,7 @@ import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
 import {
   createOrbitLine,
+  ORBIT_PATH_SEGMENTS,
   setOrbitLinePoints,
   setOrbitLineWidth,
 } from './orbit-line';
@@ -213,12 +214,12 @@ export function createAsteroidSystem(
           setOrbitLinePoints(
             path,
             Array.from(
-              { length: 257 },
+              { length: ORBIT_PATH_SEGMENTS + 1 },
               (_, i) =>
                 new THREE.Vector3(
                   ...asteroidOrbitPoint(
                     asteroid,
-                    (i / 256) * Math.PI * 2,
+                    (i / ORBIT_PATH_SEGMENTS) * Math.PI * 2,
                     scale,
                   ),
                 ),

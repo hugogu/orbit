@@ -5,6 +5,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { DEFAULT_ORBIT_LINE_WIDTH } from '@/lib/orbit-line-width';
 
 export type OrbitLine = Line2;
+export const ORBIT_PATH_SEGMENTS = 2048;
 
 type WideLineMaterial = LineMaterial & { linewidth: number };
 

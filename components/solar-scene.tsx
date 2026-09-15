@@ -28,6 +28,7 @@ import { createEclipsePath } from './eclipse-path';
 import {
   createOrbitLine,
   isOrbitLine,
+  ORBIT_PATH_SEGMENTS,
   setOrbitLinePoints,
   setOrbitLineWidth,
   type OrbitLine,
@@ -615,12 +616,12 @@ export default function SolarScene({
           const line = orbitLines.get(body.id);
           if (line) {
             const pts = Array.from(
-              { length: 257 },
+              { length: ORBIT_PATH_SEGMENTS + 1 },
               (_, i) =>
                 new THREE.Vector3(
                   ...planetPosition(
                     body,
-                    days + (i / 256) * body.period,
+                    days + (i / ORBIT_PATH_SEGMENTS) * body.period,
                     s.scale,
                   ),
                 ),
