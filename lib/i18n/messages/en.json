@@ -184,6 +184,8 @@
   "高清按需加载到正在跟随的天体和银河背景，切换目标会释放旧高清材质。自动模式在手机或省流量环境使用 2K。超清更耗显存与流量。": "High resolution loads on demand for the followed body and Milky Way. Switching targets releases old high-resolution maps. Auto uses 2K on phones or data-saving connections. Ultra needs more GPU memory and data.",
   "实际最高：地球、月球、水星、火星和银河 8K；太阳、木星、土星、金星云层 4K；天王星 4K、海王星 2K；冥王星使用 2K 的 NASA/JPL 科普示意图。卫星贴图按需加载，缺少完整全球测绘的土卫二、海卫二和彗核使用明确标注的示意表面。": "Source limits: Earth, Moon, Mercury, Mars, and the Milky Way reach 8K; Sun, Jupiter, Saturn, and Venus clouds reach 4K; Uranus reaches 4K and Neptune 2K; Pluto uses a 2K NASA/JPL illustrative teaching map. Satellite maps load on demand. Enceladus, Nereid, and comet nuclei use clearly labeled illustrative surfaces where complete global maps are unavailable.",
   "公转轨道": "Orbital paths",
+  "轨道线粗细": "Orbit line thickness",
+  "{{width}} 像素": "{{width}} px",
   "天体名称": "Body labels",
   "小天体与外围结构": "Small bodies & outer structure",
   "距离按真实比例": "True relative distances",

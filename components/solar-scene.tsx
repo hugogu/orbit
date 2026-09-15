@@ -25,11 +25,19 @@ import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
 import type { EclipseProgressEvent } from '@/lib/eclipse-progress';
 import { createEclipsePath } from './eclipse-path';
+import {
+  createOrbitLine,
+  isOrbitLine,
+  setOrbitLinePoints,
+  setOrbitLineWidth,
+  type OrbitLine,
+} from './orbit-line';
 export type SceneState = {
   locale: Locale;
   speed: number;
   paused: boolean;
   orbits: boolean;
+  orbitLineWidth: number;
   labels: boolean;
   belts: boolean;
   scale: ScaleMode;
@@ -143,7 +151,7 @@ export default function SolarScene({
     scene.backgroundRotation.y = Math.PI / 2;
     const roots = new Map<string, THREE.Group>(),
       meshes = new Map<string, THREE.Mesh>(),
-      orbitLines = new Map<string, THREE.Line>(),
+      orbitLines = new Map<string, OrbitLine>(),
       labels = new Map<string, HTMLButtonElement>(),
       projectLabels = new Map<string, ReturnType<typeof createSceneLabel>>();
     const planetSurfaces: ReturnType<typeof registerPlanetSurface>[] = [];
@@ -237,14 +245,7 @@ export default function SolarScene({
         root.add(atmosphere);
       }
       if (body.period) {
-        const line = new THREE.Line(
-          new THREE.BufferGeometry(),
-          new THREE.LineBasicMaterial({
-            color: body.color,
-            transparent: true,
-            opacity: 0.2,
-          }),
-        );
+        const line = createOrbitLine(body.color, 0.2);
         orbitLines.set(body.id, line);
         scene.add(line);
       }
@@ -624,8 +625,7 @@ export default function SolarScene({
                   ),
                 ),
             );
-            line.geometry.dispose();
-            line.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+            setOrbitLinePoints(line, pts);
           }
         }
       }
@@ -639,7 +639,10 @@ export default function SolarScene({
           .get(body.id)!
           .parent!.quaternion.copy(bodyOrientation(body.id, days));
         const line = orbitLines.get(body.id);
-        if (line) line.visible = s.orbits;
+        if (line) {
+          line.visible = s.orbits;
+          setOrbitLineWidth(line, s.orbitLineWidth);
+        }
       }
       observerMarker?.update(
         s.observerLocation.latitude,
@@ -647,8 +650,22 @@ export default function SolarScene({
         s.observerLocationReady && s.selected === 'earth',
         now,
       );
-      moonSystem.update(days, s.scale, s.selected, s.orbits, s.realSizes);
-      asteroidSystem.update(days, s.scale, s.realSizes, s.selected, s.orbits);
+      moonSystem.update(
+        days,
+        s.scale,
+        s.selected,
+        s.orbits,
+        s.realSizes,
+        s.orbitLineWidth,
+      );
+      asteroidSystem.update(
+        days,
+        s.scale,
+        s.realSizes,
+        s.selected,
+        s.orbits,
+        s.orbitLineWidth,
+      );
       eclipseSystem.update(
         days,
         s.selected,
@@ -676,6 +693,7 @@ export default function SolarScene({
         translate,
         s.cometClose,
         s.cometTails,
+        s.orbitLineWidth,
       );
       const comet = comets.find((c) => c.id === s.cometId);
       const cometKey = `${s.cometId}/${s.cometClose}`;
@@ -875,7 +893,8 @@ export default function SolarScene({
         if (
           o instanceof THREE.Mesh ||
           o instanceof THREE.Line ||
-          o instanceof THREE.Points
+          o instanceof THREE.Points ||
+          isOrbitLine(o)
         ) {
           if (o instanceof THREE.InstancedMesh) o.dispose();
           o.geometry.dispose();

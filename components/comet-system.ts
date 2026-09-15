@@ -13,6 +13,12 @@ import {
   parseAsteroidModel,
   type AsteroidModelData,
 } from '../lib/asteroid-model';
+import {
+  createOrbitLine,
+  isOrbitLine,
+  setOrbitLineWidth,
+} from './orbit-line';
+import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
 const untranslated: Translate = (key) => key;
 
 function fallbackGeometry(comet: Comet) {
@@ -64,14 +70,7 @@ export function createCometSystem(
       (_, i) =>
         new THREE.Vector3(...cometOrbitPoint(comet, (i / 512) * Math.PI * 2)),
     );
-    const line = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({
-        color: comet.color,
-        transparent: true,
-        opacity: 0.7,
-      }),
-    );
+    const line = createOrbitLine(comet.color, 0.7, points);
     group.add(line);
     return line;
   });
@@ -190,6 +189,7 @@ export function createCometSystem(
       t: Translate = untranslated,
       close = false,
       tails = true,
+      orbitLineWidth = DEFAULT_ORBIT_LINE_WIDTH,
     ) {
       const index = comets.findIndex((c) => c.id === id),
         comet = comets[index];
@@ -207,6 +207,7 @@ export function createCometSystem(
       }
       paths.forEach((path, i) => {
         path.visible = i === index && orbits;
+        setOrbitLineWidth(path, orbitLineWidth);
       });
       position.set(...cometPosition(comet, days));
       center.copy(orbitFrames[index].center);
@@ -263,7 +264,8 @@ export function createCometSystem(
         if (
           object instanceof THREE.Mesh ||
           object instanceof THREE.Line ||
-          object instanceof THREE.Points
+          object instanceof THREE.Points ||
+          isOrbitLine(object)
         ) {
           geometries.add(object.geometry);
           const objectMaterials = Array.isArray(object.material)

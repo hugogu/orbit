@@ -1,4 +1,5 @@
 import { isTextureQuality, type TextureQuality } from './texture-quality';
+import { isOrbitLineWidth } from './orbit-line-width';
 import type { ScaleMode } from './solar';
 import type { SkyLocation } from './sky-events';
 
@@ -6,6 +7,7 @@ export const preferencesStorageKey = 'orbit-observatory-preferences-v1';
 
 export type ObservatoryPreferences = {
   orbits: boolean;
+  orbitLineWidth: number;
   labels: boolean;
   belts: boolean;
   scale: ScaleMode;
@@ -45,6 +47,8 @@ export function sanitizePreferences(value: unknown): StoredPreferences {
   for (const key of booleanKeys) {
     if (typeof source[key] === 'boolean') result[key] = source[key];
   }
+  if (isOrbitLineWidth(source.orbitLineWidth))
+    result.orbitLineWidth = source.orbitLineWidth;
   if (source.scale === 'illustrated' || source.scale === 'distance')
     result.scale = source.scale;
   if (isTextureQuality(source.textureQuality))

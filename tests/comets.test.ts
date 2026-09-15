@@ -12,6 +12,7 @@ import { J2000_MS, DAY_MS } from '../lib/simulation-time.ts';
 import { bodies, eccentricPosition, orbitPosition } from '../lib/solar.ts';
 import { moonSystems } from '../lib/moons.ts';
 import { createCometSystem } from '../components/comet-system.ts';
+import { isOrbitLine } from '../components/orbit-line.ts';
 import { parseAsteroidModel } from '../lib/asteroid-model.ts';
 
 void test('all eight planets have satellite information, including the two without moons', () => {
@@ -169,7 +170,7 @@ void test('comet scene preserves the absolute date across selections and keeps i
     const initial = system.position.clone();
     const group = scene.getObjectByName('comet-system')!;
     assert.equal(
-      group.children.filter((c) => c instanceof THREE.Line && c.visible).length,
+      group.children.filter((c) => isOrbitLine(c) && c.visible).length,
       1,
     );
     const tail = scene.getObjectByName('ion-tail')!;
@@ -182,7 +183,7 @@ void test('comet scene preserves the absolute date across selections and keeps i
     system.update('halley', peri + 100, false);
     assert.ok(system.position.distanceTo(initial) > 0.1);
     assert.equal(
-      group.children.filter((c) => c instanceof THREE.Line && c.visible).length,
+      group.children.filter((c) => isOrbitLine(c) && c.visible).length,
       0,
     );
     system.update('encke', peri + 100, true);

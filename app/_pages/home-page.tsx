@@ -86,12 +86,19 @@ import {
   type StoredPreferences,
 } from '@/lib/preferences';
 import { bodyDetailsPath } from '@/lib/seo';
+import {
+  DEFAULT_ORBIT_LINE_WIDTH,
+  MAX_ORBIT_LINE_WIDTH,
+  MIN_ORBIT_LINE_WIDTH,
+  ORBIT_LINE_WIDTH_STEP,
+} from '@/lib/orbit-line-width';
 export default function Home() {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState<string | null>(null),
     [paused, setPaused] = useState(false),
     [speed, setSpeed] = useState(0),
     [orbits, setOrbits] = useState(true),
+    [orbitLineWidth, setOrbitLineWidth] = useState(DEFAULT_ORBIT_LINE_WIDTH),
     [labels, setLabels] = useState(true),
     [belts, setBelts] = useState(true),
     [scale, setScale] = useState<ScaleMode>('illustrated'),
@@ -151,6 +158,8 @@ export default function Home() {
       setTime(now);
       const preferences = loadPreferences();
       if (preferences.orbits !== undefined) setOrbits(preferences.orbits);
+      if (preferences.orbitLineWidth !== undefined)
+        setOrbitLineWidth(preferences.orbitLineWidth);
       if (preferences.labels !== undefined) setLabels(preferences.labels);
       if (preferences.belts !== undefined) setBelts(preferences.belts);
       if (preferences.scale !== undefined) setScale(preferences.scale);
@@ -201,6 +210,7 @@ export default function Home() {
     if (!preferencesReady) return;
     const preferences: StoredPreferences = {
       orbits,
+      orbitLineWidth,
       labels,
       belts,
       scale,
@@ -225,6 +235,7 @@ export default function Home() {
   }, [
     preferencesReady,
     orbits,
+    orbitLineWidth,
     labels,
     belts,
     scale,
@@ -612,6 +623,7 @@ export default function Home() {
           speed: speeds[speed],
           paused,
           orbits,
+          orbitLineWidth,
           labels,
           belts,
           scale: displayScale,
@@ -1125,6 +1137,28 @@ export default function Home() {
                   checked={orbits}
                   onCheckedChange={setOrbits}
                 />
+              </div>
+              <div className="setting-row orbit-line-width-setting">
+                <span id="orbit-line-width-label">{t('轨道线粗细')}</span>
+                <Slider
+                  aria-labelledby="orbit-line-width-label"
+                  aria-valuetext={t('{{width}} 像素', {
+                    width: orbitLineWidth,
+                  })}
+                  className="orbit-line-width-slider"
+                  max={MAX_ORBIT_LINE_WIDTH}
+                  min={MIN_ORBIT_LINE_WIDTH}
+                  onValueChange={(value) =>
+                    setOrbitLineWidth(
+                      typeof value === 'number'
+                        ? value
+                        : (value[0] ?? DEFAULT_ORBIT_LINE_WIDTH),
+                    )
+                  }
+                  step={ORBIT_LINE_WIDTH_STEP}
+                  value={[orbitLineWidth]}
+                />
+                <output>{t('{{width}} 像素', { width: orbitLineWidth })}</output>
               </div>
               <div className="setting-row">
                 <label htmlFor="labels">{t('天体名称')}</label>

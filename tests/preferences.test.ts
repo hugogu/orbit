@@ -7,6 +7,10 @@ import {
   sanitizePreferences,
   savePreferences,
 } from '../lib/preferences';
+import {
+  DEFAULT_ORBIT_LINE_WIDTH,
+  isOrbitLineWidth,
+} from '../lib/orbit-line-width';
 
 function memoryStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -23,6 +27,14 @@ void test('terrain lighting and geometry default to enabled for new users', () =
   );
   assert.match(source, /\[realSurface, setRealSurface\] = useState\(true\)/);
   assert.match(source, /\[realTerrain, setRealTerrain\] = useState\(true\)/);
+  assert.match(
+    source,
+    /\[orbitLineWidth, setOrbitLineWidth\] = useState\(DEFAULT_ORBIT_LINE_WIDTH\)/,
+  );
+  assert.equal(DEFAULT_ORBIT_LINE_WIDTH, 2.5);
+  assert.ok(isOrbitLineWidth(1));
+  assert.ok(isOrbitLineWidth(6));
+  assert.ok(!isOrbitLineWidth(2.25));
 });
 
 void test('preferences are validated and persisted as one versioned record', () => {
@@ -37,6 +49,7 @@ void test('preferences are validated and persisted as one versioned record', () 
         realSurface: true,
         realTerrain: true,
         labels: true,
+        orbitLineWidth: 4.5,
         observerLocation: {
           latitude: 31.23,
           longitude: 121.47,
@@ -58,6 +71,7 @@ void test('preferences are validated and persisted as one versioned record', () 
     realSurface: true,
     realTerrain: true,
     labels: true,
+    orbitLineWidth: 4.5,
     observerLocation: {
       latitude: 31.23,
       longitude: 121.47,
@@ -66,7 +80,14 @@ void test('preferences are validated and persisted as one versioned record', () 
     },
     observerLocationSource: 'manual',
   });
-  assert.deepEqual(sanitizePreferences({ shadows: 'yes', scale: 'wrong' }), {});
+  assert.deepEqual(
+    sanitizePreferences({
+      shadows: 'yes',
+      scale: 'wrong',
+      orbitLineWidth: 2.25,
+    }),
+    {},
+  );
   assert.deepEqual(
     sanitizePreferences({ observerLocation: { latitude: 91 } }),
     {},

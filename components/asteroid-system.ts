@@ -9,6 +9,12 @@ import { displayRadius } from '../lib/display-scale';
 import type { ScaleMode } from '../lib/solar';
 import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
+import {
+  createOrbitLine,
+  setOrbitLinePoints,
+  setOrbitLineWidth,
+} from './orbit-line';
+import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
 
 export function createAsteroidSystem(
   scene: THREE.Scene,
@@ -48,14 +54,7 @@ export function createAsteroidSystem(
     mesh.userData.id = asteroid.id;
     root.add(mesh);
     meshes.set(asteroid.id, mesh);
-    const path = new THREE.Line(
-      new THREE.BufferGeometry(),
-      new THREE.LineBasicMaterial({
-        color: asteroid.color,
-        transparent: true,
-        opacity: 0.35,
-      }),
-    );
+    const path = createOrbitLine(asteroid.color, 0.35);
     path.name = `${asteroid.id}-orbit`;
     path.raycast = () => {};
     scene.add(path);
@@ -198,6 +197,7 @@ export function createAsteroidSystem(
       realSizes: boolean,
       selected: string | null,
       orbits: boolean,
+      orbitLineWidth = DEFAULT_ORBIT_LINE_WIDTH,
     ) {
       for (const { asteroid, root, mesh, path } of entries) {
         root.position.set(...asteroidPosition(asteroid, days, scale));
@@ -208,9 +208,10 @@ export function createAsteroidSystem(
         mesh.rotation.y =
           (((days * 24) / asteroid.rotationHours) % 1) * Math.PI * 2;
         path.visible = orbits && selected === asteroid.id;
+        setOrbitLineWidth(path, orbitLineWidth);
         if (scale !== lastScale) {
-          path.geometry.dispose();
-          path.geometry = new THREE.BufferGeometry().setFromPoints(
+          setOrbitLinePoints(
+            path,
             Array.from(
               { length: 257 },
               (_, i) =>

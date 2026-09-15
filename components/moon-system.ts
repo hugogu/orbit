@@ -5,6 +5,12 @@ import { orbitingMoons } from '../lib/moon-orbits';
 import { displayRadius, moonDisplayOffset } from '../lib/display-scale';
 import { bodyOrientation } from '../lib/ephemeris';
 import type { ScaleMode } from '../lib/solar';
+import {
+  createOrbitLine,
+  setOrbitLinePoints,
+  setOrbitLineWidth,
+} from './orbit-line';
+import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
 
 export function createMoonSystem(
   scene: THREE.Scene,
@@ -34,14 +40,7 @@ export function createMoonSystem(
     mesh.userData.id = moon.id;
     root.add(mesh);
     meshes.set(moon.id, mesh);
-    const path = new THREE.Line(
-      new THREE.BufferGeometry(),
-      new THREE.LineBasicMaterial({
-        color: moon.color,
-        transparent: true,
-        opacity: 0.3,
-      }),
-    );
+    const path = createOrbitLine(moon.color, 0.3);
     path.name = `${moon.id}-orbit`;
     scene.add(path);
     const label = document.createElement('button');
@@ -79,6 +78,7 @@ export function createMoonSystem(
       selected: string | null,
       orbits: boolean,
       realSizes = false,
+      orbitLineWidth = DEFAULT_ORBIT_LINE_WIDTH,
     ) {
       const parentId =
         orbitingMoons.find((m) => m.id === selected)?.parentId ?? selected;
@@ -95,6 +95,7 @@ export function createMoonSystem(
         else mesh.lookAt(parent.position); // Synchronous orientation is schematic for these surfaces.
         path.position.copy(parent.position);
         path.visible = orbits && parentId === moon.parentId;
+        setOrbitLineWidth(path, orbitLineWidth);
         if (
           lastScale !== scale ||
           lastRealSizes !== realSizes ||
@@ -109,8 +110,7 @@ export function createMoonSystem(
               realSizes,
             ),
           );
-          path.geometry.dispose();
-          path.geometry = new THREE.BufferGeometry().setFromPoints(points);
+          setOrbitLinePoints(path, points);
         }
       }
       lastScale = scale;

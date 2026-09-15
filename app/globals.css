@@ -2212,6 +2212,20 @@ button:disabled {
   border-bottom: 1px solid #ffffff0b;
   font-size: 14px;
 }
+.setting-row.orbit-line-width-setting {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  gap: 14px;
+}
+.orbit-line-width-slider {
+  min-width: 120px;
+}
+.orbit-line-width-setting output {
+  min-width: 32px;
+  color: #aebacf;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 .model-note {
   font-size: 12px;
   line-height: 1.9;
