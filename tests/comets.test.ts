@@ -83,6 +83,7 @@ void test('comet nucleus meshes are body-specific and loaded shapes stay cached'
         className: '',
         style: { display: '' },
         setAttribute() {},
+        remove() {},
         textContent: '',
       }),
     },
@@ -137,7 +138,13 @@ void test('comet nucleus meshes are body-specific and loaded shapes stay cached'
     assert.ok(model.positions.length > 0, comet.id);
     assert.ok(model.indices.length > 0, comet.id);
   }
+  let nucleusDisposed = false;
+  system.nucleus.geometry.addEventListener('dispose', () => {
+    nucleusDisposed = true;
+  });
   system.dispose();
+  assert.equal(nucleusDisposed, true, 'dispose releases the active nucleus');
+  assert.equal(scene.getObjectByName('comet-system'), undefined);
 });
 
 void test('comet scene preserves the absolute date across selections and keeps its tail antisolar', () => {

@@ -250,14 +250,34 @@ export function createCometSystem(
     dispose() {
       disposed = true;
       modelController?.abort();
-      const current = nucleus.geometry;
-      for (const geometry of [
+      modelController = null;
+      loadingId = null;
+      activeId = null;
+      pendingModels.clear();
+      const geometries = new Set<THREE.BufferGeometry>([
         ...modelCache.values(),
         ...fallbackCache.values(),
-      ])
-        if (geometry !== current) geometry.dispose();
+      ]);
+      const materials = new Set<THREE.Material>();
+      group.traverse((object) => {
+        if (
+          object instanceof THREE.Mesh ||
+          object instanceof THREE.Line ||
+          object instanceof THREE.Points
+        ) {
+          geometries.add(object.geometry);
+          const objectMaterials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+          objectMaterials.forEach((material) => materials.add(material));
+        }
+      });
+      group.removeFromParent();
+      geometries.forEach((geometry) => geometry.dispose());
+      materials.forEach((material) => material.dispose());
       modelCache.clear();
       fallbackCache.clear();
+      label.remove();
     },
   };
 }

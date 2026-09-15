@@ -69,7 +69,10 @@ void test('every body texture is registered and has a local fallback', () => {
 });
 
 void test('asteroid maps load without waiting for a focused selection', () => {
-  const scene = readFileSync('components/solar-scene.tsx', 'utf8');
+  const scene = readFileSync(
+    new URL('../components/solar-scene.tsx', import.meta.url),
+    'utf8',
+  );
   assert.match(
     scene,
     /asteroidSystem\.setTexture\(asteroid\.id, texture\)[\s\S]*?lazy: false/,
