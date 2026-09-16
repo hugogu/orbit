@@ -206,10 +206,12 @@ void test('shared root providers mount analytics for every route group', () => {
 });
 
 void test('root layouts place the AdSense loader in each document head', () => {
+  const headContent = (layout: string) =>
+    layout.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? '';
   assert.match(explorerLayout, /import GoogleAdSense from '\.\.\/\.\.\/components\/google-adsense'/);
-  assert.match(explorerLayout, /<head>\s*<GoogleAdSense \/>\s*<\/head>/);
+  assert.match(headContent(explorerLayout), /<GoogleAdSense \/>/);
   assert.match(localizedLayout, /import GoogleAdSense from '\.\.\/\.\.\/\.\.\/components\/google-adsense'/);
-  assert.match(localizedLayout, /<head>\s*<GoogleAdSense \/>\s*<\/head>/);
+  assert.match(headContent(localizedLayout), /<GoogleAdSense \/>/);
 });
 
 void test('AdSense loader uses the supplied client ID and cross-origin settings', () => {
