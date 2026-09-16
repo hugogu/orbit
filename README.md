@@ -77,6 +77,7 @@ flowchart LR
 ### Objects in the observatory
 
 - **Planetary system:** the Sun, eight planets, Pluto, Saturn’s rings, the asteroid belt, Kuiper belt, scattered disc, heliosphere, and a schematic Oort cloud.
+- **Asteroid belt:** 1,800 schematic rocks reuse six irregular shapes, with varied sizes, orientations, and matte colors. Instancing limits the belt to six draw calls; distance-based detail uses 20 triangles per rock in overview and 80 nearby. Positions and sizes are illustrative, not a catalog or a physical density model.
 - **Moon directory:** 19 individually selectable representative moons, including the Moon, the Galilean moons, and Charon. Each has its own article, physical data, orbital data, sources, and a rotating fact card.
 - **Comet navigation:** Halley, Encke, 67P/Churyumov–Gerasimenko, and Hale–Bopp. Observe their model trajectories on the shared time axis or jump to the next model perihelion.
 - **Knowledge cards:** each of the 33 selectable bodies has 30 sourced “Did you know?” entries. The opening selection rotates between visits.

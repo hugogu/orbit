@@ -10,6 +10,7 @@ import { DAY_MS, J2000_MS, advanceTime } from '@/lib/simulation-time';
 import { comets } from '@/lib/comets';
 import { asteroids } from '@/lib/asteroids';
 import { createAsteroidSystem } from './asteroid-system';
+import { createAsteroidBelt } from './asteroid-belt';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
 import { moonTextureNames, orbitingMoons } from '@/lib/moon-orbits';
@@ -384,8 +385,9 @@ export default function SolarScene({
       scene.add(cloud);
       return cloud;
     }
-    const belt = points(1800, 35, 40, 2, 0xa89983, 0.13),
-      kuiper = points(2200, 99, 128, 8, 0x6f899a, 0.18),
+    const belt = createAsteroidBelt(rand);
+    scene.add(belt.root);
+    const kuiper = points(2200, 99, 128, 8, 0x6f899a, 0.18),
       scattered = points(750, 130, 166, 65, 0x8394b2, 0.2),
       oort = points(3500, 190, 228, 0, 0x7a92b5, 0.4, true);
     const heliosphere = new THREE.Mesh(
@@ -688,7 +690,7 @@ export default function SolarScene({
         s.shadows && s.shadowGuides && s.selected === 'earth',
         earthDisplayRadius,
       );
-      belt.visible = s.belts && s.scale === 'illustrated';
+      belt.root.visible = s.belts && s.scale === 'illustrated';
       kuiper.visible = s.belts && s.scale === 'illustrated';
       scattered.visible = s.belts && s.view >= 350 && s.scale === 'illustrated';
       oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
@@ -832,6 +834,7 @@ export default function SolarScene({
         meshes.get('sun')!.parent!.quaternion,
         s.solarActivity,
       );
+      belt.update(camera.position);
       renderer.render(scene, camera);
       asteroidSystem.project(
         camera,
@@ -894,6 +897,7 @@ export default function SolarScene({
       eclipseSystem.dispose();
       eclipsePath.dispose();
       observerMarker?.dispose();
+      belt.dispose();
       asteroidSystem.dispose();
       cometSystem.dispose();
       planetSurfaces.forEach((surface) => surface.dispose());
