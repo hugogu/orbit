@@ -200,9 +200,21 @@ void test('root layouts emit the route locale before client hydration', () => {
   assert.match(explorerPage, /homeJsonLd\(\)/);
 });
 
-void test('shared root providers mount Vercel Analytics for every route group', () => {
+void test('shared root providers mount analytics and AdSense for every route group', () => {
   assert.match(rootProviders, /from '@vercel\/analytics\/next'/);
+  assert.match(rootProviders, /import GoogleAdSense from '\.\.\/components\/google-adsense'/);
   assert.match(rootProviders, /<Analytics \/>/);
+  assert.match(rootProviders, /<GoogleAdSense \/>/);
+});
+
+void test('AdSense loader uses the supplied client ID and cross-origin settings', () => {
+  const adSense = readFileSync(
+    new URL('../components/google-adsense.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(adSense, /ca-pub-8644095085401499/);
+  assert.match(adSense, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/);
+  assert.match(adSense, /crossOrigin="anonymous"/);
 });
 
 void test('locale hydration preserves route-owned profile titles and descriptions', () => {
