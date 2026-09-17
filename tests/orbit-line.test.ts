@@ -5,6 +5,7 @@ import {
   createOrbitLine,
   isOrbitLine,
   ORBIT_PATH_SEGMENTS,
+  sampleClosedOrbit,
   setOrbitLineForeground,
   setOrbitLinePoints,
   setOrbitLineWidth,
@@ -53,4 +54,17 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
   );
   line.geometry.dispose();
   line.material.dispose();
+});
+
+void test('closed orbit sampling reuses the first point at the seam', () => {
+  const phases: number[] = [];
+  const points = sampleClosedOrbit((phase) => {
+    phases.push(phase);
+    return new THREE.Vector3(Math.cos(phase), Math.sin(phase), phase);
+  });
+  assert.equal(points.length, ORBIT_PATH_SEGMENTS + 1);
+  assert.equal(phases.length, ORBIT_PATH_SEGMENTS);
+  assert.ok(phases.every((phase) => phase >= 0 && phase < 1));
+  assert.notEqual(points[0], points.at(-1));
+  assert.deepEqual(points[0].toArray(), points.at(-1)!.toArray());
 });

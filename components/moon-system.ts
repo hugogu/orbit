@@ -7,7 +7,7 @@ import { bodyOrientation } from '../lib/ephemeris';
 import type { ScaleMode } from '../lib/solar';
 import {
   createOrbitLine,
-  ORBIT_PATH_SEGMENTS,
+  sampleClosedOrbit,
   setOrbitLinePoints,
   setOrbitLineWidth,
 } from './orbit-line';
@@ -146,10 +146,10 @@ export function createMoonSystem(
           !Number.isFinite(lastPathDay) ||
           Math.abs(days - lastPathDay) > 30
         ) {
-          const points = Array.from({ length: ORBIT_PATH_SEGMENTS + 1 }, (_, i) =>
+          const points = sampleClosedOrbit((phase) =>
             moonDisplayOffset(
               moon,
-              days + (i / ORBIT_PATH_SEGMENTS) * moon.period,
+              days + phase * moon.period,
               scale,
               realSizes,
             ),

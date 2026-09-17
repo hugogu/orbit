@@ -37,6 +37,17 @@ export function setOrbitLinePoints(line: OrbitLine, points: THREE.Vector3[]) {
   line.geometry = new LineGeometry().setFromPoints(points);
 }
 
+export function sampleClosedOrbit(
+  sample: (phase: number) => THREE.Vector3,
+  segments = ORBIT_PATH_SEGMENTS,
+) {
+  const points = Array.from({ length: segments }, (_, index) =>
+    sample(index / segments),
+  );
+  if (points.length > 0) points.push(points[0].clone());
+  return points;
+}
+
 export function setOrbitLineWidth(line: OrbitLine, width: number) {
   (line.material as WideLineMaterial).linewidth = width;
 }
