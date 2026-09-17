@@ -4,6 +4,34 @@ const COUNT = 1800;
 const VARIANTS = 6;
 const INNER_RADIUS = 35;
 const OUTER_RADIUS = 40;
+const SPIN_TURNS_PER_DAY = [2, 3, 4, 6, 8, 12];
+
+const motionShader = `
+  uniform vec2 beltTime;
+  attribute vec2 beltMotion;
+  mat3 beltRotateY(float angle) {
+    float c = cos(angle), s = sin(angle);
+    return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);
+  }
+  mat4 beltInstanceMatrix() {
+    float orbit = 6.28318530718 * (fract(beltTime.x * beltMotion.x) + beltTime.y * beltMotion.x);
+    float spin = 6.28318530718 * fract(beltTime.y * beltMotion.y);
+    mat3 orbitRotation = beltRotateY(orbit);
+    mat3 orientation = mat3(instanceMatrix);
+    vec3 size = vec3(length(orientation[0]), length(orientation[1]), length(orientation[2]));
+    orientation[0] /= size.x;
+    orientation[1] /= size.y;
+    orientation[2] /= size.z;
+    // Rotate before applying the unequal axis scales, so there is no shear.
+    mat3 basis = orbitRotation * orientation * beltRotateY(spin);
+    return mat4(
+      vec4(basis[0] * size.x, 0.0),
+      vec4(basis[1] * size.y, 0.0),
+      vec4(basis[2] * size.z, 0.0),
+      vec4(orbitRotation * instanceMatrix[3].xyz, 1.0)
+    );
+  }
+`;
 
 function rockGeometry(variant: number, detail: number) {
   const geometry = new THREE.IcosahedronGeometry(1, detail);
@@ -40,6 +68,29 @@ export function createAsteroidBelt(positionRandom: () => number) {
     metalness: 0,
     flatShading: true,
   });
+  // Split whole/fractional days so slow motion stays smooth across 1700–2200.
+  // Integer spin turns/day make the fractional-day wrap continuous.
+  const time = { value: new THREE.Vector2() };
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.beltTime = time;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>\n${motionShader}`)
+      .replace(
+        'void main() {',
+        'void main() {\nmat4 beltMatrix = beltInstanceMatrix();',
+      );
+    // Keep positions, lighting normals, and world coordinates on one transform.
+    for (const chunk of [
+      'defaultnormal_vertex',
+      'project_vertex',
+      'worldpos_vertex',
+    ] as const)
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <${chunk}>`,
+        THREE.ShaderChunk[chunk].replaceAll('instanceMatrix', 'beltMatrix'),
+      );
+  };
+  material.customProgramCacheKey = () => 'asteroid-belt-motion-v1';
   const shapes = Array.from({ length: VARIANTS }, (_, variant) => ({
     far: rockGeometry(variant, 0),
     near: rockGeometry(variant, 1),
@@ -48,6 +99,13 @@ export function createAsteroidBelt(positionRandom: () => number) {
     const mesh = new THREE.InstancedMesh(far, material, COUNT / VARIANTS);
     mesh.name = `belt-rock-${variant}`;
     mesh.matrixAutoUpdate = false;
+    mesh.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 0);
+    const motion = new THREE.InstancedBufferAttribute(
+      new Float32Array((COUNT / VARIANTS) * 2),
+      2,
+    );
+    shapes[variant].far.setAttribute('beltMotion', motion);
+    shapes[variant].near.setAttribute('beltMotion', motion);
     root.add(mesh);
     return mesh;
   });
@@ -71,7 +129,7 @@ export function createAsteroidBelt(positionRandom: () => number) {
       Math.sin(angle) * planarRadius,
     );
     // Many small fragments, a few larger silhouettes; all remain schematic.
-    const size = 0.035 + 0.18 * random() ** 3;
+    const size = 0.012 + 0.06 * random() ** 3;
     transform.scale.set(
       size * (0.8 + random() * 0.4),
       size * (0.8 + random() * 0.4),
@@ -94,23 +152,38 @@ export function createAsteroidBelt(positionRandom: () => number) {
       shade * (1 - warmth * 0.18),
     );
     mesh.setColorAt(index, color);
+    // Map the schematic annulus to the main belt's approximate 2.1–3.3 AU.
+    // Kepler's third law depends on orbital radius, not the rock's display size.
+    const au =
+      2.1 + ((radius - INNER_RADIUS) / (OUTER_RADIUS - INNER_RADIUS)) * 1.2;
+    const spin =
+      SPIN_TURNS_PER_DAY[Math.floor(random() * SPIN_TURNS_PER_DAY.length)];
+    mesh.geometry
+      .getAttribute('beltMotion')
+      .setXY(index, 1 / (365.256 * au ** 1.5), spin);
+    const { near, far } = shapes[i % VARIANTS];
+    const extent =
+      Math.max(
+        near.boundingSphere!.radius + near.boundingSphere!.center.length(),
+        far.boundingSphere!.radius + far.boundingSphere!.center.length(),
+      ) * Math.max(transform.scale.x, transform.scale.y, transform.scale.z);
+    // Cover every future orbital/spin phase, not just the initial positions.
+    mesh.boundingSphere!.radius = Math.max(
+      mesh.boundingSphere!.radius,
+      radius + extent,
+    );
   }
-  for (const [i, mesh] of meshes.entries()) {
+  for (const mesh of meshes) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.instanceColor!.needsUpdate = true;
-    // Include both LODs in the once-only bounds calculation.
-    mesh.computeBoundingSphere();
-    const bounds = mesh.boundingSphere!.clone();
-    mesh.geometry = shapes[i].near;
-    mesh.computeBoundingSphere();
-    mesh.boundingSphere!.union(bounds);
-    mesh.geometry = shapes[i].far;
   }
   let near = false;
   return {
     root,
-    update(cameraPosition: THREE.Vector3) {
+    update(cameraPosition: THREE.Vector3, days: number) {
       if (!root.visible) return;
+      const wholeDays = Math.floor(days);
+      time.value.set(wholeDays, days - wholeDays);
       const radial = Math.hypot(cameraPosition.x, cameraPosition.z);
       const radialGap = Math.max(
         INNER_RADIUS - radial,

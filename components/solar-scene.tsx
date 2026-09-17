@@ -834,7 +834,7 @@ export default function SolarScene({
         meshes.get('sun')!.parent!.quaternion,
         s.solarActivity,
       );
-      belt.update(camera.position);
+      belt.update(camera.position, days);
       renderer.render(scene, camera);
       asteroidSystem.project(
         camera,
