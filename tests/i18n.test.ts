@@ -80,6 +80,10 @@ void test('catalogs cover all source keys and interpolation parameters, allowing
   assert.equal(speedLabel(1, translator('en')), '1 day / s');
   assert.equal(speedLabel(10, translator('en')), '10 days / s');
   assert.equal(speedLabel(1, translator('ja')), '1日 / 秒');
+  assert.equal(speedLabel(365, translator('en')), '1 year / s');
+  assert.equal(speedLabel(3650, translator('en')), '10 years / s');
+  assert.equal(speedLabel(3650, translator('ja')), '10年 / 秒');
+  assert.equal(speedLabel(100, translator('en')), '100 days / s');
 });
 void test('all educational data and literal translation keys have catalog entries', () => {
   const source: Record<string, string> = languages[defaultLocale].messages;

@@ -385,9 +385,10 @@ export function speedLabel(
   t: Translate = (key, values) =>
     key.replace('{{count}}', String(values?.count ?? '')),
 ) {
-  return speed === 1 / 86400
-    ? t('实时')
-    : speed === 1 / 1440
-      ? t('1 分钟 / 秒')
-      : t('{{count}} 天 / 秒', { count: speed });
+  if (speed === 1 / 86400) return t('实时');
+  if (speed === 1 / 1440) return t('1 分钟 / 秒');
+  // Year-scale presets read far better in years than in hundreds of days.
+  if (speed >= 365 && speed % 365 === 0)
+    return t('{{count}} 年 / 秒', { count: speed / 365 });
+  return t('{{count}} 天 / 秒', { count: speed });
 }
