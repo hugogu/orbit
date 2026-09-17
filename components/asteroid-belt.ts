@@ -67,6 +67,7 @@ export function createAsteroidBelt(positionRandom: () => number) {
     roughness: 1,
     metalness: 0,
     flatShading: true,
+    vertexColors: true,
   });
   // Split whole/fractional days so slow motion stays smooth across 1700–2200.
   // Integer spin turns/day make the fractional-day wrap continuous.
