@@ -16,6 +16,24 @@ import {
 export function kmToScene(scale: ScaleMode) {
   return scale === 'distance' ? 3.1 / AU_KM : 4.8 / 696340;
 }
+/** Scene units per AU while distances are to scale. */
+export const AU_SCENE_UNITS = AU_KM * kmToScene('distance');
+// The outer populations are authored as illustrated annuli. Once distances are
+// to scale they belong at the heliocentric distances their own region cards
+// quote. The Oort cloud is deliberately absent: it starts near 2,000 AU, so no
+// placement in this scene is honest and it stays illustrated-only.
+export const outerStructures = {
+  kuiper: { illustrated: [99, 128], au: [30, 50] },
+  scattered: { illustrated: [130, 166], au: [50, 100] },
+  heliosphere: { illustrated: [167, 167], au: [120, 120] },
+} as const;
+export type OuterStructure = keyof typeof outerStructures;
+/** Uniform scale that moves an authored band onto its physical distance. */
+export function outerStructureScale(id: OuterStructure, scale: ScaleMode) {
+  if (scale !== 'distance') return 1;
+  const { illustrated, au } = outerStructures[id];
+  return ((au[0] + au[1]) * AU_SCENE_UNITS) / (illustrated[0] + illustrated[1]);
+}
 export function displayRadius(
   id: string,
   scale: ScaleMode,

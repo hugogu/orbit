@@ -77,6 +77,7 @@ flowchart LR
 ### Objects in the observatory
 
 - **Planetary system:** the Sun, eight planets, Pluto, Saturn’s rings, the asteroid belt, Kuiper belt, scattered disc, heliosphere, and a schematic Oort cloud.
+- **Outer structures at scale:** with true relative distances the asteroid belt, Kuiper belt, scattered disc, and heliopause sit at the heliocentric distances their own region cards quote. The Oort cloud begins near 2,000 AU, so it stays an illustrated-only schematic rather than appearing just beyond Neptune.
 - **Asteroid belt:** 1,800 small schematic rocks reuse six irregular shapes, with varied sizes, orientations, and matte colors. GPU animation follows the simulation clock, including pause and date jumps: inner orbits advance faster according to Kepler's third law, while illustrative spin periods vary from 2 to 12 hours. Instancing limits the belt to six draw calls without per-frame instance uploads; distance-based detail uses 20 triangles per rock in overview and 80 nearby. Positions and sizes are illustrative, not a catalog or a physical density model.
 - **Moon directory:** 19 individually selectable representative moons, including the Moon, the Galilean moons, and Charon. Each has its own article, physical data, orbital data, sources, and a rotating fact card.
 - **Comet navigation:** Halley, Encke, 67P/Churyumov–Gerasimenko, and Hale–Bopp. Observe their model trajectories on the shared time axis or jump to the next model perihelion.

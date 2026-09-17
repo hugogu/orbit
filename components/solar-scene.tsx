@@ -19,7 +19,12 @@ import {
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
 import { moonTextureNames, orbitingMoons } from '@/lib/moon-orbits';
-import { displayRadius, displaySystemExtent } from '@/lib/display-scale';
+import {
+  displayRadius,
+  displaySystemExtent,
+  outerStructures,
+  outerStructureScale,
+} from '@/lib/display-scale';
 import { createTextureManager, type RegisterOptions } from './texture-manager';
 import { registerPlanetSurface } from './planet-surface';
 import { oblateScale } from '@/lib/planet-terrain';
@@ -401,11 +406,31 @@ export default function SolarScene({
     }
     const belt = createAsteroidBelt(rand);
     scene.add(belt.root);
-    const kuiper = points(2200, 99, 128, 8, 0xa7c5d6, 0.34, false, 0.8),
-      scattered = points(750, 130, 166, 65, 0x9eb7ce, 0.3, false, 0.7),
+    const kuiper = points(
+        2200,
+        ...outerStructures.kuiper.illustrated,
+        8,
+        0xa7c5d6,
+        0.34,
+        false,
+        0.8,
+      ),
+      scattered = points(
+        750,
+        ...outerStructures.scattered.illustrated,
+        65,
+        0x9eb7ce,
+        0.3,
+        false,
+        0.7,
+      ),
       oort = points(3500, 190, 228, 0, 0xc1d8e6, 0.8, true, 0.78);
     const heliosphere = new THREE.Mesh(
-      new THREE.SphereGeometry(167, 48, 32),
+      new THREE.SphereGeometry(
+        outerStructures.heliosphere.illustrated[0],
+        48,
+        32,
+      ),
       new THREE.MeshBasicMaterial({
         color: 0x6aa2a4,
         wireframe: true,
@@ -641,11 +666,7 @@ export default function SolarScene({
             const pts = sampleClosedOrbit(
               (phase) =>
                 new THREE.Vector3(
-                  ...planetPosition(
-                    body,
-                    days + phase * body.period,
-                    s.scale,
-                  ),
+                  ...planetPosition(body, days + phase * body.period, s.scale),
                 ),
             );
             setOrbitLinePoints(line, pts);
@@ -712,15 +733,21 @@ export default function SolarScene({
       belt.setSizeScale(
         s.realSizes
           ? (displayRadius('earth', s.scale, true) * 0.02) /
-            ASTEROID_BELT_MAX_RADIUS
+              ASTEROID_BELT_MAX_RADIUS
           : 1,
       );
       belt.root.visible = s.belts;
+      // With distances to scale the outer bands move to the heliocentric
+      // distances their own cards quote; illustrated mode keeps the authored
+      // layout and reveals farther layers as the view widens.
+      kuiper.scale.setScalar(outerStructureScale('kuiper', s.scale));
+      scattered.scale.setScalar(outerStructureScale('scattered', s.scale));
+      heliosphere.scale.setScalar(outerStructureScale('heliosphere', s.scale));
       kuiper.visible = s.belts;
-      // Distance mode keeps the complete schematic outer population available
-      // while the illustrated mode reveals farther layers as the view widens.
       scattered.visible = s.belts && (s.view >= 350 || s.scale === 'distance');
-      oort.visible = s.belts && (s.view >= 400 || s.scale === 'distance');
+      // The Oort cloud begins near 2,000 AU. There is no honest place for the
+      // schematic shell once distances are to scale, so it stays illustrated.
+      oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
       heliosphere.visible =
         s.belts && (s.view >= 400 || s.scale === 'distance');
       cometSystem.update(

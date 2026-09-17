@@ -1,11 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as THREE from 'three';
 import { bodies } from '../lib/solar';
 import { orbitingMoons } from '../lib/moon-orbits';
-import { displayRadius, moonDisplayOffset } from '../lib/display-scale';
+import {
+  AU_SCENE_UNITS,
+  displayRadius,
+  moonDisplayOffset,
+  outerStructures,
+  outerStructureScale,
+  type OuterStructure,
+} from '../lib/display-scale';
 import { moonVectorKm } from '../lib/satellite-elements';
 import { moonRadii } from '../lib/eclipse-shadows';
 import { bodyFromHash } from '../lib/body-navigation';
@@ -101,4 +109,52 @@ void test('Earth night texture follows solar direction even with eclipse shadows
   );
   assert.equal(system.guideRoot.visible, false);
   system.dispose();
+});
+
+void test('outer structures stand at their published distances once distances are to scale', () => {
+  const scene = readFileSync(
+    new URL('../components/solar-scene.tsx', import.meta.url),
+    'utf8',
+  );
+  const ids = Object.keys(outerStructures) as OuterStructure[];
+  for (const id of ids) {
+    const { illustrated, au } = outerStructures[id];
+    assert.equal(outerStructureScale(id, 'illustrated'), 1);
+    const factor = outerStructureScale(id, 'distance');
+    for (const [index, radius] of illustrated.entries()) {
+      const placed = (radius * factor) / AU_SCENE_UNITS;
+      assert.ok(
+        placed >= au[0] - 1e-9 && placed <= au[1] + 1e-9,
+        `${id} edge ${index} lands at ${placed} AU, outside ${au.join('-')} AU`,
+      );
+    }
+    // Every authored band must actually be rescaled by the scene.
+    assert.match(
+      scene,
+      new RegExp(`outerStructureScale\\('${id}', s\\.scale\\)`),
+    );
+    assert.match(
+      scene,
+      new RegExp(`outerStructures\\.${id}\\.illustrated`),
+      `${id} must be built from the same radii it is rescaled from`,
+    );
+  }
+  // Ordering: Kuiper belt inside the scattered disc inside the heliopause.
+  const outerEdge = (id: OuterStructure) =>
+    outerStructures[id].illustrated[1] * outerStructureScale(id, 'distance');
+  assert.ok(outerEdge('kuiper') < outerEdge('scattered'));
+  assert.ok(outerEdge('scattered') < outerEdge('heliosphere'));
+  // The Kuiper belt begins at Neptune's orbit and contains Pluto.
+  const auOf = (id: string) => bodies.find((b) => b.id === id)!.au;
+  assert.ok(Math.abs(auOf('neptune') - outerStructures.kuiper.au[0]) < 1);
+  assert.ok(
+    auOf('pluto') > outerStructures.kuiper.au[0] &&
+      auOf('pluto') < outerStructures.kuiper.au[1],
+  );
+  // The schematic Oort cloud has no honest placement at this scale.
+  assert.ok(!Object.hasOwn(outerStructures, 'oort'));
+  assert.match(
+    scene,
+    /oort\.visible = s\.belts && s\.view >= 400 && s\.scale === 'illustrated'/,
+  );
 });

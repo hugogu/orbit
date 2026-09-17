@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { kmToScene } from '@/lib/display-scale';
-import { AU_KM } from '@/lib/eclipse-shadows';
+import { AU_SCENE_UNITS } from '@/lib/display-scale';
 
 const COUNT = 1800;
 const VARIANTS = 6;
@@ -11,14 +10,13 @@ const SPIN_TURNS_PER_DAY = [2, 3, 4, 6, 8, 12];
 // The schematic annulus stands in for the main belt's approximate 2.1-3.3 AU.
 const INNER_AU = 2.1;
 const OUTER_AU = 3.3;
-const AU_TO_SCENE = AU_KM * kmToScene('distance');
 export const ASTEROID_BELT_ILLUSTRATED_RADII = [
   INNER_RADIUS,
   OUTER_RADIUS,
 ] as const;
 export const ASTEROID_BELT_DISTANCE_RADII = [
-  INNER_AU * AU_TO_SCENE,
-  OUTER_AU * AU_TO_SCENE,
+  INNER_AU * AU_SCENE_UNITS,
+  OUTER_AU * AU_SCENE_UNITS,
 ] as const;
 // Conservative bound on the largest rock: the unit shapes reach about 1.49
 // before the per-instance scale, which itself peaks just above 0.107.
