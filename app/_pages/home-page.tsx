@@ -1,6 +1,6 @@
 'use client';
 import { useI18n } from '../../lib/i18n/provider';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type CSSProperties } from 'react';
 import { flushSync } from 'react-dom';
 import { registerObservatoryTools } from '@/lib/observatory-tools';
 import {
@@ -893,11 +893,29 @@ export default function Home() {
               value={[speed]}
               onValueChange={(v) => setSpeed(Array.isArray(v) ? v[0] : v)}
             />
-            <div className="speed-markers">
-              <span>{t('实时')}</span>
-              <span>{t('1 天 / 秒')}</span>
-              <span>{t('1 年 / 秒')}</span>
-              <span>{t('10 年 / 秒')}</span>
+            <div className="speed-markers" aria-hidden="true">
+              {speeds.map((value, index) => (
+                <span
+                  key={`${value}-${index}`}
+                  className={`speed-marker${
+                    [2, 4, 5, 6, 7].includes(index)
+                      ? ' speed-marker--optional'
+                      : index === 1
+                        ? ' speed-marker--narrow'
+                        : ''
+                  }`}
+                  data-speed-index={index}
+                  style={
+                    {
+                      '--speed-position': `${
+                        (index / (speeds.length - 1)) * 100
+                      }%`,
+                    } as CSSProperties
+                  }
+                >
+                  {speedLabel(value, t)}
+                </span>
+              ))}
             </div>
           </div>
           <div
