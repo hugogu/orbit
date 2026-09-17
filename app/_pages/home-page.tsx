@@ -369,12 +369,13 @@ export default function Home() {
       registerObservatoryTools(
         {
           focus: (id) => flushSync(() => select(id)),
-          simulation: (i, p) =>
+          simulation: (i, p) => {
             flushSync(() => {
               setSpeed(i);
               setPaused(p);
-              track('speed_change', { source: 'keyboard', speed: i, paused: p });
-            }),
+            });
+            track('speed_change', { source: 'agent_tool', speed: i, paused: p });
+          },
         },
         t,
       ),
