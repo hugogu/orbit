@@ -55,6 +55,30 @@ for (const entry of entries) {
     const [htmlTag] = htmlTagAttributes(html, 'html');
     const linkTags = htmlTagAttributes(head, 'link');
     const metaTags = htmlTagAttributes(head, 'meta');
+    assert.ok(
+      linkTags.some(
+        (attributes) =>
+          hasRel(attributes, 'manifest') &&
+          attributes.get('href') === '/manifest.webmanifest',
+      ),
+      `PWA manifest: ${path}`,
+    );
+    assert.ok(
+      linkTags.some(
+        (attributes) =>
+          hasRel(attributes, 'apple-touch-icon') &&
+          attributes.get('href') === '/icons/apple-touch-icon.png',
+      ),
+      `Apple touch icon: ${path}`,
+    );
+    assert.ok(
+      metaTags.some(
+        (attributes) =>
+          attributes.get('name') === 'theme-color' &&
+          attributes.get('content') === '#080d16',
+      ),
+      `PWA theme color: ${path}`,
+    );
     const t = translator(locale);
     assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
     assert.ok(

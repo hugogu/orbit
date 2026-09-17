@@ -1,7 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { siteOrigin } from '../lib/seo';
+import { pwaThemeColor } from '../lib/pwa';
+
+export const viewport: Viewport = {
+  themeColor: pwaThemeColor,
+  colorScheme: 'dark',
+};
 
 export const metadata: Metadata = {
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, title: 'ORBIT', statusBarStyle: 'default' },
   metadataBase: new URL(`${siteOrigin}/`),
   title: {
     default: 'ORBIT · 太阳系漫游',
@@ -40,6 +48,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: '/favicon.svg',
+    apple: '/icons/apple-touch-icon.png',
   },
   robots: {
     index: true,

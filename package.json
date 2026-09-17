@@ -7,16 +7,18 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "prebuild": "node --import tsx scripts/generate-og.ts && node --import tsx scripts/generate-seo.ts",
-    "build": "vinext build",
-    "prebuild:vercel": "node --import tsx scripts/generate-og.ts && node --import tsx scripts/generate-seo.ts",
-    "build:vercel": "VERCEL=1 vinext build && npm run check:production-artifacts && npm run check:profiles",
+    "prebuild": "node --import tsx scripts/generate-og.ts && node --import tsx scripts/generate-seo.ts && node --import tsx scripts/generate-pwa-assets.ts",
+    "build": "vinext build && npm run build:pwa",
+    "prebuild:vercel": "node --import tsx scripts/generate-og.ts && node --import tsx scripts/generate-seo.ts && node --import tsx scripts/generate-pwa-assets.ts",
+    "build:vercel": "VERCEL=1 vinext build && npm run build:pwa && npm run check:production-artifacts && npm run check:profiles",
     "check:production-artifacts": "if find dist/client -type f -name '*.map' -print -quit | grep -q .; then echo 'Source maps found in production output'; exit 1; fi; if grep -R -q --include='*.js' --include='*.css' 'sourceMappingURL=' dist/client; then echo 'sourceMappingURL found in production output'; exit 1; fi; echo 'Verified: production output contains no source maps.'",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
     "test": "node --import tsx --test tests/*.test.ts",
-    "check:profiles": "node --import tsx scripts/check-profile-export.ts"
+    "check:profiles": "node --import tsx scripts/check-profile-export.ts",
+    "predev": "node --import tsx scripts/generate-pwa-assets.ts",
+    "build:pwa": "node --import tsx scripts/build-pwa.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
@@ -63,6 +65,12 @@
     "tsx": "^4.23.13",
     "typescript": "5.9.3",
     "vite": "8.0.13",
+    "workbox-build": "7.4.1",
+    "workbox-core": "7.4.1",
+    "workbox-expiration": "7.4.1",
+    "workbox-precaching": "7.4.1",
+    "workbox-routing": "7.4.1",
+    "workbox-strategies": "7.4.1",
     "wrangler": "4.92.0"
   },
   "type": "module"
