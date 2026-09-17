@@ -66,8 +66,8 @@ export function createAsteroidBelt(positionRandom: () => number) {
   const material = new THREE.MeshStandardMaterial({
     // A restrained fill keeps distant and shadowed rocks legible against the
     // dark sky without turning the schematic population into glowing points.
-    emissive: 0x2d281f,
-    emissiveIntensity: 0.8,
+    emissive: 0x5a5144,
+    emissiveIntensity: 0.65,
     roughness: 1,
     metalness: 0,
     flatShading: true,
