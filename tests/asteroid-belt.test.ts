@@ -36,6 +36,9 @@ void test('belt keeps a deterministic sparse population with varied sizes, shape
     batches(belt.root).reduce((sum, mesh) => sum + mesh.count, 0),
     1800,
   );
+  const material = batches(belt.root)[0].material as THREE.MeshStandardMaterial;
+  assert.ok(material.emissive.r > 0);
+  assert.ok(material.emissiveIntensity > 0);
   const scales: number[] = [];
   const colors = new Set<string>();
   const matrix = new THREE.Matrix4();

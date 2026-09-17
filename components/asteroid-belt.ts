@@ -64,6 +64,10 @@ export function createAsteroidBelt(positionRandom: () => number) {
   const root = new THREE.Group();
   root.name = 'asteroid-belt';
   const material = new THREE.MeshStandardMaterial({
+    // A restrained fill keeps distant and shadowed rocks legible against the
+    // dark sky without turning the schematic population into glowing points.
+    emissive: 0x2d281f,
+    emissiveIntensity: 0.8,
     roughness: 1,
     metalness: 0,
     flatShading: true,
