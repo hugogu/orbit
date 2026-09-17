@@ -3000,20 +3000,21 @@ button:disabled {
     display: block;
   }
 }
-@container (max-width: 780px) {
+/* Marker text is absolutely positioned, so the track has to be wide enough to
+   keep neighbouring labels apart. The widest locale needs ~805px of track for
+   all nine at the base size and ~680px once they shrink; below that only the
+   three reference stops stay, and they need ~240px. */
+@container (max-width: 840px) {
   .speed-markers {
     font-size: 10px;
   }
+}
+@container (max-width: 700px) {
   .speed-marker--optional {
     display: none;
   }
 }
-@container (max-width: 380px) {
-  .speed-marker--narrow {
-    display: none;
-  }
-}
-@container (max-width: 128px) {
+@container (max-width: 260px) {
   .speed-markers {
     display: none;
   }

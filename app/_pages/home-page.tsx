@@ -92,6 +92,14 @@ import {
   MIN_ORBIT_LINE_WIDTH,
   ORBIT_LINE_WIDTH_STEP,
 } from '@/lib/orbit-line-width';
+// Real time, one day per second, and the fastest preset stay labelled at any
+// control width. The remaining stops appear only where the track is wide enough
+// for them, so the class follows the preset rather than its index.
+function speedMarkerModifier(value: number) {
+  return value === speeds[0] || value === 1 || value === speeds.at(-1)
+    ? ''
+    : ' speed-marker--optional';
+}
 export default function Home() {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState<string | null>(null),
@@ -897,13 +905,7 @@ export default function Home() {
               {speeds.map((value, index) => (
                 <span
                   key={`${value}-${index}`}
-                  className={`speed-marker${
-                    [2, 4, 5, 6, 7].includes(index)
-                      ? ' speed-marker--optional'
-                      : index === 1
-                        ? ' speed-marker--narrow'
-                        : ''
-                  }`}
+                  className={`speed-marker${speedMarkerModifier(value)}`}
                   data-speed-index={index}
                   style={
                     {
@@ -1176,7 +1178,9 @@ export default function Home() {
                   step={ORBIT_LINE_WIDTH_STEP}
                   value={[orbitLineWidth]}
                 />
-                <output>{t('{{width}} 像素', { width: orbitLineWidth })}</output>
+                <output>
+                  {t('{{width}} 像素', { width: orbitLineWidth })}
+                </output>
               </div>
               <div className="setting-row">
                 <label htmlFor="labels">{t('天体名称')}</label>
@@ -1434,7 +1438,8 @@ export default function Home() {
                   >
                     {t('NASA Goddard LOLA 月球地形')}
                   </a>
-                  。{t('本地高程图仅在开启几何开关并跟随支持地形的天体时加载。')}
+                  。
+                  {t('本地高程图仅在开启几何开关并跟随支持地形的天体时加载。')}
                 </p>
               </div>
             </TabsContent>
