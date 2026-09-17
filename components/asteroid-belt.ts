@@ -7,10 +7,13 @@ const OUTER_RADIUS = 40;
 const SPIN_TURNS_PER_DAY = [2, 3, 4, 6, 8, 12];
 export const ASTEROID_BELT_ILLUSTRATED_RADII = [INNER_RADIUS, OUTER_RADIUS] as const;
 export const ASTEROID_BELT_DISTANCE_RADII = [2.1 * 3.1, 3.3 * 3.1] as const;
+// Conservative bound for the largest deformed unit rock at its maximum scale.
+export const ASTEROID_BELT_MAX_RADIUS = 0.11;
 
 const motionShader = `
   uniform vec2 beltTime;
   uniform vec2 beltRadii;
+  uniform float beltSizeScale;
   attribute vec2 beltMotion;
   mat3 beltRotateY(float angle) {
     float c = cos(angle), s = sin(angle);
@@ -25,6 +28,7 @@ const motionShader = `
     orientation[0] /= size.x;
     orientation[1] /= size.y;
     orientation[2] /= size.z;
+    size *= beltSizeScale;
     // Rotate before applying the unequal axis scales, so there is no shear.
     mat3 basis = orbitRotation * orientation * beltRotateY(spin);
     vec3 center = instanceMatrix[3].xyz;
@@ -93,9 +97,11 @@ export function createAsteroidBelt(positionRandom: () => number) {
   const beltRadii = {
     value: new THREE.Vector2(...ASTEROID_BELT_ILLUSTRATED_RADII),
   };
+  const beltSizeScale = { value: 1 };
   material.onBeforeCompile = (shader) => {
     shader.uniforms.beltTime = time;
     shader.uniforms.beltRadii = beltRadii;
+    shader.uniforms.beltSizeScale = beltSizeScale;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${motionShader}`)
       .replace(
@@ -205,6 +211,9 @@ export function createAsteroidBelt(positionRandom: () => number) {
   let currentOuterRadius = OUTER_RADIUS;
   return {
     root,
+    setSizeScale(scale: number) {
+      beltSizeScale.value = Math.max(0, scale);
+    },
     setRadiusRange(inner: number, outer: number) {
       if (
         beltRadii.value.x === inner &&

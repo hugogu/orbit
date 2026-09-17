@@ -13,6 +13,7 @@ import { createAsteroidSystem } from './asteroid-system';
 import {
   ASTEROID_BELT_DISTANCE_RADII,
   ASTEROID_BELT_ILLUSTRATED_RADII,
+  ASTEROID_BELT_MAX_RADIUS,
   createAsteroidBelt,
 } from './asteroid-belt';
 import { createCometSystem } from './comet-system';
@@ -708,6 +709,12 @@ export default function SolarScene({
         ...(s.scale === 'distance'
           ? ASTEROID_BELT_DISTANCE_RADII
           : ASTEROID_BELT_ILLUSTRATED_RADII),
+      );
+      belt.setSizeScale(
+        s.realSizes
+          ? (displayRadius('earth', s.scale, true) * 0.02) /
+            ASTEROID_BELT_MAX_RADIUS
+          : 1,
       );
       belt.root.visible = s.belts;
       kuiper.visible = s.belts;

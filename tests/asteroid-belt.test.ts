@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {
   ASTEROID_BELT_DISTANCE_RADII,
   ASTEROID_BELT_ILLUSTRATED_RADII,
+  ASTEROID_BELT_MAX_RADIUS,
   createAsteroidBelt,
 } from '../components/asteroid-belt';
 import { advanceTime, DAY_MS, J2000_MS } from '../lib/simulation-time';
@@ -255,6 +256,16 @@ void test('GPU motion shares the simulation clock through pause, acceleration, b
   );
   const clock = shader.uniforms.beltTime.value as THREE.Vector2;
   const radii = shader.uniforms.beltRadii.value as THREE.Vector2;
+  const sizeScale = shader.uniforms.beltSizeScale.value as number;
+  assert.equal(sizeScale, 1);
+  belt.setSizeScale(0.25);
+  assert.equal(shader.uniforms.beltSizeScale.value, 0.25);
+  assert.ok(
+    shader.vertexShader.indexOf('size *= beltSizeScale') >
+      shader.vertexShader.indexOf('orientation[2] /= size.z'),
+    'size scaling must happen after matrix normalization',
+  );
+  assert.ok(ASTEROID_BELT_MAX_RADIUS > 0.09);
   assert.deepEqual(radii.toArray(), [...ASTEROID_BELT_ILLUSTRATED_RADII]);
   belt.setRadiusRange(...ASTEROID_BELT_DISTANCE_RADII);
   assert.deepEqual(radii.toArray(), [...ASTEROID_BELT_DISTANCE_RADII]);
