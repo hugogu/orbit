@@ -1552,6 +1552,7 @@ button:disabled {
 .speed-control {
   flex: 1;
   --speed-thumb-size: 16px;
+  container-type: inline-size;
   padding: 12px 0 0;
 }
 .speed-control [data-slot='slider-thumb'] {
@@ -2999,7 +3000,7 @@ button:disabled {
     display: block;
   }
 }
-@media (min-width: 601px) and (max-width: 1200px) {
+@container (max-width: 780px) {
   .speed-markers {
     font-size: 10px;
   }
@@ -3007,12 +3008,12 @@ button:disabled {
     display: none;
   }
 }
-@media (min-width: 601px) and (max-width: 840px) {
+@container (max-width: 380px) {
   .speed-marker--narrow {
     display: none;
   }
 }
-@media (min-width: 601px) and (max-width: 700px) {
+@container (max-width: 128px) {
   .speed-markers {
     display: none;
   }

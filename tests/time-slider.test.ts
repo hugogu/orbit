@@ -43,6 +43,7 @@ void test('speed markers share the slider track and the thumb has a larger targe
     compactStyles,
     /\.speed-control \{ flex: 1; --speed-thumb-size: 16px/,
   );
+  assert.match(compactStyles, /container-type: inline-size/);
   assert.match(
     compactStyles,
     /\.speed-control \[data-slot='slider-thumb'\] \{ width: var\(--speed-thumb-size\); height: var\(--speed-thumb-size\)/,
@@ -53,8 +54,7 @@ void test('speed markers share the slider track and the thumb has a larger targe
   );
   assert.match(compactStyles, /\.speed-marker--optional \{ display: none/);
   assert.match(compactStyles, /\.speed-marker--narrow \{ display: none/);
-  assert.match(
-    compactStyles,
-    /@media \(min-width: 601px\) and \(max-width: 700px\)/,
-  );
+  assert.match(compactStyles, /@container \(max-width: 780px\)/);
+  assert.match(compactStyles, /@container \(max-width: 380px\)/);
+  assert.match(compactStyles, /@container \(max-width: 128px\)/);
 });
