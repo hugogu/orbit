@@ -121,6 +121,12 @@ ORBIT deploys as a static export to Vercel, with a separate Cloudflare Worker bu
 
 The Vercel build also emits crawlable body profiles under `/:locale/bodies/:id`, plus `robots.txt` and `sitemap.xml`. Set `NEXT_PUBLIC_SITE_URL` to the permanent HTTPS hostname in the Vercel project before deploying; the build uses it for canonical, Open Graph, alternate-language, and sitemap URLs. The demo hostname is used when the variable is absent.
 
+### Install and use offline
+
+On the HTTPS site, use your browser's **Install app** action, or **Share → Add to Home Screen** in Safari on iPhone/iPad. ORBIT opens in its own window and remembers the same language and display preferences.
+
+After the first online visit finishes saving the app (about 9 MiB), the simulator, basic planet textures and astronomy calculations work offline. Visited profiles and additional textures/models are cached as you browse, with storage limits; assets you have not loaded still need a connection. Browser storage cleanup can remove offline content. Updates take effect after all ORBIT windows/tabs are closed and reopened. See [PWA build and verification](docs/deployment.md#progressive-web-app-pwa).
+
 ## Accuracy and model boundaries
 
 ORBIT is an educational tool with explicit assumptions, not a navigation product or professional ephemeris service. Display and event search use the same UTC clock, but each part has a different accuracy envelope:

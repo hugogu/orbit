@@ -44,4 +44,9 @@ next-env.d.ts
 /public/og/
 /public/media/
 
+# Generated PWA assets (service worker is built directly into dist/client)
+/public/icons/
+/public/offline/
+/public/manifest.webmanifest
+
 *.tsbuildinfo

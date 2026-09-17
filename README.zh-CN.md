@@ -121,6 +121,12 @@ ORBIT 以静态导出方式部署到 Vercel，另有独立的 Cloudflare Worker 
 
 Vercel 构建还会输出可抓取的天体资料页（`/:locale/bodies/:id`）、`robots.txt` 和 `sitemap.xml`。在 Vercel 项目中部署前，请将 `NEXT_PUBLIC_SITE_URL` 设置为正式的 HTTPS 域名；构建会用它生成 canonical、Open Graph、多语言 alternate 与 sitemap 地址。未设置时使用演示域名。
 
+### 安装与离线使用
+
+打开 HTTPS 站点后，使用浏览器的**安装应用**功能；iPhone/iPad 可在 Safari 中选择**分享 → 添加到主屏幕**。安装后的 ORBIT 使用独立窗口，并保留语言和显示偏好。
+
+首次联网访问并完成缓存（约 9 MiB）后，模拟器、行星基础纹理和天文计算可离线使用。已访问的详情页、额外纹理和模型会按需缓存，并受容量限制；未加载过的素材仍需联网。浏览器清理存储后需重新联网缓存。新版本会在关闭所有 ORBIT 窗口及标签页、重新打开后生效。构建与验证说明见 [PWA 部署文档](docs/deployment.md#progressive-web-app-pwa)。
+
 ## 模型边界与准确性
 
 ORBIT 用于天文学习，并在界面中说明模型的假设与适用范围，不适用于导航或专业星历计算。显示和查询共享一个 UTC 时钟，但各部分有不同的精度范围：

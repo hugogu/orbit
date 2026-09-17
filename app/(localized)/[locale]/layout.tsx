@@ -12,6 +12,7 @@ import {
 } from '../../../lib/i18n';
 
 export const metadata: Metadata = siteMetadata;
+export { viewport } from '../../site-metadata';
 
 export function generateStaticParams() {
   return (Object.keys(languages) as Locale[]).map((locale) => ({
