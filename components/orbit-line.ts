@@ -41,6 +41,13 @@ export function setOrbitLineWidth(line: OrbitLine, width: number) {
   (line.material as WideLineMaterial).linewidth = width;
 }
 
+export function setOrbitLineForeground(line: OrbitLine, foreground: boolean) {
+  // Close-up true-size views can make the selected body's guide path appear
+  // disconnected because the body hides its near-side segment. Keep the
+  // default occlusion for the overview, but show the focused path as a guide.
+  line.renderOrder = foreground ? 1 : -1;
+}
+
 export function isOrbitLine(object: THREE.Object3D): object is OrbitLine {
   return (object as Partial<OrbitLine>).isLine2 === true;
 }

@@ -5,6 +5,7 @@ import {
   createOrbitLine,
   isOrbitLine,
   ORBIT_PATH_SEGMENTS,
+  setOrbitLineForeground,
   setOrbitLinePoints,
   setOrbitLineWidth,
 } from '../components/orbit-line';
@@ -28,6 +29,10 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
   assert.equal(line.material.transparent, false);
   assert.equal(line.material.depthTest, false);
   assert.equal(line.material.depthWrite, false);
+  assert.equal(line.renderOrder, -1);
+  setOrbitLineForeground(line, true);
+  assert.equal(line.renderOrder, 1);
+  setOrbitLineForeground(line, false);
   assert.equal(line.renderOrder, -1);
   line.onBeforeRender({
     getViewport(target: THREE.Vector4) {

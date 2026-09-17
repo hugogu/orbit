@@ -34,6 +34,7 @@ import {
   createOrbitLine,
   isOrbitLine,
   ORBIT_PATH_SEGMENTS,
+  setOrbitLineForeground,
   setOrbitLinePoints,
   setOrbitLineWidth,
   type OrbitLine,
@@ -663,6 +664,7 @@ export default function SolarScene({
         const line = orbitLines.get(body.id);
         if (line) {
           line.visible = s.orbits;
+          setOrbitLineForeground(line, s.realSizes && s.selected === body.id);
           setOrbitLineWidth(line, s.orbitLineWidth);
         }
       }
