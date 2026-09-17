@@ -134,7 +134,7 @@ export function createAsteroidBelt(positionRandom: () => number) {
       Math.sin(angle) * planarRadius,
     );
     // Many small fragments, a few larger silhouettes; all remain schematic.
-    const size = 0.012 + 0.06 * random() ** 3;
+    const size = 0.016 + 0.075 * random() ** 3;
     transform.scale.set(
       size * (0.8 + random() * 0.4),
       size * (0.8 + random() * 0.4),

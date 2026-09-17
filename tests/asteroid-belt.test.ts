@@ -71,7 +71,7 @@ void test('belt keeps a deterministic sparse population with varied sizes, shape
   scales.sort((a, b) => a - b);
   assert.ok(scales.at(-1)! / scales[0] > 5);
   assert.ok(
-    scales.at(-1)! < 0.085,
+    scales.at(-1)! < 0.11,
     'background rocks stay much smaller than named asteroids',
   );
   assert.ok(scales[900] < scales.at(-1)! * 0.35, 'small rocks should dominate');
