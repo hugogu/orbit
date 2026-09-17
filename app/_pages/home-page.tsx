@@ -374,7 +374,12 @@ export default function Home() {
               setSpeed(i);
               setPaused(p);
             });
-            track('speed_change', { source: 'agent_tool', speed: i, paused: p });
+            track('speed_change', {
+              source: 'agent_tool',
+              speed_index: i,
+              days_per_second: speeds[i],
+              paused: p,
+            });
           },
         },
         t,
@@ -906,7 +911,11 @@ export default function Home() {
               onValueChange={(v) => {
                 const next = Array.isArray(v) ? v[0] : v;
                 setSpeed(next);
-                track('speed_change', { source: 'slider', speed: next });
+                track('speed_change', {
+                  source: 'slider',
+                  speed_index: next,
+                  days_per_second: speeds[next],
+                });
               }}
             />
             <div className="speed-markers" aria-hidden="true">
