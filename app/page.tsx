@@ -1,4 +1,5 @@
 'use client';
+import { track } from '@vercel/analytics';
 import { useI18n } from '../lib/i18n/provider';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
@@ -363,6 +364,7 @@ export default function Home() {
             flushSync(() => {
               setSpeed(i);
               setPaused(p);
+              track('speed_change', { source: 'keyboard', speed: i, paused: p });
             }),
         },
         t,
@@ -541,6 +543,7 @@ export default function Home() {
         onSelect={(id) => {
           select(id);
           setSystemView(true);
+          track('planet_focus', { source: 'moon_guide', body_id: id });
         }}
       />
       <CuriositySource id={body.id} index={curiosityPicks[body.id]} />
@@ -843,7 +846,11 @@ export default function Home() {
               max={speeds.length - 1}
               step={1}
               value={[speed]}
-              onValueChange={(v) => setSpeed(Array.isArray(v) ? v[0] : v)}
+              onValueChange={(v) => {
+                const next = Array.isArray(v) ? v[0] : v;
+                setSpeed(next);
+                track('speed_change', { source: 'slider', speed: next });
+              }}
             />
             <div className="speed-markers">
               <span>{t('实时')}</span>
@@ -910,6 +917,7 @@ export default function Home() {
           setShadowGuides(true);
           setEclipseView(true);
           setSpeed(1);
+          track('eclipse_select', { kind });
         }}
       />
       <Dialog open={settings} onOpenChange={setSettings}>

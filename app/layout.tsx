@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 import { I18nProvider } from '../lib/i18n/provider';
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="zh-CN" className="dark">
       <body>
         <I18nProvider>{children}</I18nProvider>
+        <Analytics />
       </body>
     </html>
   );
