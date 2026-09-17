@@ -390,11 +390,11 @@ export default function SolarScene({
       // small-body populations from looking like a second pixelated starfield.
       material.onBeforeCompile = (shader) => {
         shader.fragmentShader = shader.fragmentShader.replace(
-          '#include <output_fragment>',
-          'if (distance(gl_PointCoord, vec2(0.5)) > 0.5) discard;\n#include <output_fragment>',
+          '#include <opaque_fragment>',
+          'if (distance(gl_PointCoord, vec2(0.5)) > 0.5) discard;\n#include <opaque_fragment>',
         );
       };
-      material.customProgramCacheKey = () => 'outer-points-round-v1';
+      material.customProgramCacheKey = () => 'outer-points-round-v2';
       const cloud = new THREE.Points(geometry, material);
       scene.add(cloud);
       return cloud;

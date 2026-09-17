@@ -4,6 +4,7 @@ const COUNT = 1800;
 const VARIANTS = 6;
 const INNER_RADIUS = 35;
 const OUTER_RADIUS = 40;
+const MARKER_SIZE = 2.8;
 const SPIN_TURNS_PER_DAY = [2, 3, 4, 6, 8, 12];
 export const ASTEROID_BELT_ILLUSTRATED_RADII = [INNER_RADIUS, OUTER_RADIUS] as const;
 export const ASTEROID_BELT_DISTANCE_RADII = [2.1 * 3.1, 3.3 * 3.1] as const;
@@ -120,6 +121,65 @@ export function createAsteroidBelt(positionRandom: () => number) {
       );
   };
   material.customProgramCacheKey = () => 'asteroid-belt-motion-v1';
+  const markerGeometry = new THREE.BufferGeometry();
+  const markerPositions = new Float32Array(COUNT * 3);
+  const markerMotions = new Float32Array(COUNT * 2);
+  const markerColors = new Float32Array(COUNT * 3);
+  const markerSizes = new Float32Array(COUNT);
+  const markerMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: MARKER_SIZE,
+    sizeAttenuation: false,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    vertexColors: true,
+  });
+  markerMaterial.onBeforeCompile = (shader) => {
+    shader.uniforms.beltTime = time;
+    shader.uniforms.beltRadii = beltRadii;
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+uniform vec2 beltTime;
+uniform vec2 beltRadii;
+attribute vec2 beltMotion;
+attribute float beltMarkerSize;
+mat3 beltMarkerRotateY(float angle) {
+  float c = cos(angle), s = sin(angle);
+  return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);
+}`,
+      )
+      .replace(
+        '#include <begin_vertex>',
+        `vec3 transformed = position;
+float sourceRadius = max(length(transformed.xz), 0.0001);
+float radiusT = clamp(
+  (sourceRadius - ${INNER_RADIUS.toFixed(1)}) / ${(
+    OUTER_RADIUS - INNER_RADIUS
+  ).toFixed(1)},
+  0.0,
+  1.0
+);
+transformed.xz *= mix(beltRadii.x, beltRadii.y, radiusT) / sourceRadius;
+float orbit = 6.28318530718 * (fract(beltTime.x * beltMotion.x) + beltTime.y * beltMotion.x);
+transformed = beltMarkerRotateY(orbit) * transformed;`,
+      )
+      .replace('gl_PointSize = size;', 'gl_PointSize = size * beltMarkerSize;');
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      `float beltMarkerRadius = distance(gl_PointCoord, vec2(0.5));
+if (beltMarkerRadius > 0.5) discard;
+diffuseColor.a *= smoothstep(0.5, 0.18, beltMarkerRadius);
+#include <opaque_fragment>`,
+    );
+  };
+  markerMaterial.customProgramCacheKey = () => 'asteroid-belt-markers-v2';
+  const markers = new THREE.Points(markerGeometry, markerMaterial);
+  markers.name = 'asteroid-belt-subpixel-markers';
+  markers.visible = false;
+  root.add(markers);
   const shapes = Array.from({ length: VARIANTS }, (_, variant) => ({
     far: rockGeometry(variant, 0),
     near: rockGeometry(variant, 1),
@@ -170,6 +230,8 @@ export function createAsteroidBelt(positionRandom: () => number) {
       random() * Math.PI * 2,
     );
     transform.updateMatrix();
+    markerPositions.set(transform.position.toArray(), i * 3);
+    markerSizes[i] = 0.75 + ((size - 0.016) / 0.075) * 0.5;
     const mesh = meshes[i % VARIANTS];
     const index = Math.floor(i / VARIANTS);
     mesh.setMatrixAt(index, transform.matrix);
@@ -181,15 +243,19 @@ export function createAsteroidBelt(positionRandom: () => number) {
       shade * (1 - warmth * 0.18),
     );
     mesh.setColorAt(index, color);
+    markerColors.set(
+      [0.95 + warmth * 0.18, 0.7 + shade * 0.45, 0.42 + shade * 0.28],
+      i * 3,
+    );
     // Map the schematic annulus to the main belt's approximate 2.1–3.3 AU.
     // Kepler's third law depends on orbital radius, not the rock's display size.
     const au =
       2.1 + ((radius - INNER_RADIUS) / (OUTER_RADIUS - INNER_RADIUS)) * 1.2;
     const spin =
       SPIN_TURNS_PER_DAY[Math.floor(random() * SPIN_TURNS_PER_DAY.length)];
-    mesh.geometry
-      .getAttribute('beltMotion')
-      .setXY(index, 1 / (365.256 * au ** 1.5), spin);
+    const orbitalRate = 1 / (365.256 * au ** 1.5);
+    mesh.geometry.getAttribute('beltMotion').setXY(index, orbitalRate, spin);
+    markerMotions.set([orbitalRate, spin], i * 2);
     const { near, far } = shapes[i % VARIANTS];
     const extent =
       Math.max(
@@ -206,6 +272,26 @@ export function createAsteroidBelt(positionRandom: () => number) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.instanceColor!.needsUpdate = true;
   }
+  markerGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(markerPositions, 3),
+  );
+  markerGeometry.setAttribute(
+    'beltMotion',
+    new THREE.BufferAttribute(markerMotions, 2),
+  );
+  markerGeometry.setAttribute(
+    'color',
+    new THREE.BufferAttribute(markerColors, 3),
+  );
+  markerGeometry.setAttribute(
+    'beltMarkerSize',
+    new THREE.BufferAttribute(markerSizes, 1),
+  );
+  markerGeometry.boundingSphere = new THREE.Sphere(
+    new THREE.Vector3(),
+    OUTER_RADIUS + ASTEROID_BELT_MAX_RADIUS,
+  );
   let near = false;
   let currentInnerRadius = INNER_RADIUS;
   let currentOuterRadius = OUTER_RADIUS;
@@ -213,6 +299,9 @@ export function createAsteroidBelt(positionRandom: () => number) {
     root,
     setSizeScale(scale: number) {
       beltSizeScale.value = Math.max(0, scale);
+      // Real-size rocks are far below one pixel in an overview. These markers
+      // preserve the belt's location without enlarging its physical geometry.
+      markers.visible = scale < 0.1;
     },
     setRadiusRange(inner: number, outer: number) {
       if (
@@ -255,6 +344,8 @@ export function createAsteroidBelt(positionRandom: () => number) {
         near.dispose();
         far.dispose();
       });
+      markerGeometry.dispose();
+      markerMaterial.dispose();
       material.dispose();
       root.clear();
     },

@@ -21,7 +21,16 @@ function population() {
 }
 
 function batches(root: THREE.Group) {
-  return root.children as THREE.InstancedMesh[];
+  return root.children.filter(
+    (child): child is THREE.InstancedMesh =>
+      child instanceof THREE.InstancedMesh,
+  );
+}
+
+function markers(root: THREE.Group) {
+  return root.getObjectByName(
+    'asteroid-belt-subpixel-markers',
+  ) as THREE.Points;
 }
 
 function triangleCount(root: THREE.Group) {
@@ -36,11 +45,18 @@ void test('belt keeps a deterministic sparse population with varied sizes, shape
   const { belt, samples } = population();
   const repeat = population().belt;
   assert.equal(samples, 5400, 'do not perturb the existing outer populations');
-  assert.equal(belt.root.children.length, 6);
+  assert.equal(batches(belt.root).length, 6);
   assert.equal(
     batches(belt.root).reduce((sum, mesh) => sum + mesh.count, 0),
     1800,
   );
+  const markerCloud = markers(belt.root);
+  assert.ok(markerCloud);
+  assert.equal(markerCloud.geometry.getAttribute('position').count, 1800);
+  assert.equal(markerCloud.visible, false);
+  const markerMaterial = markerCloud.material as THREE.PointsMaterial;
+  assert.equal(markerMaterial.sizeAttenuation, false);
+  assert.ok(markerMaterial.opacity > 0.85);
   const material = batches(belt.root)[0].material as THREE.MeshStandardMaterial;
   assert.ok(material.emissive.r > 0);
   assert.ok(material.emissiveIntensity > 0);
@@ -189,6 +205,8 @@ void test('scene integration bounds rendering cost, avoids buffer uploads, and r
   let disposedGeometries = 0;
   let disposedMeshes = 0;
   let disposedMaterials = 0;
+  let disposedMarkerGeometries = 0;
+  let disposedMarkerMaterials = 0;
   for (const geometry of [...far, ...near])
     geometry.addEventListener('dispose', () => disposedGeometries++);
   for (const mesh of meshes)
@@ -197,12 +215,22 @@ void test('scene integration bounds rendering cost, avoids buffer uploads, and r
     'dispose',
     () => disposedMaterials++,
   );
+  markers(belt.root).geometry.addEventListener(
+    'dispose',
+    () => disposedMarkerGeometries++,
+  );
+  (markers(belt.root).material as THREE.Material).addEventListener(
+    'dispose',
+    () => disposedMarkerMaterials++,
+  );
   belt.dispose();
   assert.equal(scene.children.length, 0);
   assert.equal(belt.root.children.length, 0);
   assert.equal(disposedGeometries, 12);
   assert.equal(disposedMeshes, 6);
   assert.equal(disposedMaterials, 1);
+  assert.equal(disposedMarkerGeometries, 1);
+  assert.equal(disposedMarkerMaterials, 1);
 });
 
 void test('distance mode remaps the annulus and keeps its LOD near the physical belt', () => {
@@ -221,7 +249,9 @@ void test('orbital rates follow Kepler spacing while spin rates vary independent
   const center = new THREE.Vector3();
   const orbits: { radius: number; rate: number }[] = [];
   const spins = new Set<number>();
-  for (const mesh of batches(belt.root)) {
+  const markerMotion = markers(belt.root).geometry.getAttribute('beltMotion');
+  const meshBatches = batches(belt.root);
+  for (const [variant, mesh] of meshBatches.entries()) {
     const motion = mesh.geometry.getAttribute('beltMotion');
     for (let i = 0; i < mesh.count; i++) {
       mesh.getMatrixAt(i, matrix);
@@ -231,6 +261,9 @@ void test('orbital rates follow Kepler spacing while spin rates vary independent
       assert.ok(Math.abs(periodYears ** 2 / au ** 3 - 1) < 2e-6);
       orbits.push({ radius: center.length(), rate: motion.getX(i) });
       spins.add(motion.getY(i));
+      const markerIndex = i * meshBatches.length + variant;
+      assert.equal(markerMotion.getX(markerIndex), motion.getX(i));
+      assert.equal(markerMotion.getY(markerIndex), motion.getY(i));
     }
   }
   orbits.sort((a, b) => a.radius - b.radius);
@@ -260,6 +293,9 @@ void test('GPU motion shares the simulation clock through pause, acceleration, b
   assert.equal(sizeScale, 1);
   belt.setSizeScale(0.25);
   assert.equal(shader.uniforms.beltSizeScale.value, 0.25);
+  assert.equal(markers(belt.root).visible, false);
+  belt.setSizeScale(0.01);
+  assert.equal(markers(belt.root).visible, true);
   assert.ok(
     shader.vertexShader.indexOf('size *= beltSizeScale') >
       shader.vertexShader.indexOf('orientation[2] /= size.z'),
@@ -305,6 +341,21 @@ void test('GPU motion shares the simulation clock through pause, acceleration, b
   );
   assert.match(shader.vertexShader, /mat3 im = mat3\( beltMatrix \)/);
   assert.equal(shader.fragmentShader, THREE.ShaderLib.standard.fragmentShader);
+  const markerShader = {
+    vertexShader: THREE.ShaderLib.points.vertexShader,
+    fragmentShader: THREE.ShaderLib.points.fragmentShader,
+    uniforms: {} as Record<string, { value: unknown }>,
+  };
+  const markerMaterial = markers(belt.root).material as THREE.PointsMaterial;
+  markerMaterial.onBeforeCompile(
+    markerShader as Parameters<typeof markerMaterial.onBeforeCompile>[0],
+    {} as THREE.WebGLRenderer,
+  );
+  assert.equal(markerShader.uniforms.beltTime.value, clock);
+  assert.equal(markerShader.uniforms.beltRadii.value, radii);
+  assert.match(markerShader.vertexShader, /attribute float beltMarkerSize/);
+  assert.match(markerShader.vertexShader, /gl_PointSize = size \* beltMarkerSize/);
+  assert.match(markerShader.fragmentShader, /beltMarkerRadius > 0.5/);
   belt.dispose();
 });
 
