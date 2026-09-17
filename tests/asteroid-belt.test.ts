@@ -56,10 +56,12 @@ void test('belt keeps a deterministic sparse population with varied sizes, shape
   assert.equal(markerCloud.visible, false);
   const markerMaterial = markerCloud.material as THREE.PointsMaterial;
   assert.equal(markerMaterial.sizeAttenuation, false);
-  assert.ok(markerMaterial.opacity > 0.85);
+  assert.ok(markerMaterial.opacity > 0.5 && markerMaterial.opacity < 0.7);
   const material = batches(belt.root)[0].material as THREE.MeshStandardMaterial;
   assert.ok(material.emissive.r > 0);
-  assert.ok(material.emissiveIntensity > 0);
+  assert.ok(
+    material.emissiveIntensity > 0.25 && material.emissiveIntensity < 0.5,
+  );
   const scales: number[] = [];
   const colors = new Set<string>();
   const matrix = new THREE.Matrix4();

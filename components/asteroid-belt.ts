@@ -4,7 +4,7 @@ const COUNT = 1800;
 const VARIANTS = 6;
 const INNER_RADIUS = 35;
 const OUTER_RADIUS = 40;
-const MARKER_SIZE = 2.8;
+const MARKER_SIZE = 2.4;
 const SPIN_TURNS_PER_DAY = [2, 3, 4, 6, 8, 12];
 export const ASTEROID_BELT_ILLUSTRATED_RADII = [INNER_RADIUS, OUTER_RADIUS] as const;
 export const ASTEROID_BELT_DISTANCE_RADII = [2.1 * 3.1, 3.3 * 3.1] as const;
@@ -86,7 +86,7 @@ export function createAsteroidBelt(positionRandom: () => number) {
     // A restrained fill keeps distant and shadowed rocks legible against the
     // dark sky without turning the schematic population into glowing points.
     emissive: 0x9a8d78,
-    emissiveIntensity: 0.8,
+    emissiveIntensity: 0.38,
     roughness: 1,
     metalness: 0,
     flatShading: true,
@@ -131,7 +131,7 @@ export function createAsteroidBelt(positionRandom: () => number) {
     size: MARKER_SIZE,
     sizeAttenuation: false,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.58,
     depthWrite: false,
     vertexColors: true,
   });
@@ -244,7 +244,7 @@ diffuseColor.a *= smoothstep(0.5, 0.18, beltMarkerRadius);
     );
     mesh.setColorAt(index, color);
     markerColors.set(
-      [0.95 + warmth * 0.18, 0.7 + shade * 0.45, 0.42 + shade * 0.28],
+      [0.48 + warmth * 0.08, 0.3 + shade * 0.25, 0.18 + shade * 0.16],
       i * 3,
     );
     // Map the schematic annulus to the main belt's approximate 2.1–3.3 AU.
