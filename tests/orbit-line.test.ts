@@ -56,15 +56,30 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
   line.material.dispose();
 });
 
-void test('closed orbit sampling reuses the first point at the seam', () => {
+void test('closed orbit sampling distributes endpoint drift without a seam kink', () => {
   const phases: number[] = [];
   const points = sampleClosedOrbit((phase) => {
     phases.push(phase);
-    return new THREE.Vector3(Math.cos(phase), Math.sin(phase), phase);
+    const angle = phase * Math.PI * 2;
+    return new THREE.Vector3(
+      Math.cos(angle) + phase * 0.25,
+      Math.sin(angle),
+      phase * 0.1,
+    );
   });
   assert.equal(points.length, ORBIT_PATH_SEGMENTS + 1);
-  assert.equal(phases.length, ORBIT_PATH_SEGMENTS);
-  assert.ok(phases.every((phase) => phase >= 0 && phase < 1));
-  assert.notEqual(points[0], points.at(-1));
+  assert.equal(phases.length, ORBIT_PATH_SEGMENTS + 1);
+  assert.equal(phases.at(-1), 1);
   assert.deepEqual(points[0].toArray(), points.at(-1)!.toArray());
+  for (const index of [1, 511, 1024, 2047]) {
+    const angle = (index / ORBIT_PATH_SEGMENTS) * Math.PI * 2;
+    assert.ok(
+      points[index].distanceTo(
+        new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0),
+      ) < 1e-12,
+    );
+  }
+  const outgoing = points[1].clone().sub(points[0]).normalize();
+  const incoming = points.at(-1)!.clone().sub(points.at(-2)!).normalize();
+  assert.ok(outgoing.angleTo(incoming) < 0.004);
 });

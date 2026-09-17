@@ -41,10 +41,19 @@ export function sampleClosedOrbit(
   sample: (phase: number) => THREE.Vector3,
   segments = ORBIT_PATH_SEGMENTS,
 ) {
-  const points = Array.from({ length: segments }, (_, index) =>
+  const points = Array.from({ length: segments + 1 }, (_, index) =>
     sample(index / segments),
   );
-  if (points.length > 0) points.push(points[0].clone());
+  const first = points[0];
+  const last = points.at(-1);
+  if (!first || !last) return points;
+  // Precise ephemerides include perturbations, so one nominal period may end
+  // slightly away from the starting point. Spread that drift across the whole
+  // guide instead of concentrating it in a visible closing segment.
+  const drift = last.clone().sub(first);
+  for (let index = 1; index < segments; index++)
+    points[index].addScaledVector(drift, -index / segments);
+  last.copy(first);
   return points;
 }
 
