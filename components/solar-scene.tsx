@@ -360,6 +360,7 @@ export default function SolarScene({
       color: number,
       size: number,
       spherical = false,
+      opacity = 0.55,
     ) {
       const a = new Float32Array(count * 3);
       for (let i = 0; i < count; i++) {
@@ -377,7 +378,7 @@ export default function SolarScene({
           color,
           size,
           transparent: true,
-          opacity: 0.55,
+          opacity,
           sizeAttenuation: true,
           depthWrite: false,
         }),
@@ -387,9 +388,9 @@ export default function SolarScene({
     }
     const belt = createAsteroidBelt(rand);
     scene.add(belt.root);
-    const kuiper = points(2200, 99, 128, 8, 0x6f899a, 0.18),
-      scattered = points(750, 130, 166, 65, 0x8394b2, 0.2),
-      oort = points(3500, 190, 228, 0, 0x7a92b5, 0.4, true);
+    const kuiper = points(2200, 99, 128, 8, 0xa7c5d6, 0.34, false, 0.8),
+      scattered = points(750, 130, 166, 65, 0x9eb7ce, 0.3, false, 0.7),
+      oort = points(3500, 190, 228, 0, 0xc1d8e6, 0.8, true, 0.78);
     const heliosphere = new THREE.Mesh(
       new THREE.SphereGeometry(167, 48, 32),
       new THREE.MeshBasicMaterial({
