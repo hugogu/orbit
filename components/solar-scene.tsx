@@ -372,17 +372,24 @@ export default function SolarScene({
       }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(a, 3));
-      const cloud = new THREE.Points(
-        geometry,
-        new THREE.PointsMaterial({
-          color,
-          size,
-          transparent: true,
-          opacity,
-          sizeAttenuation: true,
-          depthWrite: false,
-        }),
-      );
+      const material = new THREE.PointsMaterial({
+        color,
+        size,
+        transparent: true,
+        opacity,
+        sizeAttenuation: true,
+        depthWrite: false,
+      });
+      // Point sprites are square by default; a circular mask keeps distant
+      // small-body populations from looking like a second pixelated starfield.
+      material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <output_fragment>',
+          'if (distance(gl_PointCoord, vec2(0.5)) > 0.5) discard;\n#include <output_fragment>',
+        );
+      };
+      material.customProgramCacheKey = () => 'outer-points-round-v1';
+      const cloud = new THREE.Points(geometry, material);
       scene.add(cloud);
       return cloud;
     }
