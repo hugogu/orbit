@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { kmToScene } from '@/lib/display-scale';
+import { AU_KM } from '@/lib/eclipse-shadows';
 
 const COUNT = 1800;
 const VARIANTS = 6;
@@ -6,16 +8,46 @@ const INNER_RADIUS = 35;
 const OUTER_RADIUS = 40;
 const MARKER_SIZE = 2.4;
 const SPIN_TURNS_PER_DAY = [2, 3, 4, 6, 8, 12];
-export const ASTEROID_BELT_ILLUSTRATED_RADII = [INNER_RADIUS, OUTER_RADIUS] as const;
-export const ASTEROID_BELT_DISTANCE_RADII = [2.1 * 3.1, 3.3 * 3.1] as const;
-// Conservative bound for the largest deformed unit rock at its maximum scale.
-export const ASTEROID_BELT_MAX_RADIUS = 0.11;
+// The schematic annulus stands in for the main belt's approximate 2.1-3.3 AU.
+const INNER_AU = 2.1;
+const OUTER_AU = 3.3;
+const AU_TO_SCENE = AU_KM * kmToScene('distance');
+export const ASTEROID_BELT_ILLUSTRATED_RADII = [
+  INNER_RADIUS,
+  OUTER_RADIUS,
+] as const;
+export const ASTEROID_BELT_DISTANCE_RADII = [
+  INNER_AU * AU_TO_SCENE,
+  OUTER_AU * AU_TO_SCENE,
+] as const;
+// Conservative bound on the largest rock: the unit shapes reach about 1.49
+// before the per-instance scale, which itself peaks just above 0.107.
+// `createAsteroidBelt` uses it as the real-size reference; the belt test keeps
+// it above every deformed vertex so the bound can never silently go stale.
+export const ASTEROID_BELT_MAX_RADIUS = 0.16;
+
+// Both shaders place the authored annulus on the active radius range, so they
+// share one remapping helper instead of repeating the source radii.
+const remapShader = `
+  vec2 beltRemapRadius(vec2 plane, vec2 radii) {
+    float sourceRadius = max(length(plane), 0.0001);
+    float radiusT = clamp(
+      (sourceRadius - ${INNER_RADIUS.toFixed(1)}) / ${(
+        OUTER_RADIUS - INNER_RADIUS
+      ).toFixed(1)},
+      0.0,
+      1.0
+    );
+    return plane * (mix(radii.x, radii.y, radiusT) / sourceRadius);
+  }
+`;
 
 const motionShader = `
   uniform vec2 beltTime;
   uniform vec2 beltRadii;
   uniform float beltSizeScale;
   attribute vec2 beltMotion;
+${remapShader}
   mat3 beltRotateY(float angle) {
     float c = cos(angle), s = sin(angle);
     return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);
@@ -33,16 +65,7 @@ const motionShader = `
     // Rotate before applying the unequal axis scales, so there is no shear.
     mat3 basis = orbitRotation * orientation * beltRotateY(spin);
     vec3 center = instanceMatrix[3].xyz;
-    float sourceRadius = max(length(center.xz), 0.0001);
-    float radiusT = clamp(
-      (sourceRadius - ${INNER_RADIUS.toFixed(1)}) / ${(
-        OUTER_RADIUS - INNER_RADIUS
-      ).toFixed(1)},
-      0.0,
-      1.0
-    );
-    float targetRadius = mix(beltRadii.x, beltRadii.y, radiusT);
-    center.xz *= targetRadius / sourceRadius;
+    center.xz = beltRemapRadius(center.xz, beltRadii);
     return mat4(
       vec4(basis[0] * size.x, 0.0),
       vec4(basis[1] * size.y, 0.0),
@@ -146,6 +169,7 @@ uniform vec2 beltTime;
 uniform vec2 beltRadii;
 attribute vec2 beltMotion;
 attribute float beltMarkerSize;
+${remapShader}
 mat3 beltMarkerRotateY(float angle) {
   float c = cos(angle), s = sin(angle);
   return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);
@@ -154,15 +178,7 @@ mat3 beltMarkerRotateY(float angle) {
       .replace(
         '#include <begin_vertex>',
         `vec3 transformed = position;
-float sourceRadius = max(length(transformed.xz), 0.0001);
-float radiusT = clamp(
-  (sourceRadius - ${INNER_RADIUS.toFixed(1)}) / ${(
-    OUTER_RADIUS - INNER_RADIUS
-  ).toFixed(1)},
-  0.0,
-  1.0
-);
-transformed.xz *= mix(beltRadii.x, beltRadii.y, radiusT) / sourceRadius;
+transformed.xz = beltRemapRadius(transformed.xz, beltRadii);
 float orbit = 6.28318530718 * (fract(beltTime.x * beltMotion.x) + beltTime.y * beltMotion.x);
 transformed = beltMarkerRotateY(orbit) * transformed;`,
       )
@@ -247,10 +263,11 @@ diffuseColor.a *= smoothstep(0.5, 0.18, beltMarkerRadius);
       [0.48 + warmth * 0.08, 0.3 + shade * 0.25, 0.18 + shade * 0.16],
       i * 3,
     );
-    // Map the schematic annulus to the main belt's approximate 2.1–3.3 AU.
     // Kepler's third law depends on orbital radius, not the rock's display size.
     const au =
-      2.1 + ((radius - INNER_RADIUS) / (OUTER_RADIUS - INNER_RADIUS)) * 1.2;
+      INNER_AU +
+      ((radius - INNER_RADIUS) / (OUTER_RADIUS - INNER_RADIUS)) *
+        (OUTER_AU - INNER_AU);
     const spin =
       SPIN_TURNS_PER_DAY[Math.floor(random() * SPIN_TURNS_PER_DAY.length)];
     const orbitalRate = 1 / (365.256 * au ** 1.5);
@@ -304,11 +321,7 @@ diffuseColor.a *= smoothstep(0.5, 0.18, beltMarkerRadius);
       markers.visible = scale < 0.1;
     },
     setRadiusRange(inner: number, outer: number) {
-      if (
-        beltRadii.value.x === inner &&
-        beltRadii.value.y === outer
-      )
-        return;
+      if (beltRadii.value.x === inner && beltRadii.value.y === outer) return;
       beltRadii.value.set(inner, outer);
       currentInnerRadius = inner;
       currentOuterRadius = outer;

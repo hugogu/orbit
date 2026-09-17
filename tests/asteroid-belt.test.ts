@@ -8,6 +8,8 @@ import {
   createAsteroidBelt,
 } from '../components/asteroid-belt';
 import { advanceTime, DAY_MS, J2000_MS } from '../lib/simulation-time';
+import { kmToScene } from '../lib/display-scale';
+import { AU_KM } from '../lib/eclipse-shadows';
 
 function population() {
   let seed = 71;
@@ -28,9 +30,7 @@ function batches(root: THREE.Group) {
 }
 
 function markers(root: THREE.Group) {
-  return root.getObjectByName(
-    'asteroid-belt-subpixel-markers',
-  ) as THREE.Points;
+  return root.getObjectByName('asteroid-belt-subpixel-markers') as THREE.Points;
 }
 
 function triangleCount(root: THREE.Group) {
@@ -115,6 +115,8 @@ void test('both detail levels have closed finite rock surfaces and conservative 
   const { belt } = population();
   const matrix = new THREE.Matrix4();
   const point = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  let largestRock = 0;
   for (const camera of [
     new THREE.Vector3(0, 115, 170),
     new THREE.Vector3(37, 2, 0),
@@ -147,11 +149,50 @@ void test('both detail levels have closed finite rock surfaces and conservative 
       );
       for (let i = 0; i < mesh.count; i++) {
         mesh.getMatrixAt(i, matrix);
+        center.setFromMatrixPosition(matrix);
         for (let j = 0; j < positions.count; j++) {
           point.fromBufferAttribute(positions, j).applyMatrix4(matrix);
           assert.ok(mesh.boundingSphere!.distanceToPoint(point) < 1e-5);
+          largestRock = Math.max(largestRock, point.distanceTo(center));
         }
       }
+    }
+  }
+  // The real-size scale divides by this constant, so a stale value would both
+  // mis-size the belt and under-report how much room a rock needs.
+  assert.ok(
+    largestRock <= ASTEROID_BELT_MAX_RADIUS,
+    `largest rock ${largestRock} exceeds ASTEROID_BELT_MAX_RADIUS`,
+  );
+  assert.ok(
+    largestRock > ASTEROID_BELT_MAX_RADIUS * 0.8,
+    'the bound should stay close to the shapes it describes',
+  );
+  belt.dispose();
+});
+
+void test('the schematic annulus maps onto the main belt through the shared AU scale', () => {
+  const auToScene = AU_KM * kmToScene('distance');
+  assert.deepEqual(
+    [...ASTEROID_BELT_DISTANCE_RADII],
+    [2.1 * auToScene, 3.3 * auToScene],
+  );
+  const { belt } = population();
+  const matrix = new THREE.Matrix4();
+  const center = new THREE.Vector3();
+  for (const mesh of batches(belt.root)) {
+    const motion = mesh.geometry.getAttribute('beltMotion');
+    for (let i = 0; i < mesh.count; i++) {
+      mesh.getMatrixAt(i, matrix);
+      center.setFromMatrixPosition(matrix);
+      // Kepler rates and the distance-mode radii must describe the same belt.
+      const au = 1 / (motion.getX(i) * 365.256) ** (2 / 3);
+      const radius = au * auToScene;
+      assert.ok(
+        radius >= ASTEROID_BELT_DISTANCE_RADII[0] - 1e-6 &&
+          radius <= ASTEROID_BELT_DISTANCE_RADII[1] + 1e-6,
+        `orbital rate at ${center.length()} implies ${au} AU`,
+      );
     }
   }
   belt.dispose();
@@ -356,7 +397,18 @@ void test('GPU motion shares the simulation clock through pause, acceleration, b
   assert.equal(markerShader.uniforms.beltTime.value, clock);
   assert.equal(markerShader.uniforms.beltRadii.value, radii);
   assert.match(markerShader.vertexShader, /attribute float beltMarkerSize/);
-  assert.match(markerShader.vertexShader, /gl_PointSize = size \* beltMarkerSize/);
+  // A failed chunk replacement would leave three.js' own `begin_vertex` in
+  // place and silently freeze the markers at their authored radii.
+  assert.match(
+    markerShader.vertexShader,
+    /transformed = beltMarkerRotateY\(orbit\) \* transformed/,
+  );
+  for (const source of [shader.vertexShader, markerShader.vertexShader])
+    assert.match(source, /transformed\.xz = beltRemapRadius|beltRemapRadius\(/);
+  assert.match(
+    markerShader.vertexShader,
+    /gl_PointSize = size \* beltMarkerSize/,
+  );
   assert.match(markerShader.fragmentShader, /beltMarkerRadius > 0.5/);
   belt.dispose();
 });
