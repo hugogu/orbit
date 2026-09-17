@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { createAsteroidBelt } from '../components/asteroid-belt';
+import {
+  ASTEROID_BELT_DISTANCE_RADII,
+  ASTEROID_BELT_ILLUSTRATED_RADII,
+  createAsteroidBelt,
+} from '../components/asteroid-belt';
 import { advanceTime, DAY_MS, J2000_MS } from '../lib/simulation-time';
 
 function population() {
@@ -200,6 +204,16 @@ void test('scene integration bounds rendering cost, avoids buffer uploads, and r
   assert.equal(disposedMaterials, 1);
 });
 
+void test('distance mode remaps the annulus and keeps its LOD near the physical belt', () => {
+  const { belt } = population();
+  belt.setRadiusRange(...ASTEROID_BELT_DISTANCE_RADII);
+  belt.update(new THREE.Vector3(8, 0, 0), 0);
+  assert.equal(triangleCount(belt.root), 144000);
+  belt.update(new THREE.Vector3(37, 0, 0), 0);
+  assert.equal(triangleCount(belt.root), 36000);
+  belt.dispose();
+});
+
 void test('orbital rates follow Kepler spacing while spin rates vary independently', () => {
   const { belt } = population();
   const matrix = new THREE.Matrix4();
@@ -240,6 +254,10 @@ void test('GPU motion shares the simulation clock through pause, acceleration, b
     {} as THREE.WebGLRenderer,
   );
   const clock = shader.uniforms.beltTime.value as THREE.Vector2;
+  const radii = shader.uniforms.beltRadii.value as THREE.Vector2;
+  assert.deepEqual(radii.toArray(), [...ASTEROID_BELT_ILLUSTRATED_RADII]);
+  belt.setRadiusRange(...ASTEROID_BELT_DISTANCE_RADII);
+  assert.deepEqual(radii.toArray(), [...ASTEROID_BELT_DISTANCE_RADII]);
   const camera = new THREE.Vector3(37, 0, 0);
   let ms = J2000_MS + 1000.25 * DAY_MS;
   const update = () => belt.update(camera, (ms - J2000_MS) / DAY_MS);

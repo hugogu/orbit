@@ -10,7 +10,11 @@ import { DAY_MS, J2000_MS, advanceTime } from '@/lib/simulation-time';
 import { comets } from '@/lib/comets';
 import { asteroids } from '@/lib/asteroids';
 import { createAsteroidSystem } from './asteroid-system';
-import { createAsteroidBelt } from './asteroid-belt';
+import {
+  ASTEROID_BELT_DISTANCE_RADII,
+  ASTEROID_BELT_ILLUSTRATED_RADII,
+  createAsteroidBelt,
+} from './asteroid-belt';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
 import { moonTextureNames, orbitingMoons } from '@/lib/moon-orbits';
@@ -698,12 +702,19 @@ export default function SolarScene({
         s.shadows && s.shadowGuides && s.selected === 'earth',
         earthDisplayRadius,
       );
-      belt.root.visible = s.belts && s.scale === 'illustrated';
-      kuiper.visible = s.belts && s.scale === 'illustrated';
-      scattered.visible = s.belts && s.view >= 350 && s.scale === 'illustrated';
-      oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
+      belt.setRadiusRange(
+        ...(s.scale === 'distance'
+          ? ASTEROID_BELT_DISTANCE_RADII
+          : ASTEROID_BELT_ILLUSTRATED_RADII),
+      );
+      belt.root.visible = s.belts;
+      kuiper.visible = s.belts;
+      // Distance mode keeps the complete schematic outer population available
+      // while the illustrated mode reveals farther layers as the view widens.
+      scattered.visible = s.belts && (s.view >= 350 || s.scale === 'distance');
+      oort.visible = s.belts && (s.view >= 400 || s.scale === 'distance');
       heliosphere.visible =
-        s.belts && s.view >= 400 && s.scale === 'illustrated';
+        s.belts && (s.view >= 400 || s.scale === 'distance');
       cometSystem.update(
         s.cometId,
         days,

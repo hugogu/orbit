@@ -5,9 +5,12 @@ const VARIANTS = 6;
 const INNER_RADIUS = 35;
 const OUTER_RADIUS = 40;
 const SPIN_TURNS_PER_DAY = [2, 3, 4, 6, 8, 12];
+export const ASTEROID_BELT_ILLUSTRATED_RADII = [INNER_RADIUS, OUTER_RADIUS] as const;
+export const ASTEROID_BELT_DISTANCE_RADII = [2.1 * 3.1, 3.3 * 3.1] as const;
 
 const motionShader = `
   uniform vec2 beltTime;
+  uniform vec2 beltRadii;
   attribute vec2 beltMotion;
   mat3 beltRotateY(float angle) {
     float c = cos(angle), s = sin(angle);
@@ -24,11 +27,22 @@ const motionShader = `
     orientation[2] /= size.z;
     // Rotate before applying the unequal axis scales, so there is no shear.
     mat3 basis = orbitRotation * orientation * beltRotateY(spin);
+    vec3 center = instanceMatrix[3].xyz;
+    float sourceRadius = max(length(center.xz), 0.0001);
+    float radiusT = clamp(
+      (sourceRadius - ${INNER_RADIUS.toFixed(1)}) / ${(
+        OUTER_RADIUS - INNER_RADIUS
+      ).toFixed(1)},
+      0.0,
+      1.0
+    );
+    float targetRadius = mix(beltRadii.x, beltRadii.y, radiusT);
+    center.xz *= targetRadius / sourceRadius;
     return mat4(
       vec4(basis[0] * size.x, 0.0),
       vec4(basis[1] * size.y, 0.0),
       vec4(basis[2] * size.z, 0.0),
-      vec4(orbitRotation * instanceMatrix[3].xyz, 1.0)
+      vec4(orbitRotation * center, 1.0)
     );
   }
 `;
@@ -76,8 +90,12 @@ export function createAsteroidBelt(positionRandom: () => number) {
   // Split whole/fractional days so slow motion stays smooth across 1700–2200.
   // Integer spin turns/day make the fractional-day wrap continuous.
   const time = { value: new THREE.Vector2() };
+  const beltRadii = {
+    value: new THREE.Vector2(...ASTEROID_BELT_ILLUSTRATED_RADII),
+  };
   material.onBeforeCompile = (shader) => {
     shader.uniforms.beltTime = time;
+    shader.uniforms.beltRadii = beltRadii;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${motionShader}`)
       .replace(
@@ -183,16 +201,31 @@ export function createAsteroidBelt(positionRandom: () => number) {
     mesh.instanceColor!.needsUpdate = true;
   }
   let near = false;
+  let currentInnerRadius = INNER_RADIUS;
+  let currentOuterRadius = OUTER_RADIUS;
   return {
     root,
+    setRadiusRange(inner: number, outer: number) {
+      if (
+        beltRadii.value.x === inner &&
+        beltRadii.value.y === outer
+      )
+        return;
+      beltRadii.value.set(inner, outer);
+      currentInnerRadius = inner;
+      currentOuterRadius = outer;
+      near = false;
+      for (const [index, mesh] of meshes.entries())
+        mesh.geometry = shapes[index].far;
+    },
     update(cameraPosition: THREE.Vector3, days: number) {
       if (!root.visible) return;
       const wholeDays = Math.floor(days);
       time.value.set(wholeDays, days - wholeDays);
       const radial = Math.hypot(cameraPosition.x, cameraPosition.z);
       const radialGap = Math.max(
-        INNER_RADIUS - radial,
-        radial - OUTER_RADIUS,
+        currentInnerRadius - radial,
+        radial - currentOuterRadius,
         0,
       );
       const distance = Math.hypot(
