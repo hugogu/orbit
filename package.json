@@ -5,6 +5,12 @@
   "engines": {
     "node": "^22.13.0 || ^24.0.0"
   },
+  "allowScripts": {
+    "esbuild@0.27.3 || 0.28.2": true,
+    "fsevents@2.3.3": true,
+    "sharp@0.34.5": true,
+    "workerd@1.20260515.1": true
+  },
   "scripts": {
     "dev": "vinext dev",
     "prebuild": "node --import tsx scripts/generate-og.ts && node --import tsx scripts/generate-seo.ts && node --import tsx scripts/generate-pwa-assets.ts",
