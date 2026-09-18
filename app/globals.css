@@ -2197,7 +2197,6 @@ button:disabled {
   flex: 1 1 140px;
 }
 .share-actions .primary-action {
-  flex-basis: 100%;
   justify-content: center;
   gap: 10px;
 }
@@ -2209,8 +2208,30 @@ button:disabled {
   font-size: 12px;
   color: #97b9a6;
 }
+.share-link-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.share-copy {
+  flex-shrink: 0;
+  width: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffffff18;
+  border-radius: 8px;
+  background: #ffffff06;
+  color: #bfccdc;
+  cursor: pointer;
+}
+.share-copy:hover {
+  background: #ffffff10;
+  color: #ead4ac;
+}
 .share-link {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   border: 1px solid #ffffff18;
   border-radius: 8px;
   background: #ffffff06;

@@ -20,8 +20,6 @@ export const qrBadgePalette = {
   module: '#070c15',
   label: '#1d2635',
   edge: 'rgba(7, 12, 21, 0.55)',
-  /** On screen the symbol is there to be read, not to recede, so it stays brighter. */
-  screen: '#e6ecf4',
 };
 
 /**

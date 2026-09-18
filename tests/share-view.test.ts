@@ -296,7 +296,9 @@ void test('the on-screen code is drawn at device pixels a camera can resolve', (
   }
   // Never zero, however little room it is handed.
   assert.equal(qrCanvasSize(10, 177, 1).unit, 1);
-  assert.ok(contrastRatio(qrBadgePalette.module, qrBadgePalette.screen) >= 10);
+  // Same muted card as the badge: at this size the symbol has pixels to spare,
+  // so it need not be brighter than the one lying on the frame.
+  assert.ok(contrastRatio(qrBadgePalette.module, qrBadgePalette.card) >= 7);
 });
 
 void test('an unusable badge size is refused rather than drawn illegibly', () => {

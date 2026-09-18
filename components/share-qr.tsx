@@ -11,7 +11,9 @@ import {
  * The link at a size a camera can actually read. The badge burnt into the
  * shared frame is sized for that frame, so it lands far too small once the
  * preview scales the whole image down; this one is drawn at device resolution
- * and never resampled, which is what makes it scannable off a screen.
+ * and never resampled, which is what makes it scannable off a screen. It wears
+ * the same muted palette as the badge: at this size the symbol has pixels to
+ * spare, so it can sit quietly in a dark panel rather than glare out of it.
  */
 export default function ShareQr({
   link,
@@ -43,7 +45,7 @@ export default function ShareQr({
     target.style.height = `${side / ratio}px`;
     const context = target.getContext('2d');
     if (!context) return;
-    context.fillStyle = qrBadgePalette.screen;
+    context.fillStyle = qrBadgePalette.card;
     context.fillRect(0, 0, side, side);
     context.fillStyle = qrBadgePalette.module;
     for (let row = 0; row < symbol.size; row++)

@@ -1,7 +1,7 @@
 'use client';
 import { track } from '@vercel/analytics';
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Check, Download, Link2, Share2 } from 'lucide-react';
+import { Check, Copy, Download, Share2 } from 'lucide-react';
 import { useI18n } from '../lib/i18n/provider';
 import {
   Dialog,
@@ -70,6 +70,7 @@ export default function ShareDialog({
   const heading = view.selected
     ? t('{{name}}，{{date}}', { name: subject, date })
     : t('太阳系，{{date}}', { date });
+  const canShare = typeof navigator !== 'undefined' && 'share' in navigator;
   const url = absoluteSiteUrl(
     `${sharePath(locale, view.selected)}?${encodeShareView(view).toString()}`,
   );
@@ -190,56 +191,61 @@ export default function ShareDialog({
           <ShareQr link={url} />
           <p>{t('用手机扫码，在手机上继续观测。')}</p>
         </div>
-        <div className="share-actions">
-          {typeof navigator !== 'undefined' && 'share' in navigator && (
-            <button
-              type="button"
-              className="primary-action"
-              onClick={() => void shareCurrentView()}
-            >
-              <Share2 size={16} />
-              {t('分享')}
-            </button>
-          )}
-          <button
-            type="button"
-            className="secondary-action"
-            onClick={() => void copyLink()}
-          >
-            {status === 'copied' ? <Check size={15} /> : <Link2 size={15} />}
-            {t('复制链接')}
-          </button>
-          {preview.status === 'ready' && (
-            <a
-              className="secondary-action"
-              href={preview.url}
-              download={shareFileName(view)}
-              onClick={() =>
-                track('share', {
-                  method: 'download_image',
-                  body_id: view.selected ?? 'system',
-                })
-              }
-            >
-              <Download size={15} />
-              {t('保存图片')}
-            </a>
-          )}
-        </div>
+        {(canShare || preview.status === 'ready') && (
+          <div className="share-actions">
+            {canShare && (
+              <button
+                type="button"
+                className="primary-action"
+                onClick={() => void shareCurrentView()}
+              >
+                <Share2 size={16} />
+                {t('分享')}
+              </button>
+            )}
+            {preview.status === 'ready' && (
+              <a
+                className="secondary-action"
+                href={preview.url}
+                download={shareFileName(view)}
+                onClick={() =>
+                  track('share', {
+                    method: 'download_image',
+                    body_id: view.selected ?? 'system',
+                  })
+                }
+              >
+                <Download size={15} />
+                {t('保存图片')}
+              </a>
+            )}
+          </div>
+        )}
         <output className="share-status" aria-live="polite" aria-atomic="true">
           {status === 'copied'
             ? t('链接已复制')
             : status === 'manual'
-              ? t('请复制下方链接')
+              ? t('请手动复制链接')
               : ''}
         </output>
-        <input
-          className="share-link"
-          aria-label={t('分享链接')}
-          readOnly
-          value={url}
-          onFocus={(event) => event.currentTarget.select()}
-        />
+        <div className="share-link-row">
+          <input
+            className="share-link"
+            aria-label={t('分享链接')}
+            readOnly
+            value={url}
+            onFocus={(event) => event.currentTarget.select()}
+          />
+          <button
+            type="button"
+            className="share-copy"
+            aria-label={t('复制链接')}
+            title={t('复制链接')}
+            onClick={() => void copyLink()}
+          >
+            {status === 'copied' ? <Check size={16} /> : <Copy size={16} />}
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );
