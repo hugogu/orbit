@@ -1076,5 +1076,6 @@
   "分享链接": "Share link",
   "看看分享者在 ORBIT 中观测{{name}}的这一刻。": "See the moment {{name}} was observed in ORBIT.",
   "正在打开分享的观测视角…": "Opening the shared view…",
-  "如果没有自动跳转，点此进入观测台": "Open the observatory if this page does not continue automatically"
+  "如果没有自动跳转，点此进入观测台": "Open the observatory if this page does not continue automatically",
+  "用手机扫码，在手机上继续观测。": "Scan with your phone to carry on observing there."
 }

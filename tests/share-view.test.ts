@@ -19,6 +19,7 @@ import {
   contrastRatio,
   qrBadgeLayout,
   qrBadgePalette,
+  qrCanvasSize,
   relativeLuminance,
   shareImageSize,
 } from '../lib/share-image';
@@ -273,6 +274,29 @@ void test('the badge stays muted over the sky without starving a scanner', () =>
   assert.ok(relativeLuminance(module) < relativeLuminance(card));
   // Far enough below white that it no longer glares out of a dark frame.
   assert.ok(relativeLuminance(card) <= 0.55, 'card is muted');
+});
+
+void test('the on-screen code is drawn at device pixels a camera can resolve', () => {
+  // 41 modules plus the quiet zone on either side.
+  const across = 41 + 4 * 2;
+  for (const ratio of [1, 2, 3]) {
+    const { unit, side } = qrCanvasSize(180, 41, ratio);
+    const where = `dpr ${ratio}`;
+    // Whole device pixels per module, and the canvas is exactly that many, so
+    // presenting it at side/ratio never resamples the modules together.
+    assert.ok(Number.isInteger(unit) && unit >= 1, where);
+    assert.equal(side, unit * across, where);
+    assert.ok(side <= 180 * ratio, where);
+    // The badge burnt into the frame lands near one CSS pixel per module once
+    // the preview scales it down; this has to clear that by a wide margin.
+    assert.ok(
+      unit / ratio >= 3,
+      `${where}: ${(unit / ratio).toFixed(2)} css px per module`,
+    );
+  }
+  // Never zero, however little room it is handed.
+  assert.equal(qrCanvasSize(10, 177, 1).unit, 1);
+  assert.ok(contrastRatio(qrBadgePalette.module, qrBadgePalette.screen) >= 10);
 });
 
 void test('an unusable badge size is refused rather than drawn illegibly', () => {

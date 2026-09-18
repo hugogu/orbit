@@ -2162,6 +2162,32 @@ button:disabled {
   color: #bfccdc;
   font-size: 13px;
 }
+.share-scan {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 13px;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  background: #ffffff05;
+}
+.share-scan canvas {
+  display: block;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.share-scan p {
+  margin: 0;
+  color: #9fb0c4;
+  font-size: 13px;
+  line-height: 1.7;
+}
+/* On a phone the code would be scanned with the device already holding it. */
+@media (max-width: 620px) {
+  .share-scan {
+    display: none;
+  }
+}
 .share-actions {
   display: flex;
   flex-wrap: wrap;

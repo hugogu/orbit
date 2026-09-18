@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { composeShareImage } from '../lib/share-image';
+import ShareQr from './share-qr';
 import { absoluteSiteUrl } from '../lib/seo';
 import {
   encodeShareView,
@@ -185,6 +186,10 @@ export default function ShareDialog({
             {heading}
           </figcaption>
         </figure>
+        <div className="share-scan">
+          <ShareQr link={url} />
+          <p>{t('用手机扫码，在手机上继续观测。')}</p>
+        </div>
         <div className="share-actions">
           {typeof navigator !== 'undefined' && 'share' in navigator && (
             <button
