@@ -76,24 +76,31 @@ export type SceneState = {
   observerLocation: SkyLocation;
   observerLocationReady: boolean;
 };
+/**
+ * Reads the scene exactly as it is on screen. The drawing buffer is not
+ * preserved, so the frame has to be drawn and read back in the same task.
+ */
+export type SceneCapture = () => string | null;
 export default function SolarScene({
   state,
   onSelect,
   onTime,
   onAssetStatus,
+  captureRef,
 }: {
   state: SceneState;
   onSelect: (id: string) => void;
   onTime: (days: number) => void;
   onAssetStatus: (message: string) => void;
+  captureRef?: React.RefObject<SceneCapture | null>;
 }) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null),
-    latest = useRef({ state, onSelect, onTime, onAssetStatus });
+    latest = useRef({ state, onSelect, onTime, onAssetStatus, captureRef });
   const [error, setError] = useState('');
   useEffect(() => {
-    latest.current = { state, onSelect, onTime, onAssetStatus };
-  }, [state, onSelect, onTime, onAssetStatus]);
+    latest.current = { state, onSelect, onTime, onAssetStatus, captureRef };
+  }, [state, onSelect, onTime, onAssetStatus, captureRef]);
   useEffect(() => {
     const container = host.current!;
     let renderer: THREE.WebGLRenderer;
@@ -934,6 +941,16 @@ export default function SolarScene({
       }
     };
     frame = requestAnimationFrame(animate);
+    const sceneCapture = latest.current.captureRef;
+    if (sceneCapture)
+      sceneCapture.current = () => {
+        try {
+          renderer.render(scene, camera);
+          return renderer.domElement.toDataURL('image/png');
+        } catch {
+          return null;
+        }
+      };
     const onContextLost = (e: Event) => {
       e.preventDefault();
       cancelAnimationFrame(frame);
@@ -942,6 +959,7 @@ export default function SolarScene({
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
     return () => {
       cancelAnimationFrame(frame);
+      if (sceneCapture) sceneCapture.current = null;
       if (texturePreload.kind === 'idle')
         idleWindow.cancelIdleCallback?.(texturePreload.handle);
       else window.clearTimeout(texturePreload.handle);

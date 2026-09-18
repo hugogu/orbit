@@ -1063,5 +1063,18 @@
   "隼鸟二号在 2019 年两次采样，并于 2020 年将约 5.4 克龙宫物质送回地球。": "Hayabusa2 sampled Ryugu twice in 2019 and returned about 5.4 grams of material to Earth in 2020.",
   "当前页面尚未离线保存": "This page is not saved offline yet",
   "连接网络后可查看此页面，也可以返回已保存的太阳系模拟器继续探索。": "Connect to view this page, or return to the saved Solar System simulator to keep exploring.",
-  "返回太阳系模拟器": "Return to the Solar System"
+  "返回太阳系模拟器": "Return to the Solar System",
+  "{{name}}，{{date}}": "{{name}} on {{date}}",
+  "太阳系，{{date}}": "The solar system on {{date}}",
+  "分享此刻所见": "Share this view",
+  "打开链接的人会看到同一时刻、同一天体的太阳系。": "Anyone who opens the link sees the solar system at the same moment, around the same body.",
+  "当前观测画面预览": "Preview of the current view",
+  "正在生成观测截图…": "Capturing the current view…",
+  "截图生成失败，链接仍可分享。": "The screenshot could not be captured. The link still works.",
+  "分享": "Share",
+  "保存图片": "Save image",
+  "分享链接": "Share link",
+  "看看分享者在 ORBIT 中观测{{name}}的这一刻。": "See the moment {{name}} was observed in ORBIT.",
+  "正在打开分享的观测视角…": "Opening the shared view…",
+  "如果没有自动跳转，点此进入观测台": "Open the observatory if this page does not continue automatically"
 }

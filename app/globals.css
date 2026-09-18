@@ -2126,6 +2126,99 @@ button:disabled {
   font-weight: 500;
   padding-right: 20px;
 }
+.orbit-dialog.share-dialog {
+  max-width: 480px !important;
+  display: grid;
+  gap: 14px;
+}
+.share-preview {
+  margin: 0;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #070c15;
+}
+.share-preview-frame {
+  width: 100%;
+  /* A portrait capture would otherwise push the share actions off screen. */
+  max-height: min(46vh, 340px);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.share-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 148px;
+  padding: 16px;
+  text-align: center;
+  color: #7d8b9d;
+  font-size: 13px;
+}
+.share-preview figcaption {
+  padding: 10px 14px;
+  border-top: 1px solid #ffffff10;
+  color: #bfccdc;
+  font-size: 13px;
+}
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.share-actions > * {
+  flex: 1 1 140px;
+}
+.share-actions .primary-action {
+  flex-basis: 100%;
+  justify-content: center;
+  gap: 10px;
+}
+.share-actions .secondary-action {
+  text-decoration: none;
+}
+.share-status {
+  min-height: 17px;
+  font-size: 12px;
+  color: #97b9a6;
+}
+.share-link {
+  width: 100%;
+  border: 1px solid #ffffff18;
+  border-radius: 8px;
+  background: #ffffff06;
+  padding: 9px 12px;
+  color: #8a97a8;
+  font-size: 12px;
+}
+.share-landing {
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px;
+  text-align: center;
+  background: #070c15;
+  color: #ede9e0;
+}
+.share-landing-brand {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.34em;
+  color: #dfc99f;
+}
+.share-landing h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 400;
+  color: #bfccdc;
+}
+.share-landing a {
+  color: #8a97a8;
+  font-size: 13px;
+}
 .orbit-dialog.settings-dialog {
   width: calc(100vw - 24px);
   max-width: 560px !important;

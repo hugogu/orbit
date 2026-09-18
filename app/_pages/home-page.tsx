@@ -1,7 +1,13 @@
 'use client';
 import { track } from '@vercel/analytics';
 import { useI18n } from '../../lib/i18n/provider';
-import { useEffect, useState, useCallback, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type CSSProperties,
+} from 'react';
 import { flushSync } from 'react-dom';
 import { registerObservatoryTools } from '@/lib/observatory-tools';
 import {
@@ -20,10 +26,11 @@ import {
   SlidersHorizontal,
   Info,
   CalendarDays,
+  Share2,
   X,
 } from 'lucide-react';
 import LanguagePicker from '../../components/language-picker';
-import SolarScene from '@/components/solar-scene';
+import SolarScene, { type SceneCapture } from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';
 import BodyNavigation from '@/components/body-navigation';
@@ -37,6 +44,12 @@ import AstronomyPanel from '@/components/astronomy-panel';
 import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
+import ShareDialog from '@/components/share-dialog';
+import {
+  decodeShareView,
+  hasShareView,
+  type ShareView,
+} from '@/lib/share-view';
 import { comets, cometModelNote, cometPerihelion } from '@/lib/comets';
 import {
   asteroids,
@@ -137,6 +150,8 @@ export default function Home() {
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
     [details, setDetails] = useState(false),
+    [share, setShare] = useState(false),
+    [shareView, setShareView] = useState<ShareView | null>(null),
     [fullscreen, setFullscreen] = useState(false),
     [notice, setNotice] = useState(''),
     [preferencesReady, setPreferencesReady] = useState(false),
@@ -146,6 +161,8 @@ export default function Home() {
     [observerLocationSource, setObserverLocationSource] = useState<
       'pending' | 'device' | 'manual' | 'fallback'
     >('fallback');
+  const captureScene = useRef<SceneCapture | null>(null);
+  const capture = useCallback(() => captureScene.current?.() ?? null, []);
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const selectedAsteroid = asteroids.find((item) => item.id === selected);
   const body = bodies.find(
@@ -267,6 +284,21 @@ export default function Home() {
     if (live) setSpeed(0);
     if (live) setEclipseView(false);
   }
+  // The share dialog works from a snapshot, so the running clock cannot move
+  // the moment out from under the captured frame and its link.
+  function openShare() {
+    setShareView({
+      time: time ?? Date.now(),
+      paused,
+      speedIndex: speed,
+      selected,
+      view,
+      top,
+      cometClose,
+      region: tab === 'structure' && !selected ? region : null,
+    });
+    setShare(true);
+  }
   function updateObserverLocation(
     next: SkyLocation,
     source: 'device' | 'manual' = 'manual',
@@ -310,20 +342,54 @@ export default function Home() {
     setReset((v) => v + 1);
     setTop(false);
   }, []);
+  // A share link arrives with its moment and framing in the query string. It is
+  // applied after the hash has selected the body, then cleared so the address
+  // bar follows the live simulation again.
+  const applyShareView = useCallback(() => {
+    const url = new URL(window.location.href);
+    if (!hasShareView(url.searchParams)) return;
+    const shared = decodeShareView(url.searchParams, bodyFromHash(url.hash));
+    setEpoch(shared.time);
+    setTime(shared.time);
+    setPaused(shared.paused);
+    setSpeed(shared.speedIndex);
+    setTop(shared.top);
+    if (shared.selected) {
+      if (comets.some((comet) => comet.id === shared.selected))
+        setCometClose(shared.cometClose);
+    } else if (shared.region) {
+      setTab('structure');
+      setRegion(shared.region);
+      setView(regions.find((item) => item.id === shared.region)!.view);
+    } else {
+      setView(shared.view);
+    }
+    setReset((value) => value + 1);
+    const language = url.searchParams.get('lang');
+    const query = language ? `?lang=${encodeURIComponent(language)}` : '';
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${url.pathname}${query}${url.hash}`,
+    );
+  }, []);
   useEffect(() => {
     const restore = () => {
       const id = bodyFromHash(window.location.hash);
       if (id) select(id);
       else home();
     };
-    queueMicrotask(restore);
+    queueMicrotask(() => {
+      restore();
+      applyShareView();
+    });
     window.addEventListener('hashchange', restore);
     window.addEventListener('popstate', restore);
     return () => {
       window.removeEventListener('hashchange', restore);
       window.removeEventListener('popstate', restore);
     };
-  }, [select, home]);
+  }, [select, home, applyShareView]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (
@@ -671,6 +737,7 @@ export default function Home() {
         onSelect={select}
         onTime={setTime}
         onAssetStatus={setNotice}
+        captureRef={captureScene}
       />
       <div className="vignette" />
       {eclipse.event && time !== null && (
@@ -737,6 +804,14 @@ export default function Home() {
             <i />
             {paused ? t('模拟暂停') : t('按日期演算')}
           </span>
+          <button
+            className="icon-button"
+            aria-label={t('分享此刻所见')}
+            title={t('分享此刻所见')}
+            onClick={openShare}
+          >
+            <Share2 />
+          </button>
           <button
             className="icon-button"
             aria-label={t('导航帮助')}
@@ -983,6 +1058,14 @@ export default function Home() {
             <X size={16} />
           </button>
         </output>
+      )}
+      {shareView && (
+        <ShareDialog
+          open={share}
+          onOpenChange={setShare}
+          view={shareView}
+          capture={capture}
+        />
       )}
       <AstronomyPanel
         open={astronomy}
