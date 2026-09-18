@@ -122,16 +122,24 @@ export default function ShareDialog({
   }
 
   async function shareCurrentView() {
+    const file = preview.status === 'ready' ? preview.file : undefined;
+    const link = { title: heading, url };
+    // Probe the exact payload rather than the file on its own: a browser can
+    // accept an image alone and still refuse one beside a link, and sharing a
+    // payload it rejected throws instead of opening the sheet. Carrying the
+    // file also gives the system sheet our own frame to preview, in place of
+    // the generic page glyph it draws for a bare link.
+    const withImage = file
+      ? [
+          { ...link, files: [file] },
+          { title: heading, text: url, files: [file] },
+        ].find((candidate) => navigator.canShare?.(candidate))
+      : undefined;
     // Targets that reject an attached screenshot still receive the link, whose
     // social card already matches the body on screen.
-    const file = preview.status === 'ready' ? preview.file : undefined;
-    const withImage = file && navigator.canShare?.({ files: [file] });
+    const payload = withImage ?? link;
     try {
-      await navigator.share({
-        title: heading,
-        url,
-        ...(withImage ? { files: [file] } : {}),
-      });
+      await navigator.share(payload);
       track('share', {
         method: withImage ? 'system_image' : 'system_link',
         body_id: view.selected ?? 'system',

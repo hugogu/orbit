@@ -46,8 +46,13 @@ export const metadata: Metadata = {
       '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
     images: ['/og-image.png'],
   },
+  // A raster icon beside the vector one: system surfaces that represent a page
+  // outside the browser, such as a share sheet, do not all render SVG.
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
     apple: '/icons/apple-touch-icon.png',
   },
   robots: {

@@ -84,6 +84,18 @@ for (const locale of seoLocales) {
       ),
       path,
     );
+    // A share sheet represents the page outside the browser and cannot rely on
+    // the vector icon, so a raster one has to reach the landing page too.
+    assert.ok(
+      linkTags.some(
+        (attributes) =>
+          (attributes.get('rel') ?? '')
+            .split(/\s+/)
+            .some((value) => value.toLowerCase() === 'icon') &&
+          attributes.get('href') === '/icons/icon-192.png',
+      ),
+      `Raster icon: ${path}`,
+    );
     assert.equal((html.match(/<h1\b/g) ?? []).length, 1, path);
     checked++;
   }
