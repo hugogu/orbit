@@ -15,7 +15,8 @@ import {
   withoutShareView,
   type ShareView,
 } from '../lib/share-view';
-import { shareImageSize } from '../lib/share-image';
+import { qrBadgeLayout, shareImageSize } from '../lib/share-image';
+import { encode } from 'uqr';
 import { MAX_TIME, MIN_TIME } from '../lib/simulation-time';
 import { catalogEntries, seoLocales } from '../lib/seo';
 import { localePath, translator } from '../lib/i18n';
@@ -25,6 +26,8 @@ const moment = Date.UTC(2026, 8, 18, 12, 34, 56);
 const base: ShareView = { ...defaultShareView, time: moment };
 const roundTrip = (view: ShareView) =>
   decodeShareView(encodeShareView(view), view.selected);
+const absoluteShareLink = (id: string, query: string) =>
+  `https://www.orbits.observer${sharePath('zh-CN', id)}${query}`;
 
 void test('a shared view survives the round trip through a link', () => {
   for (const view of [
@@ -217,6 +220,46 @@ void test('captured frames scale down to the share limit without changing framin
   });
   assert.deepEqual(shareImageSize(0, 0), { width: 0, height: 0 });
   assert.deepEqual(shareImageSize(Number.NaN, 10), { width: 0, height: 0 });
+});
+
+void test('the scannable badge keeps whole-pixel modules and its quiet zone', () => {
+  // A long link: every field set, the longest catalog id, and a camera pose.
+  const longest = absoluteShareLink(
+    'moon-ganymede',
+    '?t=2026-09-18T12:34:56.000Z&p=1&s=8&top=1&cc=1&c=-3.1416,3.1416,499.9999',
+  );
+  for (const link of [
+    absoluteShareLink('sun', '?t=2026-09-18T00:00:00.000Z'),
+    longest,
+  ])
+    for (const [width, height] of [
+      [1600, 1000],
+      [739, 1600],
+      [1000, 1000],
+      [640, 360],
+    ] as const) {
+      const symbol = encode(link, { ecc: 'M', border: 0 });
+      const layout = qrBadgeLayout(width, height, symbol.size)!;
+      const where = `${link.length}ch ${width}x${height}`;
+      assert.ok(layout, where);
+      // Whole pixels per module, or a camera cannot separate neighbours.
+      assert.ok(Number.isInteger(layout.unit) && layout.unit >= 2, where);
+      assert.equal(layout.symbol, layout.unit * symbol.size, where);
+      // Four modules of clear space on every side, as scanners require.
+      assert.equal(layout.quiet, layout.unit * 4, where);
+      assert.equal(layout.card, layout.symbol + layout.quiet * 2, where);
+      // The badge plus its label has to fit inside the frame it stamps.
+      assert.ok(layout.card * 1.2 <= Math.min(width, height), where);
+    }
+});
+
+void test('an unusable badge size is refused rather than drawn illegibly', () => {
+  assert.equal(qrBadgeLayout(1600, 1000, 0), null);
+  assert.equal(qrBadgeLayout(1600, 1000, 2.5), null);
+  assert.equal(qrBadgeLayout(0, 0, 41), null);
+  assert.equal(qrBadgeLayout(Number.NaN, 100, 41), null);
+  // A symbol that cannot hold two whole pixels per module on a tiny frame.
+  assert.equal(qrBadgeLayout(60, 60, 177), null);
 });
 
 void test('share landing routes re-export the shared page module', () => {

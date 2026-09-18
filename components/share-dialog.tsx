@@ -83,7 +83,7 @@ export default function ShareDialog({
         // Read the frame before awaiting: the drawing buffer is not preserved.
         const frame = capture();
         const image = frame
-          ? await composeShareImage(frame, { subject, moment })
+          ? await composeShareImage(frame, { subject, moment, link: url })
           : null;
         if (image) {
           objectUrl = URL.createObjectURL(image.blob);
@@ -107,7 +107,7 @@ export default function ShareDialog({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [open, capture, view, subject, moment]);
+  }, [open, capture, view, subject, moment, url]);
 
   async function copyLink() {
     let result: CopyStatus = 'manual';
