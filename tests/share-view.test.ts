@@ -15,7 +15,13 @@ import {
   withoutShareView,
   type ShareView,
 } from '../lib/share-view';
-import { qrBadgeLayout, shareImageSize } from '../lib/share-image';
+import {
+  contrastRatio,
+  qrBadgeLayout,
+  qrBadgePalette,
+  relativeLuminance,
+  shareImageSize,
+} from '../lib/share-image';
 import { encode } from 'uqr';
 import { MAX_TIME, MIN_TIME } from '../lib/simulation-time';
 import { catalogEntries, seoLocales } from '../lib/seo';
@@ -251,6 +257,22 @@ void test('the scannable badge keeps whole-pixel modules and its quiet zone', ()
       // The badge plus its label has to fit inside the frame it stamps.
       assert.ok(layout.card * 1.2 <= Math.min(width, height), where);
     }
+});
+
+void test('the badge stays muted over the sky without starving a scanner', () => {
+  const { card, module, label } = qrBadgePalette;
+  // Known ratios anchor the maths before it judges the palette.
+  assert.equal(Number(contrastRatio('#000000', '#ffffff').toFixed(2)), 21);
+  assert.equal(Number(contrastRatio('#ffffff', '#ffffff').toFixed(2)), 1);
+  assert.equal(Number(relativeLuminance('#ffffff').toFixed(3)), 1);
+  assert.equal(Number(relativeLuminance('#000000').toFixed(3)), 0);
+  // Comfortably past the separation a scanner needs, with room to spare.
+  assert.ok(contrastRatio(module, card) >= 7, 'symbol contrast');
+  assert.ok(contrastRatio(label, card) >= 4.5, 'wordmark contrast');
+  // Dark modules on a lighter card: an inverted symbol is what scanners refuse.
+  assert.ok(relativeLuminance(module) < relativeLuminance(card));
+  // Far enough below white that it no longer glares out of a dark frame.
+  assert.ok(relativeLuminance(card) <= 0.55, 'card is muted');
 });
 
 void test('an unusable badge size is refused rather than drawn illegibly', () => {

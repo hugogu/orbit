@@ -8,6 +8,44 @@ const shareFont = "Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif";
 /** Clear margin a scanner needs around the symbol, in modules. */
 const qrQuietModules = 4;
 
+/**
+ * Badge palette. A scanner separates modules by luminance, not by brightness,
+ * so the card can sit far down towards the sky it lies on and still read
+ * cleanly. These stay muted enough not to glare over a dark scene while
+ * holding a wide margin over the ratio any scanner asks for; the contrast test
+ * guards that trade.
+ */
+export const qrBadgePalette = {
+  card: '#a8b6c8',
+  module: '#070c15',
+  label: '#1d2635',
+  edge: 'rgba(7, 12, 21, 0.55)',
+};
+
+function channelLuminance(value: number) {
+  const channel = value / 255;
+  return channel <= 0.04045
+    ? channel / 12.92
+    : ((channel + 0.055) / 1.055) ** 2.4;
+}
+
+/** Relative luminance of a `#rrggbb` colour, per WCAG. */
+export function relativeLuminance(colour: string) {
+  const hex = colour.replace('#', '');
+  const [red, green, blue] = [0, 2, 4].map((at) =>
+    channelLuminance(Number.parseInt(hex.slice(at, at + 2), 16)),
+  );
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+/** Contrast between two `#rrggbb` colours, as the familiar n:1 ratio. */
+export function contrastRatio(one: string, other: string) {
+  const [dark, light] = [relativeLuminance(one), relativeLuminance(other)].sort(
+    (a, b) => a - b,
+  );
+  return (light + 0.05) / (dark + 0.05);
+}
+
 export type ShareImageSize = { width: number; height: number };
 export type ShareImage = ShareImageSize & { blob: Blob };
 
@@ -86,8 +124,10 @@ function cardPath(
 
 /**
  * Stamp the link onto the frame as a scannable badge, so the image on its own
- * reopens the view. Drawn dark on a solid light card rather than over the sky,
- * because an inverted symbol on a busy background is what scanners refuse.
+ * reopens the view. The symbol sits dark on its own card rather than inverted
+ * over the sky, which is what scanners refuse, but the card is toned well down
+ * from white and its edge is dissolved by a shadow, so it settles into a dark
+ * frame instead of glaring out of it.
  * Returns the width it claimed, or null when the link cannot be encoded.
  */
 function drawQrBadge(
@@ -114,11 +154,20 @@ function drawQrBadge(
     top,
     layout.card,
     layout.card + label,
-    layout.unit * 2,
+    layout.unit * 3,
   );
-  context.fillStyle = '#ffffff';
+  // A soft shadow dissolves the card edge into the sky instead of cutting a
+  // hard rectangle out of it. It sits under the card, never over the modules.
+  context.shadowColor = 'rgba(3, 6, 12, 0.55)';
+  context.shadowBlur = layout.unit * 6;
+  context.fillStyle = qrBadgePalette.card;
   context.fill();
-  context.fillStyle = '#0a0f18';
+  context.shadowColor = 'transparent';
+  context.shadowBlur = 0;
+  context.strokeStyle = qrBadgePalette.edge;
+  context.lineWidth = Math.max(1, Math.round(layout.unit / 3));
+  context.stroke();
+  context.fillStyle = qrBadgePalette.module;
   for (let row = 0; row < symbol.size; row++) {
     for (let column = 0; column < symbol.size; column++) {
       if (!symbol.data[row][column]) continue;
@@ -130,7 +179,7 @@ function drawQrBadge(
       );
     }
   }
-  context.fillStyle = '#2a3342';
+  context.fillStyle = qrBadgePalette.label;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.font = `600 ${Math.round(label * 0.46)}px ${shareFont}`;
