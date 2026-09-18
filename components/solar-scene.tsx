@@ -34,6 +34,7 @@ import { createObserverMarker } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
 import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
+import type { CameraPose } from '@/lib/share-view';
 import type { EclipseProgressEvent } from '@/lib/eclipse-progress';
 import { createEclipsePath } from './eclipse-path';
 import {
@@ -75,32 +76,38 @@ export type SceneState = {
   systemView: boolean;
   observerLocation: SkyLocation;
   observerLocationReady: boolean;
+  /** A shared pose to adopt instead of the next automatic framing. */
+  cameraPose: CameraPose | null;
 };
-/**
- * Reads the scene exactly as it is on screen. The drawing buffer is not
- * preserved, so the frame has to be drawn and read back in the same task.
- */
-export type SceneCapture = () => string | null;
+export type SceneHandle = {
+  /**
+   * Reads the scene exactly as it is on screen. The drawing buffer is not
+   * preserved, so the frame has to be drawn and read back in the same task.
+   */
+  capture: () => string | null;
+  /** Where the camera sits now, relative to whatever it is framing. */
+  pose: () => CameraPose;
+};
 export default function SolarScene({
   state,
   onSelect,
   onTime,
   onAssetStatus,
-  captureRef,
+  sceneRef,
 }: {
   state: SceneState;
   onSelect: (id: string) => void;
   onTime: (days: number) => void;
   onAssetStatus: (message: string) => void;
-  captureRef?: React.RefObject<SceneCapture | null>;
+  sceneRef?: React.RefObject<SceneHandle | null>;
 }) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null),
-    latest = useRef({ state, onSelect, onTime, onAssetStatus, captureRef });
+    latest = useRef({ state, onSelect, onTime, onAssetStatus, sceneRef });
   const [error, setError] = useState('');
   useEffect(() => {
-    latest.current = { state, onSelect, onTime, onAssetStatus, captureRef };
-  }, [state, onSelect, onTime, onAssetStatus, captureRef]);
+    latest.current = { state, onSelect, onTime, onAssetStatus, sceneRef };
+  }, [state, onSelect, onTime, onAssetStatus, sceneRef]);
   useEffect(() => {
     const container = host.current!;
     let renderer: THREE.WebGLRenderer;
@@ -535,12 +542,17 @@ export default function SolarScene({
     const navigationTextureGraceMs = 5000;
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
+    // A shared pose replaces automatic framing until the viewer takes over.
+    let adoptedPose: CameraPose | null | undefined,
+      sharedPose: CameraPose | null = null;
     const projected = new THREE.Vector3(),
       newTarget = new THREE.Vector3(),
-      desired = new THREE.Vector3();
+      desired = new THREE.Vector3(),
+      poseOffset = new THREE.Spherical();
     controls.addEventListener('start', () => {
       transition = 0;
       following = null;
+      sharedPose = null;
     });
     const compactScreen = window.matchMedia(
       '(max-width: 700px), (pointer: coarse)',
@@ -768,6 +780,10 @@ export default function SolarScene({
       );
       const comet = comets.find((c) => c.id === s.cometId);
       const cometKey = `${s.cometId}/${s.cometClose}`;
+      if (s.cameraPose !== adoptedPose) {
+        adoptedPose = s.cameraPose;
+        sharedPose = s.cameraPose;
+      }
       if (
         s.selected !== lastSelected ||
         s.reset !== lastReset ||
@@ -851,7 +867,24 @@ export default function SolarScene({
             ? (roots.get(s.selected)?.position ?? new THREE.Vector3())
             : new THREE.Vector3(),
       );
-      if (transition > 0) {
+      if (transition > 0 && sharedPose) {
+        // A shared framing is adopted outright rather than flown to, and it is
+        // reapplied on every later reframe — a resize must not drop the
+        // recipient back to the automatic angle. The distance is a ratio of
+        // this body's framing distance, so the body keeps its apparent size
+        // under the recipient's own size and distance settings.
+        poseOffset.set(
+          targetDistance * sharedPose.zoom,
+          sharedPose.polar,
+          sharedPose.azimuth,
+        );
+        controls.target.copy(newTarget);
+        camera.position
+          .copy(newTarget)
+          .add(desired.setFromSpherical(poseOffset));
+        following = newTarget.clone();
+        transition = 0;
+      } else if (transition > 0) {
         controls.target.lerp(newTarget, 0.07);
         desired
           .copy(newTarget)
@@ -941,15 +974,25 @@ export default function SolarScene({
       }
     };
     frame = requestAnimationFrame(animate);
-    const sceneCapture = latest.current.captureRef;
-    if (sceneCapture)
-      sceneCapture.current = () => {
-        try {
-          renderer.render(scene, camera);
-          return renderer.domElement.toDataURL('image/png');
-        } catch {
-          return null;
-        }
+    const handle = latest.current.sceneRef;
+    if (handle)
+      handle.current = {
+        capture: () => {
+          try {
+            renderer.render(scene, camera);
+            return renderer.domElement.toDataURL('image/png');
+          } catch {
+            return null;
+          }
+        },
+        pose: () => ({
+          azimuth: controls.getAzimuthalAngle(),
+          polar: controls.getPolarAngle(),
+          zoom:
+            targetDistance > 0
+              ? camera.position.distanceTo(controls.target) / targetDistance
+              : 1,
+        }),
       };
     const onContextLost = (e: Event) => {
       e.preventDefault();
@@ -959,7 +1002,7 @@ export default function SolarScene({
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
     return () => {
       cancelAnimationFrame(frame);
-      if (sceneCapture) sceneCapture.current = null;
+      if (handle) handle.current = null;
       if (texturePreload.kind === 'idle')
         idleWindow.cancelIdleCallback?.(texturePreload.handle);
       else window.clearTimeout(texturePreload.handle);

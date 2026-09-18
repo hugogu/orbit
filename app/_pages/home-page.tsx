@@ -30,7 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import LanguagePicker from '../../components/language-picker';
-import SolarScene, { type SceneCapture } from '@/components/solar-scene';
+import SolarScene, { type SceneHandle } from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';
 import BodyNavigation from '@/components/body-navigation';
@@ -48,6 +48,8 @@ import ShareDialog from '@/components/share-dialog';
 import {
   decodeShareView,
   hasShareView,
+  withoutShareView,
+  type CameraPose,
   type ShareView,
 } from '@/lib/share-view';
 import { comets, cometModelNote, cometPerihelion } from '@/lib/comets';
@@ -152,6 +154,7 @@ export default function Home() {
     [details, setDetails] = useState(false),
     [share, setShare] = useState(false),
     [shareView, setShareView] = useState<ShareView | null>(null),
+    [cameraPose, setCameraPose] = useState<CameraPose | null>(null),
     [fullscreen, setFullscreen] = useState(false),
     [notice, setNotice] = useState(''),
     [preferencesReady, setPreferencesReady] = useState(false),
@@ -161,8 +164,8 @@ export default function Home() {
     [observerLocationSource, setObserverLocationSource] = useState<
       'pending' | 'device' | 'manual' | 'fallback'
     >('fallback');
-  const captureScene = useRef<SceneCapture | null>(null);
-  const capture = useCallback(() => captureScene.current?.() ?? null, []);
+  const scene = useRef<SceneHandle | null>(null);
+  const capture = useCallback(() => scene.current?.capture() ?? null, []);
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const selectedAsteroid = asteroids.find((item) => item.id === selected);
   const body = bodies.find(
@@ -296,6 +299,7 @@ export default function Home() {
       top,
       cometClose,
       region: tab === 'structure' && !selected ? region : null,
+      camera: scene.current?.pose() ?? null,
     });
     setShare(true);
   }
@@ -311,10 +315,13 @@ export default function Home() {
       window.history.pushState(
         null,
         '',
-        window.location.pathname + window.location.search + `#${id}`,
+        window.location.pathname +
+          withoutShareView(window.location.search) +
+          `#${id}`,
       );
     setSystemView(false);
     setEclipseView(false);
+    setCameraPose(null);
     if (comets.some((c) => c.id === id)) {
       setTab('explore');
       setCometId(id);
@@ -332,23 +339,24 @@ export default function Home() {
       window.history.pushState(
         null,
         '',
-        window.location.pathname + window.location.search,
+        window.location.pathname + withoutShareView(window.location.search),
       );
     setSystemView(false);
     setEclipseView(false);
+    setCameraPose(null);
     setTab('explore');
     setSelected(null);
     setView(205);
     setReset((v) => v + 1);
     setTop(false);
   }, []);
-  // A share link arrives with its moment and framing in the query string. It is
-  // applied after the hash has selected the body, then cleared so the address
-  // bar follows the live simulation again.
-  const applyShareView = useCallback(() => {
-    const url = new URL(window.location.href);
-    if (!hasShareView(url.searchParams)) return;
-    const shared = decodeShareView(url.searchParams, bodyFromHash(url.hash));
+  // A share link arrives with its moment and framing in the query string, and
+  // is applied after the hash has selected the body. The query stays in the
+  // address bar so the link can still be reloaded, bookmarked or passed on.
+  const applyShareView = useCallback((search: string, hash: string) => {
+    const params = new URLSearchParams(search);
+    if (!hasShareView(params)) return;
+    const shared = decodeShareView(params, bodyFromHash(hash));
     setEpoch(shared.time);
     setTime(shared.time);
     setPaused(shared.paused);
@@ -364,14 +372,8 @@ export default function Home() {
     } else {
       setView(shared.view);
     }
+    setCameraPose(shared.camera);
     setReset((value) => value + 1);
-    const language = url.searchParams.get('lang');
-    const query = language ? `?lang=${encodeURIComponent(language)}` : '';
-    window.history.replaceState(
-      window.history.state,
-      '',
-      `${url.pathname}${query}${url.hash}`,
-    );
   }, []);
   useEffect(() => {
     const restore = () => {
@@ -380,8 +382,9 @@ export default function Home() {
       else home();
     };
     queueMicrotask(() => {
+      const { search, hash } = window.location;
       restore();
-      applyShareView();
+      applyShareView(search, hash);
     });
     window.addEventListener('hashchange', restore);
     window.addEventListener('popstate', restore);
@@ -733,11 +736,12 @@ export default function Home() {
           observerLocationReady:
             observerLocationSource !== 'pending' &&
             observerLocationSource !== 'fallback',
+          cameraPose,
         }}
         onSelect={select}
         onTime={setTime}
         onAssetStatus={setNotice}
-        captureRef={captureScene}
+        sceneRef={scene}
       />
       <div className="vignette" />
       {eclipse.event && time !== null && (

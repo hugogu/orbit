@@ -4,6 +4,20 @@ import { MAX_TIME, MIN_TIME, utcLabel } from './simulation-time';
 import { catalogEntries } from './seo';
 import { regions, speeds } from './solar';
 
+/** Where the camera actually sits around the followed body. */
+export type CameraPose = {
+  /** Horizontal angle, in radians. */
+  azimuth: number;
+  /** Angle away from north, in radians. */
+  polar: number;
+  /**
+   * Distance as a multiple of the framing distance the scene picks for that
+   * body. A ratio rather than scene units, so the recipient sees the same
+   * apparent size under their own size and distance settings.
+   */
+  zoom: number;
+};
+
 /**
  * The observation the share link reproduces: the moment, the subject and the
  * framing around it. Visual options and the observer's own coordinates stay out
@@ -22,6 +36,8 @@ export type ShareView = {
   cometClose: boolean;
   /** Set only for the structure tour, which has no followed body. */
   region: string | null;
+  /** Absent when the scene could not be read, which falls back to auto framing. */
+  camera: CameraPose | null;
 };
 
 export const defaultShareView: ShareView = {
@@ -33,11 +49,34 @@ export const defaultShareView: ShareView = {
   top: false,
   cometClose: false,
   region: null,
+  camera: null,
 };
 
 /** Overview distances stay inside the range the structure tour and reset use. */
 const minView = 1;
 const maxView = 2000;
+/** A pose further outside this than any control allows is treated as corrupt. */
+const minZoom = 0.02;
+const maxZoom = 500;
+
+/** Four decimals hold the pose to well under a tenth of a degree. */
+function compact(value: number) {
+  return String(Number(value.toFixed(4)));
+}
+
+function readCamera(value: string | null): CameraPose | null {
+  if (!value) return null;
+  const parts = value.split(',').map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part)))
+    return null;
+  const [azimuth, polar, zoom] = parts;
+  if (Math.abs(azimuth) > Math.PI * 2) return null;
+  if (polar < 0 || polar > Math.PI) return null;
+  if (zoom < minZoom || zoom > maxZoom) return null;
+  return { azimuth, polar, zoom };
+}
+
+const shareKeys = ['t', 'p', 's', 'v', 'top', 'cc', 'r', 'c'] as const;
 
 let cachedIds: Set<string> | undefined;
 function catalogIds() {
@@ -65,6 +104,13 @@ export function encodeShareView(view: ShareView) {
   if (view.speedIndex !== defaultShareView.speedIndex)
     params.set('s', String(view.speedIndex));
   if (view.top) params.set('top', '1');
+  if (view.camera)
+    params.set(
+      'c',
+      [view.camera.azimuth, view.camera.polar, view.camera.zoom]
+        .map(compact)
+        .join(','),
+    );
   if (view.selected) {
     if (comets.some((comet) => comet.id === view.selected))
       params.set('cc', view.cometClose ? '1' : '0');
@@ -108,6 +154,7 @@ export function decodeShareView(
         ? view
         : defaultShareView.view,
     top: readBoolean(params.get('top')),
+    camera: readCamera(params.get('c')),
     cometClose:
       cometClose === null ? defaultShareView.cometClose : cometClose === '1',
     region: !body && isShareableRegion(region) ? region : null,
@@ -116,7 +163,19 @@ export function decodeShareView(
 
 /** Whether a link carried any observation state at all. */
 export function hasShareView(params: URLSearchParams) {
-  return ['t', 'p', 's', 'v', 'top', 'cc', 'r'].some((key) => params.has(key));
+  return shareKeys.some((key) => params.has(key));
+}
+
+/**
+ * Drop a consumed observation from a URL. The explorer keeps a share link
+ * intact so it can be reloaded or passed on, but once the visitor follows a
+ * different body the link no longer describes what is on screen.
+ */
+export function withoutShareView(search: string) {
+  const params = new URLSearchParams(search);
+  for (const key of shareKeys) params.delete(key);
+  const query = params.toString();
+  return query ? `?${query}` : '';
 }
 
 /** Crawlable landing page whose social card matches the followed body. */

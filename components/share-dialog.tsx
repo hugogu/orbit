@@ -19,7 +19,7 @@ import {
   shareSubjectName,
   type ShareView,
 } from '../lib/share-view';
-import type { SceneCapture } from './solar-scene';
+import type { SceneHandle } from './solar-scene';
 
 type Preview =
   | { status: 'pending' }
@@ -47,7 +47,7 @@ export default function ShareDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   view: ShareView;
-  capture: SceneCapture;
+  capture: SceneHandle['capture'];
 }) {
   const { t, locale } = useI18n();
   // Both results are tagged with the snapshot they belong to, so reopening the
