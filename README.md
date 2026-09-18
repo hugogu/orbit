@@ -90,7 +90,7 @@ flowchart LR
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) `>= 22.13.0`
+- [Node.js](https://nodejs.org/) `^22.13.0 || ^24.0.0` (the 22 and 24 LTS lines)
 - npm; this repository includes `package-lock.json`
 - A modern WebGL-capable browser with hardware acceleration recommended
 

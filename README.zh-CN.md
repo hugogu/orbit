@@ -90,7 +90,7 @@ flowchart LR
 
 ### 前置条件
 
-- [Node.js](https://nodejs.org/) `>= 22.13.0`
+- [Node.js](https://nodejs.org/) `^22.13.0 || ^24.0.0`（22 与 24 两条 LTS 线）
 - npm（项目包含 `package-lock.json`）
 - 支持 WebGL 的现代浏览器；推荐开启硬件加速
 
