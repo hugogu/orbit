@@ -306,9 +306,16 @@ void test('the on-screen code is drawn at device pixels a camera can resolve', (
   const cramped = qrCanvasSize(10, 177, 1);
   assert.equal(cramped.unit, 1);
   assert.ok(cramped.side > 10);
-  // Same muted card as the badge: at this size the symbol has pixels to spare,
-  // so it need not be brighter than the one lying on the frame.
-  assert.ok(contrastRatio(qrBadgePalette.module, qrBadgePalette.card) >= 7);
+  // The dialog code is a control among buttons, so it carries their weight
+  // rather than the badge's, which has a picture to sit on without glaring.
+  assert.ok(contrastRatio(qrBadgePalette.module, qrBadgePalette.screen) >= 10);
+  assert.ok(
+    relativeLuminance(qrBadgePalette.screen) >
+      relativeLuminance(qrBadgePalette.card),
+  );
+  // Within reach of the button it sits beside, and clear of plain white.
+  assert.ok(relativeLuminance(qrBadgePalette.screen) >= 0.5);
+  assert.ok(relativeLuminance(qrBadgePalette.screen) <= 0.72);
 });
 
 void test('an unusable badge size is refused rather than drawn illegibly', () => {

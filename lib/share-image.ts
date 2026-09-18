@@ -20,6 +20,12 @@ export const qrBadgePalette = {
   module: '#070c15',
   label: '#1d2635',
   edge: 'rgba(7, 12, 21, 0.55)',
+  /**
+   * The code shown in the dialog is a control among buttons, not something
+   * lying on a picture, so it carries their weight instead of receding the way
+   * the badge on the frame has to.
+   */
+  screen: '#c6d1e0',
 };
 
 /**
