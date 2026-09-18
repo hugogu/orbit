@@ -70,7 +70,10 @@ export default function ShareDialog({
   const heading = view.selected
     ? t('{{name}}，{{date}}', { name: subject, date })
     : t('太阳系，{{date}}', { date });
-  const canShare = typeof navigator !== 'undefined' && 'share' in navigator;
+  // Presence is not enough: the property exists unusable in some runtimes, and
+  // the button would then offer something that cannot be done.
+  const canShare =
+    typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const url = absoluteSiteUrl(
     `${sharePath(locale, view.selected)}?${encodeShareView(view).toString()}`,
   );

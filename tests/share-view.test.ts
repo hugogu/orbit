@@ -291,7 +291,9 @@ void test('the on-screen code is drawn at device pixels a camera can resolve', (
     assert.ok(side <= 180 * ratio, where);
     // The canvas is presented at side/ratio CSS pixels, which the display then
     // paints with exactly `side` of its own: one drawn pixel per real pixel.
-    assert.equal((side / ratio) * ratio, side, where);
+    // Compared loosely, since a fractional ratio cannot round-trip exactly in
+    // binary and the browser lays out in subpixels anyway.
+    assert.ok(Math.abs((side / ratio) * ratio - side) < 1e-9, where);
     // The badge burnt into the frame lands near one CSS pixel per module once
     // the preview scales it down; this has to clear that by a wide margin.
     assert.ok(

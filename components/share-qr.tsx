@@ -24,49 +24,82 @@ export default function ShareQr({
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const target = canvas.current;
-    if (!target) return;
-    let symbol;
+    const element = canvas.current;
+    if (!element) return;
+    const blank = () => {
+      element.width = 0;
+      element.height = 0;
+      element.style.width = '0px';
+      element.style.height = '0px';
+    };
+    let encoded: ReturnType<typeof encode> | undefined;
     try {
-      symbol = encode(link, { ecc: 'M', border: 0 });
+      encoded = encode(link, { ecc: 'M', border: 0 });
     } catch {
+      /* Handled below, together with anything else that left it unset. */
+    }
+    if (!encoded) {
       // Blank it rather than leave the previous link's symbol standing: a
       // stale code would quietly send someone to a view nobody shared.
-      target.width = 0;
-      target.height = 0;
-      target.style.width = '0px';
-      target.style.height = '0px';
+      blank();
       return;
     }
-    // The real ratio, not a clamped one. Browser zoom carries this past the
-    // usual 2 or 3, and drawing for fewer pixels than the display actually has
-    // hands the browser a canvas to rescale, which is the one thing to avoid.
-    // The ceiling only bounds the canvas, far above any display and zoom.
-    const reported =
-      typeof window === 'undefined' ? 1 : window.devicePixelRatio;
-    const ratio =
-      Number.isFinite(reported) && reported > 0 ? Math.min(8, reported) : 1;
-    const { unit, side } = qrCanvasSize(size, symbol.size, ratio);
-    target.width = side;
-    target.height = side;
-    // Present it at exactly the pixels it was drawn with, so the browser never
-    // resamples the modules into each other.
-    target.style.width = `${side / ratio}px`;
-    target.style.height = `${side / ratio}px`;
-    const context = target.getContext('2d');
-    if (!context) return;
-    context.fillStyle = qrBadgePalette.card;
-    context.fillRect(0, 0, side, side);
-    context.fillStyle = qrBadgePalette.module;
-    for (let row = 0; row < symbol.size; row++)
-      for (let column = 0; column < symbol.size; column++)
-        if (symbol.data[row][column])
-          context.fillRect(
-            (column + qrQuietModules) * unit,
-            (row + qrQuietModules) * unit,
-            unit,
-            unit,
-          );
+    const symbol = encoded;
+    // The ratio the display reports, not a clamped one: drawing for fewer
+    // pixels than it paints with hands the browser a canvas to rescale, which
+    // is the one thing to avoid. The ceiling only bounds the canvas, far past
+    // any display and zoom.
+    const currentRatio = () => {
+      const reported = window.devicePixelRatio;
+      return Number.isFinite(reported) && reported > 0
+        ? Math.min(8, reported)
+        : 1;
+    };
+    let watched: MediaQueryList | null = null;
+    let drawnAt = 0;
+    // Zooming is the first thing someone does when a code will not scan, and
+    // that moves the ratio, so follow it rather than keep the mount's value.
+    // An arrow, so the narrowing above still holds inside it.
+    const paint = () => {
+      const ratio = currentRatio();
+      if (ratio === drawnAt) return;
+      drawnAt = ratio;
+      const { unit, side } = qrCanvasSize(size, symbol.size, ratio);
+      const context = element.getContext('2d');
+      if (!context) {
+        blank();
+        return;
+      }
+      element.width = side;
+      element.height = side;
+      // Present it at exactly the pixels it was drawn with, so the browser
+      // never resamples the modules into each other.
+      element.style.width = `${side / ratio}px`;
+      element.style.height = `${side / ratio}px`;
+      context.fillStyle = qrBadgePalette.card;
+      context.fillRect(0, 0, side, side);
+      context.fillStyle = qrBadgePalette.module;
+      for (let row = 0; row < symbol.size; row++)
+        for (let column = 0; column < symbol.size; column++)
+          if (symbol.data[row][column])
+            context.fillRect(
+              (column + qrQuietModules) * unit,
+              (row + qrQuietModules) * unit,
+              unit,
+              unit,
+            );
+      watched?.removeEventListener('change', paint);
+      watched = window.matchMedia(`(resolution: ${ratio}dppx)`);
+      watched.addEventListener('change', paint);
+    };
+    paint();
+    // Moving the window between screens of different density changes the ratio
+    // without the query above always noticing.
+    window.addEventListener('resize', paint);
+    return () => {
+      window.removeEventListener('resize', paint);
+      watched?.removeEventListener('change', paint);
+    };
   }, [link, size]);
   return <canvas ref={canvas} className="share-qr" aria-hidden="true" />;
 }
