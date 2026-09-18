@@ -7,14 +7,8 @@ import { useI18n } from '../lib/i18n/provider';
 export default function LanguagePicker() {
   const { locale, setLocale, t } = useI18n();
   return (
-    <label className="language-picker">
-      <Languages size={16} aria-hidden="true" />
-      <span className="language-name" aria-hidden="true">
-        {languages[locale].name}
-      </span>
-      <span className="language-short" aria-hidden="true">
-        {languages[locale].short}
-      </span>
+    <label className="language-picker" title={languages[locale].name}>
+      <Languages size={18} aria-hidden="true" />
       <select
         aria-label={t('语言')}
         value={locale}

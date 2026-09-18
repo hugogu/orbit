@@ -806,11 +806,6 @@ button:disabled {
 }
 .observatory[data-eclipse-active='true'] .mobile-info {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 0;
-  color: #c8b590;
 }
 @media (min-width: 901px) and (min-height: 601px) {
   .observatory[data-eclipse-active='true'] .scene-meta {
@@ -1188,13 +1183,31 @@ button:disabled {
   margin: 12px 0;
   color: #d9dfe9;
 }
-.catalog {
+/* Each rail stacks its panel above its tools and stays transparent to pointer
+   events, so the gaps between them never block the scene. */
+.side-rail {
   position: absolute;
-  left: 32px;
   top: 204px;
-  width: 206px;
-  padding: 16px 9px 0;
   max-height: calc(100dvh - 390px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+.side-rail > * {
+  pointer-events: auto;
+}
+.rail-start {
+  left: 32px;
+  width: 206px;
+}
+.rail-end {
+  right: 332px;
+  align-items: flex-end;
+}
+.catalog {
+  min-height: 0;
+  padding: 16px 9px 0;
   overflow-y: auto;
 }
 .body-branch-row {
@@ -1478,24 +1491,22 @@ button:disabled {
   margin: 13px 0 0;
 }
 .view-tools {
-  position: absolute;
-  right: 332px;
-  top: 204px;
   padding: 4px;
   display: flex;
   flex-direction: column;
   border-radius: 8px;
-}
-.view-tools > div {
-  height: 1px;
-  background: #ffffff12;
-  margin: 4px;
 }
 .bottom-area {
   position: absolute;
   bottom: 0;
   left: 32px;
   right: 32px;
+  /* The band above playback reaches over the side rails, so only the controls
+     themselves take the pointer; the rest belongs to the scene. */
+  pointer-events: none;
+}
+.bottom-area > * {
+  pointer-events: auto;
 }
 .scene-meta {
   display: flex;
@@ -1637,7 +1648,7 @@ button:disabled {
   .timeline .simulation-clock > span {
     margin: 0;
   }
-  .observatory .catalog {
+  .observatory .rail-start {
     bottom: 235px;
   }
 }
@@ -1691,6 +1702,10 @@ button:disabled {
   border-radius: 8px;
   background: #d9c49a08;
   white-space: nowrap;
+}
+.side-rail .astronomy-button {
+  flex: 0 0 auto;
+  justify-content: center;
 }
 .orbit-dialog.astronomy-dialog {
   width: min(680px, calc(100vw - 24px)) !important;
@@ -2439,6 +2454,13 @@ button:disabled {
 }
 .mobile-info {
   display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  min-height: 40px;
+  border-radius: 8px;
+  color: #cdb88f;
+  font-size: 12px;
 }
 .mobile-details {
   max-height: 82svh;
@@ -2475,7 +2497,7 @@ button:disabled {
   .topbar {
     inset-inline: 44px;
   }
-  .catalog {
+  .rail-start {
     left: 44px;
     width: 226px;
   }
@@ -2486,7 +2508,7 @@ button:disabled {
   .scene-caption {
     left: 44px;
   }
-  .view-tools {
+  .rail-end {
     right: 366px;
   }
   .bottom-area {
@@ -2498,9 +2520,8 @@ button:disabled {
   }
 }
 @media (max-height: 850px) and (min-width: 901px) {
-  .catalog,
-  .info-panel,
-  .view-tools {
+  .side-rail,
+  .info-panel {
     top: 173px;
   }
   .scene-caption {
@@ -2543,7 +2564,7 @@ button:disabled {
   }
 }
 @media (max-width: 1100px) {
-  .catalog {
+  .rail-start {
     width: 180px;
     left: 22px;
   }
@@ -2558,7 +2579,7 @@ button:disabled {
   .body-option small {
     display: none;
   }
-  .view-tools {
+  .rail-end {
     right: 280px;
   }
   .topbar {
@@ -2602,13 +2623,17 @@ button:disabled {
     display: none;
   }
   .view-tools {
-    right: 20px;
-    top: 160px;
+    flex-direction: row;
   }
-  .catalog {
-    left: 20px;
+  .side-rail {
     top: 186px;
+  }
+  .rail-start {
+    left: 20px;
     width: 166px;
+  }
+  .rail-end {
+    right: 20px;
   }
   .scene-caption {
     left: 20px;
@@ -2625,12 +2650,6 @@ button:disabled {
   }
   .mobile-info {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 0;
-    color: #cdb88f;
-    font-size: 12px;
   }
   .scene-meta > span:nth-child(2) {
     font-size: 12px;
@@ -2659,9 +2678,10 @@ button:disabled {
   }
 }
 @media (min-width: 601px) and (max-width: 900px) {
-  .catalog {
+  .rail-start {
     max-height: calc(100svh - 410px);
-    overflow-y: auto;
+  }
+  .catalog {
     scrollbar-width: thin;
     scrollbar-color: #394250 transparent;
   }
@@ -2732,12 +2752,13 @@ button:disabled {
     font-size: 17px;
     margin-top: 8px;
   }
-  .catalog {
-    top: auto;
+  .rail-start {
     bottom: 185px;
     left: 16px;
     right: 16px;
     width: auto;
+  }
+  .catalog {
     display: flex;
     overflow-x: auto;
     scrollbar-width: none;
@@ -2771,9 +2792,10 @@ button:disabled {
   .region-option small {
     display: none;
   }
-  .view-tools {
-    top: 139px;
+  .rail-end {
     right: 16px;
+  }
+  .view-tools {
     padding: 3px;
   }
   .view-tools .icon-button {
@@ -2787,14 +2809,6 @@ button:disabled {
     left: 16px;
     right: 16px;
     padding-bottom: env(safe-area-inset-bottom);
-  }
-  .scene-meta {
-    margin-bottom: 10px;
-    gap: 8px;
-    font-size: 12px;
-  }
-  .scale-status {
-    display: none;
   }
   .timeline {
     display: grid;
@@ -2934,12 +2948,22 @@ button:disabled {
     width: 44px;
     height: 44px;
   }
-  .observatory .catalog {
+  .observatory .side-rail {
     top: 108px;
+    max-height: none;
+    gap: 8px;
+  }
+  .observatory .rail-start {
     bottom: auto;
     left: max(12px, env(safe-area-inset-left));
-    right: auto;
+    right: 164px;
     width: auto;
+    align-items: flex-start;
+  }
+  .observatory .rail-end {
+    right: max(12px, env(safe-area-inset-right));
+  }
+  .observatory .catalog {
     max-height: 48px;
     padding: 0;
     border-radius: 8px;
@@ -2956,7 +2980,7 @@ button:disabled {
     color: #dfc58f;
   }
   .observatory .catalog-regions {
-    right: 164px;
+    align-self: stretch;
     display: flex;
     overflow-x: auto;
     gap: 4px;
@@ -2973,14 +2997,13 @@ button:disabled {
   .catalog-regions svg {
     display: none;
   }
+  /* Both rails run as two rows of equal height, so the pairs line up. */
+  .side-rail .astronomy-button {
+    min-height: 46px;
+  }
   .view-tools {
-    top: 108px;
-    right: max(12px, env(safe-area-inset-right));
     flex-direction: row;
     padding: 0;
-  }
-  .view-tools > div {
-    display: none;
   }
   .view-tools .icon-button {
     width: 44px;
@@ -2992,32 +3015,19 @@ button:disabled {
     bottom: max(8px, env(safe-area-inset-bottom));
     padding: 0;
   }
-  .scene-meta {
-    min-height: 36px;
-    margin-bottom: 4px;
-    gap: 8px;
-  }
-  .scene-meta > span:first-child {
-    min-width: 0;
-    font-size: 11px;
-  }
-  .scene-meta > span:nth-child(2),
+  .scene-meta,
   .footer {
     display: none;
   }
   .mobile-info {
     display: flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 36px;
-    flex-shrink: 0;
-    font-size: 12px;
+    min-height: 46px;
   }
   .timeline {
     display: grid;
     grid-template-columns: minmax(105px, 1fr) minmax(100px, 1fr) 44px;
-    gap: 2px 8px;
-    padding: 8px 10px;
+    gap: 12px 8px;
+    padding: 10px 10px 12px;
   }
   .timeline .playback {
     grid-column: 1;
@@ -3041,8 +3051,9 @@ button:disabled {
   .timeline .speed-control {
     grid-column: 1 / -1;
     grid-row: 2;
-    padding: 6px 2px;
-    min-height: 28px;
+    /* The thumb overhangs the track, so the row keeps its own top padding. */
+    padding: 6px 2px 0;
+    min-height: 20px;
   }
   .timeline .simulation-clock {
     grid-column: 2;
@@ -3129,25 +3140,8 @@ button:disabled {
     font-size: 12px;
     padding: 6px 10px;
   }
-  .observatory .catalog,
-  .view-tools {
+  .observatory .side-rail {
     top: 64px;
-  }
-  .bottom-area {
-    display: grid;
-    grid-template-columns: minmax(130px, 1fr) minmax(0, 2fr);
-    align-items: end;
-    gap: 16px;
-  }
-  .scene-meta {
-    align-self: end;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 0 12px;
-    margin: 0;
-  }
-  .scene-meta > span:first-child {
-    flex-basis: 100%;
   }
   .timeline {
     grid-template-columns: auto minmax(90px, 1fr) auto 44px;
@@ -3176,11 +3170,15 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
-/* Panels stay clear of playback at every desktop height. */
+/* Panels stay clear of playback at every desktop height. The rail carries the
+   cap so the launcher stays put and the catalogue scrolls inside what is left. */
 @media (min-width: 901px) and (min-height: 601px) {
-  .catalog,
+  .side-rail,
   .info-panel {
     max-height: calc(100svh - 385px);
+  }
+  .catalog,
+  .info-panel {
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #394250 transparent;
@@ -3211,15 +3209,16 @@ button:disabled {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 40px;
-  padding: 0 10px;
-  border: 1px solid #ffffff20;
-  border-radius: 7px;
-  color: #dfc99d;
-  background: #10151dcc;
-  font-size: 14px;
-  white-space: nowrap;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 6px;
+  color: #949fae;
+  background: transparent;
+}
+.language-picker:hover {
+  background: #ffffff0b;
+  color: #ead4ac;
 }
 .language-picker:focus-within {
   outline: 2px solid #dfc99d;
@@ -3235,9 +3234,6 @@ button:disabled {
 .language-picker option {
   color: #eee;
   background: #10151d;
-}
-.language-short {
-  display: none;
 }
 html:lang(en) .brand i,
 html:lang(ja) .brand i {
@@ -3263,12 +3259,6 @@ html:lang(en) .moon-children button > span:last-child {
   line-height: 1.6;
 }
 @media (max-width: 1250px) {
-  .language-name {
-    display: none;
-  }
-  .language-short {
-    display: inline;
-  }
   .header-actions {
     gap: 6px;
   }
@@ -3295,12 +3285,8 @@ html:lang(en) .moon-children button > span:last-child {
 }
 @media (max-width: 600px), (orientation: landscape) and (max-height: 600px) {
   .language-picker {
-    min-height: 44px;
-    padding: 0 7px;
-    gap: 5px;
-  }
-  .language-picker svg {
-    width: 14px;
+    width: 44px;
+    height: 44px;
   }
   html:lang(en) .scale-status {
     max-width: 210px;
@@ -3319,16 +3305,6 @@ html:lang(en) .moon-children button > span:last-child {
   }
   .view-tabs button {
     padding-inline: 7px;
-  }
-}
-@media (max-width: 420px) {
-  .astronomy-button {
-    width: 44px;
-    min-height: 44px;
-    justify-content: center;
-    padding: 0;
-    font-size: 0;
-    gap: 0;
   }
 }
 @media (orientation: landscape) and (max-height: 600px) and (min-width: 650px) {

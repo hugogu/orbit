@@ -174,6 +174,11 @@ export default function Home() {
   const activeRegion = regions.find((r) => r.id === region)!;
   const activeComet = comets.find((c) => c.id === cometId)!;
   const isComet = selected === cometId;
+  // The followed body names both the status line and the compact mobile picker.
+  const followed = isComet
+    ? activeComet
+    : (selectedAsteroid ?? selectedMoon ?? body);
+  const followLabel = followed ? t(followed.name) : null;
   // Topic views choose a distance mode without overwriting the user's layout preference.
   const displayScale = isComet
     ? 'distance'
@@ -794,16 +799,6 @@ export default function Home() {
           </TabsList>
         </Tabs>
         <div className="header-actions">
-          <LanguagePicker />
-          <button
-            className="astronomy-button"
-            aria-label={t('天象推演')}
-            title={t('天象推演')}
-            onClick={() => setAstronomy(true)}
-          >
-            <CalendarDays size={18} />
-            {t('天象推演')}
-          </button>
           <span className="live">
             <i />
             {paused ? t('模拟暂停') : t('按日期演算')}
@@ -816,9 +811,19 @@ export default function Home() {
           >
             <Share2 />
           </button>
+          <LanguagePicker />
+          <button
+            className="icon-button"
+            aria-label={t('显示设置')}
+            title={t('显示设置')}
+            onClick={() => setSettings(true)}
+          >
+            <SlidersHorizontal />
+          </button>
           <button
             className="icon-button"
             aria-label={t('导航帮助')}
+            title={t('导航帮助')}
             onClick={() => setHelp(true)}
           >
             <HelpCircle />
@@ -840,46 +845,61 @@ export default function Home() {
             : t('在宇宙中，找到我们。')}
         </h1>
       </div>
-      <section
-        className={`catalog glass ${tab === 'explore' ? 'catalog-body' : 'catalog-regions'}`}
-        aria-label={tab === 'explore' ? t('选择天体') : t('选择太阳系区域')}
-      >
-        <h2 className="sr-only">
-          {tab === 'explore' ? t('天体导航') : t('太阳系结构')}
-        </h2>
-        <div className="catalog-title">
-          {tab === 'explore' ? t('天体导航') : t('由内向外')}
-          <span>
+      <div className="side-rail rail-start">
+        <section
+          className={`catalog glass ${tab === 'explore' ? 'catalog-body' : 'catalog-regions'}`}
+          aria-label={tab === 'explore' ? t('选择天体') : t('选择太阳系区域')}
+        >
+          <h2 className="sr-only">
+            {tab === 'explore' ? t('天体导航') : t('太阳系结构')}
+          </h2>
+          <div className="catalog-title">
+            {tab === 'explore' ? t('天体导航') : t('由内向外')}
+            <span>
+              {tab === 'explore'
+                ? `01 — ${bodies.length + comets.length + asteroids.length}`
+                : '01 — 07'}
+            </span>
+          </div>
+          {tab === 'explore' ? (
+            <BodyNavigation
+              selected={selected}
+              onSelect={select}
+              label={followLabel}
+            />
+          ) : (
+            regions.map((r, i) => (
+              <button
+                key={r.id}
+                className={`region-option ${region === r.id ? 'active' : ''}`}
+                onClick={() => goRegion(r.id)}
+              >
+                <span className="body-number">0{i + 1}</span>
+                <span>
+                  {t(r.name)}
+                  <small>{t(r.range)}</small>
+                </span>
+                <ChevronRight size={14} />
+              </button>
+            ))
+          )}
+          <div className="catalog-footer">
+            <span className="tiny-cross">+</span>
             {tab === 'explore'
-              ? `01 — ${bodies.length + comets.length + asteroids.length}`
-              : '01 — 07'}
-          </span>
-        </div>
-        {tab === 'explore' ? (
-          <BodyNavigation selected={selected} onSelect={select} />
-        ) : (
-          regions.map((r, i) => (
-            <button
-              key={r.id}
-              className={`region-option ${region === r.id ? 'active' : ''}`}
-              onClick={() => goRegion(r.id)}
-            >
-              <span className="body-number">0{i + 1}</span>
-              <span>
-                {t(r.name)}
-                <small>{t(r.range)}</small>
-              </span>
-              <ChevronRight size={14} />
-            </button>
-          ))
-        )}
-        <div className="catalog-footer">
-          <span className="tiny-cross">+</span>
-          {tab === 'explore'
-            ? t('点击天体，开启近距离观察')
-            : t('距离单位 AU ≈ 1.496 亿公里')}
-        </div>
-      </section>
+              ? t('点击天体，开启近距离观察')
+              : t('距离单位 AU ≈ 1.496 亿公里')}
+          </div>
+        </section>
+        <button
+          className="astronomy-button"
+          aria-label={t('天象推演')}
+          title={t('天象推演')}
+          onClick={() => setAstronomy(true)}
+        >
+          <CalendarDays size={18} />
+          {t('天象推演')}
+        </button>
+      </div>
       <aside className="info-panel glass">
         {tab === 'structure' && !body ? (
           <>
@@ -902,32 +922,29 @@ export default function Home() {
           readout
         )}
       </aside>
-      <div className="view-tools glass">
-        <button
-          className="icon-button"
-          aria-label={t('返回总览')}
-          title={t('返回总览 · R')}
-          onClick={home}
-        >
-          <LocateFixed />
+      <div className="side-rail rail-end">
+        <button className="mobile-info glass" onClick={() => setDetails(true)}>
+          <Info size={16} />
+          {t('天体知识')}
         </button>
-        <button
-          className={`icon-button ${top ? 'active' : ''}`}
-          aria-label={t('切换俯视角度')}
-          title={t('俯视轨道')}
-          onClick={() => setTop((v) => !v)}
-        >
-          <Layers3 />
-        </button>
-        <div />
-        <button
-          className="icon-button"
-          aria-label={t('显示设置')}
-          title={t('显示设置')}
-          onClick={() => setSettings(true)}
-        >
-          <SlidersHorizontal />
-        </button>
+        <div className="view-tools glass">
+          <button
+            className="icon-button"
+            aria-label={t('返回总览')}
+            title={t('返回总览 · R')}
+            onClick={home}
+          >
+            <LocateFixed />
+          </button>
+          <button
+            className={`icon-button ${top ? 'active' : ''}`}
+            aria-label={t('切换俯视角度')}
+            title={t('俯视轨道')}
+            onClick={() => setTop((v) => !v)}
+          >
+            <Layers3 />
+          </button>
+        </div>
       </div>
       <div className="bottom-area">
         <div className="scene-meta">
@@ -936,17 +953,13 @@ export default function Home() {
             {isComet
               ? t('{{v0}} · {{v1}}', {
                   v0: t(cometClose ? '正在跟随' : '轨道全景'),
-                  v1: t(activeComet.name),
+                  v1: followLabel,
                 })
-              : selectedAsteroid
-                ? t('正在跟随 · {{v0}}', { v0: t(selectedAsteroid.name) })
-                : body
-                  ? t('正在跟随 · {{v0}}', {
-                      v0: t(selectedMoon?.name ?? body.name),
-                    })
-                  : tab === 'structure'
-                    ? t(activeRegion.name)
-                    : t('太阳系全景')}
+              : followLabel
+                ? t('正在跟随 · {{v0}}', { v0: followLabel })
+                : tab === 'structure'
+                  ? t(activeRegion.name)
+                  : t('太阳系全景')}
           </span>
           <span className="scale-status">
             {realSizes
@@ -957,10 +970,6 @@ export default function Home() {
                 ? t('距离按比例 · 天体已放大')
                 : t('演示比例 · 距离与天体大小已调整')}
           </span>
-          <button className="mobile-info" onClick={() => setDetails(true)}>
-            <Info size={16} />
-            {t('天体知识')}
-          </button>
         </div>
         <section className="timeline glass" aria-label={t('时间控制')}>
           <div className="playback">
