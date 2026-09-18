@@ -30,12 +30,22 @@ export default function ShareQr({
     try {
       symbol = encode(link, { ecc: 'M', border: 0 });
     } catch {
+      // Blank it rather than leave the previous link's symbol standing: a
+      // stale code would quietly send someone to a view nobody shared.
+      target.width = 0;
+      target.height = 0;
+      target.style.width = '0px';
+      target.style.height = '0px';
       return;
     }
+    // The real ratio, not a clamped one. Browser zoom carries this past the
+    // usual 2 or 3, and drawing for fewer pixels than the display actually has
+    // hands the browser a canvas to rescale, which is the one thing to avoid.
+    // The ceiling only bounds the canvas, far above any display and zoom.
+    const reported =
+      typeof window === 'undefined' ? 1 : window.devicePixelRatio;
     const ratio =
-      typeof window === 'undefined'
-        ? 1
-        : Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+      Number.isFinite(reported) && reported > 0 ? Math.min(8, reported) : 1;
     const { unit, side } = qrCanvasSize(size, symbol.size, ratio);
     target.width = side;
     target.height = side;

@@ -102,7 +102,13 @@ export default function ShareDialog({
       } catch {
         /* The link is still shareable without a screenshot. */
       }
-      if (cancelled) return;
+      if (cancelled) {
+        // The cleanup ran while this was still composing, so it saw no url to
+        // revoke. Nothing else holds this one, and a blob lives until it is
+        // revoked or the page goes, so release it here.
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        return;
+      }
       setCaptured({ view, preview: result });
     })();
     return () => {

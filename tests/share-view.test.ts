@@ -279,7 +279,9 @@ void test('the badge stays muted over the sky without starving a scanner', () =>
 void test('the on-screen code is drawn at device pixels a camera can resolve', () => {
   // 41 modules plus the quiet zone on either side.
   const across = 41 + 4 * 2;
-  for (const ratio of [1, 2, 3]) {
+  // Browser zoom pushes the ratio past the usual 2 and 3, and every one of
+  // them has to come out exact, or the browser rescales what it is handed.
+  for (const ratio of [1, 1.5, 2, 2.5, 3, 4, 6]) {
     const { unit, side } = qrCanvasSize(180, 41, ratio);
     const where = `dpr ${ratio}`;
     // Whole device pixels per module, and the canvas is exactly that many, so
@@ -287,6 +289,9 @@ void test('the on-screen code is drawn at device pixels a camera can resolve', (
     assert.ok(Number.isInteger(unit) && unit >= 1, where);
     assert.equal(side, unit * across, where);
     assert.ok(side <= 180 * ratio, where);
+    // The canvas is presented at side/ratio CSS pixels, which the display then
+    // paints with exactly `side` of its own: one drawn pixel per real pixel.
+    assert.equal((side / ratio) * ratio, side, where);
     // The badge burnt into the frame lands near one CSS pixel per module once
     // the preview scales it down; this has to clear that by a wide margin.
     assert.ok(
@@ -294,8 +299,11 @@ void test('the on-screen code is drawn at device pixels a camera can resolve', (
       `${where}: ${(unit / ratio).toFixed(2)} css px per module`,
     );
   }
-  // Never zero, however little room it is handed.
-  assert.equal(qrCanvasSize(10, 177, 1).unit, 1);
+  // Never zero, however little room it is handed — it overflows instead of
+  // collapsing into a symbol no scanner could resolve, as the doc warns.
+  const cramped = qrCanvasSize(10, 177, 1);
+  assert.equal(cramped.unit, 1);
+  assert.ok(cramped.side > 10);
   // Same muted card as the badge: at this size the symbol has pixels to spare,
   // so it need not be brighter than the one lying on the frame.
   assert.ok(contrastRatio(qrBadgePalette.module, qrBadgePalette.card) >= 7);

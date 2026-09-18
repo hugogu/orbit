@@ -23,9 +23,12 @@ export const qrBadgePalette = {
 };
 
 /**
- * Largest whole-pixel symbol that fits the requested size at this display's
+ * Largest whole-pixel symbol for the requested size at this display's
  * resolution. Returning the drawn side lets the caller present the canvas at
  * exactly those pixels, because a resampled module is what a camera fails on.
+ * A module never falls below one pixel, so a size too small to hold the symbol
+ * returns a side larger than the one asked for rather than an unreadable
+ * smudge; callers that must not overflow should check it.
  */
 export function qrCanvasSize(size: number, modules: number, ratio: number) {
   const across = modules + qrQuietModules * 2;
