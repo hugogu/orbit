@@ -1691,8 +1691,15 @@ button:disabled {
   padding-top: 0;
   border-top: 0;
 }
+/* The planner stands at the head of the body column, above the panel that
+   answers it, instead of trailing the catalogue where it went unnoticed. Each
+   top below is that column's own top, less this button and the rails' gap. */
 .astronomy-button {
+  position: absolute;
+  right: 32px;
+  top: 152px;
   display: flex;
+  min-height: 40px;
   align-items: center;
   gap: 7px;
   color: #dfc99f;
@@ -1702,10 +1709,6 @@ button:disabled {
   border-radius: 8px;
   background: #d9c49a08;
   white-space: nowrap;
-}
-.side-rail .astronomy-button {
-  flex: 0 0 auto;
-  justify-content: center;
 }
 .orbit-dialog.astronomy-dialog {
   width: min(680px, calc(100vw - 24px)) !important;
@@ -2505,6 +2508,9 @@ button:disabled {
     right: 44px;
     width: 302px;
   }
+  .astronomy-button {
+    right: 44px;
+  }
   .scene-caption {
     left: 44px;
   }
@@ -2523,6 +2529,9 @@ button:disabled {
   .side-rail,
   .info-panel {
     top: 173px;
+  }
+  .astronomy-button {
+    top: 121px;
   }
   .scene-caption {
     top: 104px;
@@ -2572,6 +2581,9 @@ button:disabled {
     right: 22px;
     width: 242px;
     padding: 19px;
+  }
+  .astronomy-button {
+    right: 22px;
   }
   .body-option {
     gap: 8px;
@@ -2650,6 +2662,10 @@ button:disabled {
   }
   .mobile-info {
     display: flex;
+  }
+  .astronomy-button {
+    right: 20px;
+    top: 134px;
   }
   .scene-meta > span:nth-child(2) {
     font-size: 12px;
@@ -2999,8 +3015,12 @@ button:disabled {
   }
   /* Every row on a phone is one control height tall, so a row reads as a row
      however its two sides are built. */
-  .side-rail .astronomy-button {
+  .astronomy-button {
+    left: max(12px, env(safe-area-inset-left));
+    right: auto;
+    top: 148px;
     min-height: 40px;
+    justify-content: center;
   }
   .view-tools {
     flex-direction: row;
@@ -3171,6 +3191,9 @@ button:disabled {
   }
   .observatory .side-rail {
     top: 64px;
+  }
+  .observatory .astronomy-button {
+    top: 110px;
   }
   .timeline {
     grid-template-columns: auto minmax(90px, 1fr) auto 44px;

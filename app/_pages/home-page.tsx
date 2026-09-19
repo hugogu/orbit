@@ -890,16 +890,16 @@ export default function Home() {
               : t('距离单位 AU ≈ 1.496 亿公里')}
           </div>
         </section>
-        <button
-          className="astronomy-button"
-          aria-label={t('天象推演')}
-          title={t('天象推演')}
-          onClick={() => setAstronomy(true)}
-        >
-          <CalendarDays size={18} />
-          {t('天象推演')}
-        </button>
       </div>
+      <button
+        className="astronomy-button"
+        aria-label={t('天象推演')}
+        title={t('天象推演')}
+        onClick={() => setAstronomy(true)}
+      >
+        <CalendarDays size={18} />
+        {t('天象推演')}
+      </button>
       <aside className="info-panel glass">
         {tab === 'structure' && !body ? (
           <>
