@@ -32,6 +32,15 @@ const moment = Date.UTC(2026, 8, 18, 12, 34, 56);
 const base: ShareView = { ...defaultShareView, time: moment };
 const roundTrip = (view: ShareView) =>
   decodeShareView(encodeShareView(view), view.selected);
+/**
+ * Brackets a decode with the wall clock, so a moment the decoder chose for
+ * itself can be told apart from any fixed one it might have fallen back to.
+ */
+const decodeNow = (search: string, selected: string | null = null) => {
+  const before = Date.now();
+  const view = decodeShareView(new URLSearchParams(search), selected);
+  return { view, live: view.time >= before && view.time <= Date.now() };
+};
 const absoluteShareLink = (id: string, query: string) =>
   `https://www.orbits.observer${sharePath('zh-CN', id)}${query}`;
 
@@ -89,26 +98,17 @@ void test('links stay short by omitting everything already at its default', () =
 });
 
 void test('a hand-edited or truncated link falls back to the defaults', () => {
-  const decoded = decodeShareView(
-    new URLSearchParams({
-      t: 'not-a-date',
-      s: '999',
-      v: '-4',
-      r: 'atlantis',
-      p: 'yes',
-      top: 'true',
-    }),
+  const { view: decoded, live } = decodeNow(
+    't=not-a-date&s=999&v=-4&r=atlantis&p=yes&top=true',
     'not-a-body',
   );
-  assert.deepEqual(decoded, defaultShareView);
-  assert.equal(
-    decodeShareView(new URLSearchParams({ t: '1200-01-01T00:00:00Z' })).time,
-    defaultShareView.time,
-  );
-  assert.equal(
-    decodeShareView(new URLSearchParams({ t: '2400-01-01T00:00:00Z' })).time,
-    defaultShareView.time,
-  );
+  // Every other field falls back to its default; the moment falls back to now.
+  assert.ok(live, new Date(decoded.time).toISOString());
+  assert.deepEqual({ ...decoded, time: 0 }, { ...defaultShareView, time: 0 });
+  // A moment outside the simulated range is no more usable than a broken one,
+  // and neither may strand the visitor at the far end of that range.
+  for (const t of ['1200-01-01T00:00:00Z', '2400-01-01T00:00:00Z', ''])
+    assert.ok(decodeNow(`t=${encodeURIComponent(t)}`).live, t);
   for (const edge of [MIN_TIME, MAX_TIME])
     assert.equal(
       decodeShareView(new URLSearchParams({ t: new Date(edge).toISOString() }))
@@ -147,7 +147,8 @@ void test('a hand-edited or truncated link falls back to the defaults', () => {
 void test('an ordinary explorer URL carries no observation state', () => {
   assert.equal(hasShareView(new URLSearchParams('lang=ja')), false);
   assert.equal(hasShareView(new URLSearchParams('lang=ja&t=')), true);
-  assert.equal(hasShareView(new URLSearchParams('c=1,1,1')), true);
+  // Framing without a moment describes no observation, and never travels alone.
+  assert.equal(hasShareView(new URLSearchParams('c=1,1,1')), false);
   // Following a different body makes the link stale; the language does not.
   assert.equal(
     withoutShareView('?lang=ja&t=2026-09-18T00:00:00.000Z&c=1,1,1&top=1'),
@@ -158,6 +159,32 @@ void test('an ordinary explorer URL carries no observation state', () => {
   assert.ok(isShareableBody('moon-io'));
   assert.ok(!isShareableBody('moon-io '));
   assert.ok(!isShareableBody(undefined));
+});
+
+void test('a link decorated with tracking parameters is not a shared view', () => {
+  // `t`, `s`, `r`, `v`, `c` and `p` are among the commonest tracking and
+  // redirect parameters on the web. An ordinary link that picked one up used to
+  // take the share path and, finding no usable moment, land 300 years in the
+  // past; now only the moment itself marks a link as carrying an observation.
+  for (const search of [
+    'r=3',
+    's=',
+    'v=',
+    'c=',
+    'p=1',
+    'cc=1',
+    'top=1',
+    'utm_source=newsletter&s=weekly&r=2',
+  ])
+    assert.equal(hasShareView(new URLSearchParams(search)), false, search);
+  // Every link the dialog writes carries its moment, so none of them is lost.
+  assert.ok(hasShareView(encodeShareView(base)));
+  assert.ok(hasShareView(encodeShareView({ ...base, selected: 'halley' })));
+  // The landing page decodes without consulting that guard, so the fallback has
+  // to hold on its own: a stray key and no moment still opens on the live sky.
+  const { view, live } = decodeNow('r=3&utm_source=newsletter');
+  assert.ok(live, new Date(view.time).toISOString());
+  assert.notEqual(view.time, MIN_TIME);
 });
 
 void test('share landing paths resolve to one crawlable page per body and language', () => {
@@ -184,15 +211,22 @@ void test('the landing page forwards a sanitized state to the explorer', () => {
     ),
     '/?t=2026-09-18T12%3A34%3A56.000Z&p=1&s=4&top=1&c=-1.5%2C1.2%2C0.4&lang=ja#saturn',
   );
-  // Unknown keys and invalid values never reach the explorer.
-  assert.equal(
-    explorerHref('zh-CN', 'not-a-body', '?t=broken&next=//evil.example&s=99'),
-    `/?t=${encodeURIComponent(new Date(defaultShareView.time).toISOString())}&lang=zh-CN`,
-  );
-  assert.equal(
-    explorerHref('en', null, '?r=oort'),
-    `/?t=${encodeURIComponent(new Date(defaultShareView.time).toISOString())}&r=oort&lang=en`,
-  );
+  // Unknown keys and invalid values never reach the explorer, and a landing
+  // page reached without a usable moment forwards the current one.
+  for (const [href, tail] of [
+    [
+      explorerHref('zh-CN', 'not-a-body', '?t=broken&next=//evil.example&s=99'),
+      'lang=zh-CN',
+    ],
+    [explorerHref('en', null, '?r=oort'), 'r=oort&lang=en'],
+  ]) {
+    const forwarded = new URLSearchParams(href.slice(href.indexOf('?'))).get(
+      't',
+    )!;
+    assert.equal(href, `/?t=${encodeURIComponent(forwarded)}&${tail}`);
+    assert.ok(Math.abs(Date.parse(forwarded) - Date.now()) < 60_000, href);
+    assert.notEqual(Date.parse(forwarded), MIN_TIME);
+  }
 });
 
 void test('every language names the shared subject and stamps the frame in UTC', () => {

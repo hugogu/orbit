@@ -41,6 +41,8 @@ export type ShareView = {
 };
 
 export const defaultShareView: ShareView = {
+  // A floor that satisfies the type, never a moment to show: a link whose time
+  // is missing or unusable decodes to the current sky instead. See decodeShareView.
   time: MIN_TIME,
   paused: false,
   speedIndex: 0,
@@ -96,6 +98,15 @@ function readBoolean(value: string | null) {
   return value === '1';
 }
 
+/**
+ * What a link without a usable moment falls back to. The explorer's own default
+ * is the live clock, so a decorated or hand-edited link has to land on the same
+ * sky an ordinary visit shows rather than at the floor of the supported range.
+ */
+function fallbackTime() {
+  return Math.min(MAX_TIME, Math.max(MIN_TIME, Date.now()));
+}
+
 /** Serialize a view, omitting everything that already matches the default. */
 export function encodeShareView(view: ShareView) {
   const params = new URLSearchParams();
@@ -124,7 +135,8 @@ export function encodeShareView(view: ShareView) {
 
 /**
  * Read a share link back into a view. Every field is validated, so a hand-edited
- * or truncated link degrades to the defaults instead of breaking the scene.
+ * or truncated link degrades to the defaults — and to the current moment, never
+ * a distant one — instead of breaking the scene.
  */
 export function decodeShareView(
   params: URLSearchParams,
@@ -140,7 +152,7 @@ export function decodeShareView(
     time:
       Number.isFinite(time) && time >= MIN_TIME && time <= MAX_TIME
         ? time
-        : defaultShareView.time,
+        : fallbackTime(),
     paused: readBoolean(params.get('p')),
     speedIndex:
       Number.isInteger(speedIndex) &&
@@ -161,9 +173,15 @@ export function decodeShareView(
   };
 }
 
-/** Whether a link carried any observation state at all. */
+/**
+ * Whether a link carried an observation at all. The moment is the signature:
+ * every link the share dialog writes carries `t`, while the remaining keys are
+ * single letters (`s`, `r`, `v`, `c`, `p`) common enough as tracking and
+ * redirect decoration that accepting any one of them alone would hand an
+ * ordinary visitor a framing nobody shared with them.
+ */
 export function hasShareView(params: URLSearchParams) {
-  return shareKeys.some((key) => params.has(key));
+  return params.has('t');
 }
 
 /**
