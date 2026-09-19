@@ -595,12 +595,12 @@ body {
   gap: 20px;
   padding: 26px 0 36px;
 }
-.seo-page-footer span {
+.seo-page-byline {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.seo-page-footer .github-link {
+.seo-page-byline .github-link {
   color: inherit;
 }
 @media (max-width: 1000px) {
@@ -1839,6 +1839,11 @@ button:disabled {
 .github-link {
   display: flex;
   align-items: center;
+  justify-content: center;
+  /* A 15px mark needs padding of its own to reach a 24px pointer target. */
+  min-width: 24px;
+  min-height: 24px;
+  margin: 0 -4px;
   color: #748092;
 }
 .github-link:hover {

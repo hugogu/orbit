@@ -28,7 +28,7 @@ import {
   portraitCredit,
 } from '../../lib/profile-images';
 import ProfileShare from '../../components/profile-share';
-import GithubLink from '../../components/github-link';
+import GitHubLink from '../../components/github-link';
 import { orbitingMoons } from '../../lib/moon-orbits';
 import {
   absoluteSiteUrl,
@@ -654,9 +654,9 @@ export default async function BodyPage({ params }: PageProps) {
       </article>
       <footer className="seo-page-footer">
         <a href={explorerPath(locale)}>{t('返回太阳系观测台')}</a>
-        <span>
+        <span className="seo-page-byline">
           ORBIT / orbits.observer
-          <GithubLink label={t('在 GitHub 查看源代码')} />
+          <GitHubLink label={t('在 GitHub 查看源代码')} />
         </span>
       </footer>
       <script

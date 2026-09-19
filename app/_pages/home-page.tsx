@@ -45,7 +45,7 @@ import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
 import ShareDialog from '@/components/share-dialog';
-import GithubLink from '@/components/github-link';
+import GitHubLink from '@/components/github-link';
 import {
   decodeShareView,
   hasShareView,
@@ -1055,7 +1055,7 @@ export default function Home() {
               {t('模型说明与来源')}
               <ArrowUpRight size={12} />
             </button>
-            <GithubLink label={t('在 GitHub 查看源代码')} />
+            <GitHubLink label={t('在 GitHub 查看源代码')} />
           </div>
         </footer>
       </div>
