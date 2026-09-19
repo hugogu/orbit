@@ -1912,12 +1912,19 @@ button:disabled {
   width: 18px;
   height: 18px;
   color: #9aa9bc;
-  cursor: help;
+  cursor: pointer;
   outline: none;
   border: 0;
   padding: 0;
   background: transparent;
   font: inherit;
+}
+/* The hint's own text sizes the popup; the viewport caps it on a phone. */
+.concept-hint-popup {
+  max-width: min(260px, calc(100vw - 32px));
+  font-size: 13px;
+  line-height: 1.75;
+  color: #cbd3e0;
 }
 .concept-hint:hover,
 .concept-hint:focus-visible {
