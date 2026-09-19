@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import ConceptHint from './concept-hint';
-import { currentLocation } from '../lib/geolocation';
+import { currentLocation, zoneOffsetHours } from '../lib/geolocation';
 import type {
   ChosenLocationSource,
   ObserverLocationSource,
@@ -20,10 +20,13 @@ import type {
 // visibility, so it is edited beside the day's Sun times on Earth rather than
 // inside the event planner.
 export default function ObserverLocation({
+  time,
   location,
   source,
   onChange,
 }: {
+  /** The simulated moment, which decides the device zone's offset. */
+  time: number;
   location: SkyLocation;
   source: ObserverLocationSource;
   onChange: (location: SkyLocation, source: ChosenLocationSource) => void;
@@ -55,17 +58,17 @@ export default function ObserverLocation({
         window.isSecureContext,
       );
       if (pending !== request.current) return;
-      // The device reports a place, not a time zone, so the offset follows the
-      // browser's own zone at the simulated day; height stays as entered.
-      const utcOffset = -new Date().getTimezoneOffset() / 60;
+      // The device reports a place, not a time zone, so the offset is read from
+      // the browser's own zone at the simulated moment: taking it from "now"
+      // would be an hour out whenever the two fall in different daylight
+      // saving periods. Height stays as entered.
+      const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const utcOffset = zoneOffsetHours(time, zone) ?? location.utcOffset;
       onChange({ ...location, ...fix, utcOffset }, 'device');
       setMessage(
-        '已定位，精度约 ±{{accuracy}} 米。时差按设备时区 {{zone}} 填写，请核对；海拔保留手动值。',
+        '已定位，精度约 ±{{accuracy}} 米。时差取设备时区 {{zone}} 在模拟日期的值，请核对；海拔保留手动值。',
       );
-      setValues({
-        accuracy: Math.ceil(fix.accuracy),
-        zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
+      setValues({ accuracy: Math.ceil(fix.accuracy), zone });
     } catch (error) {
       if (pending === request.current)
         setMessage(

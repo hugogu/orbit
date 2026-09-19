@@ -42,3 +42,29 @@ export function currentLocation(
     );
   });
 }
+
+/**
+ * The UTC offset, in hours, that `timeZone` is on at `time`. Daylight saving
+ * makes this a property of the instant rather than of the place, so a summer
+ * moment and a winter one differ by an hour wherever it applies. Returns
+ * undefined when the zone cannot be read, so callers keep what they had.
+ */
+export function zoneOffsetHours(time: number, timeZone: string) {
+  let label: string | undefined;
+  try {
+    label = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'longOffset',
+    })
+      .formatToParts(time)
+      .find((part) => part.type === 'timeZoneName')?.value;
+  } catch {
+    return undefined;
+  }
+  if (label === 'GMT') return 0;
+  const parsed = /^GMT([+-])(\d{2}):(\d{2})$/.exec(label ?? '');
+  if (!parsed) return undefined;
+  const hours = Number(parsed[2]) + Number(parsed[3]) / 60;
+  // The zero the "+0" sign test reads must be positive, not a negated zero.
+  return parsed[1] === '-' ? -hours + 0 : hours;
+}

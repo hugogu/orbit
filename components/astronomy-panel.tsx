@@ -64,14 +64,18 @@ export default function AstronomyPanel({
         live = false;
       };
     }
+    // One question, one answer: the worker is released as soon as it replies
+    // rather than idling with the ephemeris loaded until the panel closes.
     task.onmessage = (
       event: MessageEvent<{ result?: EclipseList; error?: string }>,
     ) => {
+      task.terminate();
       if (!live) return;
       setError(event.data.error ?? '');
       if (event.data.result) setResult({ query, data: event.data.result });
     };
     task.onerror = () => {
+      task.terminate();
       if (live) setError('计算模块加载失败，请刷新后重试。');
     };
     task.postMessage(query);

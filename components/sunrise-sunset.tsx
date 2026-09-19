@@ -73,6 +73,7 @@ export default function SunriseSunset({
         <p className="little-note">{t('正在加载观测点…')}</p>
       )}
       <ObserverLocation
+        time={time}
         location={location}
         source={locationSource}
         onChange={onLocationChange}

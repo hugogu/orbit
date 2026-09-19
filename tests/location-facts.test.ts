@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { currentLocation } from '../lib/geolocation.ts';
+import { currentLocation, zoneOffsetHours } from '../lib/geolocation.ts';
 import { bodies } from '../lib/solar.ts';
 import { extraFacts, physicalParameters } from '../lib/physical-facts.ts';
 import { fallbackSkyLocation } from '../lib/sky-events.ts';
@@ -70,6 +70,35 @@ void test('denial, timeout, unsupported browsers and bad coordinates remain expl
     },
   };
   await assert.rejects(currentLocation(broken, true), /无效位置/);
+});
+void test('the device zone resolves to the offset it is on at the simulated moment', () => {
+  const july = Date.parse('2026-07-15T12:00:00Z'),
+    january = Date.parse('2026-01-15T12:00:00Z');
+  // Reading the offset from "now" rather than from the simulated moment would
+  // put a summer sky an hour out of a winter one wherever daylight saving runs.
+  assert.equal(zoneOffsetHours(july, 'America/New_York'), -4);
+  assert.equal(zoneOffsetHours(january, 'America/New_York'), -5);
+  assert.equal(zoneOffsetHours(july, 'Europe/London'), 1);
+  assert.equal(zoneOffsetHours(january, 'Europe/London'), 0);
+  // Zones without daylight saving, and those off the hour, resolve exactly.
+  for (const time of [july, january]) {
+    assert.equal(zoneOffsetHours(time, 'Asia/Shanghai'), 8);
+    assert.equal(zoneOffsetHours(time, 'Asia/Kolkata'), 5.5);
+    assert.equal(zoneOffsetHours(time, 'UTC'), 0);
+  }
+  assert.equal(zoneOffsetHours(july, 'Australia/Lord_Howe'), 10.5);
+  assert.equal(zoneOffsetHours(january, 'Australia/Lord_Howe'), 11);
+  // Every offset the observer can be given must fit the field that shows it.
+  for (const zone of Intl.supportedValuesOf('timeZone')) {
+    for (const time of [july, january]) {
+      const offset = zoneOffsetHours(time, zone)!;
+      assert.ok(Number.isFinite(offset), zone);
+      assert.ok(offset >= -12 && offset <= 14, `${zone}: ${offset}`);
+      assert.ok(Number.isInteger(offset * 4), `${zone}: ${offset}`);
+    }
+  }
+  // An unreadable zone leaves the caller's own offset in place.
+  assert.equal(zoneOffsetHours(july, 'Not/AZone'), undefined);
 });
 void test('physical data covers each body and preserves mass, radius, density and gravity unit consistency', () => {
   for (const b of bodies) {
