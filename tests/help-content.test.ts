@@ -26,6 +26,10 @@ const styles = readFileSync(
   new URL('../app/globals.css', import.meta.url),
   'utf8',
 );
+const planner = readFileSync(
+  new URL('../components/astronomy-panel.tsx', import.meta.url),
+  'utf8',
+);
 
 void test('space journey help is split into operation, model and source tabs', () => {
   assert.match(page, /value="operation"/);
@@ -66,4 +70,21 @@ void test('archive hints open on tap without horizontal overflow', () => {
 
 void test('ordinary sunrise cards keep the calculation note in the tooltip only', () => {
   assert.match(sunrise, /result\.daylight !== '按太阳上缘和标准大气折射计算'/);
+});
+
+void test('the planner describes the query it answered, not the place the app holds now', () => {
+  // Times and the observation point printed under them must come from one
+  // place. The list is a snapshot, so reading the live prop while rendering
+  // would label a computed list with somewhere it was never computed for.
+  assert.match(
+    planner,
+    /const answered: SkyLocation = loaded\?\.query \?\? location;/,
+  );
+  assert.doesNotMatch(
+    planner,
+    /location\.(latitude|longitude|height|utcOffset)/,
+  );
+  // The prop still decides what to ask for and whether what is held still fits.
+  assert.match(planner, /\{ start: time, \.\.\.location \}/);
+  assert.match(planner, /stillAnswers\(loaded, query\.start, location\)/);
 });

@@ -151,13 +151,17 @@ export default function AstronomyPanel({
       ),
     );
   }
+  // Every time and the observation point under them describe the same query:
+  // the place the list was computed for, not whatever the app holds now. They
+  // rejoin when the panel is reopened, where a changed place recalculates.
+  const answered: SkyLocation = loaded?.query ?? location;
   const format = (ms: number) =>
     new Intl.DateTimeFormat(locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
       hourCycle: 'h23',
       timeZone: 'UTC',
-    }).format(ms + (loaded?.query.utcOffset ?? location.utcOffset) * 3600000);
+    }).format(ms + answered.utcOffset * 3600000);
   const eventCard = (event: SkyEvent, kind: Kind) => (
     <article className="sky-event" key={event.peak}>
       <div className="sky-event-heading">
@@ -234,9 +238,9 @@ export default function AstronomyPanel({
     <>
       <p className="little-note">
         {t('观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}', {
-          latitude: location.latitude.toFixed(4),
-          longitude: location.longitude.toFixed(4),
-          offset: `${location.utcOffset >= 0 ? '+' : ''}${location.utcOffset}`,
+          latitude: answered.latitude.toFixed(4),
+          longitude: answered.longitude.toFixed(4),
+          offset: `${answered.utcOffset >= 0 ? '+' : ''}${answered.utcOffset}`,
         })}
         {t('，可在地球的天体信息中调整。')}
       </p>
