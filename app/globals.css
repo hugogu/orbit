@@ -2949,9 +2949,9 @@ button:disabled {
     height: 44px;
   }
   .observatory .side-rail {
-    top: 108px;
+    top: 102px;
     max-height: none;
-    gap: 8px;
+    gap: 6px;
   }
   .observatory .rail-start {
     bottom: auto;
@@ -2964,7 +2964,7 @@ button:disabled {
     right: max(12px, env(safe-area-inset-right));
   }
   .observatory .catalog {
-    max-height: 48px;
+    max-height: 40px;
     padding: 0;
     border-radius: 8px;
   }
@@ -2973,7 +2973,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 44px;
+    min-height: 38px;
     width: auto;
     padding: 0 10px;
     font-size: 12px;
@@ -2988,7 +2988,7 @@ button:disabled {
   .catalog-regions .region-option {
     flex: 0 0 auto;
     width: auto;
-    min-height: 44px;
+    min-height: 38px;
     padding: 8px;
     font-size: 12px;
   }
@@ -2997,17 +2997,18 @@ button:disabled {
   .catalog-regions svg {
     display: none;
   }
-  /* Both rails run as two rows of equal height, so the pairs line up. */
+  /* Every row on a phone is one control height tall, so a row reads as a row
+     however its two sides are built. */
   .side-rail .astronomy-button {
-    min-height: 46px;
+    min-height: 40px;
   }
   .view-tools {
     flex-direction: row;
     padding: 0;
   }
   .view-tools .icon-button {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
   }
   .bottom-area {
     left: max(12px, env(safe-area-inset-left));
@@ -3021,13 +3022,13 @@ button:disabled {
   }
   .mobile-info {
     display: flex;
-    min-height: 46px;
+    min-height: 40px;
   }
   .timeline {
     display: grid;
     grid-template-columns: minmax(105px, 1fr) minmax(100px, 1fr) 44px;
     gap: 12px 8px;
-    padding: 10px 10px 12px;
+    padding: 6px 10px 8px;
   }
   .timeline .playback {
     grid-column: 1;
@@ -3122,6 +3123,7 @@ button:disabled {
     max-width: calc(100% - 106px);
   }
   .view-tabs {
+    height: 40px !important;
     overflow-x: auto;
     scrollbar-width: none;
   }
