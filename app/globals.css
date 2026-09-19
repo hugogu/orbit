@@ -3104,6 +3104,33 @@ button:disabled {
     display: block;
   }
 }
+/* A portrait phone stacks the tabs on their own row and leaves its right half
+   empty, so the camera pair rides up beside them and the facts button keeps the
+   catalogue's line. The header actions end where the tab row starts, which is
+   what fixes the pair's top rather than centring it on the tabs. The tabs give
+   up some padding to share the row, and are capped short of the pair so a
+   longer locale scrolls its own labels instead of running into them. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .observatory .rail-end {
+    top: 56px;
+    gap: 6px;
+  }
+  .rail-end .view-tools {
+    order: -1;
+  }
+  .topbar [data-slot='tabs'] {
+    max-width: calc(100% - 106px);
+  }
+  .view-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .view-tabs button {
+    flex: 0 0 auto;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+}
 /* Marker text is absolutely positioned, so the track has to be wide enough to
    keep neighbouring labels apart. The widest locale needs ~805px of track for
    all nine at the base size and ~680px once they shrink; below that only the
