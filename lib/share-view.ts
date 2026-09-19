@@ -175,10 +175,11 @@ export function decodeShareView(
 
 /**
  * Whether a link carried an observation at all. The moment is the signature:
- * every link the share dialog writes carries `t`, while the remaining keys are
- * single letters (`s`, `r`, `v`, `c`, `p`) common enough as tracking and
- * redirect decoration that accepting any one of them alone would hand an
- * ordinary visitor a framing nobody shared with them.
+ * every link the share dialog writes carries `t`, while the remaining keys
+ * describe framing alone. Most are bare single letters — `s`, `r`, `v`, `c` and
+ * `p` are all common tracking and redirect parameters, and `top` and `cc` are
+ * barely less likely to collide — so honouring any one of them by itself would
+ * hand an ordinary visitor a framing nobody shared with them.
  */
 export function hasShareView(params: URLSearchParams) {
   return params.has('t');
