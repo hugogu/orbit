@@ -45,6 +45,7 @@ import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
 import ShareDialog from '@/components/share-dialog';
+import GithubLink from '@/components/github-link';
 import {
   decodeShareView,
   hasShareView,
@@ -1040,7 +1041,7 @@ export default function Home() {
           </button>
         </section>
         <footer className="footer">
-          <div>
+          <div className="footer-hints">
             <span>{t('拖动旋转')}</span>
             <b>·</b>
             <span>{t('滚轮 / 双指缩放')}</span>
@@ -1049,10 +1050,13 @@ export default function Home() {
             <b>·</b>
             <span>{t('空格暂停')}</span>
           </div>
-          <button onClick={() => setHelp(true)}>
-            {t('模型说明与来源')}
-            <ArrowUpRight size={12} />
-          </button>
+          <div className="footer-links">
+            <button onClick={() => setHelp(true)}>
+              {t('模型说明与来源')}
+              <ArrowUpRight size={12} />
+            </button>
+            <GithubLink label={t('在 GitHub 查看源代码')} />
+          </div>
         </footer>
       </div>
       {notice && (
