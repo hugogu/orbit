@@ -1,7 +1,7 @@
 'use client';
 import { track } from '@vercel/analytics';
-import { useEffect, useState, type CSSProperties } from 'react';
-import { Check, Copy, Download, Share2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, Copy, Download, ImageDown, Share2 } from 'lucide-react';
 import { useI18n } from '../lib/i18n/provider';
 import {
   Dialog,
@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from './ui/dialog';
-import { composeShareImage } from '../lib/share-image';
+import { composeShareImage, saveImageRoute } from '../lib/share-image';
 import ShareQr from './share-qr';
 import { absoluteSiteUrl } from '../lib/seo';
 import {
@@ -32,6 +32,16 @@ type CopyStatus = 'idle' | 'copied' | 'manual';
 function shareFileName(view: ShareView) {
   const subject = view.selected ?? view.region ?? 'solar-system';
   return `orbit-${subject}-${new Date(view.time).toISOString().slice(0, 10)}.png`;
+}
+
+/** Keeps the frame as a file when the system sheet refuses to carry it. */
+function downloadImage(url: string, name: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 /**
@@ -74,6 +84,17 @@ export default function ShareDialog({
   // the button would then offer something that cannot be done.
   const canShare =
     typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  // A coarse pointer is a phone or tablet, where the picture belongs in the
+  // album rather than in a download folder no social application opens.
+  const touchScreen =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(pointer: coarse)').matches;
+  const saveRoute = saveImageRoute(
+    preview.status === 'ready' &&
+      canShare &&
+      navigator.canShare?.({ files: [preview.file] }) === true,
+    touchScreen,
+  );
   const url = absoluteSiteUrl(
     `${sharePath(locale, view.selected)}?${encodeShareView(view).toString()}`,
   );
@@ -161,6 +182,26 @@ export default function ShareDialog({
     }
   }
 
+  async function saveToAlbum(file: File, objectUrl: string) {
+    try {
+      // The picture travels alone. A sheet handed a link beside it offers to
+      // pass the pair along, while the action that files an image in the album
+      // is only offered for an image on its own.
+      await navigator.share({ files: [file] });
+      track('share', {
+        method: 'save_album',
+        body_id: view.selected ?? 'system',
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      downloadImage(objectUrl, shareFileName(view));
+      track('share', {
+        method: 'download_image',
+        body_id: view.selected ?? 'system',
+      });
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -173,14 +214,18 @@ export default function ShareDialog({
         </DialogDescription>
         <figure className="share-preview">
           {preview.status === 'ready' ? (
-            <div
+            // A real image, not a background: holding a finger on one is how a
+            // phone offers to keep a picture, and an in-app browser that has no
+            // system sheet leaves that gesture as the only way into the album.
+            // The frame is composed here as a blob, so there is nothing for the
+            // framework's image pipeline to optimise.
+            // oxlint-disable-next-line nextjs/no-img-element
+            <img
               className="share-preview-frame"
-              style={
-                {
-                  backgroundImage: `url(${preview.url})`,
-                  aspectRatio: `${preview.width} / ${preview.height}`,
-                } as CSSProperties
-              }
+              src={preview.url}
+              alt={t('当前观测画面预览')}
+              width={preview.width}
+              height={preview.height}
             />
           ) : (
             <div className="share-preview-placeholder">
@@ -191,10 +236,7 @@ export default function ShareDialog({
               )}
             </div>
           )}
-          <figcaption>
-            <span className="sr-only">{t('当前观测画面预览')}</span>
-            {heading}
-          </figcaption>
+          <figcaption>{heading}</figcaption>
         </figure>
         <div className="share-scan">
           <ShareQr link={url} />
@@ -212,23 +254,42 @@ export default function ShareDialog({
                 {t('分享')}
               </button>
             )}
-            {preview.status === 'ready' && (
-              <a
-                className="secondary-action"
-                href={preview.url}
-                download={shareFileName(view)}
-                onClick={() =>
-                  track('share', {
-                    method: 'download_image',
-                    body_id: view.selected ?? 'system',
-                  })
-                }
-              >
-                <Download size={15} />
-                {t('保存图片')}
-              </a>
-            )}
+            {preview.status === 'ready' &&
+              (saveRoute === 'album' ? (
+                <button
+                  type="button"
+                  className="secondary-action"
+                  onClick={() => void saveToAlbum(preview.file, preview.url)}
+                >
+                  <ImageDown size={15} />
+                  {t('保存到相册')}
+                </button>
+              ) : (
+                <a
+                  className="secondary-action"
+                  href={preview.url}
+                  download={shareFileName(view)}
+                  onClick={() =>
+                    track('share', {
+                      method: 'download_image',
+                      body_id: view.selected ?? 'system',
+                    })
+                  }
+                >
+                  <Download size={15} />
+                  {t('保存图片')}
+                </a>
+              ))}
           </div>
+        )}
+        {touchScreen && preview.status === 'ready' && (
+          <p className="share-note">
+            {t(
+              saveRoute === 'album'
+                ? '在弹出的系统面板中选择保存图像，图片就会存进相册。'
+                : '长按上方图片，可以把它存进相册。',
+            )}
+          </p>
         )}
         <output className="share-status" aria-live="polite" aria-atomic="true">
           {status === 'copied'

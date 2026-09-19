@@ -2278,12 +2278,12 @@ button:disabled {
   background: #070c15;
 }
 .share-preview-frame {
+  display: block;
   width: 100%;
+  height: auto;
   /* A portrait capture would otherwise push the share actions off screen. */
   max-height: min(46vh, 340px);
-  background-position: center;
-  background-size: contain;
-  background-repeat: no-repeat;
+  object-fit: contain;
 }
 .share-preview-placeholder {
   display: flex;
@@ -2341,6 +2341,13 @@ button:disabled {
 }
 .share-actions .secondary-action {
   text-decoration: none;
+}
+/* Sits directly under the actions it explains, ahead of the status line. */
+.share-note {
+  margin: -6px 0 0;
+  color: #7d8b9d;
+  font-size: 12px;
+  line-height: 1.7;
 }
 .share-status {
   min-height: 17px;
