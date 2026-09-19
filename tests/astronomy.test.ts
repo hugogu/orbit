@@ -16,12 +16,14 @@ import {
   advanceTime,
 } from '../lib/simulation-time.ts';
 import {
-  calculateSkyEvents,
+  calculateEclipseList,
   calculateDailySunEvents,
   localDayForTime,
   altitude,
-  validateQuery,
-  type SkyQuery,
+  validateEclipseQuery,
+  ECLIPSE_LIST_SIZE,
+  type EclipseQuery,
+  type DailySunQuery,
 } from '../lib/sky-events.ts';
 import {
   cometElements,
@@ -33,14 +35,14 @@ import { datedMoonOffset } from '../lib/satellite-elements.ts';
 import { orbitingMoons } from '../lib/moon-orbits.ts';
 const earth = bodies.find((b) => b.id === 'earth')!;
 const days = (iso: string) => (Date.parse(iso) - J2000_MS) / DAY_MS;
-const query: SkyQuery = {
+const query: EclipseQuery = {
   start: Date.parse('2024-04-01T00:00:00Z'),
-  day: '2024-04-01',
   latitude: 32.7767,
   longitude: -96.797,
   height: 0,
   utcOffset: -5,
 };
+const dailyQuery: DailySunQuery = { ...query, day: '2024-04-01' };
 
 void test('UTC clock pauses exactly, seeks independently of selection and clamps supported boundaries', () => {
   const t = Date.parse('2026-09-07T12:34:56Z');
@@ -113,36 +115,81 @@ void test('all 19 dated moon positions are finite, reproducible and move; lunar 
 });
 void test('global eclipse peaks agree with NASA catalogs after converting TD to UTC', () => {
   // https://eclipse.gsfc.nasa.gov/SEcat5/SE2001-2100.html (TD 18:18:29, deltaT 74s)
-  const a = calculateSkyEvents(query);
-  assert.equal(a.solar!.kind, '日全食');
+  const a = calculateEclipseList(query);
+  assert.equal(a.solar[0].kind, '日全食');
   assert.ok(
-    Math.abs(a.solar!.peak - Date.parse('2024-04-08T18:17:15Z')) < 30000,
+    Math.abs(a.solar[0].peak - Date.parse('2024-04-08T18:17:15Z')) < 30000,
   );
-  assert.equal(a.localSolar!.kind, '日全食');
-  assert.ok(
-    a.localSolar!.begin! < a.localSolar!.peak &&
-      a.localSolar!.end! > a.localSolar!.peak,
-  );
-  assert.ok(a.localSolar!.altitude! > 0);
+  // Dallas stands on the 2024 path, so the first listed eclipse carries its own
+  // local contacts. The observer's maximum is its own instant, later than the
+  // global peak and bracketed by the contacts seen there.
+  const dallas = a.solar[0].local!;
+  assert.equal(dallas.kind, '日全食');
+  assert.ok(dallas.begin < dallas.peak && dallas.end > dallas.peak);
+  assert.ok(dallas.peak > a.solar[0].peak);
+  assert.ok(Math.abs(dallas.peak - Date.parse('2024-04-08T18:42:00Z')) < 120000);
+  assert.ok(dallas.altitude > 0);
+  assert.ok(dallas.obscuration > 0.99);
   // https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html (TD 06:59:56, deltaT 75s)
-  const b = calculateSkyEvents({
+  const b = calculateEclipseList({
     ...query,
     start: Date.parse('2025-03-01T00:00:00Z'),
   });
-  assert.equal(b.lunar!.kind, '月全食');
+  assert.equal(b.lunar[0].kind, '月全食');
   assert.ok(
-    Math.abs(b.lunar!.peak - Date.parse('2025-03-14T06:58:41Z')) < 30000,
+    Math.abs(b.lunar[0].peak - Date.parse('2025-03-14T06:58:41Z')) < 30000,
   );
+});
+void test('each list holds one screen of upcoming eclipses in order, after the requested moment', () => {
+  const list = calculateEclipseList(query);
+  for (const events of [list.lunar, list.solar]) {
+    assert.ok(events.length >= ECLIPSE_LIST_SIZE);
+    for (const [index, event] of events.entries()) {
+      assert.ok(event.peak > query.start);
+      assert.ok(Number.isFinite(event.peak));
+      if (index > 0) assert.ok(event.peak > events[index - 1].peak);
+    }
+  }
+  assert.equal(list.lunar.length, ECLIPSE_LIST_SIZE);
+  // Every listed lunar eclipse reports its penumbral span and the Moon's height.
+  for (const event of list.lunar) {
+    assert.ok(event.begin! < event.peak && event.end! > event.peak);
+    assert.ok(Math.abs(event.altitude!) <= 90);
+  }
+  assert.equal(list.solar.filter((event) => event.local).length, 1);
+  assert.equal(calculateEclipseList({ ...query, count: 2 }).lunar.length, 2);
+});
+void test('a location that sees none of the listed solar eclipses still gets its next visible one', () => {
+  const beijing = {
+    ...query,
+    start: Date.parse('2026-09-19T00:00:00Z'),
+    latitude: 39.9042,
+    longitude: 116.4074,
+    height: 43,
+    utcOffset: 8,
+  };
+  const solar = calculateEclipseList(beijing).solar;
+  assert.equal(solar.length, ECLIPSE_LIST_SIZE + 1);
+  assert.ok(solar.slice(0, ECLIPSE_LIST_SIZE).every((event) => !event.local));
+  const visible = solar.at(-1)!;
+  assert.ok(visible.local);
+  assert.ok(visible.peak > solar[ECLIPSE_LIST_SIZE - 1].peak);
+  assert.ok(visible.obscuration === undefined);
+  assert.ok(visible.local!.obscuration > 0);
+  // The appended entry keeps its own global classification and peak, so the
+  // list reads in one frame of reference however far ahead it reaches.
+  assert.match(visible.kind, /^日/);
+  assert.ok(Math.abs(visible.local!.peak - visible.peak) < DAY_MS / 2);
 });
 void test('daily events respect local midnight, opposite UTC date and horizon crossing direction', () => {
   const q = {
-    ...query,
+    ...dailyQuery,
     day: '2025-03-01',
     latitude: 39.9042,
     longitude: 116.4074,
     utcOffset: 8,
   };
-  const r = calculateSkyEvents(q),
+  const r = calculateDailySunEvents(q),
     observer = new Observer(q.latitude, q.longitude, 0);
   assert.equal(new Date(r.rise!).toISOString().slice(0, 10), '2025-02-28');
   for (const ms of [r.rise!, r.set!])
@@ -159,9 +206,8 @@ void test('daily events respect local midnight, opposite UTC date and horizon cr
       altitude(AstroBody.Sun, r.set! - 60000, observer),
   );
   assert.ok(Math.abs(altitude(AstroBody.Sun, r.rise!, observer) + 0.27) < 0.1);
-  assert.notEqual(r.localSolar!.peak, r.solar!.peak);
 });
-void test('daily sunrise and sunset can be projected from the simulation clock for Earth', () => {
+void test('daily sunrise and sunset are projected from the simulation clock for Earth', () => {
   const location = {
     latitude: 39.9042,
     longitude: 116.4074,
@@ -170,24 +216,21 @@ void test('daily sunrise and sunset can be projected from the simulation clock f
   };
   const simulationTime = Date.parse('2025-03-01T18:00:00Z');
   const day = localDayForTime(simulationTime, location.utcOffset);
-  const daily = calculateDailySunEvents({ ...location, day });
-  const full = calculateSkyEvents({
-    start: simulationTime,
-    day,
-    ...location,
-  });
   assert.equal(day, '2025-03-02');
-  assert.equal(daily.rise, full.rise);
-  assert.equal(daily.set, full.set);
-  assert.equal(daily.daylight, full.daylight);
+  const daily = calculateDailySunEvents({ ...location, day });
+  assert.ok(daily.rise! < daily.set!);
+  assert.equal(
+    localDayForTime(daily.rise!, location.utcOffset),
+    localDayForTime(daily.set!, location.utcOffset),
+  );
 });
 void test('polar day/night and invalid inputs produce explicit outcomes', () => {
   for (const [day, word] of [
     ['2024-06-21', '极昼'],
     ['2024-12-21', '极夜'],
   ]) {
-    const r = calculateSkyEvents({
-      ...query,
+    const r = calculateDailySunEvents({
+      ...dailyQuery,
       day,
       latitude: 69.65,
       longitude: 18.96,
@@ -198,18 +241,18 @@ void test('polar day/night and invalid inputs produce explicit outcomes', () => 
     assert.match(r.daylight, new RegExp(word));
   }
   for (const patch of [
-    { day: '2024-02-30' },
     { latitude: 91 },
     { longitude: NaN },
     { utcOffset: 15 },
     { start: MAX_TIME + 1 },
     { height: Infinity },
   ])
-    assert.throws(() => validateQuery({ ...query, ...patch }));
-  const end = calculateSkyEvents({ ...query, start: MAX_TIME });
-  assert.equal(end.solar, null);
-  assert.equal(end.lunar, null);
-  assert.equal(end.localSolar, null);
+    assert.throws(() => validateEclipseQuery({ ...query, ...patch }));
+  for (const patch of [{ day: '2024-02-30' }, { latitude: 91 }])
+    assert.throws(() => calculateDailySunEvents({ ...dailyQuery, ...patch }));
+  const end = calculateEclipseList({ ...query, start: MAX_TIME });
+  assert.deepEqual(end.solar, []);
+  assert.deepEqual(end.lunar, []);
 });
 void test('comet snapshots orient perihelia and use epochs, so dates are independent of navigation', () => {
   for (const comet of comets) {

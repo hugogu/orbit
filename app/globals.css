@@ -1622,7 +1622,8 @@ button:disabled {
   color: #8390a2;
   display: block;
 }
-.now-button {
+.now-button,
+.jump-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1635,9 +1636,15 @@ button:disabled {
   white-space: nowrap;
   font-size: 12px;
 }
+/* The jump control is icon-only at every width, so its box comes from the
+   square target rather than from a label's text. */
+.jump-button {
+  min-width: 36px;
+  padding: 8px;
+}
 @media (max-width: 700px) {
+  .timeline .jump-button,
   .timeline .now-button {
-    grid-column: 2;
     grid-row: 1;
     justify-self: end;
     padding: 7px;
@@ -1718,11 +1725,26 @@ button:disabled {
   background: #d9c49a08;
   white-space: nowrap;
 }
+.time-jump-dialog .astro-form,
+.observer-dialog .astro-form {
+  margin-top: 18px;
+}
+/* The list is long enough to scroll past its own switch, so the dialog holds
+   the title and the switch and lets only the list move, as settings does. */
 .orbit-dialog.astronomy-dialog {
   width: min(680px, calc(100vw - 24px)) !important;
   max-width: 680px !important;
   max-height: 88dvh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.astronomy-dialog > * {
+  flex-shrink: 0;
+}
+.astronomy-dialog > .settings-tabs {
+  flex: 1;
+  min-height: 0;
 }
 .astro-form {
   display: grid;
@@ -1773,7 +1795,7 @@ button:disabled {
 .sky-results {
   display: grid;
   gap: 12px;
-  margin: 20px 0;
+  margin: 4px 0;
   font-size: 13px;
   line-height: 1.7;
   color: #9eafc5;
@@ -1784,14 +1806,34 @@ button:disabled {
   border-radius: 10px;
   padding: 16px;
 }
-.sky-event > span {
-  color: #b7c5d5;
-  font-size: 12px;
+.sky-event-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 .sky-event h3 {
   font-size: 20px;
   color: #ead5ad;
-  margin: 8px 0;
+  margin: 0 0 8px;
+}
+/* The badge marks the one fact the reader scans this list for: whether the
+   eclipse reaches their own sky. */
+.sky-event-tag {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  color: #0e1620;
+  background: #e3cda4;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.sky-event-local {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ffffff12;
+  color: #cbd8e6;
 }
 .sky-event strong {
   color: #e0e8f2;
@@ -1993,6 +2035,39 @@ button:disabled {
   align-items: center;
   gap: 5px;
   max-width: 100%;
+}
+.observer-location {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #ffffff0f;
+}
+/* The coordinates and their two controls share one line, and the line wraps
+   before the buttons shrink below a finger's width. */
+.observer-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+  margin: 0;
+}
+.observer-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  /* The pair stays against the right edge whether or not the line wraps. */
+  margin-left: auto;
+}
+.observer-actions .icon-button {
+  width: 34px;
+  height: 34px;
+}
+.observer-actions .icon-button svg {
+  width: 15px;
+  height: 15px;
+}
+.observer-actions .icon-button[aria-busy='true'] {
+  color: #ead4ac;
 }
 .moon-guide {
   margin: 24px 0;
@@ -3126,8 +3201,8 @@ button:disabled {
   }
   .timeline {
     display: grid;
-    grid-template-columns: minmax(105px, 1fr) minmax(100px, 1fr) 44px;
-    gap: 12px 8px;
+    grid-template-columns: minmax(88px, 1fr) minmax(92px, 1fr) 44px 44px;
+    gap: 12px 6px;
     padding: 6px 10px 8px;
   }
   .timeline .playback {
@@ -3156,6 +3231,13 @@ button:disabled {
     padding: 6px 2px 0;
     min-height: 20px;
   }
+  .timeline .jump-button {
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
   .timeline .simulation-clock {
     grid-column: 2;
     grid-row: 1;
@@ -3183,7 +3265,7 @@ button:disabled {
     content: ' UTC';
   }
   .timeline .now-button {
-    grid-column: 3;
+    grid-column: 4;
     grid-row: 1;
     min-width: 44px;
     min-height: 44px;
@@ -3276,7 +3358,7 @@ button:disabled {
     top: 110px;
   }
   .timeline {
-    grid-template-columns: auto minmax(90px, 1fr) auto 44px;
+    grid-template-columns: auto minmax(90px, 1fr) auto 44px 44px;
     padding: 6px 10px;
     gap: 8px;
   }
@@ -3287,8 +3369,11 @@ button:disabled {
   .timeline .simulation-clock {
     grid-column: 3;
   }
-  .timeline .now-button {
+  .timeline .jump-button {
     grid-column: 4;
+  }
+  .timeline .now-button {
+    grid-column: 5;
   }
   .brand {
     gap: 6px;

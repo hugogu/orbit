@@ -1,7 +1,7 @@
 import { isTextureQuality, type TextureQuality } from './texture-quality';
 import { isOrbitLineWidth } from './orbit-line-width';
 import type { ScaleMode } from './solar';
-import type { SkyLocation } from './sky-events';
+import type { ChosenLocationSource, SkyLocation } from './sky-events';
 
 export const preferencesStorageKey = 'orbit-observatory-preferences-v1';
 
@@ -21,7 +21,7 @@ export type ObservatoryPreferences = {
   realTerrain: boolean;
   textureQuality: TextureQuality;
   observerLocation: SkyLocation;
-  observerLocationSource: 'device' | 'manual';
+  observerLocationSource: ChosenLocationSource;
 };
 
 export type StoredPreferences = Partial<ObservatoryPreferences>;

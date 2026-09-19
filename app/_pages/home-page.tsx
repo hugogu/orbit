@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   Info,
   CalendarDays,
+  CalendarClock,
   Share2,
   X,
 } from 'lucide-react';
@@ -41,6 +42,7 @@ import CuriosityCard, { CuriositySource } from '@/components/curiosity-card';
 import ConceptHint from '@/components/concept-hint';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
+import TimeJump from '@/components/time-jump';
 import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
@@ -61,7 +63,12 @@ import {
 } from '@/lib/asteroids';
 import AsteroidDetails from '@/components/asteroid-details';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
-import { fallbackSkyLocation, type SkyLocation } from '@/lib/sky-events';
+import {
+  fallbackSkyLocation,
+  type ChosenLocationSource,
+  type ObserverLocationSource,
+  type SkyLocation,
+} from '@/lib/sky-events';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -133,6 +140,7 @@ export default function Home() {
     [time, setTime] = useState<number | null>(null),
     [epoch, setEpoch] = useState<number | null>(null),
     [astronomy, setAstronomy] = useState(false),
+    [timeJump, setTimeJump] = useState(false),
     [tab, setTab] = useState('explore'),
     [cometId, setCometId] = useState('halley'),
     [cometClose, setCometClose] = useState(false),
@@ -162,9 +170,8 @@ export default function Home() {
     [settingsTab, setSettingsTab] = useState('layout'),
     [observerLocation, setObserverLocation] =
       useState<SkyLocation>(fallbackSkyLocation),
-    [observerLocationSource, setObserverLocationSource] = useState<
-      'pending' | 'device' | 'manual' | 'fallback'
-    >('fallback');
+    [observerLocationSource, setObserverLocationSource] =
+      useState<ObserverLocationSource>('fallback');
   const scene = useRef<SceneHandle | null>(null);
   const capture = useCallback(() => scene.current?.capture() ?? null, []);
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
@@ -311,7 +318,7 @@ export default function Home() {
   }
   function updateObserverLocation(
     next: SkyLocation,
-    source: 'device' | 'manual' = 'manual',
+    source: ChosenLocationSource = 'manual',
   ) {
     setObserverLocation(next);
     setObserverLocationSource(source);
@@ -624,6 +631,7 @@ export default function Home() {
           time={time ?? J2000_MS}
           location={observerLocation}
           locationSource={observerLocationSource}
+          onLocationChange={updateObserverLocation}
         />
       )}
       <CuriosityCard
@@ -1037,6 +1045,14 @@ export default function Home() {
             <small>{time ? utcLabel(time).slice(11) : '—'}</small>
           </div>
           <button
+            className="jump-button"
+            aria-label={t('跳到指定时间')}
+            title={t('跳到指定时间')}
+            onClick={() => setTimeJump(true)}
+          >
+            <CalendarClock size={16} />
+          </button>
+          <button
             className="now-button"
             aria-label={t('回到当前时间并实时运行')}
             title={t('回到当前时间并实时运行')}
@@ -1084,13 +1100,17 @@ export default function Home() {
           capture={capture}
         />
       )}
+      <TimeJump
+        open={timeJump}
+        onOpenChange={setTimeJump}
+        time={time ?? J2000_MS}
+        onSeek={seekTime}
+      />
       <AstronomyPanel
         open={astronomy}
         onOpenChange={setAstronomy}
         time={time ?? J2000_MS}
-        onSeek={seekTime}
         location={observerLocation}
-        onLocationChange={updateObserverLocation}
         onEclipse={(ms, kind) => {
           seekTime(ms);
           select(kind === 'solar' ? 'earth' : 'moon-moon');
@@ -1383,7 +1403,9 @@ export default function Home() {
                 </p>
                 <p>
                   <strong>{t('观测地点')}</strong>
-                  {t('可在“天象推演”中修改观测地点。')}
+                  {t(
+                    '观测地点在地球的天体信息中设置，用于日出日落与日月食的当地可见性。',
+                  )}
                 </p>
               </div>
             </TabsContent>
@@ -1405,7 +1427,7 @@ export default function Home() {
                 <p>
                   {t('按太阳上缘和标准大气折射计算')}。{' '}
                   {t(
-                    '点击“使用当前位置”后，设备会尝试提供当前位置，也可手动修改。经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
+                    '经纬度采用 WGS84（不是国内地图的偏移坐标），只在本页计算使用。时差需包含当日夏令时；当地可见性不考虑地形、建筑和实际天气。',
                   )}
                 </p>
                 <p>

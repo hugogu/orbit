@@ -1,7 +1,7 @@
-import { calculateSkyEvents, type SkyQuery } from '../lib/sky-events';
-self.onmessage = (event: MessageEvent<SkyQuery>) => {
+import { calculateEclipseList, type EclipseQuery } from '../lib/sky-events';
+self.onmessage = (event: MessageEvent<EclipseQuery>) => {
   try {
-    self.postMessage({ result: calculateSkyEvents(event.data) });
+    self.postMessage({ result: calculateEclipseList(event.data) });
   } catch (error) {
     self.postMessage({
       error:
