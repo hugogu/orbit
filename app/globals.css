@@ -1829,6 +1829,19 @@ button:disabled {
   font-size: 11px;
   letter-spacing: 0.04em;
 }
+/* The continuation sits under the run it extends, full width, so it reads as
+   the end of the list rather than as one more card's action. */
+.load-more {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin: 14px 0 0;
+  min-height: 44px;
+}
+.load-more:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
 .sky-event-local {
   margin-top: 10px;
   padding-top: 10px;

@@ -115,34 +115,32 @@ void test('all 19 dated moon positions are finite, reproducible and move; lunar 
 });
 void test('global eclipse peaks agree with NASA catalogs after converting TD to UTC', () => {
   // https://eclipse.gsfc.nasa.gov/SEcat5/SE2001-2100.html (TD 18:18:29, deltaT 74s)
-  const a = calculateEclipseList(query);
-  assert.equal(a.solar[0].kind, '日全食');
-  assert.ok(
-    Math.abs(a.solar[0].peak - Date.parse('2024-04-08T18:17:15Z')) < 30000,
-  );
+  const a = calculateEclipseList(query).solar.events;
+  assert.equal(a[0].kind, '日全食');
+  assert.ok(Math.abs(a[0].peak - Date.parse('2024-04-08T18:17:15Z')) < 30000);
   // Dallas stands on the 2024 path, so the first listed eclipse carries its own
   // local contacts. The observer's maximum is its own instant, later than the
   // global peak and bracketed by the contacts seen there.
-  const dallas = a.solar[0].local!;
+  const dallas = a[0].local!;
   assert.equal(dallas.kind, '日全食');
   assert.ok(dallas.begin < dallas.peak && dallas.end > dallas.peak);
-  assert.ok(dallas.peak > a.solar[0].peak);
-  assert.ok(Math.abs(dallas.peak - Date.parse('2024-04-08T18:42:00Z')) < 120000);
+  assert.ok(dallas.peak > a[0].peak);
+  assert.ok(
+    Math.abs(dallas.peak - Date.parse('2024-04-08T18:42:00Z')) < 120000,
+  );
   assert.ok(dallas.altitude > 0);
   assert.ok(dallas.obscuration > 0.99);
   // https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html (TD 06:59:56, deltaT 75s)
   const b = calculateEclipseList({
     ...query,
     start: Date.parse('2025-03-01T00:00:00Z'),
-  });
-  assert.equal(b.lunar[0].kind, '月全食');
-  assert.ok(
-    Math.abs(b.lunar[0].peak - Date.parse('2025-03-14T06:58:41Z')) < 30000,
-  );
+  }).lunar.events;
+  assert.equal(b[0].kind, '月全食');
+  assert.ok(Math.abs(b[0].peak - Date.parse('2025-03-14T06:58:41Z')) < 30000);
 });
 void test('each list holds one screen of upcoming eclipses in order, after the requested moment', () => {
   const list = calculateEclipseList(query);
-  for (const events of [list.lunar, list.solar]) {
+  for (const events of [list.lunar.events, list.solar.events]) {
     assert.ok(events.length >= ECLIPSE_LIST_SIZE);
     for (const [index, event] of events.entries()) {
       assert.ok(event.peak > query.start);
@@ -150,14 +148,17 @@ void test('each list holds one screen of upcoming eclipses in order, after the r
       if (index > 0) assert.ok(event.peak > events[index - 1].peak);
     }
   }
-  assert.equal(list.lunar.length, ECLIPSE_LIST_SIZE);
+  assert.equal(list.lunar.events.length, ECLIPSE_LIST_SIZE);
   // Every listed lunar eclipse reports its penumbral span and the Moon's height.
-  for (const event of list.lunar) {
+  for (const event of list.lunar.events) {
     assert.ok(event.begin! < event.peak && event.end! > event.peak);
     assert.ok(Math.abs(event.altitude!) <= 90);
   }
-  assert.equal(list.solar.filter((event) => event.local).length, 1);
-  assert.equal(calculateEclipseList({ ...query, count: 2 }).lunar.length, 2);
+  assert.equal(list.solar.events.filter((event) => event.local).length, 1);
+  assert.equal(
+    calculateEclipseList({ ...query, count: 2 }).lunar.events.length,
+    2,
+  );
 });
 void test('a location that sees none of the listed solar eclipses still gets its next visible one', () => {
   const beijing = {
@@ -168,7 +169,7 @@ void test('a location that sees none of the listed solar eclipses still gets its
     height: 43,
     utcOffset: 8,
   };
-  const solar = calculateEclipseList(beijing).solar;
+  const solar = calculateEclipseList(beijing).solar.events;
   assert.equal(solar.length, ECLIPSE_LIST_SIZE + 1);
   assert.ok(solar.slice(0, ECLIPSE_LIST_SIZE).every((event) => !event.local));
   const visible = solar.at(-1)!;
@@ -180,6 +181,65 @@ void test('a location that sees none of the listed solar eclipses still gets its
   // list reads in one frame of reference however far ahead it reaches.
   assert.match(visible.kind, /^日/);
   assert.ok(Math.abs(visible.local!.peak - visible.peak) < DAY_MS / 2);
+});
+void test('following pages continue the sequence without gaps, repeats or a second visible hunt', () => {
+  const place = {
+    ...query,
+    start: Date.parse('2026-09-19T00:00:00Z'),
+    latitude: 39.9042,
+    longitude: 116.4074,
+    height: 43,
+    utcOffset: 8,
+  };
+  const first = calculateEclipseList(place);
+  // The cursor follows the global run, not the visible eclipse appended past
+  // it: continuing from that one would skip every eclipse in between.
+  const appended = first.solar.events.at(-1)!;
+  assert.equal(first.solar.events.length, ECLIPSE_LIST_SIZE + 1);
+  assert.ok(appended.peak > first.solar.next!);
+  assert.equal(
+    first.solar.next,
+    first.solar.events[ECLIPSE_LIST_SIZE - 1].peak + 1,
+  );
+  // The preview is not part of the run, so paging is expected to reach that
+  // eclipse again in its own right; the list merges the two by peak.
+  const seen = first.solar.events.slice(0, ECLIPSE_LIST_SIZE);
+  let cursor: number | null = first.solar.next;
+  for (let page = 0; page < 4; page++) {
+    const next = calculateEclipseList({ ...place, start: cursor!, page: true });
+    // A following page is a plain global run: no repeated visible-eclipse hunt,
+    // so nothing is appended twice.
+    assert.equal(next.solar.events.length, ECLIPSE_LIST_SIZE);
+    for (const event of next.solar.events) {
+      assert.ok(event.peak >= cursor!);
+      assert.ok(
+        !seen.some((other) => Math.abs(other.peak - event.peak) < DAY_MS),
+        new Date(event.peak).toISOString(),
+      );
+      seen.push(event);
+    }
+    cursor = next.solar.next;
+  }
+  const reached = seen.filter(
+    (event) => Math.abs(event.peak - appended.peak) < DAY_MS,
+  );
+  assert.equal(reached.length, 1);
+  assert.ok(reached[0].local, 'the run reports it as visible too');
+  // Lunar pages carry their own cursor, since the two series do not align.
+  assert.notEqual(first.lunar.next, first.solar.next);
+  const lunarPage = calculateEclipseList({
+    ...place,
+    start: first.lunar.next!,
+    page: true,
+  });
+  assert.ok(lunarPage.lunar.events[0].peak > first.lunar.next!);
+  // The cursor closes at the end of the supported range rather than looping.
+  const tail = calculateEclipseList({
+    ...place,
+    start: MAX_TIME - 200 * DAY_MS,
+  });
+  assert.equal(tail.solar.next, null);
+  assert.equal(tail.lunar.next, null);
 });
 void test('daily events respect local midnight, opposite UTC date and horizon crossing direction', () => {
   const q = {
@@ -251,8 +311,8 @@ void test('polar day/night and invalid inputs produce explicit outcomes', () => 
   for (const patch of [{ day: '2024-02-30' }, { latitude: 91 }])
     assert.throws(() => calculateDailySunEvents({ ...dailyQuery, ...patch }));
   const end = calculateEclipseList({ ...query, start: MAX_TIME });
-  assert.deepEqual(end.solar, []);
-  assert.deepEqual(end.lunar, []);
+  assert.deepEqual(end.solar, { events: [], next: null });
+  assert.deepEqual(end.lunar, { events: [], next: null });
 });
 void test('comet snapshots orient perihelia and use epochs, so dates are independent of navigation', () => {
   for (const comet of comets) {

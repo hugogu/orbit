@@ -1,6 +1,6 @@
 'use client';
 import { useI18n } from '../lib/i18n/provider';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 } from './ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
-  ECLIPSE_LIST_SIZE,
+  mergeEvents,
   type EclipseList,
   type EclipseQuery,
   type SkyEvent,
@@ -18,6 +18,36 @@ import {
 // Vite generates the default constructor; it is not an export of the worker source.
 // oxlint-disable-next-line import/default
 import AstronomyWorker from '../workers/astronomy.worker?worker';
+
+type Kind = 'solar' | 'lunar';
+type Loaded = {
+  /** The moment and place these events answer. */
+  query: EclipseQuery;
+  solar: SkyEvent[];
+  lunar: SkyEvent[];
+  next: Record<Kind, number | null>;
+};
+const samePlace = (a: SkyLocation, b: SkyLocation) =>
+  a.latitude === b.latitude &&
+  a.longitude === b.longitude &&
+  a.height === b.height &&
+  a.utcOffset === b.utcOffset;
+// What is on screen still answers a later moment as long as the clock has not
+// reached the first event listed: the next eclipse is months away, so reopening
+// the panel after a few simulated days would only recompute the same answer,
+// and would throw away however far the reader had paged.
+function stillAnswers(
+  loaded: Loaded | null,
+  start: number,
+  place: SkyLocation,
+) {
+  if (!loaded || !samePlace(loaded.query, place)) return false;
+  const first = Math.min(
+    loaded.solar[0]?.peak ?? Infinity,
+    loaded.lunar[0]?.peak ?? Infinity,
+  );
+  return start >= loaded.query.start && start <= first;
+}
 
 export default function AstronomyPanel({
   open,
@@ -29,71 +59,106 @@ export default function AstronomyPanel({
   open: boolean;
   onOpenChange: (v: boolean) => void;
   time: number;
-  onEclipse: (ms: number, kind: 'solar' | 'lunar') => void;
+  onEclipse: (ms: number, kind: Kind) => void;
   location: SkyLocation;
 }) {
   const { t, locale } = useI18n();
-  const [result, setResult] = useState<{
-      query: EclipseQuery;
-      data: EclipseList;
-    } | null>(null),
+  const [loaded, setLoaded] = useState<Loaded | null>(null),
+    [busy, setBusy] = useState<'first' | Kind | null>(null),
     [error, setError] = useState(''),
-    [tab, setTab] = useState('solar');
-  // The list answers the moment the panel was opened on. Recalculating against
-  // a running clock would rewrite the results under the reader for no gain:
-  // the next eclipse is months away, and playback moves by days per second.
+    [tab, setTab] = useState<Kind>('solar');
+  const live = useRef(true),
+    // Only the newest request may land: reopening the panel on a new moment
+    // must not be overwritten by the answer to the moment before it.
+    request = useRef(0);
   useEffect(() => {
-    if (!open) return;
-    const query: EclipseQuery = { start: time, ...location };
-    let live = true;
-    // The reset is deferred so reopening the panel does not cascade a render
-    // inside this effect; the worker's reply is a later task either way.
-    queueMicrotask(() => {
-      if (!live) return;
-      setResult(null);
-      setError('');
-    });
+    // Set on the way in as well as cleared on the way out. A development
+    // double-invoke runs the cleanup between two mounts, and a flag that is
+    // only ever cleared would discard every reply from then on.
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
+  // One question, one answer: each request gets its own worker and releases it
+  // as soon as it replies, rather than idling with the ephemeris loaded.
+  function ask(query: EclipseQuery, onDone: (list: EclipseList) => void) {
+    const ticket = ++request.current;
+    const stale = () => !live.current || ticket !== request.current;
     let task: Worker;
     try {
       task = new AstronomyWorker();
     } catch {
-      queueMicrotask(() => {
-        if (live) setError('计算模块无法启动，请刷新后重试。');
-      });
-      return () => {
-        live = false;
-      };
+      setBusy(null);
+      setError('计算模块无法启动，请刷新后重试。');
+      return;
     }
-    // One question, one answer: the worker is released as soon as it replies
-    // rather than idling with the ephemeris loaded until the panel closes.
     task.onmessage = (
       event: MessageEvent<{ result?: EclipseList; error?: string }>,
     ) => {
       task.terminate();
-      if (!live) return;
+      if (stale()) return;
+      setBusy(null);
       setError(event.data.error ?? '');
-      if (event.data.result) setResult({ query, data: event.data.result });
+      if (event.data.result) onDone(event.data.result);
     };
     task.onerror = () => {
       task.terminate();
-      if (live) setError('计算模块加载失败，请刷新后重试。');
+      if (stale()) return;
+      setBusy(null);
+      setError('计算模块加载失败，请刷新后重试。');
     };
     task.postMessage(query);
-    return () => {
-      live = false;
-      task.terminate();
-    };
+  }
+  useEffect(() => {
+    if (!open) return;
+    const query: EclipseQuery = { start: time, ...location };
+    // The decision is taken here rather than inside a state updater: an updater
+    // must stay pure, and React may replay or discard one.
+    if (stillAnswers(loaded, query.start, location)) return;
+    // Deferred so opening the panel does not cascade a render in this effect.
+    queueMicrotask(() => {
+      if (!live.current) return;
+      setLoaded(null);
+      setError('');
+      setBusy('first');
+      ask(query, (list) =>
+        setLoaded({
+          query,
+          solar: list.solar.events,
+          lunar: list.lunar.events,
+          next: { solar: list.solar.next, lunar: list.lunar.next },
+        }),
+      );
+    });
     // The opening moment and place are a snapshot; see the note above.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  function loadMore(kind: Kind) {
+    const start = loaded?.next[kind];
+    if (!loaded || start == null || busy) return;
+    setBusy(kind);
+    setError('');
+    ask({ ...loaded.query, start, page: true }, (list) =>
+      setLoaded((current) =>
+        current === null
+          ? current
+          : {
+              ...current,
+              [kind]: mergeEvents(current[kind], list[kind].events),
+              next: { ...current.next, [kind]: list[kind].next },
+            },
+      ),
+    );
+  }
   const format = (ms: number) =>
     new Intl.DateTimeFormat(locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
       hourCycle: 'h23',
       timeZone: 'UTC',
-    }).format(ms + (result?.query.utcOffset ?? 0) * 3600000);
-  const eventCard = (event: SkyEvent, kind: 'solar' | 'lunar') => (
+    }).format(ms + (loaded?.query.utcOffset ?? location.utcOffset) * 3600000);
+  const eventCard = (event: SkyEvent, kind: Kind) => (
     <article className="sky-event" key={event.peak}>
       <div className="sky-event-heading">
         <h3>{t(event.kind)}</h3>
@@ -163,20 +228,6 @@ export default function AstronomyPanel({
       </button>
     </article>
   );
-  const list = (events: SkyEvent[] | undefined, kind: 'solar' | 'lunar') =>
-    error ? (
-      <p role="alert" className="astro-error">
-        {t(error)}
-      </p>
-    ) : !events ? (
-      <p className="little-note">{t('正在计算未来天象…')}</p>
-    ) : events.length === 0 ? (
-      <p className="little-note">{t('在支持的日期范围内未找到下一次。')}</p>
-    ) : (
-      <div className="sky-results">
-        {events.map((event) => eventCard(event, kind))}
-      </div>
-    );
   // Both notes belong under either list, so they ride inside the scrolling
   // panel rather than taking permanent height from a phone's viewport.
   const notes = (
@@ -204,6 +255,42 @@ export default function AstronomyPanel({
       </p>
     </>
   );
+  const list = (kind: Kind) => {
+    if (error)
+      return (
+        <p role="alert" className="astro-error">
+          {t(error)}
+        </p>
+      );
+    if (!loaded) return <p className="little-note">{t('正在计算未来天象…')}</p>;
+    const events = loaded[kind];
+    if (events.length === 0)
+      return (
+        <p className="little-note">{t('在支持的日期范围内未找到下一次。')}</p>
+      );
+    return (
+      <>
+        <div className="sky-results">
+          {events.map((event) => eventCard(event, kind))}
+        </div>
+        {loaded.next[kind] === null ? (
+          <p className="little-note">
+            {t('已列出支持范围内（至 2200 年）的全部{{kind}}。', {
+              kind: t(kind === 'solar' ? '日食' : '月食'),
+            })}
+          </p>
+        ) : (
+          <button
+            className="secondary-action load-more"
+            onClick={() => loadMore(kind)}
+            disabled={busy !== null}
+          >
+            {busy === kind ? t('正在计算未来天象…') : t('继续加载更多')}
+          </button>
+        )}
+      </>
+    );
+  };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -212,16 +299,15 @@ export default function AstronomyPanel({
       >
         <DialogTitle>{t('天象推演')}</DialogTitle>
         <DialogDescription>
-          {result
-            ? t('从 {{date}} 起的 {{count}} 次食象，均为观测地点的当地时间。', {
-                date: format(result.query.start),
-                count: ECLIPSE_LIST_SIZE,
+          {loaded
+            ? t('从 {{date}} 起的食象，均为观测地点的当地时间。', {
+                date: format(loaded.query.start),
               })
             : t('正在从当前模拟时间查找接下来的食象。')}
         </DialogDescription>
         <Tabs
           value={tab}
-          onValueChange={(value) => setTab(String(value))}
+          onValueChange={(value) => setTab(String(value) as Kind)}
           className="settings-tabs"
         >
           <TabsList className="settings-tabs-list" aria-label={t('天象分类')}>
@@ -229,11 +315,11 @@ export default function AstronomyPanel({
             <TabsTrigger value="lunar">{t('月食')}</TabsTrigger>
           </TabsList>
           <TabsContent value="solar" className="settings-tab-panel">
-            {list(result?.data.solar, 'solar')}
+            {list('solar')}
             {notes}
           </TabsContent>
           <TabsContent value="lunar" className="settings-tab-panel">
-            {list(result?.data.lunar, 'lunar')}
+            {list('lunar')}
             {notes}
           </TabsContent>
         </Tabs>

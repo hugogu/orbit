@@ -71,8 +71,27 @@ export type SkyEvent = {
   obscuration?: number;
   local?: LocalCircumstances;
 };
-export type EclipseQuery = SkyLocation & { start: number; count?: number };
-export type EclipseList = { solar: SkyEvent[]; lunar: SkyEvent[] };
+export type EclipseQuery = SkyLocation & {
+  start: number;
+  count?: number;
+  /**
+   * A follow-up page continues a sequence the reader is already holding, so it
+   * skips the hunt for the next locally visible eclipse: the first page either
+   * found one or proved there is none, and repeating it would both cost the
+   * long walk again and duplicate the entry.
+   */
+  page?: boolean;
+};
+export type EclipsePage = {
+  events: SkyEvent[];
+  /**
+   * Where the following page starts, or null once the range is exhausted. It
+   * is one tick past the last event listed, because a page includes an eclipse
+   * that falls exactly on its start and would otherwise repeat it.
+   */
+  next: number | null;
+};
+export type EclipseList = { solar: EclipsePage; lunar: EclipsePage };
 const kinds: Record<string, string> = {
   total: '全食',
   annular: '环食',
@@ -184,29 +203,41 @@ export function calculateEclipseList(q: EclipseQuery): EclipseList {
   };
   const solar: SkyEvent[] = [];
   let global = SearchGlobalSolarEclipse(new Date(q.start));
-  while (solar.length < count && within(global.peak.date.getTime())) {
+  while (solar.length < count && global.peak.date.getTime() <= MAX_TIME) {
     const peak = global.peak.date.getTime();
-    // Advance past local eclipses the global series has already left behind.
-    while (local && local.peak.time.date.getTime() < peak - PEAK_TOLERANCE)
-      local = NextLocalSolarEclipse(local.peak.time, observer);
-    const here =
-      local && Math.abs(local.peak.time.date.getTime() - peak) < PEAK_TOLERANCE
-        ? local
-        : null;
-    solar.push({
-      kind: '日' + kinds[global.kind],
-      peak,
-      ...(here && localSolarVisible(here, observer)
-        ? { local: localCircumstances(here) }
-        : {}),
-    });
+    // Each search begins at a new moon, so it can land back on the eclipse the
+    // cursor has just passed. That one is stepped over, not read as the end of
+    // the series, or every following page would come back empty.
+    if (peak >= q.start) {
+      // Advance past local eclipses the global series has already left behind.
+      while (local && local.peak.time.date.getTime() < peak - PEAK_TOLERANCE)
+        local = NextLocalSolarEclipse(local.peak.time, observer);
+      const here =
+        local &&
+        Math.abs(local.peak.time.date.getTime() - peak) < PEAK_TOLERANCE
+          ? local
+          : null;
+      solar.push({
+        kind: '日' + kinds[global.kind],
+        peak,
+        ...(here && localSolarVisible(here, observer)
+          ? { local: localCircumstances(here) }
+          : {}),
+      });
+    }
     global = NextGlobalSolarEclipse(global.peak);
   }
+  // The cursor follows the global run alone. An appended visible eclipse sits
+  // beyond it, and continuing from there would skip everything in between.
+  const solarNext =
+    solar.length === count && global.peak.date.getTime() <= MAX_TIME
+      ? solar.at(-1)!.peak + 1
+      : null;
   // A locally visible eclipse can be decades beyond the listed ones, so it is
   // appended rather than left out; the list stays in chronological order. Its
   // own global entry is looked up directly instead of walking there one new
   // moon at a time.
-  if (!solar.some((event) => event.local)) {
+  if (!q.page && !solar.some((event) => event.local)) {
     const visible = nextVisibleLocal();
     const peak = visible?.peak.time.date.getTime();
     if (visible && peak !== undefined && within(peak)) {
@@ -220,17 +251,39 @@ export function calculateEclipseList(q: EclipseQuery): EclipseList {
   }
   const lunar: SkyEvent[] = [];
   let moon = SearchLunarEclipse(new Date(q.start));
-  while (lunar.length < count && within(moon.peak.date.getTime())) {
+  while (lunar.length < count && moon.peak.date.getTime() <= MAX_TIME) {
     const peak = moon.peak.date.getTime();
-    lunar.push({
-      kind: '月' + kinds[moon.kind],
-      peak,
-      begin: peak - moon.sd_penum * 60000,
-      end: peak + moon.sd_penum * 60000,
-      altitude: altitude(Body.Moon, peak, observer),
-      obscuration: moon.obscuration,
-    });
+    if (peak >= q.start)
+      lunar.push({
+        kind: '月' + kinds[moon.kind],
+        peak,
+        begin: peak - moon.sd_penum * 60000,
+        end: peak + moon.sd_penum * 60000,
+        altitude: altitude(Body.Moon, peak, observer),
+        obscuration: moon.obscuration,
+      });
     moon = NextLunarEclipse(moon.peak);
   }
-  return { solar, lunar };
+  const lunarNext =
+    lunar.length === count && moon.peak.date.getTime() <= MAX_TIME
+      ? lunar.at(-1)!.peak + 1
+      : null;
+  return {
+    solar: { events: solar, next: solarNext },
+    lunar: { events: lunar, next: lunarNext },
+  };
+}
+
+/**
+ * Join a freshly loaded page onto the list already on screen. The previewed
+ * visible eclipse sits ahead of the run, so paging eventually reaches that same
+ * eclipse from the other direction; entries closer together than any two real
+ * eclipses can be are therefore one, and the earlier copy wins.
+ */
+export function mergeEvents(current: SkyEvent[], incoming: SkyEvent[]) {
+  const all = [...current, ...incoming].sort((a, b) => a.peak - b.peak);
+  return all.filter(
+    (event, index) =>
+      index === 0 || event.peak - all[index - 1].peak > PEAK_TOLERANCE,
+  );
 }
