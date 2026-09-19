@@ -6,6 +6,8 @@ import { DEFAULT_ORBIT_LINE_WIDTH } from '@/lib/orbit-line-width';
 
 export type OrbitLine = Line2;
 export const ORBIT_PATH_SEGMENTS = 2048;
+/** Above the bodies' default order, below surface overlays such as eclipse paths. */
+const ORBIT_LINE_RENDER_ORDER = 1;
 
 type WideLineMaterial = LineMaterial & { linewidth: number };
 
@@ -16,19 +18,22 @@ export function createOrbitLine(
 ) {
   const geometry = new LineGeometry();
   if (points.length > 0) geometry.setFromPoints(points);
-  // Draw guide paths before opaque bodies. This keeps a continuous line free
-  // of segment self-occlusion, while bodies still hide their far-side arcs.
+  // Draw guide paths after the opaque bodies and depth-test against them, so a
+  // body hides the arc behind it and not the one crossing in front. A moon's
+  // guide is only a couple of planet radii wide, so discarding its near side
+  // would sink the whole ring into the planet's disc.
+  // Depth writes stay off and the dimming is baked into an opaque colour, so
+  // adjacent wide-line segments can neither occlude nor double-blend each other.
   // Line2 inherits LineSegments2.onBeforeRender, which updates the material
   // resolution from the active renderer viewport on every render.
   const dimmedColor = new THREE.Color(color).multiplyScalar(brightness);
   const material = new LineMaterial({
     color: dimmedColor,
-    depthTest: false,
     depthWrite: false,
   });
   (material as WideLineMaterial).linewidth = DEFAULT_ORBIT_LINE_WIDTH;
   const line = new Line2(geometry, material);
-  line.renderOrder = -1;
+  line.renderOrder = ORBIT_LINE_RENDER_ORDER;
   return line;
 }
 
@@ -62,10 +67,10 @@ export function setOrbitLineWidth(line: OrbitLine, width: number) {
 }
 
 export function setOrbitLineForeground(line: OrbitLine, foreground: boolean) {
-  // Close-up true-size views can make the selected body's guide path appear
-  // disconnected because the body hides its near-side segment. Keep the
-  // default occlusion for the overview, but show the focused path as a guide.
-  line.renderOrder = foreground ? 1 : -1;
+  // A true-size body can swallow most of its own guide path from close up.
+  // Keep the default occlusion for the overview, but let the focused path show
+  // through as a guide.
+  line.material.depthTest = !foreground;
 }
 
 export function isOrbitLine(object: THREE.Object3D): object is OrbitLine {

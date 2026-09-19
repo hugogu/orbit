@@ -28,13 +28,15 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
     DEFAULT_ORBIT_LINE_WIDTH,
   );
   assert.equal(line.material.transparent, false);
-  assert.equal(line.material.depthTest, false);
   assert.equal(line.material.depthWrite, false);
-  assert.equal(line.renderOrder, -1);
+  // Bodies are drawn first, so testing against their depth hides the far-side
+  // arc alone and leaves the arc passing in front of a body visible.
+  assert.equal(line.material.depthTest, true);
+  assert.ok(line.renderOrder > 0);
   setOrbitLineForeground(line, true);
-  assert.equal(line.renderOrder, 1);
+  assert.equal(line.material.depthTest, false);
   setOrbitLineForeground(line, false);
-  assert.equal(line.renderOrder, -1);
+  assert.equal(line.material.depthTest, true);
   line.onBeforeRender({
     getViewport(target: THREE.Vector4) {
       return target.set(0, 0, 1920, 1080);
