@@ -21,6 +21,7 @@ import {
   qrBadgePalette,
   qrCanvasSize,
   relativeLuminance,
+  saveImageRoute,
   shareImageSize,
 } from '../lib/share-image';
 import { encode } from 'uqr';
@@ -261,6 +262,19 @@ void test('captured frames scale down to the share limit without changing framin
   });
   assert.deepEqual(shareImageSize(0, 0), { width: 0, height: 0 });
   assert.deepEqual(shareImageSize(Number.NaN, 10), { width: 0, height: 0 });
+});
+
+void test('keeping the frame goes through the system sheet on a touch screen', () => {
+  // Where the sheet carries a picture, its own save action is the only way a
+  // page can reach the photo library, and social applications take the image
+  // from that same sheet; a download folder serves neither on a phone.
+  assert.equal(saveImageRoute(true, true), 'album');
+  // A desktop sheet has no album behind it, so the file is the useful result.
+  assert.equal(saveImageRoute(true, false), 'download');
+  // An in-app browser without file sharing still has the long-press gesture,
+  // but nothing this dialog can invoke, so it keeps offering the download.
+  assert.equal(saveImageRoute(false, true), 'download');
+  assert.equal(saveImageRoute(false, false), 'download');
 });
 
 void test('the scannable badge keeps whole-pixel modules and its quiet zone', () => {

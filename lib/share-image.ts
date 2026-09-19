@@ -69,6 +69,24 @@ export function contrastRatio(one: string, other: string) {
 export type ShareImageSize = { width: number; height: number };
 export type ShareImage = ShareImageSize & { blob: Blob };
 
+export type SaveRoute = 'album' | 'download';
+
+/**
+ * Where a viewer who asks to keep the frame should receive it. No page may
+ * write to a photo library itself, and a phone's download folder is not
+ * anywhere a social application looks for a picture, so on a touch screen the
+ * image goes to the system sheet instead: the sheet's own save action is what
+ * files it in the album, and the applications listed beside that action take
+ * the picture straight from here. A pointer that is not coarse is a desktop,
+ * where a file on disk is the useful result.
+ */
+export function saveImageRoute(
+  sheetTakesImages: boolean,
+  touchScreen: boolean,
+): SaveRoute {
+  return sheetTakesImages && touchScreen ? 'album' : 'download';
+}
+
 export type QrBadgeLayout = {
   /** Side of one module, in whole pixels so the symbol stays crisp. */
   unit: number;
