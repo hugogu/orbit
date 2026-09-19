@@ -12,6 +12,20 @@ const { d1, r2 } = hostingConfig;
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
 
+// Never publish source maps with the static production site. The browser still
+// receives the compiled bundle it needs, while the original TypeScript/TSX
+// source remains out of the deployment artifact.
+//
+// Two client chunks exceed the 500 kB default warning by design: the Three.js
+// renderer (~665 kB) and the translation catalogues (~510 kB), which the
+// synchronous `translator()` loads for every language at once. Both already
+// stand alone, so the budget sits just above them — high enough to stay quiet,
+// low enough that an unplanned regression still reports.
+const buildOptions = {
+  sourcemap: false,
+  chunkSizeWarningLimit: 750,
+};
+
 const localBindingConfig = {
   main: 'vinext/server/fetch-handler',
   compatibility_flags: ['nodejs_compat'],
@@ -39,10 +53,7 @@ export default defineConfig(async () => {
   if (process.env.VERCEL === '1') {
     return {
       css: { postcss: { plugins: [tailwindcss()] } },
-      // Never publish source maps with the static production site. The browser
-      // still receives the compiled bundle it needs, while the original
-      // TypeScript/TSX source remains out of the deployment artifact.
-      build: { sourcemap: false },
+      build: buildOptions,
       plugins: [vinext()],
     };
   }
@@ -58,7 +69,7 @@ export default defineConfig(async () => {
 
   return {
     css: { postcss: { plugins: [tailwindcss()] } },
-    build: { sourcemap: false },
+    build: buildOptions,
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,

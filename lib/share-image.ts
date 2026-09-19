@@ -6,7 +6,7 @@ const maxShareEdge = 1600;
 const shareFont = "Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif";
 
 /** Clear margin a scanner needs around the symbol, in modules. */
-const qrQuietModules = 4;
+export const qrQuietModules = 4;
 
 /**
  * Badge palette. A scanner separates modules by luminance, not by brightness,
@@ -20,7 +20,27 @@ export const qrBadgePalette = {
   module: '#070c15',
   label: '#1d2635',
   edge: 'rgba(7, 12, 21, 0.55)',
+  /**
+   * The code shown in the dialog is a control among buttons, not something
+   * lying on a picture, so it carries their weight instead of receding the way
+   * the badge on the frame has to.
+   */
+  screen: '#c6d1e0',
 };
+
+/**
+ * Largest whole-pixel symbol for the requested size at this display's
+ * resolution. Returning the drawn side lets the caller present the canvas at
+ * exactly those pixels, because a resampled module is what a camera fails on.
+ * A module never falls below one pixel, so a size too small to hold the symbol
+ * returns a side larger than the one asked for rather than an unreadable
+ * smudge; callers that must not overflow should check it.
+ */
+export function qrCanvasSize(size: number, modules: number, ratio: number) {
+  const across = modules + qrQuietModules * 2;
+  const unit = Math.max(1, Math.floor((size * ratio) / across));
+  return { unit, side: unit * across };
+}
 
 function channelLuminance(value: number) {
   const channel = value / 255;

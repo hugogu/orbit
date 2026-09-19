@@ -8,7 +8,13 @@ export default function PhysicalFacts({ body }: { body: Body }) {
   const { t, locale } = useI18n();
   return (
     <details className="physical-facts">
-      <summary>
+      {/* The hint opens its own popover, so it must not also toggle the panel. */}
+      <summary
+        onClick={(event) => {
+          if ((event.target as Element).closest('.concept-hint'))
+            event.preventDefault();
+        }}
+      >
         <span className="physical-facts-label">
           {t('更多基础数据')}
           <ConceptHint

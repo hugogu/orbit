@@ -19,6 +19,7 @@ import {
   contrastRatio,
   qrBadgeLayout,
   qrBadgePalette,
+  qrCanvasSize,
   relativeLuminance,
   shareImageSize,
 } from '../lib/share-image';
@@ -307,6 +308,48 @@ void test('the badge stays muted over the sky without starving a scanner', () =>
   assert.ok(relativeLuminance(module) < relativeLuminance(card));
   // Far enough below white that it no longer glares out of a dark frame.
   assert.ok(relativeLuminance(card) <= 0.55, 'card is muted');
+});
+
+void test('the on-screen code is drawn at device pixels a camera can resolve', () => {
+  // 41 modules plus the quiet zone on either side.
+  const across = 41 + 4 * 2;
+  // Browser zoom pushes the ratio past the usual 2 and 3, and every one of
+  // them has to come out exact, or the browser rescales what it is handed.
+  for (const ratio of [1, 1.5, 2, 2.5, 3, 4, 6]) {
+    const { unit, side } = qrCanvasSize(180, 41, ratio);
+    const where = `dpr ${ratio}`;
+    // Whole device pixels per module, and the canvas is exactly that many, so
+    // presenting it at side/ratio never resamples the modules together.
+    assert.ok(Number.isInteger(unit) && unit >= 1, where);
+    assert.equal(side, unit * across, where);
+    assert.ok(side <= 180 * ratio, where);
+    // The canvas is presented at side/ratio CSS pixels, which the display then
+    // paints with exactly `side` of its own: one drawn pixel per real pixel.
+    // Compared loosely, since a fractional ratio cannot round-trip exactly in
+    // binary and the browser lays out in subpixels anyway.
+    assert.ok(Math.abs((side / ratio) * ratio - side) < 1e-9, where);
+    // The badge burnt into the frame lands near one CSS pixel per module once
+    // the preview scales it down; this has to clear that by a wide margin.
+    assert.ok(
+      unit / ratio >= 3,
+      `${where}: ${(unit / ratio).toFixed(2)} css px per module`,
+    );
+  }
+  // Never zero, however little room it is handed — it overflows instead of
+  // collapsing into a symbol no scanner could resolve, as the doc warns.
+  const cramped = qrCanvasSize(10, 177, 1);
+  assert.equal(cramped.unit, 1);
+  assert.ok(cramped.side > 10);
+  // The dialog code is a control among buttons, so it carries their weight
+  // rather than the badge's, which has a picture to sit on without glaring.
+  assert.ok(contrastRatio(qrBadgePalette.module, qrBadgePalette.screen) >= 10);
+  assert.ok(
+    relativeLuminance(qrBadgePalette.screen) >
+      relativeLuminance(qrBadgePalette.card),
+  );
+  // Within reach of the button it sits beside, and clear of plain white.
+  assert.ok(relativeLuminance(qrBadgePalette.screen) >= 0.5);
+  assert.ok(relativeLuminance(qrBadgePalette.screen) <= 0.72);
 });
 
 void test('an unusable badge size is refused rather than drawn illegibly', () => {

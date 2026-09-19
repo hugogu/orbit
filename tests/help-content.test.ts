@@ -44,12 +44,21 @@ void test('archive keeps app guidance compact behind concept hints', () => {
   assert.doesNotMatch(moons, /className="little-note"/);
 });
 
-void test('archive hints use one native tooltip without horizontal overflow', () => {
-  assert.match(hint, /title=\{label\}/);
+void test('archive hints open on tap without horizontal overflow', () => {
+  // A native title tooltip is unreachable on a touch screen, so the hint owns a
+  // popover that a tap, a hover and the keyboard can all open.
+  assert.doesNotMatch(hint, /title=\{label\}/);
+  assert.match(hint, /PopoverTrigger/);
+  assert.match(hint, /openOnHover/);
+  assert.match(hint, /PopoverContent/);
+  // The popup is portalled and capped, so it cannot widen the panel it sits in.
+  assert.match(styles, /\.concept-hint-popup \{[\s\S]*max-width: min\(/);
   assert.doesNotMatch(hint, /concept-tooltip/);
   assert.match(styles, /\.orbit-dialog \{[\s\S]*overflow-x: hidden;/);
   assert.match(styles, /\.mobile-details \{[\s\S]*overflow-x: hidden;/);
   assert.match(physicalFacts, /physical-facts-label/);
+  // A hint inside the summary must not also toggle the panel it labels.
+  assert.match(physicalFacts, /closest\('\.concept-hint'\)/);
   assert.match(styles, /\.physical-facts summary::marker/);
   assert.match(styles, /content: '▸  ';/);
   assert.doesNotMatch(styles, /\.concept-tooltip/);

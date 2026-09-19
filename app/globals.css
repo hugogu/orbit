@@ -595,6 +595,14 @@ body {
   gap: 20px;
   padding: 26px 0 36px;
 }
+.seo-page-byline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.seo-page-byline .github-link {
+  color: inherit;
+}
 @media (max-width: 1000px) {
   .seo-page-header,
   .seo-page-footer,
@@ -806,11 +814,6 @@ button:disabled {
 }
 .observatory[data-eclipse-active='true'] .mobile-info {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 0;
-  color: #c8b590;
 }
 @media (min-width: 901px) and (min-height: 601px) {
   .observatory[data-eclipse-active='true'] .scene-meta {
@@ -1188,13 +1191,31 @@ button:disabled {
   margin: 12px 0;
   color: #d9dfe9;
 }
-.catalog {
+/* Each rail stacks its panel above its tools and stays transparent to pointer
+   events, so the gaps between them never block the scene. */
+.side-rail {
   position: absolute;
-  left: 32px;
   top: 204px;
-  width: 206px;
-  padding: 16px 9px 0;
   max-height: calc(100dvh - 390px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+.side-rail > * {
+  pointer-events: auto;
+}
+.rail-start {
+  left: 32px;
+  width: 206px;
+}
+.rail-end {
+  right: 332px;
+  align-items: flex-end;
+}
+.catalog {
+  min-height: 0;
+  padding: 16px 9px 0;
   overflow-y: auto;
 }
 .body-branch-row {
@@ -1478,24 +1499,22 @@ button:disabled {
   margin: 13px 0 0;
 }
 .view-tools {
-  position: absolute;
-  right: 332px;
-  top: 204px;
   padding: 4px;
   display: flex;
   flex-direction: column;
   border-radius: 8px;
-}
-.view-tools > div {
-  height: 1px;
-  background: #ffffff12;
-  margin: 4px;
 }
 .bottom-area {
   position: absolute;
   bottom: 0;
   left: 32px;
   right: 32px;
+  /* The band above playback reaches over the side rails, so only the controls
+     themselves take the pointer; the rest belongs to the scene. */
+  pointer-events: none;
+}
+.bottom-area > * {
+  pointer-events: auto;
 }
 .scene-meta {
   display: flex;
@@ -1637,7 +1656,7 @@ button:disabled {
   .timeline .simulation-clock > span {
     margin: 0;
   }
-  .observatory .catalog {
+  .observatory .rail-start {
     bottom: 235px;
   }
 }
@@ -1680,8 +1699,15 @@ button:disabled {
   padding-top: 0;
   border-top: 0;
 }
+/* The planner stands at the head of the body column, above the panel that
+   answers it, instead of trailing the catalogue where it went unnoticed. Each
+   top below is that column's own top, less this button and the rails' gap. */
 .astronomy-button {
+  position: absolute;
+  right: 32px;
+  top: 152px;
   display: flex;
+  min-height: 40px;
   align-items: center;
   gap: 7px;
   color: #dfc99f;
@@ -1806,9 +1832,14 @@ button:disabled {
   font-size: 12px;
   color: #596578;
 }
-.footer > div {
+.footer-hints {
   display: flex;
   gap: 15px;
+}
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 .footer b {
   font-weight: 400;
@@ -1822,6 +1853,19 @@ button:disabled {
   background: transparent;
   color: #748092;
   font-size: 12px;
+}
+.github-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* A 15px mark needs padding of its own to reach a 24px pointer target. */
+  min-width: 24px;
+  min-height: 24px;
+  margin: 0 -4px;
+  color: #748092;
+}
+.github-link:hover {
+  color: #e7d2a7;
 }
 .detail-heading {
   display: flex;
@@ -1894,12 +1938,19 @@ button:disabled {
   width: 18px;
   height: 18px;
   color: #9aa9bc;
-  cursor: help;
+  cursor: pointer;
   outline: none;
   border: 0;
   padding: 0;
   background: transparent;
   font: inherit;
+}
+/* The hint's own text sizes the popup; the viewport caps it on a phone. */
+.concept-hint-popup {
+  max-width: min(260px, calc(100vw - 32px));
+  font-size: 13px;
+  line-height: 1.75;
+  color: #cbd3e0;
 }
 .concept-hint:hover,
 .concept-hint:focus-visible {
@@ -2162,6 +2213,32 @@ button:disabled {
   color: #bfccdc;
   font-size: 13px;
 }
+.share-scan {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 13px;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  background: #ffffff05;
+}
+.share-scan canvas {
+  display: block;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.share-scan p {
+  margin: 0;
+  color: #9fb0c4;
+  font-size: 13px;
+  line-height: 1.7;
+}
+/* On a phone the code would be scanned with the device already holding it. */
+@media (max-width: 620px) {
+  .share-scan {
+    display: none;
+  }
+}
 .share-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2171,7 +2248,6 @@ button:disabled {
   flex: 1 1 140px;
 }
 .share-actions .primary-action {
-  flex-basis: 100%;
   justify-content: center;
   gap: 10px;
 }
@@ -2183,8 +2259,30 @@ button:disabled {
   font-size: 12px;
   color: #97b9a6;
 }
+.share-link-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.share-copy {
+  flex-shrink: 0;
+  width: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffffff18;
+  border-radius: 8px;
+  background: #ffffff06;
+  color: #bfccdc;
+  cursor: pointer;
+}
+.share-copy:hover {
+  background: #ffffff10;
+  color: #ead4ac;
+}
 .share-link {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   border: 1px solid #ffffff18;
   border-radius: 8px;
   background: #ffffff06;
@@ -2439,6 +2537,13 @@ button:disabled {
 }
 .mobile-info {
   display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  min-height: 40px;
+  border-radius: 8px;
+  color: #cdb88f;
+  font-size: 12px;
 }
 .mobile-details {
   max-height: 82svh;
@@ -2475,7 +2580,7 @@ button:disabled {
   .topbar {
     inset-inline: 44px;
   }
-  .catalog {
+  .rail-start {
     left: 44px;
     width: 226px;
   }
@@ -2483,10 +2588,13 @@ button:disabled {
     right: 44px;
     width: 302px;
   }
+  .astronomy-button {
+    right: 44px;
+  }
   .scene-caption {
     left: 44px;
   }
-  .view-tools {
+  .rail-end {
     right: 366px;
   }
   .bottom-area {
@@ -2498,10 +2606,12 @@ button:disabled {
   }
 }
 @media (max-height: 850px) and (min-width: 901px) {
-  .catalog,
-  .info-panel,
-  .view-tools {
+  .side-rail,
+  .info-panel {
     top: 173px;
+  }
+  .astronomy-button {
+    top: 121px;
   }
   .scene-caption {
     top: 104px;
@@ -2543,7 +2653,7 @@ button:disabled {
   }
 }
 @media (max-width: 1100px) {
-  .catalog {
+  .rail-start {
     width: 180px;
     left: 22px;
   }
@@ -2552,13 +2662,16 @@ button:disabled {
     width: 242px;
     padding: 19px;
   }
+  .astronomy-button {
+    right: 22px;
+  }
   .body-option {
     gap: 8px;
   }
   .body-option small {
     display: none;
   }
-  .view-tools {
+  .rail-end {
     right: 280px;
   }
   .topbar {
@@ -2602,13 +2715,17 @@ button:disabled {
     display: none;
   }
   .view-tools {
-    right: 20px;
-    top: 160px;
+    flex-direction: row;
   }
-  .catalog {
-    left: 20px;
+  .side-rail {
     top: 186px;
+  }
+  .rail-start {
+    left: 20px;
     width: 166px;
+  }
+  .rail-end {
+    right: 20px;
   }
   .scene-caption {
     left: 20px;
@@ -2625,12 +2742,10 @@ button:disabled {
   }
   .mobile-info {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 0;
-    color: #cdb88f;
-    font-size: 12px;
+  }
+  .astronomy-button {
+    right: 20px;
+    top: 134px;
   }
   .scene-meta > span:nth-child(2) {
     font-size: 12px;
@@ -2651,7 +2766,7 @@ button:disabled {
     min-width: 100px;
     padding-left: 15px;
   }
-  .footer > div {
+  .footer-hints {
     gap: 8px;
   }
   .reset-speed {
@@ -2659,9 +2774,10 @@ button:disabled {
   }
 }
 @media (min-width: 601px) and (max-width: 900px) {
-  .catalog {
+  .rail-start {
     max-height: calc(100svh - 410px);
-    overflow-y: auto;
+  }
+  .catalog {
     scrollbar-width: thin;
     scrollbar-color: #394250 transparent;
   }
@@ -2732,12 +2848,13 @@ button:disabled {
     font-size: 17px;
     margin-top: 8px;
   }
-  .catalog {
-    top: auto;
+  .rail-start {
     bottom: 185px;
     left: 16px;
     right: 16px;
     width: auto;
+  }
+  .catalog {
     display: flex;
     overflow-x: auto;
     scrollbar-width: none;
@@ -2771,9 +2888,10 @@ button:disabled {
   .region-option small {
     display: none;
   }
-  .view-tools {
-    top: 139px;
+  .rail-end {
     right: 16px;
+  }
+  .view-tools {
     padding: 3px;
   }
   .view-tools .icon-button {
@@ -2787,14 +2905,6 @@ button:disabled {
     left: 16px;
     right: 16px;
     padding-bottom: env(safe-area-inset-bottom);
-  }
-  .scene-meta {
-    margin-bottom: 10px;
-    gap: 8px;
-    font-size: 12px;
-  }
-  .scale-status {
-    display: none;
   }
   .timeline {
     display: grid;
@@ -2844,7 +2954,7 @@ button:disabled {
     justify-content: center;
     font-size: 12px;
   }
-  .footer > div {
+  .footer-hints {
     display: none;
   }
   .footer button {
@@ -2934,13 +3044,23 @@ button:disabled {
     width: 44px;
     height: 44px;
   }
-  .observatory .catalog {
-    top: 108px;
+  .observatory .side-rail {
+    top: 102px;
+    max-height: none;
+    gap: 6px;
+  }
+  .observatory .rail-start {
     bottom: auto;
     left: max(12px, env(safe-area-inset-left));
-    right: auto;
+    right: 164px;
     width: auto;
-    max-height: 48px;
+    align-items: flex-start;
+  }
+  .observatory .rail-end {
+    right: max(12px, env(safe-area-inset-right));
+  }
+  .observatory .catalog {
+    max-height: 40px;
     padding: 0;
     border-radius: 8px;
   }
@@ -2949,14 +3069,14 @@ button:disabled {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 44px;
+    min-height: 38px;
     width: auto;
     padding: 0 10px;
     font-size: 12px;
     color: #dfc58f;
   }
   .observatory .catalog-regions {
-    right: 164px;
+    align-self: stretch;
     display: flex;
     overflow-x: auto;
     gap: 4px;
@@ -2964,7 +3084,7 @@ button:disabled {
   .catalog-regions .region-option {
     flex: 0 0 auto;
     width: auto;
-    min-height: 44px;
+    min-height: 38px;
     padding: 8px;
     font-size: 12px;
   }
@@ -2973,18 +3093,22 @@ button:disabled {
   .catalog-regions svg {
     display: none;
   }
+  /* Every row on a phone is one control height tall, so a row reads as a row
+     however its two sides are built. */
+  .astronomy-button {
+    left: max(12px, env(safe-area-inset-left));
+    right: auto;
+    top: 148px;
+    min-height: 40px;
+    justify-content: center;
+  }
   .view-tools {
-    top: 108px;
-    right: max(12px, env(safe-area-inset-right));
     flex-direction: row;
     padding: 0;
   }
-  .view-tools > div {
-    display: none;
-  }
   .view-tools .icon-button {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
   }
   .bottom-area {
     left: max(12px, env(safe-area-inset-left));
@@ -2992,32 +3116,19 @@ button:disabled {
     bottom: max(8px, env(safe-area-inset-bottom));
     padding: 0;
   }
-  .scene-meta {
-    min-height: 36px;
-    margin-bottom: 4px;
-    gap: 8px;
-  }
-  .scene-meta > span:first-child {
-    min-width: 0;
-    font-size: 11px;
-  }
-  .scene-meta > span:nth-child(2),
+  .scene-meta,
   .footer {
     display: none;
   }
   .mobile-info {
     display: flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 36px;
-    flex-shrink: 0;
-    font-size: 12px;
+    min-height: 40px;
   }
   .timeline {
     display: grid;
     grid-template-columns: minmax(105px, 1fr) minmax(100px, 1fr) 44px;
-    gap: 2px 8px;
-    padding: 8px 10px;
+    gap: 12px 8px;
+    padding: 6px 10px 8px;
   }
   .timeline .playback {
     grid-column: 1;
@@ -3041,8 +3152,9 @@ button:disabled {
   .timeline .speed-control {
     grid-column: 1 / -1;
     grid-row: 2;
-    padding: 6px 2px;
-    min-height: 28px;
+    /* The thumb overhangs the track, so the row keeps its own top padding. */
+    padding: 6px 2px 0;
+    min-height: 20px;
   }
   .timeline .simulation-clock {
     grid-column: 2;
@@ -3093,6 +3205,34 @@ button:disabled {
     display: block;
   }
 }
+/* A portrait phone stacks the tabs on their own row and leaves its right half
+   empty, so the camera pair rides up beside them and the facts button keeps the
+   catalogue's line. The header actions end where the tab row starts, which is
+   what fixes the pair's top rather than centring it on the tabs. The tabs give
+   up some padding to share the row, and are capped short of the pair so a
+   longer locale scrolls its own labels instead of running into them. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .observatory .rail-end {
+    top: 56px;
+    gap: 6px;
+  }
+  .rail-end .view-tools {
+    order: -1;
+  }
+  .topbar [data-slot='tabs'] {
+    max-width: calc(100% - 106px);
+  }
+  .view-tabs {
+    height: 40px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .view-tabs button {
+    flex: 0 0 auto;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+}
 /* Marker text is absolutely positioned, so the track has to be wide enough to
    keep neighbouring labels apart. The widest locale needs ~805px of track for
    all nine at the base size and ~680px once they shrink; below that only the
@@ -3129,25 +3269,11 @@ button:disabled {
     font-size: 12px;
     padding: 6px 10px;
   }
-  .observatory .catalog,
-  .view-tools {
+  .observatory .side-rail {
     top: 64px;
   }
-  .bottom-area {
-    display: grid;
-    grid-template-columns: minmax(130px, 1fr) minmax(0, 2fr);
-    align-items: end;
-    gap: 16px;
-  }
-  .scene-meta {
-    align-self: end;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 0 12px;
-    margin: 0;
-  }
-  .scene-meta > span:first-child {
-    flex-basis: 100%;
+  .observatory .astronomy-button {
+    top: 110px;
   }
   .timeline {
     grid-template-columns: auto minmax(90px, 1fr) auto 44px;
@@ -3176,11 +3302,15 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
-/* Panels stay clear of playback at every desktop height. */
+/* Panels stay clear of playback at every desktop height. The rail carries the
+   cap so the launcher stays put and the catalogue scrolls inside what is left. */
 @media (min-width: 901px) and (min-height: 601px) {
-  .catalog,
+  .side-rail,
   .info-panel {
     max-height: calc(100svh - 385px);
+  }
+  .catalog,
+  .info-panel {
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #394250 transparent;
@@ -3211,15 +3341,16 @@ button:disabled {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 40px;
-  padding: 0 10px;
-  border: 1px solid #ffffff20;
-  border-radius: 7px;
-  color: #dfc99d;
-  background: #10151dcc;
-  font-size: 14px;
-  white-space: nowrap;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 6px;
+  color: #949fae;
+  background: transparent;
+}
+.language-picker:hover {
+  background: #ffffff0b;
+  color: #ead4ac;
 }
 .language-picker:focus-within {
   outline: 2px solid #dfc99d;
@@ -3235,9 +3366,6 @@ button:disabled {
 .language-picker option {
   color: #eee;
   background: #10151d;
-}
-.language-short {
-  display: none;
 }
 html:lang(en) .brand i,
 html:lang(ja) .brand i {
@@ -3263,12 +3391,6 @@ html:lang(en) .moon-children button > span:last-child {
   line-height: 1.6;
 }
 @media (max-width: 1250px) {
-  .language-name {
-    display: none;
-  }
-  .language-short {
-    display: inline;
-  }
   .header-actions {
     gap: 6px;
   }
@@ -3295,12 +3417,8 @@ html:lang(en) .moon-children button > span:last-child {
 }
 @media (max-width: 600px), (orientation: landscape) and (max-height: 600px) {
   .language-picker {
-    min-height: 44px;
-    padding: 0 7px;
-    gap: 5px;
-  }
-  .language-picker svg {
-    width: 14px;
+    width: 44px;
+    height: 44px;
   }
   html:lang(en) .scale-status {
     max-width: 210px;
@@ -3319,16 +3437,6 @@ html:lang(en) .moon-children button > span:last-child {
   }
   .view-tabs button {
     padding-inline: 7px;
-  }
-}
-@media (max-width: 420px) {
-  .astronomy-button {
-    width: 44px;
-    min-height: 44px;
-    justify-content: center;
-    padding: 0;
-    font-size: 0;
-    gap: 0;
   }
 }
 @media (orientation: landscape) and (max-height: 600px) and (min-width: 650px) {

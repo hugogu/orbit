@@ -162,9 +162,11 @@ function BodyTree({
 export default function BodyNavigation({
   selected,
   onSelect,
+  label,
 }: {
   selected: string | null;
   onSelect: (id: string) => void;
+  label?: string | null;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -178,8 +180,13 @@ export default function BodyNavigation({
           onSelect={onSelect}
         />
       </div>
-      <button className="mobile-body-picker" onClick={() => setOpen(true)}>
-        <Orbit size={18} /> {t('天体导航')}
+      <button
+        className="mobile-body-picker"
+        aria-label={t('天体导航')}
+        onClick={() => setOpen(true)}
+      >
+        <Orbit size={18} />
+        <span>{label ?? t('天体导航')}</span>
         <ChevronDown size={16} />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
