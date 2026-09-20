@@ -1,5 +1,6 @@
 import { comets, type Comet } from './comets';
 import { asteroids, type Asteroid } from './asteroids';
+import { eventCategory, eventTopics, type EventTopic } from './event-guide';
 import { languages, localePath, translator, type Locale } from './i18n';
 import { orbitingMoons, type OrbitingMoon } from './moon-orbits';
 import { bodies, type Body } from './solar';
@@ -70,9 +71,27 @@ export function bodyDetailsPath(locale: Locale, id: string) {
   return `/${localePath(locale)}/bodies/${encodeURIComponent(id)}`;
 }
 
+/** The sky-event guide: one crawlable index plus one page per event concept. */
+export function eventsIndexPath(locale: Locale) {
+  return `/${localePath(locale)}/events`;
+}
+
+export function eventDetailsPath(locale: Locale, id: string) {
+  return `/${localePath(locale)}/events/${encodeURIComponent(id)}`;
+}
+
 export function profileTitle(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
   return t('{{name}}：结构、轨道与探索', { name: t(entry.data.name) });
+}
+
+export function eventsIndexTitle(locale: Locale) {
+  return translator(locale)('天象事件：常见天文现象指南');
+}
+
+export function eventTitle(topic: EventTopic, locale: Locale) {
+  const t = translator(locale);
+  return t('{{name}}：成因、周期与观测', { name: t(topic.name) });
 }
 
 /** Build-time generated social preview for one localized profile. */
@@ -128,6 +147,43 @@ function profileImageMetadata(
   };
 }
 
+function organizationNode() {
+  return {
+    '@type': 'Organization',
+    '@id': `${siteOrigin}#organization`,
+    name: seoSiteName,
+    url: siteOrigin,
+    logo: {
+      '@type': 'ImageObject',
+      url: absoluteSiteUrl('/og-image.png'),
+    },
+  };
+}
+
+function websiteNode(locale: Locale) {
+  return {
+    '@type': 'WebSite',
+    '@id': `${siteOrigin}#website`,
+    name: seoSiteName,
+    url: absoluteSiteUrl('/'),
+    publisher: { '@id': `${siteOrigin}#organization` },
+    inLanguage: languages[locale].intl,
+  };
+}
+
+function breadcrumbNode(id: string, trail: { name: string; item: string }[]) {
+  return {
+    '@type': 'BreadcrumbList',
+    '@id': id,
+    itemListElement: trail.map((step, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: step.name,
+      item: step.item,
+    })),
+  };
+}
+
 /** Structured data shared by every crawlable celestial profile. */
 export function profileJsonLd({
   entry,
@@ -152,24 +208,8 @@ export function profileJsonLd({
   return {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'Organization',
-        '@id': organizationId,
-        name: seoSiteName,
-        url: siteOrigin,
-        logo: {
-          '@type': 'ImageObject',
-          url: absoluteSiteUrl('/og-image.png'),
-        },
-      },
-      {
-        '@type': 'WebSite',
-        '@id': websiteId,
-        name: seoSiteName,
-        url: absoluteSiteUrl('/'),
-        publisher: { '@id': organizationId },
-        inLanguage: languages[locale].intl,
-      },
+      organizationNode(),
+      websiteNode(locale),
       {
         '@type': 'AstronomicalBody',
         '@id': celestialId,
@@ -180,24 +220,10 @@ export function profileJsonLd({
         image,
         url: canonical,
       },
-      {
-        '@type': 'BreadcrumbList',
-        '@id': breadcrumbId,
-        itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: 'ORBIT',
-            item: absoluteSiteUrl('/'),
-          },
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name,
-            item: canonical,
-          },
-        ],
-      },
+      breadcrumbNode(breadcrumbId, [
+        { name: 'ORBIT', item: absoluteSiteUrl('/') },
+        { name, item: canonical },
+      ]),
       {
         '@type': 'LearningResource',
         '@id': `${canonical}#learning-resource`,
@@ -237,13 +263,7 @@ export function homeJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'Organization',
-        '@id': organizationId,
-        name: seoSiteName,
-        url: siteOrigin,
-        logo: { '@type': 'ImageObject', url: absoluteSiteUrl('/og-image.png') },
-      },
+      organizationNode(),
       {
         '@type': 'WebSite',
         '@id': websiteId,
@@ -264,6 +284,145 @@ export function homeJsonLd() {
         inLanguage: seoLocales.map((locale) => languages[locale].intl),
         provider: { '@id': organizationId },
         about: { '@type': 'AstronomicalBody', name: 'Solar System' },
+      },
+    ],
+  };
+}
+
+/** The term set both event pages point at, so a topic declares its collection. */
+function eventTermSet(locale: Locale) {
+  const index = absoluteSiteUrl(eventsIndexPath(locale));
+  return {
+    '@type': 'DefinedTermSet',
+    '@id': `${index}#event-guide`,
+    name: eventsIndexTitle(locale),
+    url: index,
+  };
+}
+
+function eventTermNode(topic: EventTopic, locale: Locale, id: string) {
+  const t = translator(locale);
+  return {
+    '@type': 'DefinedTerm',
+    '@id': id,
+    name: t(topic.name),
+    alternateName: topic.en,
+    identifier: topic.id,
+    termCode: topic.id,
+    description: t(topic.summary),
+    url: absoluteSiteUrl(eventDetailsPath(locale, topic.id)),
+    inDefinedTermSet: {
+      '@id': `${absoluteSiteUrl(eventsIndexPath(locale))}#event-guide`,
+    },
+  };
+}
+
+/** Structured data for the sky-event guide index. */
+export function eventsIndexJsonLd({
+  locale,
+  title,
+  description,
+  canonical,
+}: {
+  locale: Locale;
+  title: string;
+  description: string;
+  canonical: string;
+}) {
+  const t = translator(locale);
+  const breadcrumbId = `${canonical}#breadcrumb`;
+  const termSet = eventTermSet(locale);
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      organizationNode(),
+      websiteNode(locale),
+      breadcrumbNode(breadcrumbId, [
+        { name: 'ORBIT', item: absoluteSiteUrl('/') },
+        { name: t('天象事件'), item: canonical },
+      ]),
+      {
+        ...termSet,
+        description,
+        hasDefinedTerm: eventTopics.map((topic) => ({
+          '@type': 'DefinedTerm',
+          name: t(topic.name),
+          alternateName: topic.en,
+          termCode: topic.id,
+          description: t(topic.summary),
+          url: absoluteSiteUrl(eventDetailsPath(locale, topic.id)),
+        })),
+      },
+      {
+        '@type': 'CollectionPage',
+        '@id': `${canonical}#webpage`,
+        url: canonical,
+        name: title,
+        description,
+        inLanguage: languages[locale].intl,
+        isPartOf: { '@id': `${siteOrigin}#website` },
+        mainEntity: { '@id': termSet['@id'] },
+        breadcrumb: { '@id': breadcrumbId },
+      },
+    ],
+  };
+}
+
+/** Structured data for one sky-event topic. */
+export function eventJsonLd({
+  topic,
+  locale,
+  title,
+  description,
+  canonical,
+}: {
+  topic: EventTopic;
+  locale: Locale;
+  title: string;
+  description: string;
+  canonical: string;
+}) {
+  const t = translator(locale);
+  const organizationId = `${siteOrigin}#organization`;
+  const termId = `${canonical}#sky-event`;
+  const breadcrumbId = `${canonical}#breadcrumb`;
+  const image = absoluteSiteUrl('/og-image.png');
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      organizationNode(),
+      websiteNode(locale),
+      eventTermNode(topic, locale, termId),
+      breadcrumbNode(breadcrumbId, [
+        { name: 'ORBIT', item: absoluteSiteUrl('/') },
+        { name: t('天象事件'), item: absoluteSiteUrl(eventsIndexPath(locale)) },
+        { name: t(topic.name), item: canonical },
+      ]),
+      {
+        '@type': 'LearningResource',
+        '@id': `${canonical}#learning-resource`,
+        url: canonical,
+        name: title,
+        description,
+        learningResourceType: 'sky event guide',
+        educationalLevel: 'Beginner',
+        inLanguage: languages[locale].intl,
+        provider: { '@id': organizationId },
+        author: { '@id': organizationId },
+        about: { '@id': termId },
+        teaches: t(eventCategory(topic.category).name),
+        image,
+      },
+      {
+        '@type': 'WebPage',
+        '@id': `${canonical}#webpage`,
+        url: canonical,
+        name: title,
+        description,
+        inLanguage: languages[locale].intl,
+        isPartOf: { '@id': `${siteOrigin}#website` },
+        about: { '@id': termId },
+        breadcrumb: { '@id': breadcrumbId },
       },
     ],
   };

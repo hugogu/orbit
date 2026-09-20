@@ -68,11 +68,20 @@ void test('PWA routes exclude APIs, analytics, mutations and RSC responses', () 
     ['ja-JP', 'ja'],
   ]) {
     assert.ok(isProfilePath(`/${prefix}/bodies/earth`));
+    // The sky-event guide is cached the same way as a body profile.
+    assert.ok(isProfilePath(`/${prefix}/events`));
+    assert.ok(isProfilePath(`/${prefix}/events/perseids`));
     assert.equal(
       offlinePagePath(`/${prefix}/bodies/earth`),
       `/offline/${locale}.html`,
     );
+    assert.equal(
+      offlinePagePath(`/${prefix}/events/perseids`),
+      `/offline/${locale}.html`,
+    );
   }
+  for (const path of ['/events', '/zh-CN/events/', '/zh-CN/eventsx'])
+    assert.equal(isProfilePath(path), path === '/zh-CN/events/', path);
 });
 
 void test('offline pages use complete translations and link back to the simulator', () => {

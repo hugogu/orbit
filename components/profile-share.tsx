@@ -7,10 +7,13 @@ export default function ProfileShare({
   locale,
   title,
   url,
+  label,
 }: {
   locale: Locale;
   title: string;
   url: string;
+  /** Already translated; pages that are not body profiles name their own. */
+  label?: string;
 }) {
   const t = translator(locale);
   const [status, setStatus] = useState<'idle' | 'copied' | 'manual'>('idle');
@@ -37,7 +40,7 @@ export default function ProfileShare({
         className="seo-secondary-action"
         onClick={() => void share()}
       >
-        {t('分享档案')}
+        {label ?? t('分享档案')}
       </button>
       <output aria-live="polite" aria-atomic="true">
         {status === 'copied'

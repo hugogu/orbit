@@ -586,6 +586,153 @@ body {
 .seo-related a:hover {
   color: #e6cfa2;
 }
+
+/* The sky-event guide: a typographic index and topic pages without portraits. */
+.event-cover {
+  max-width: 760px;
+  padding: 48px 0 4px;
+}
+.event-cover .seo-lead {
+  max-width: 640px;
+}
+.event-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-bottom: 46px;
+}
+.event-toc a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  border: 1px solid #ffffff1c;
+  border-radius: 999px;
+  color: #b9c5d6;
+  font-size: 14px;
+  padding: 9px 16px;
+}
+.event-toc a:hover {
+  border-color: #d9c49a80;
+  color: #f1ddb8;
+}
+.event-toc span {
+  color: #5f7290;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.event-toc small {
+  color: #8d7a58;
+  font-size: 12px;
+}
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+}
+.event-grid a {
+  display: block;
+  height: 100%;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  background: #ffffff05;
+  padding: 20px;
+}
+.event-grid a:hover {
+  border-color: #d9c49a5c;
+  background: #d9c49a0a;
+}
+.event-grid h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  color: #e6d9bf;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+.event-grid h3 span {
+  color: #6f8099;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.event-season {
+  color: #a3906c;
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+.event-summary {
+  color: #a7b3c5;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 12px 0 0;
+}
+.event-observing {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.event-observing li {
+  position: relative;
+  color: #b9c3d1;
+  font-size: 16px;
+  line-height: 1.9;
+  padding-left: 26px;
+}
+.event-observing li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 13px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c3ab81;
+}
+.event-related {
+  margin-top: 40px;
+  border-top: 1px solid #ffffff18;
+  padding-top: 35px;
+}
+.event-related h2 {
+  font-size: 25px;
+  font-weight: 400;
+}
+.event-related ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 25px 0 0;
+  padding: 0;
+}
+.event-related a {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  color: #c4cddb;
+  padding: 16px 18px;
+}
+.event-related strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+.event-related small {
+  color: #7f8ea5;
+  font-size: 12px;
+}
+.event-related a:hover {
+  border-color: #d9c49a5c;
+  color: #e6cfa2;
+}
 .seo-page-footer {
   border-top: 1px solid #ffffff16;
   color: #788ba7;
@@ -729,6 +876,19 @@ body {
   }
   .seo-related ul {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .event-cover {
+    padding-top: 30px;
+  }
+  .event-toc {
+    margin-bottom: 30px;
+  }
+  .event-grid,
+  .event-related ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .event-observing li {
+    font-size: 15px;
   }
   .seo-page-footer {
     flex-wrap: wrap;
@@ -1812,10 +1972,14 @@ button:disabled {
 /* The planner stands at the head of the body column, above the panel that
    answers it, instead of trailing the catalogue where it went unnoticed. Each
    top below is that column's own top, less this button and the rails' gap. */
-.astronomy-button {
+.astronomy-actions {
   position: absolute;
   right: 32px;
   top: 152px;
+  display: flex;
+  gap: 8px;
+}
+.astronomy-button {
   display: flex;
   min-height: 40px;
   align-items: center;
@@ -2786,7 +2950,7 @@ button:disabled {
     right: 44px;
     width: 302px;
   }
-  .astronomy-button {
+  .astronomy-actions {
     right: 44px;
   }
   .scene-caption {
@@ -2808,7 +2972,7 @@ button:disabled {
   .info-panel {
     top: 173px;
   }
-  .astronomy-button {
+  .astronomy-actions {
     top: 121px;
   }
   .scene-caption {
@@ -2860,7 +3024,7 @@ button:disabled {
     width: 242px;
     padding: 19px;
   }
-  .astronomy-button {
+  .astronomy-actions {
     right: 22px;
   }
   .body-option {
@@ -2941,7 +3105,7 @@ button:disabled {
   .mobile-info {
     display: flex;
   }
-  .astronomy-button {
+  .astronomy-actions {
     right: 20px;
     top: 134px;
   }
@@ -3293,10 +3457,12 @@ button:disabled {
   }
   /* Every row on a phone is one control height tall, so a row reads as a row
      however its two sides are built. */
-  .astronomy-button {
+  .astronomy-actions {
     left: max(12px, env(safe-area-inset-left));
     right: auto;
     top: 148px;
+  }
+  .astronomy-button {
     min-height: 40px;
     justify-content: center;
   }
@@ -3477,7 +3643,7 @@ button:disabled {
   .observatory .side-rail {
     top: 64px;
   }
-  .observatory .astronomy-button {
+  .observatory .astronomy-actions {
     top: 110px;
   }
   .timeline {

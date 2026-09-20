@@ -26,6 +26,7 @@ import {
 import { moonSystems } from '../lib/moons';
 import { profileContent } from '../lib/profile-content';
 import { curiosities } from '../lib/curiosities';
+import { eventCategories, eventTopics } from '../lib/event-guide';
 import CuriosityCard from '../components/curiosity-card';
 import MoonDetails from '../components/moon-details';
 import BodyNavigation from '../components/body-navigation';
@@ -104,6 +105,8 @@ void test('all educational data and literal translation keys have catalog entrie
     moonSystems,
     curiosities,
     profileContent,
+    eventCategories,
+    eventTopics,
   ].forEach(check);
   const scan = (directory: string) => {
     for (const item of fs.readdirSync(directory, { withFileTypes: true })) {

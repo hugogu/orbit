@@ -6,6 +6,12 @@ import {
   bodyDetailsPath,
   catalogEntries,
   entryImagePath,
+  eventDetailsPath,
+  eventJsonLd,
+  eventsIndexJsonLd,
+  eventsIndexPath,
+  eventsIndexTitle,
+  eventTitle,
   explorerPath,
   homeJsonLd,
   normalizeSiteOrigin,
@@ -17,6 +23,7 @@ import {
   seoSiteName,
   seoLocales,
 } from '../lib/seo';
+import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
 import { portraitCredit } from '../lib/profile-images';
 import { localePath, translator } from '../lib/i18n';
 import { renderSitemap, sitemapEntries } from '../lib/sitemap';
@@ -60,6 +67,14 @@ const profileShare = readFileSync(
 );
 const notFoundPage = readFileSync(
   new URL('../app/not-found.tsx', import.meta.url),
+  'utf8',
+);
+const eventsPage = readFileSync(
+  new URL('../app/_pages/events-page.tsx', import.meta.url),
+  'utf8',
+);
+const eventPage = readFileSync(
+  new URL('../app/_pages/event-page.tsx', import.meta.url),
   'utf8',
 );
 const vercelConfig = JSON.parse(
@@ -151,10 +166,11 @@ void test('profile JSON-LD describes the learning resource and breadcrumb graph'
   );
 });
 
-void test('sitemap repeats reciprocal hreflang links for every localized profile', () => {
+void test('sitemap repeats reciprocal hreflang links for every localized page', () => {
   const entries = sitemapEntries();
   const localized = entries.filter((entry) => entry.alternates);
-  assert.equal(localized.length, catalogEntries().length * seoLocales.length);
+  const routes = catalogEntries().length + eventTopics.length + 1;
+  assert.equal(localized.length, routes * seoLocales.length);
   assert.equal(
     new Set(
       localized.flatMap((entry) =>
@@ -172,6 +188,124 @@ void test('sitemap repeats reciprocal hreflang links for every localized profile
     (renderSitemap().match(/<xhtml:link /g) ?? []).length,
     localized.length * 4,
   );
+});
+
+void test('sky-event pages have unique localized URLs under a shared index', () => {
+  const ids = eventTopics.map((topic) => topic.id);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(eventsIndexPath('zh-CN'), '/zh-CN/events');
+  assert.equal(eventsIndexPath('en'), '/en-US/events');
+  assert.equal(eventDetailsPath('ja', 'geminids'), '/ja-JP/events/geminids');
+  for (const locale of seoLocales) {
+    const paths = ids.map((id) => eventDetailsPath(locale, id));
+    assert.equal(new Set(paths).size, ids.length);
+    assert.ok(
+      paths.every((path) => path.startsWith(`${eventsIndexPath(locale)}/`)),
+    );
+  }
+});
+
+void test('guide index JSON-LD collects every topic under one term set', () => {
+  const canonical = absoluteSiteUrl(eventsIndexPath('en'));
+  const nodes = eventsIndexJsonLd({
+    locale: 'en',
+    title: eventsIndexTitle('en'),
+    description: 'Sky events.',
+    canonical,
+  })['@graph'] as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    nodes.map((node) => node['@type']),
+    [
+      'Organization',
+      'WebSite',
+      'BreadcrumbList',
+      'DefinedTermSet',
+      'CollectionPage',
+    ],
+  );
+  const set = nodes.find((node) => node['@type'] === 'DefinedTermSet')!;
+  const terms = set.hasDefinedTerm as Array<Record<string, string>>;
+  assert.equal(terms.length, eventTopics.length);
+  assert.deepEqual(
+    terms.map((term) => term.url),
+    eventTopics.map((topic) =>
+      absoluteSiteUrl(eventDetailsPath('en', topic.id)),
+    ),
+  );
+  const page = nodes.find((node) => node['@type'] === 'CollectionPage')!;
+  assert.deepEqual(page.mainEntity, { '@id': set['@id'] });
+});
+
+void test('event JSON-LD breadcrumbs climb to the guide index, not the topic itself', () => {
+  const topic = eventTopic('perseids')!;
+  const canonical = absoluteSiteUrl(eventDetailsPath('en', topic.id));
+  const nodes = eventJsonLd({
+    topic,
+    locale: 'en',
+    title: eventTitle(topic, 'en'),
+    description: 'The Perseids.',
+    canonical,
+  })['@graph'] as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    nodes.map((node) => node['@type']),
+    [
+      'Organization',
+      'WebSite',
+      'DefinedTerm',
+      'BreadcrumbList',
+      'LearningResource',
+      'WebPage',
+    ],
+  );
+  const trail = nodes.find((node) => node['@type'] === 'BreadcrumbList')!
+    .itemListElement as Array<Record<string, string>>;
+  assert.deepEqual(
+    trail.map((step) => step.item),
+    [absoluteSiteUrl('/'), absoluteSiteUrl(eventsIndexPath('en')), canonical],
+  );
+  const term = nodes.find((node) => node['@type'] === 'DefinedTerm')!;
+  assert.equal(term.termCode, topic.id);
+  assert.deepEqual(term.inDefinedTermSet, {
+    '@id': `${absoluteSiteUrl(eventsIndexPath('en'))}#event-guide`,
+  });
+  const webpage = nodes.find((node) => node['@type'] === 'WebPage')!;
+  assert.deepEqual(webpage.about, { '@id': `${canonical}#sky-event` });
+});
+
+void test('guide titles read as plain names in every language', () => {
+  for (const locale of seoLocales) {
+    const t = translator(locale);
+    const indexTitle = eventsIndexTitle(locale);
+    assert.ok(indexTitle.trim().length > 0);
+    assert.doesNotMatch(indexTitle, /[/·→]\s*$/);
+    if (locale !== 'zh-CN')
+      assert.notEqual(indexTitle, eventsIndexTitle('zh-CN'));
+    if (locale === 'en') assert.doesNotMatch(indexTitle, /\p{Script=Han}/u);
+    for (const topic of eventTopics) {
+      const title = eventTitle(topic, locale);
+      assert.ok(title.includes(t(topic.name)), `${locale}: ${topic.id}`);
+      assert.doesNotMatch(title, /[/·→]\s*$/);
+      if (locale !== 'zh-CN') assert.notEqual(title, topic.name);
+      if (locale === 'en')
+        assert.doesNotMatch(title, /\p{Script=Han}/u, topic.id);
+    }
+    for (const category of eventCategories)
+      assert.ok(t(category.summary).trim().length > 0, category.id);
+  }
+});
+
+void test('guide routes render their own static params, metadata and structured data', () => {
+  assert.match(eventsPage, /generateStaticParams/);
+  assert.match(eventsPage, /eventsIndexJsonLd\(/);
+  assert.match(eventsPage, /dynamicParams = false/);
+  assert.match(eventPage, /generateStaticParams/);
+  assert.match(eventPage, /eventJsonLd\(/);
+  assert.match(eventPage, /dynamicParams = false/);
+  // The topic page must climb back to its own collection page.
+  assert.match(eventPage, /href=\{eventsIndexPath\(locale\)\}/);
+  // The explorer offers the guide beside the eclipse planner.
+  assert.match(homePage, /className="astronomy-actions"/);
+  assert.match(homePage, /href=\{eventsIndexPath\(locale\)\}/);
 });
 
 void test('explorer links keep the language and optional body selection', () => {
@@ -208,9 +342,15 @@ void test('shared root providers mount analytics for every route group', () => {
 void test('root layouts place the AdSense loader in each document head', () => {
   const headContent = (layout: string) =>
     layout.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? '';
-  assert.match(explorerLayout, /import GoogleAdSense from '\.\.\/\.\.\/components\/google-adsense'/);
+  assert.match(
+    explorerLayout,
+    /import GoogleAdSense from '\.\.\/\.\.\/components\/google-adsense'/,
+  );
   assert.match(headContent(explorerLayout), /<GoogleAdSense \/>/);
-  assert.match(localizedLayout, /import GoogleAdSense from '\.\.\/\.\.\/\.\.\/components\/google-adsense'/);
+  assert.match(
+    localizedLayout,
+    /import GoogleAdSense from '\.\.\/\.\.\/\.\.\/components\/google-adsense'/,
+  );
   assert.match(headContent(localizedLayout), /<GoogleAdSense \/>/);
 });
 
@@ -220,7 +360,10 @@ void test('AdSense loader uses the supplied client ID and cross-origin settings'
     'utf8',
   );
   assert.match(adSense, /ca-pub-8644095085401499/);
-  assert.match(adSense, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/);
+  assert.match(
+    adSense,
+    /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/,
+  );
   assert.match(adSense, /crossOrigin="anonymous"/);
   assert.match(adSense, /<script/);
 });

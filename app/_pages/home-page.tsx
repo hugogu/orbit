@@ -27,6 +27,7 @@ import {
   Info,
   CalendarDays,
   CalendarClock,
+  Sparkles,
   Share2,
   X,
 } from 'lucide-react';
@@ -110,7 +111,7 @@ import {
   savePreferences,
   type StoredPreferences,
 } from '@/lib/preferences';
-import { bodyDetailsPath } from '@/lib/seo';
+import { bodyDetailsPath, eventsIndexPath } from '@/lib/seo';
 import {
   DEFAULT_ORBIT_LINE_WIDTH,
   MAX_ORBIT_LINE_WIDTH,
@@ -926,15 +927,25 @@ export default function Home() {
           </div>
         </section>
       </div>
-      <button
-        className="astronomy-button"
-        aria-label={t('天象推演')}
-        title={t('天象推演')}
-        onClick={() => setAstronomy(true)}
-      >
-        <CalendarDays size={18} />
-        {t('天象推演')}
-      </button>
+      <div className="astronomy-actions">
+        <button
+          className="astronomy-button"
+          aria-label={t('天象推演')}
+          title={t('天象推演')}
+          onClick={() => setAstronomy(true)}
+        >
+          <CalendarDays size={18} />
+          {t('天象推演')}
+        </button>
+        <a
+          className="astronomy-button"
+          href={eventsIndexPath(locale)}
+          title={t('天象事件')}
+        >
+          <Sparkles size={18} />
+          {t('天象事件')}
+        </a>
+      </div>
       <aside className="info-panel glass">
         {tab === 'structure' && !body ? (
           <>

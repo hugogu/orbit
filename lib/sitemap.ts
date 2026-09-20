@@ -2,10 +2,13 @@ import {
   absoluteSiteUrl,
   bodyDetailsPath,
   catalogEntries,
+  eventDetailsPath,
+  eventsIndexPath,
   seoLocales,
   type CatalogEntry,
 } from './seo';
-import { defaultLocale, languages } from './i18n';
+import { eventTopics } from './event-guide';
+import { defaultLocale, languages, type Locale } from './i18n';
 
 export type SitemapAlternate = {
   hreflang: string;
@@ -17,26 +20,53 @@ export type SitemapEntry = {
   alternates?: SitemapAlternate[];
 };
 
-function alternateLinks(entry: CatalogEntry): SitemapAlternate[] {
+/** One crawlable document, addressed by the locale it is rendered in. */
+type LocalizedRoute = (locale: Locale) => string;
+
+function alternateLinks(route: LocalizedRoute): SitemapAlternate[] {
   return [
     ...seoLocales.map((locale) => ({
       hreflang: languages[locale].intl,
-      href: absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id)),
+      href: absoluteSiteUrl(route(locale)),
     })),
     {
       hreflang: 'x-default',
-      href: absoluteSiteUrl(bodyDetailsPath(defaultLocale, entry.data.id)),
+      href: absoluteSiteUrl(route(defaultLocale)),
     },
   ];
 }
 
-export function sitemapEntries(entries: CatalogEntry[] = catalogEntries()): SitemapEntry[] {
+function localizedRoutes(entries: CatalogEntry[]): LocalizedRoute[] {
+  return [
+    ...entries.map(
+      (entry): LocalizedRoute =>
+        (locale) =>
+          bodyDetailsPath(locale, entry.data.id),
+    ),
+    eventsIndexPath,
+    ...eventTopics.map(
+      (topic): LocalizedRoute =>
+        (locale) =>
+          eventDetailsPath(locale, topic.id),
+    ),
+  ];
+}
+
+export function sitemapEntries(
+  entries: CatalogEntry[] = catalogEntries(),
+): SitemapEntry[] {
+  // Each route's reciprocal hreflang set is the same in every locale, so it is
+  // built once and shared by that route's localized URLs.
+  const routes = localizedRoutes(entries).map((route) => ({
+    route,
+    alternates: alternateLinks(route),
+  }));
   return [
     { loc: absoluteSiteUrl('/') },
     ...seoLocales.flatMap((locale) =>
-      entries.map((entry) => ({
-        loc: absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id)),
-        alternates: alternateLinks(entry),
+      routes.map(({ route, alternates }) => ({
+        loc: absoluteSiteUrl(route(locale)),
+        alternates,
       })),
     ),
   ];

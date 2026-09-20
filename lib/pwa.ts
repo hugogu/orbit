@@ -37,8 +37,11 @@ export function isExplorerPath(pathname: string) {
   return pathname === '/' || pathname === '/index.html';
 }
 
+/** A statically exported content page: a body profile or the sky-event guide. */
 export function isProfilePath(pathname: string) {
-  return /^\/(zh-CN|en-US|ja-JP)\/bodies\/[a-z0-9-]+\/?$/.test(pathname);
+  return /^\/(zh-CN|en-US|ja-JP)\/(bodies\/[a-z0-9-]+|events(\/[a-z0-9-]+)?)\/?$/.test(
+    pathname,
+  );
 }
 
 export function isPwaAssetPath(pathname: string) {
