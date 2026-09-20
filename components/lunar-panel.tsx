@@ -62,12 +62,21 @@ export default function LunarPanel({
   // an effect that seeds state.
   useEffect(() => {
     if (!open) return;
+    // The flag belongs to this run of the effect rather than to a ref shared
+    // across runs: a development double-invoke puts the cleanup between two
+    // mounts, and a shared flag that is only ever cleared would discard the
+    // second seeding too.
+    let cancelled = false;
     queueMicrotask(() => {
+      if (cancelled) return;
       const start = monthForTime(time, location.utcOffset);
       setAnchor({ time, place: location, month: start });
       setMonth(start);
       setCount(QUARTER_LIST_SIZE);
     });
+    return () => {
+      cancelled = true;
+    };
     // The opening moment and place are deliberately a snapshot; see above.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);

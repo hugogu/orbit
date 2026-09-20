@@ -1212,11 +1212,6 @@ button:disabled {
    playback bar already owns and grows upward from there: collapsed it is a strip
    above the controls, and expanded it still leaves most of the globe visible. */
 @media (max-width: 900px), (max-height: 600px) {
-  /* No column to head here: the card joins the eclipse card's corner, and the
-     information panel stops reserving room above itself for it. */
-  .observatory[data-moon-card='true'] {
-    --moon-card-space: 0px;
-  }
   .eclipse-progress,
   .eclipse-retry {
     top: auto;
@@ -1719,6 +1714,15 @@ button:disabled {
    this stays exact. */
 .observatory[data-moon-card='true'] {
   --moon-card-space: 120px;
+}
+/* Wherever the card leaves the column for the playback bar's corner it stops
+   reserving room above the panel. This has to follow the rule above rather than
+   sit beside the card's own small-screen block: a media query adds no
+   specificity, so between two equal selectors the later one wins. */
+@media (max-width: 900px), (max-height: 600px) {
+  .observatory[data-moon-card='true'] {
+    --moon-card-space: 0px;
+  }
 }
 .info-panel {
   position: absolute;
@@ -3238,7 +3242,11 @@ button:disabled {
   }
 }
 @media (max-height: 850px) and (min-width: 901px) {
-  .side-rail,
+  .side-rail {
+    top: 173px;
+  }
+  /* Only the column the card heads gives up room for it; the catalogue on the
+     opposite side of the scene keeps its own top. */
   .info-panel {
     top: calc(173px + var(--moon-card-space));
   }
@@ -3983,7 +3991,9 @@ button:disabled {
 /* Panels stay clear of playback at every desktop height. The rail carries the
    cap so the launcher stays put and the catalogue scrolls inside what is left. */
 @media (min-width: 901px) and (min-height: 601px) {
-  .side-rail,
+  .side-rail {
+    max-height: calc(100svh - 385px);
+  }
   .info-panel {
     max-height: calc(100svh - 385px - var(--moon-card-space));
   }
