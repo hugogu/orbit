@@ -27,8 +27,15 @@ import { moonSystems } from '../lib/moons';
 import { profileContent } from '../lib/profile-content';
 import { curiosities } from '../lib/curiosities';
 import { eventCategories, eventTopics } from '../lib/event-guide';
+import {
+  compassPoints,
+  observingNotes,
+  phaseNames,
+  quarterNames,
+} from '../lib/lunar-phase';
 import CuriosityCard from '../components/curiosity-card';
 import MoonDetails from '../components/moon-details';
+import MoonPhasePanel from '../components/moon-phase-panel';
 import BodyNavigation from '../components/body-navigation';
 import { orbitingMoons } from '../lib/moon-orbits';
 
@@ -107,6 +114,10 @@ void test('all educational data and literal translation keys have catalog entrie
     profileContent,
     eventCategories,
     eventTopics,
+    phaseNames,
+    quarterNames,
+    compassPoints,
+    observingNotes,
   ].forEach(check);
   const scan = (directory: string) => {
     for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -204,6 +215,37 @@ void test('moon profiles and their navigation use localized names and keep stabl
         ).slice(3, -4),
       ),
     );
+    if (locale === 'en') assert.doesNotMatch(markup, /\p{Script=Han}/u);
+  }
+});
+
+void test('the Moon phase card is fully translated, including its computed labels', () => {
+  // Every phase name, compass point and unit in the card comes from the
+  // calculation rather than from a literal, so the rendered markup is what
+  // proves they are all translated.
+  const location = {
+    latitude: 39.9042,
+    longitude: 116.4074,
+    height: 43,
+    utcOffset: 8,
+  };
+  for (const locale of codes) {
+    const t = translator(locale);
+    const markup = renderToStaticMarkup(
+      createElement(
+        I18nProvider,
+        { initialLocale: locale },
+        createElement(MoonPhasePanel, {
+          time: Date.parse('2026-09-20T12:00:00Z'),
+          location,
+          locationSource: 'manual' as const,
+          onLocationChange() {},
+        }),
+      ),
+    );
+    assert.ok(markup.includes(t('今晚观月窗口')), locale);
+    assert.ok(markup.includes(t('月相日历与四相时刻')), locale);
+    assert.doesNotMatch(markup, /{{|undefined|NaN|Infinity/, locale);
     if (locale === 'en') assert.doesNotMatch(markup, /\p{Script=Han}/u);
   }
 });

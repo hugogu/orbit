@@ -92,7 +92,8 @@ export type EclipsePage = {
   next: number | null;
 };
 export type EclipseList = { solar: EclipsePage; lunar: EclipsePage };
-const kinds: Record<string, string> = {
+/** Eclipse classifications, shared with the lunar almanac's calendar marks. */
+export const eclipseKinds: Record<string, string> = {
   total: '全食',
   annular: '环食',
   partial: '偏食',
@@ -102,7 +103,7 @@ export function validateEclipseQuery(q: EclipseQuery) {
   if (!validTime(q.start)) throw new Error('请选择 1700—2200 年内的有效日期。');
   validateLocation(q);
 }
-function validateLocation(q: SkyLocation) {
+export function validateLocation(q: SkyLocation) {
   for (const [value, min, max] of [
     [q.latitude, -90, 90],
     [q.longitude, -180, 180],
@@ -171,7 +172,7 @@ function localSolarVisible(e: LocalSolarEclipseInfo, observer: Observer) {
 }
 function localCircumstances(e: LocalSolarEclipseInfo): LocalCircumstances {
   return {
-    kind: '日' + kinds[e.kind],
+    kind: '日' + eclipseKinds[e.kind],
     peak: e.peak.time.date.getTime(),
     begin: e.partial_begin.time.date.getTime(),
     end: e.partial_end.time.date.getTime(),
@@ -218,7 +219,7 @@ export function calculateEclipseList(q: EclipseQuery): EclipseList {
           ? local
           : null;
       solar.push({
-        kind: '日' + kinds[global.kind],
+        kind: '日' + eclipseKinds[global.kind],
         peak,
         ...(here && localSolarVisible(here, observer)
           ? { local: localCircumstances(here) }
@@ -243,7 +244,7 @@ export function calculateEclipseList(q: EclipseQuery): EclipseList {
     if (visible && peak !== undefined && within(peak)) {
       const counterpart = SearchGlobalSolarEclipse(new Date(peak - DAY_MS));
       solar.push({
-        kind: '日' + kinds[counterpart.kind],
+        kind: '日' + eclipseKinds[counterpart.kind],
         peak: counterpart.peak.date.getTime(),
         local: localCircumstances(visible),
       });
@@ -255,7 +256,7 @@ export function calculateEclipseList(q: EclipseQuery): EclipseList {
     const peak = moon.peak.date.getTime();
     if (peak >= q.start)
       lunar.push({
-        kind: '月' + kinds[moon.kind],
+        kind: '月' + eclipseKinds[moon.kind],
         peak,
         begin: peak - moon.sd_penum * 60000,
         end: peak + moon.sd_penum * 60000,

@@ -2349,6 +2349,209 @@ button:disabled {
 .observer-actions .icon-button[aria-busy='true'] {
   color: #ead4ac;
 }
+/* The Moon's phase card sits where Earth carries its sunrise and sunset. */
+.moon-phase {
+  margin: 20px 0 22px;
+  padding: 14px 0 16px;
+  border-bottom: 1px solid #ffffff12;
+}
+/* The information panel is narrow on a desktop screen, so the disc keeps only
+   the width the phase name does not need, and the pair wraps before either is
+   squeezed. */
+.moon-phase-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+.moon-phase-summary {
+  flex: 1 1 118px;
+  min-width: 0;
+}
+.moon-phase-summary strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 400;
+  color: #ead5ad;
+}
+.moon-phase-summary p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #9eafc5;
+  font-variant-numeric: tabular-nums;
+}
+.moon-phase-summary .little-note {
+  margin-top: 4px;
+}
+/* The disc is drawn from the phase angle; only its colours live here. */
+.moon-disc {
+  flex: 0 0 auto;
+  display: block;
+  overflow: visible;
+}
+.moon-disc-dark {
+  fill: #18202b;
+}
+.moon-disc-rim {
+  fill: none;
+  stroke: #ffffff26;
+  stroke-width: 2;
+}
+.moon-phase-facts {
+  border-bottom: 0;
+  margin-top: 4px;
+}
+.moon-phase-facts strong {
+  font-variant-numeric: tabular-nums;
+}
+.moon-window {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #ffffff0f;
+  font-size: 13px;
+  color: #9eafc5;
+}
+.moon-window .concept-heading {
+  color: #dfc99f;
+  margin-bottom: 8px;
+}
+.moon-window strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 400;
+  color: #e0e8f2;
+  font-variant-numeric: tabular-nums;
+}
+.moon-window p {
+  margin: 6px 0 0;
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+}
+.moon-calendar-action {
+  margin-top: 16px;
+  gap: 8px;
+}
+/* The almanac needs more width than the eclipse list: eleven columns of it. */
+.orbit-dialog.lunar-dialog {
+  width: min(920px, calc(100vw - 24px)) !important;
+  max-width: 920px !important;
+}
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 2px 0 12px;
+}
+.calendar-nav strong {
+  min-width: 10ch;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 400;
+  color: #ead5ad;
+}
+.calendar-nav .icon-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+/* Both axes scroll inside the panel, so the header row and the date column can
+   stay put while a month of readings moves under them. The tab panel is a
+   column flexbox, so the table has to refuse to shrink: the long note below it
+   would otherwise squeeze a month of readings down to two visible rows. */
+.sky-table-scroll {
+  flex: 0 0 auto;
+  overflow: auto;
+  max-height: min(52dvh, 460px);
+  border: 1px solid #ffffff15;
+  border-radius: 10px;
+  background: #09121d;
+}
+.sky-table {
+  flex: 0 0 auto;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #b7c4d5;
+  font-variant-numeric: tabular-nums;
+}
+.quarter-table {
+  border: 1px solid #ffffff15;
+  border-radius: 10px;
+  background: #09121d;
+  overflow: hidden;
+}
+.sky-table th,
+.sky-table td {
+  padding: 9px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.sky-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #0c1622;
+  color: #8694a8;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+.sky-table thead th small {
+  color: #63717f;
+}
+.sky-table tbody tr {
+  border-top: 1px solid #ffffff0d;
+}
+.sky-table tbody th {
+  font-weight: 400;
+  color: #e0e8f2;
+}
+.sky-table tbody tr:hover {
+  background: #ffffff07;
+}
+/* The date stays pinned while the readings scroll past it, with a rule of its
+   own so the two halves of the row never run together. */
+.calendar-table tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #09121d;
+  box-shadow: 1px 0 0 #ffffff12;
+}
+.calendar-table thead th:first-child {
+  left: 0;
+  z-index: 3;
+  box-shadow: 1px 0 0 #ffffff12;
+}
+.calendar-table tbody tr:hover th {
+  background: #101a26;
+}
+/* The day the simulation is sitting on, so the reader can find it again. */
+.calendar-table .is-today th,
+.calendar-table .is-today td {
+  background: #16212f;
+  color: #f0e6d3;
+}
+.quarter-name,
+.calendar-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.calendar-table .sky-event-tag {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+/* An eclipse is the one mark on the calendar that is not a phase. */
+.eclipse-tag {
+  background: #c97f6a;
+  color: #150d0a;
+}
+.calendar-eclipses {
+  margin-top: 14px;
+}
 .moon-guide {
   margin: 24px 0;
 }

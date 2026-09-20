@@ -1,6 +1,7 @@
 'use client';
 import { useI18n } from '../lib/i18n/provider';
 import { ArrowUpRight } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { OrbitingMoon } from '../lib/moon-orbits';
 import { bodies } from '../lib/solar';
 import { moonRadii } from '../lib/eclipse-shadows';
@@ -12,10 +13,13 @@ export default function MoonDetails({
   moon,
   curiosityIndex,
   onSelect,
+  extra,
 }: {
   moon: OrbitingMoon;
   curiosityIndex?: number;
   onSelect: (id: string) => void;
+  /** What only one moon has to say: the Moon's own phase card sits here. */
+  extra?: ReactNode;
 }) {
   const { t, locale } = useI18n();
   const parent = bodies.find((b) => b.id === moon.parentId)!;
@@ -63,6 +67,7 @@ export default function MoonDetails({
           </strong>
         </div>
       </div>
+      {extra}
       <CuriosityCard
         id={moon.id}
         index={curiosityIndex}

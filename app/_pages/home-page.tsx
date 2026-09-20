@@ -35,6 +35,7 @@ import LanguagePicker from '../../components/language-picker';
 import SolarScene, { type SceneHandle } from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';
+import MoonPhasePanel from '@/components/moon-phase-panel';
 import BodyNavigation from '@/components/body-navigation';
 import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
@@ -608,6 +609,16 @@ export default function Home() {
       moon={selectedMoon}
       curiosityIndex={curiosityPicks[selectedMoon.id]}
       onSelect={select}
+      extra={
+        selectedMoon.id === 'moon-moon' ? (
+          <MoonPhasePanel
+            time={time ?? J2000_MS}
+            location={observerLocation}
+            locationSource={observerLocationSource}
+            onLocationChange={updateObserverLocation}
+          />
+        ) : undefined
+      }
     />
   ) : body ? (
     <>
