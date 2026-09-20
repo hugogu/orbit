@@ -5,6 +5,7 @@ import {
   dragBounds,
   noDragOffset,
   sameDragOffset,
+  settleDragOffset,
   type DragBox,
 } from '../lib/drag-offset';
 
@@ -68,4 +69,20 @@ void test('an offset that did not move is recognized, so a fit does not re-rende
   assert.ok(
     sameDragOffset(clampDragOffset(noDragOffset, bounds), noDragOffset),
   );
+});
+
+void test('an offset that settles where it already was comes back unchanged', () => {
+  const bounds = dragBounds(parked, noDragOffset, viewport);
+  const corner = clampDragOffset({ x: -400, y: -900 }, bounds);
+  // Pushing further into an edge the card already rests on hands back the very
+  // offset React is holding, so the move costs no re-render.
+  assert.equal(settleDragOffset(corner, { x: -900, y: -900 }, bounds), corner);
+  assert.equal(
+    settleDragOffset(noDragOffset, noDragOffset, bounds),
+    noDragOffset,
+  );
+  // A move with room left is a new position, and says so by being a new object.
+  const moved = settleDragOffset(noDragOffset, { x: -40, y: -200 }, bounds);
+  assert.notEqual(moved, noDragOffset);
+  assert.deepEqual(moved, { x: -40, y: -200 });
 });

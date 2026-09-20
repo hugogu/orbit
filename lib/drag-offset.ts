@@ -67,3 +67,19 @@ export function clampDragOffset(
 export function sameDragOffset(a: DragOffset, b: DragOffset) {
   return a.x === b.x && a.y === b.y;
 }
+
+/**
+ * Clamp an offset for React, keeping the offset already held whenever the
+ * result lands on the same position. State is compared by identity, so handing
+ * back the very same object is what turns a move that changes nothing — a drag
+ * pushing further into an edge it already sits against, or a re-fit of a card
+ * that still has room — into no re-render at all.
+ */
+export function settleDragOffset(
+  current: DragOffset,
+  next: DragOffset,
+  bounds: DragBounds,
+): DragOffset {
+  const held = clampDragOffset(next, bounds);
+  return sameDragOffset(held, current) ? current : held;
+}

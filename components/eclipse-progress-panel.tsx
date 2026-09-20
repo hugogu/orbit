@@ -12,10 +12,9 @@ import { ChevronDown, GripVertical } from 'lucide-react';
 import { Progress } from './ui/progress';
 import { useI18n } from '../lib/i18n/provider';
 import {
-  clampDragOffset,
   dragBounds,
   noDragOffset,
-  sameDragOffset,
+  settleDragOffset,
   type DragBounds,
   type DragOffset,
 } from '../lib/drag-offset';
@@ -86,17 +85,17 @@ export default function EclipseProgressPanel({
       : null;
   }, []);
   /**
-   * Move the card and keep it on screen. Returning the very same offset when
-   * nothing changed leaves React with no re-render to do, which is what stops
-   * the fit-to-viewport effect below from feeding itself.
+   * Move the card and keep it on screen, measuring the room it has right now.
+   * An offset that settles where it already was comes back unchanged, which is
+   * what stops the fit-to-viewport effect below from feeding itself.
    */
   const settle = useCallback(
     (to: (current: DragOffset) => DragOffset) =>
       setOffset((current) => {
         const bounds = room(current);
-        const next = to(current);
-        const held = bounds ? clampDragOffset(next, bounds) : next;
-        return sameDragOffset(held, current) ? current : held;
+        return bounds
+          ? settleDragOffset(current, to(current), bounds)
+          : current;
       }),
     [room],
   );
@@ -111,14 +110,13 @@ export default function EclipseProgressPanel({
   const startDrag = (pointer: PointerEvent<HTMLButtonElement>) => {
     const box = card.current?.getBoundingClientRect();
     if (pointer.button !== 0 || !box) return;
-    // Capture keeps the moves coming once the finger leaves the handle, but a
-    // pointer released in the same breath as it pressed no longer exists to
-    // capture. The drag is set up either way; without capture it simply ends
-    // when the pointer wanders off the handle.
+    // Capture is what keeps the moves coming once the finger leaves the handle.
+    // It fails only for a pointer that is already gone, and a drag nothing can
+    // follow is also a drag nothing can end, so that one is never started.
     try {
       pointer.currentTarget.setPointerCapture(pointer.pointerId);
     } catch {
-      /* The pointer is already gone. */
+      return;
     }
     travelled.current = false;
     grab.current = {
@@ -141,8 +139,12 @@ export default function EclipseProgressPanel({
     const dx = pointer.clientX - held.x;
     const dy = pointer.clientY - held.y;
     if (Math.hypot(dx, dy) > dragThreshold) travelled.current = true;
-    setOffset(
-      clampDragOffset(
+    // Bounds measured at the press, so a move costs arithmetic and no layout
+    // read; pushing further into an edge the card already rests on re-renders
+    // nothing.
+    setOffset((current) =>
+      settleDragOffset(
+        current,
         { x: held.from.x + dx, y: held.from.y + dy },
         held.bounds,
       ),
@@ -153,7 +155,8 @@ export default function EclipseProgressPanel({
    * and a tap on the handle parks the card back in its corner. That is decided
    * here and not on the click that may follow, because a drag does not always
    * end in one — and a flag left over from the drag that did not would swallow
-   * the next real tap.
+   * the next real tap. Losing the capture ends the drag by this same route, so
+   * a pointer taken away mid-drag cannot leave the card held.
    */
   const endDrag = (
     pointer: PointerEvent<HTMLButtonElement>,
@@ -219,6 +222,7 @@ export default function EclipseProgressPanel({
           onPointerMove={moveDrag}
           onPointerUp={(pointer) => endDrag(pointer, true)}
           onPointerCancel={(pointer) => endDrag(pointer, false)}
+          onLostPointerCapture={(pointer) => endDrag(pointer, false)}
           onKeyDown={nudge}
         >
           <GripVertical size={16} aria-hidden="true" />
