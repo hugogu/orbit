@@ -3487,13 +3487,6 @@ button:disabled {
   .observatory {
     min-height: 550px;
   }
-  /* A phone scrolls this table sideways whatever happens, so the pinned date
-     column is the expensive one: its badges wrap to keep it narrow, and those
-     few rows grow downward instead. */
-  .calendar-table tbody .sky-event-tag {
-    white-space: normal;
-    width: 100%;
-  }
   /* Every row above this one carries a control on the left and one on the
      right, so two sitting side by side here read as a third pattern rather
      than as another row. The pair stacks instead. A short landscape screen
