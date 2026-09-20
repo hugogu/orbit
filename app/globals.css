@@ -2076,6 +2076,16 @@ button:disabled {
   background: #d9c49a08;
   white-space: nowrap;
 }
+/* Without its label a button is a square the height it already had, so turning
+   the text off changes its width alone and the rows it sits in keep their line.
+   The label is still in the button, hidden rather than dropped, and an absolute
+   sr-only span is no flex item, so neither the gap nor its width survives it. */
+.observatory[data-action-labels='false'] .astronomy-button,
+.observatory[data-action-labels='false'] .mobile-info {
+  width: 40px;
+  padding-inline: 0;
+  justify-content: center;
+}
 .time-jump-dialog .astro-form,
 .observer-dialog .astro-form {
   margin-top: 18px;
@@ -3199,6 +3209,7 @@ button:disabled {
   display: none;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
   padding: 0 12px;
   min-height: 40px;
   border-radius: 8px;

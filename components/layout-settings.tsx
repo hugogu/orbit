@@ -8,14 +8,18 @@ export default function LayoutSettings({
   realSizes,
   scale,
   distanceLocked,
+  actionLabels,
   onRealSizesChange,
   onScaleChange,
+  onActionLabelsChange,
 }: {
   realSizes: boolean;
   scale: ScaleMode;
   distanceLocked: boolean;
+  actionLabels: boolean;
   onRealSizesChange: (value: boolean) => void;
   onScaleChange: (value: ScaleMode) => void;
+  onActionLabelsChange: (value: boolean) => void;
 }) {
   const { t } = useI18n();
   return (
@@ -49,6 +53,19 @@ export default function LayoutSettings({
           {t('当前专题使用固定距离模式；返回自由探索后恢复你的偏好。')}
         </p>
       )}
+      <div className="setting-row">
+        <label htmlFor="action-labels">{t('操作按钮显示文字')}</label>
+        <Switch
+          id="action-labels"
+          checked={actionLabels}
+          onCheckedChange={onActionLabelsChange}
+        />
+      </div>
+      <p className="model-note layout-note">
+        {t(
+          '关闭后，天象推演、天象事件与天体百科按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。',
+        )}
+      </p>
     </>
   );
 }
