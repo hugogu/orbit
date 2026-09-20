@@ -70,6 +70,7 @@ import {
   type SkyLocation,
 } from '@/lib/sky-events';
 import { orbitingMoons } from '@/lib/moon-orbits';
+import { bodyMotion } from '@/lib/body-motion';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -187,6 +188,31 @@ export default function Home() {
     ? activeComet
     : (selectedAsteroid ?? selectedMoon ?? body);
   const followLabel = followed ? t(followed.name) : null;
+  // Read live from the followed body's own path, so the numbers and the orbit
+  // on screen can never disagree. The Sun holds the origin and reports nothing.
+  const motion =
+    followed && time !== null
+      ? bodyMotion(followed.id, (time - J2000_MS) / DAY_MS)
+      : null;
+  const motionReadout = motion
+    ? t('{{speed}} km/s · 黄经 {{longitude}}°', {
+        speed: motion.speed.toLocaleString(locale, {
+          minimumFractionDigits: 1,
+          // A slow outer moon or a comet near aphelion earns the second
+          // decimal that a planet's tens of km/s would only clutter.
+          maximumFractionDigits: motion.speed < 10 ? 2 : 1,
+        }),
+        longitude: motion.longitude.toLocaleString(locale, {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        }),
+      })
+    : undefined;
+  const motionFrame = motion
+    ? t('相对{{center}}的轨道速度与黄经，J2000 黄道坐标', {
+        center: t(motion.center),
+      })
+    : undefined;
   // Topic views choose a distance mode without overwriting the user's layout preference.
   const displayScale = isComet
     ? 'distance'
@@ -959,16 +985,23 @@ export default function Home() {
         <div className="scene-meta">
           <span className="follow-status">
             <i />
-            {isComet
-              ? t('{{v0}} · {{v1}}', {
-                  v0: t(cometClose ? '正在跟随' : '轨道全景'),
-                  v1: followLabel,
-                })
-              : followLabel
-                ? t('正在跟随 · {{v0}}', { v0: followLabel })
-                : tab === 'structure'
-                  ? t(activeRegion.name)
-                  : t('太阳系全景')}
+            <span className="follow-name">
+              {isComet
+                ? t('{{v0}} · {{v1}}', {
+                    v0: t(cometClose ? '正在跟随' : '轨道全景'),
+                    v1: followLabel,
+                  })
+                : followLabel
+                  ? t('正在跟随 · {{v0}}', { v0: followLabel })
+                  : tab === 'structure'
+                    ? t(activeRegion.name)
+                    : t('太阳系全景')}
+            </span>
+            {motion && (
+              <span className="follow-motion" title={motionFrame}>
+                {motionReadout}
+              </span>
+            )}
           </span>
           <span className="scale-status">
             {realSizes

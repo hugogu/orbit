@@ -1596,6 +1596,10 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Three readouts share this row. Where they no longer fit side by side, the
+     scale note drops to a second line rather than running into the name. */
+  flex-wrap: wrap;
+  gap: 2px 16px;
   font-size: 12px;
   color: #657185;
   letter-spacing: 0.04em;
@@ -1606,6 +1610,29 @@ button:disabled {
   align-items: center;
   gap: 8px;
   color: #a3aebc;
+}
+.scene-meta .follow-status {
+  min-width: 0;
+  max-width: 100%;
+}
+/* Even alone the name can outgrow the row, and the panel beside the scene
+   spells it out anyway, so it is what gives way; the numbers stay whole. */
+.follow-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* The live readout carries its own separator so the name can stand alone. */
+.follow-motion {
+  flex: none;
+  color: #7f8b9b;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.follow-motion::before {
+  content: '·';
+  margin-right: 8px;
 }
 .timeline {
   display: flex;

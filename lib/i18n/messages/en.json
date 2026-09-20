@@ -107,6 +107,8 @@
   "正在跟随": "Following",
   "轨道全景": "Orbit overview",
   "正在跟随 · {{v0}}": "Following · {{v0}}",
+  "{{speed}} km/s · 黄经 {{longitude}}°": "{{speed}} km/s · ecliptic longitude {{longitude}}°",
+  "相对{{center}}的轨道速度与黄经，J2000 黄道坐标": "Orbital speed and ecliptic longitude relative to {{center}}, in J2000 ecliptic coordinates",
   "太阳系全景": "Solar System overview",
   "大小与距离采用同一比例": "One scale for sizes and distances",
   "天体大小按真实比例 · 距离示意": "True body sizes · illustrative distances",
