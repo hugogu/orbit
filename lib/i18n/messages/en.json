@@ -1551,7 +1551,7 @@
   "独立计算。地月距离与视直径为地心值，赤经赤纬、高度角与中天高度为观测点的视位置，不考虑地形、建筑和天气。": ". Distance and apparent diameter are geocentric; the coordinates, the altitude and the transit altitude are apparent from the observing site. Terrain, buildings and weather are not considered.",
   "每行的月龄、照明、距离、视直径与赤经赤纬取当地正午的瞬时值；月出、中天与月落是当日事件，月亮每天晚升约 50 分钟，因此某些日期本就没有其中之一，表中留空。": "Each row’s age, illumination, distance, apparent diameter and coordinates are the instantaneous values at local noon; moonrise, transit and moonset are that day’s own events. The Moon rises about fifty minutes later each day, so some dates genuinely have none of one of them and the cell is left empty.",
   "以 {{date}} 为准，均为观测地点的当地时间。": "Anchored to {{date}}, in the observing site’s local time.",
-  "今晚可见 {{span}}": "Up tonight {{span}}",
   "照明 {{percent}}%": "{{percent}}% illuminated",
-  "月龄 {{age}} 天": "{{age}} days old"
+  "月龄 {{age}} 天": "{{age}} days old",
+  "今晚 {{span}}": "Tonight {{span}}"
 }

@@ -3457,6 +3457,14 @@ button:disabled {
   .observatory {
     min-height: 550px;
   }
+  /* Every row above this one carries a control on the left and one on the
+     right, so two sitting side by side here read as a third pattern rather
+     than as another row. The pair stacks instead. A short landscape screen
+     cannot spare the second row, and keeps them side by side. */
+  .astronomy-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
   .topbar {
     height: 117px;
     align-items: flex-start;

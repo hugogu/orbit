@@ -77,7 +77,7 @@ export default function MoonPhaseCard({
           <small>{t('月龄 {{age}} 天', { age: number(phase.age) })}</small>
           <small>
             {window.start !== null && window.end !== null
-              ? t('今晚可见 {{span}}', {
+              ? t('今晚 {{span}}', {
                   span: `${clock(window.start)} – ${clock(window.end)}`,
                 })
               : t('今夜无观月窗口')}
