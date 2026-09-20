@@ -77,6 +77,10 @@ const eventPage = readFileSync(
   new URL('../app/_pages/event-page.tsx', import.meta.url),
   'utf8',
 );
+const seoModule = readFileSync(
+  new URL('../lib/seo.ts', import.meta.url),
+  'utf8',
+);
 const vercelConfig = JSON.parse(
   readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'),
 );
@@ -461,4 +465,9 @@ void test('custom 404 offers noindex metadata and exploration links', () => {
 
 void test('Vercel serves extensionless paths for exported HTML profiles', () => {
   assert.equal(vercelConfig.cleanUrls, true);
+});
+
+void test('the built-in origin is the canonical host, not one that redirects', () => {
+  assert.match(seoModule, /fallbackSiteOrigin = 'https:\/\/orbits\.observer'/);
+  assert.doesNotMatch(seoModule, /https:\/\/www\./);
 });

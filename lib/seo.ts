@@ -7,7 +7,7 @@ import { bodies, type Body } from './solar';
 import { portraitPath, wideImagePath, portraitCredit } from './profile-images';
 
 /** Permanent public origin used when a build does not provide an override. */
-const fallbackSiteOrigin = 'https://www.orbits.observer';
+const fallbackSiteOrigin = 'https://orbits.observer';
 
 /** Plain entity name for metadata and structured data; UI labels may be more decorative. */
 export const seoSiteName = 'ORBIT Solar System Observatory';
