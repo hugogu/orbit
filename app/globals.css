@@ -2609,10 +2609,32 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
-.calendar-table .sky-event-tag {
-  margin-left: 8px;
-  vertical-align: middle;
+/* The date cell is the one that may run to more than one line: its badges wrap
+   inside the column rather than widening it, because this column is pinned and
+   whatever width it takes is gone from the whole table. */
+.calendar-table tbody th {
+  white-space: normal;
+}
+.calendar-table tbody .sky-event-tag {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 5px;
+  white-space: nowrap;
+}
+/* The exact moment is short and fixed, so the column simply takes its width and
+   the badge reads on one line. An eclipse's name is the one badge too long to
+   be worth widening a pinned column for, so that one wraps — and a wrapped pill
+   reads as a squashed lozenge, so it squares off into a label instead and
+   spends less of its width on its own padding. */
+.calendar-table tbody .eclipse-tag {
+  white-space: normal;
+  width: 100%;
+  border-radius: 7px;
+  padding: 4px 6px;
+  line-height: 1.4;
 }
 /* An eclipse is the one mark on the calendar that is not a phase. */
 .eclipse-tag {
@@ -3464,6 +3486,13 @@ button:disabled {
 @media (max-width: 600px) {
   .observatory {
     min-height: 550px;
+  }
+  /* A phone scrolls this table sideways whatever happens, so the pinned date
+     column is the expensive one: its badges wrap to keep it narrow, and those
+     few rows grow downward instead. */
+  .calendar-table tbody .sky-event-tag {
+    white-space: normal;
+    width: 100%;
   }
   /* Every row above this one carries a control on the left and one on the
      right, so two sitting side by side here read as a third pattern rather

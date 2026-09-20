@@ -278,6 +278,12 @@ export default function LunarPanel({
 
   const dayRow = (day: LunarDay) => (
     <tr key={day.day} className={day.day === today ? 'is-today' : undefined}>
+      {/* Both badges qualify the day rather than the phase's name, so they sit
+          under the date instead of widening the column that carries the name.
+          They wrap instead of stretching the pinned date column, which would
+          cost that width for the whole table; the few days that carry one are
+          simply taller. The neighbouring day can share a phase name, so the
+          badge gives the exact moment rather than repeating it. */}
       <th scope="row">
         <span className="calendar-day">
           <MoonPhaseDisc
@@ -287,13 +293,6 @@ export default function LunarPanel({
           />
           {local(day.noon, { day: 'numeric', weekday: 'short' })}
         </span>
-      </th>
-      {/* The badges qualify the phase, and the date column stays narrow enough
-          to stay pinned while the rest of the row scrolls. The neighbouring day
-          can carry the same name, so the badge gives the exact moment rather
-          than repeating it. */}
-      <td>
-        {t(day.phase)}
         {day.quarter && (
           <span className="sky-event-tag">
             {t('精确时刻 {{time}}', { time: clock(day.quarter.time) })}
@@ -304,7 +303,8 @@ export default function LunarPanel({
             {t(day.eclipse.kind)}
           </span>
         )}
-      </td>
+      </th>
+      <td>{t(day.phase)}</td>
       <td>{number(day.age)}</td>
       <td>{number(day.illumination * 100)}%</td>
       <td>{clock(day.rise)}</td>
