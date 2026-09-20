@@ -44,7 +44,7 @@ const decodeNow = (search: string, selected: string | null = null) => {
   return { view, live: view.time >= before && view.time <= Date.now() };
 };
 const absoluteShareLink = (id: string, query: string) =>
-  `https://www.orbits.observer${sharePath('zh-CN', id)}${query}`;
+  `https://orbits.observer${sharePath('zh-CN', id)}${query}`;
 
 void test('a shared view survives the round trip through a link', () => {
   for (const view of [

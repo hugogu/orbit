@@ -38,7 +38,7 @@ Environment variables such as `NEXT_PUBLIC_GA_MEASUREMENT_ID` are read at build 
 | `NEXT_PUBLIC_SITE_URL`          | Yes for public deployments | Build time | Canonical origin for metadata, sitemap, and robots URLs |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | No       | Build time, both targets | Enables Google Analytics 4 when set; see below |
 
-Set `NEXT_PUBLIC_SITE_URL` to the exact public origin, for example `https://www.orbits.observer`, without a path. Redeploy after changing it because static metadata and SEO files are generated during the build.
+Set `NEXT_PUBLIC_SITE_URL` to the exact public origin, for example `https://orbits.observer`, without a path. Redeploy after changing it because static metadata and SEO files are generated during the build.
 
 ### Google Analytics (optional)
 
