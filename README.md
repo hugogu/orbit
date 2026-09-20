@@ -29,6 +29,7 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 | 🗺️  | Optionally load 2K real-surface relief and high-density terrain geometry for Mercury, Venus, Earth, Mars, and the Moon only when focused | Published topography can change close-up lighting and silhouette; the geometry mode is opt-in |
 | 📱  | Navigate with mouse, keyboard, touch gestures, and responsive portrait or landscape layouts                                              | Continuous exploration across desktop and mobile                                              |
 | 🌐  | Switch between Simplified Chinese, English, and Japanese; your language choice is remembered                                             | Translated profiles, fact cards, scene labels, and astronomy tools                            |
+| 📚  | Read the sky-event guide: meteor showers, conjunctions, oppositions, elongations, lunar phases, and eclipses                              | What causes each recurring event, how often it returns, and how to watch it                    |
 | 🔗  | Share the view on screen: the link reopens the same moment, body, and framing, and carries the captured frame with it                    | Showing someone else exactly what you are looking at                                          |
 
 ## See it running
@@ -124,7 +125,7 @@ npm run build:vercel
 
 ORBIT deploys as a static export to Vercel, with a separate Cloudflare Worker build for the Sites platform, and optional Google Analytics configured through one environment variable. See the [deployment guide](docs/deployment.md) for Vercel project setup, build settings, and analytics configuration.
 
-The Vercel build also emits crawlable body profiles under `/:locale/bodies/:id`, plus `robots.txt` and `sitemap.xml`. Set `NEXT_PUBLIC_SITE_URL` to the permanent HTTPS hostname in the Vercel project before deploying; the build uses it for canonical, Open Graph, alternate-language, and sitemap URLs. The demo hostname is used when the variable is absent.
+The Vercel build also emits crawlable body profiles under `/:locale/bodies/:id` and the sky-event guide under `/:locale/events` and `/:locale/events/:id`, plus `robots.txt` and `sitemap.xml`. Set `NEXT_PUBLIC_SITE_URL` to the permanent HTTPS hostname in the Vercel project before deploying; the build uses it for canonical, Open Graph, alternate-language, and sitemap URLs. The demo hostname is used when the variable is absent.
 
 ### Install and use offline
 

@@ -29,6 +29,7 @@ ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计�
 | 🗺️  | 可选：仅在跟随水星、金星、地球或火星时加载 2K 真实地形光照           | 公开地形数据增强近距离明暗起伏，但不改变球体网格 |
 | 📱  | 支持桌面鼠标和键盘、触屏手势、手机横屏与竖屏布局                     | 不同设备上的连续探索                             |
 | 🌐  | 支持简体中文、英语、日语，自动识别浏览器语言并记住手动选择           | 天体介绍、知识卡片、场景标签与天象工具完整翻译   |
+| 📚  | 阅读天象事件指南：流星雨、合相、冲、大距、月相与日月食                | 常见天象的成因、周期与观测要点                   |
 | 🔗  | 分享此刻所见：链接可复现同一时刻、同一天体与同一取景，并附带当前画面 | 把你正在看到的景象原样分享给别人                 |
 
 ## 在真实运行中观察
@@ -124,7 +125,7 @@ npm run build:vercel
 
 ORBIT 以静态导出方式部署到 Vercel，另有独立的 Cloudflare Worker 构建目标用于 Sites 平台；Google Analytics 为可选功能，通过一个环境变量控制。Vercel 项目配置、构建参数与分析配置请参阅[部署指南](docs/deployment.md)。
 
-Vercel 构建还会输出可抓取的天体资料页（`/:locale/bodies/:id`）、`robots.txt` 和 `sitemap.xml`。在 Vercel 项目中部署前，请将 `NEXT_PUBLIC_SITE_URL` 设置为正式的 HTTPS 域名；构建会用它生成 canonical、Open Graph、多语言 alternate 与 sitemap 地址。未设置时使用演示域名。
+Vercel 构建还会输出可抓取的天体资料页（`/:locale/bodies/:id`）、天象事件指南（`/:locale/events` 与 `/:locale/events/:id`）、`robots.txt` 和 `sitemap.xml`。在 Vercel 项目中部署前，请将 `NEXT_PUBLIC_SITE_URL` 设置为正式的 HTTPS 域名；构建会用它生成 canonical、Open Graph、多语言 alternate 与 sitemap 地址。未设置时使用演示域名。
 
 ### 安装与离线使用
 
