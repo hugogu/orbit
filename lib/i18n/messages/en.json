@@ -1510,7 +1510,6 @@
   "此地当夜没有天文暗夜，太阳始终高于地平线下 18°。": "No astronomical darkness here tonight: the Sun stays higher than 18° below the horizon.",
   "今夜月亮始终在地平线下，要到白天才升起。": "The Moon stays below the horizon all night and only rises in daylight.",
   "当前月相": "Current lunar phase",
-  "月面按相位角实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。月龄从上一次朔起算，视直径为地心值。": "The disc is drawn from the phase angle itself, as a geocentric view with celestial north up. The southern hemisphere sees it the other way round, which the observer’s latitude mirrors. Age runs from the previous new moon, and the apparent diameter is geocentric.",
   "照明 {{percent}}% · 月龄 {{age}} 天": "{{percent}}% illuminated · {{age}} days old",
   "本轮朔望月 {{length}} 天": "This lunation runs {{length}} days",
   "今晚观月窗口": "Tonight’s observing window",
@@ -1547,5 +1546,9 @@
   "四相时刻": "Phase times",
   "每日月历": "Daily calendar",
   "已列出支持范围内（至 2200 年）的全部月相时刻。": "Every phase time within the supported range, to 2200, is listed.",
-  "精确时刻 {{time}}": "Exact {{time}}"
+  "精确时刻 {{time}}": "Exact {{time}}",
+  "日月黄经差": "Elongation",
+  "赤经": "RA",
+  "赤纬": "Dec",
+  "月面按日月黄经差实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。日月黄经差从朔起算（0° 朔、90° 上弦、180° 望、270° 下弦），决定月相名称与月面形状；相位角是在月球上看太阳与地球的夹角（望时接近 0°），两者相加约为 180°。月龄从上一次朔起算，视直径为地心值。": "The disc is drawn from the elongation itself, as a geocentric view with celestial north up. The southern hemisphere sees it the other way round, which the observer’s latitude mirrors. Elongation is measured from the new moon (0° new, 90° first quarter, 180° full, 270° last) and decides both the phase name and the shape; the phase angle is the Sun–Earth angle seen from the Moon, near 0° at full, and the two add up to about 180°. Age runs from the previous new moon, and the apparent diameter is geocentric."
 }

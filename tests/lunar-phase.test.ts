@@ -323,6 +323,21 @@ void test('principal phases and lunar eclipses are marked on the local day they 
   assert.equal(penumbral!.eclipse!.obscuration, 0);
 });
 
+void test('local noon lands back on its own row at every offset the field accepts', () => {
+  // The date a row prints is drawn by shifting its local noon into the fixed
+  // offset. Past twelve hours that instant is already on another UTC date, so
+  // the whole supported range has to round-trip, not just the common offsets.
+  for (const utcOffset of [14, 12.75, 8, 0, -5.5, -12]) {
+    const month = lunarMonth({ ...beijing, utcOffset, month: '2026-09' });
+    for (const day of month.days)
+      assert.equal(
+        new Date(day.noon + utcOffset * 3600000).toISOString().slice(0, 10),
+        day.day,
+        `UTC${utcOffset} ${day.day}`,
+      );
+  }
+});
+
 void test('the observation point moves the local calendar without moving the sky', () => {
   const east = lunarMonth({ ...beijing, month: '2026-09' });
   const west = lunarMonth({

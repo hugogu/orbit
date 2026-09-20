@@ -87,7 +87,7 @@ export default function MoonPhasePanel({
           {t('月相')}
           <ConceptHint
             label={t(
-              '月面按相位角实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。月龄从上一次朔起算，视直径为地心值。',
+              '月面按日月黄经差实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。日月黄经差从朔起算（0° 朔、90° 上弦、180° 望、270° 下弦），决定月相名称与月面形状；相位角是在月球上看太阳与地球的夹角（望时接近 0°），两者相加约为 180°。月龄从上一次朔起算，视直径为地心值。',
             )}
           />
         </span>
@@ -119,7 +119,11 @@ export default function MoonPhasePanel({
             </div>
           </div>
           <div className="facts moon-phase-facts">
-            {fact('相位角', `${number(readout.moment.elongation)}°`)}
+            {/* Two different angles, each under its own name: the elongation is
+                what the phase name and the drawn disc follow, while the phase
+                angle is the one measured at the Moon. */}
+            {fact('日月黄经差', `${number(readout.moment.elongation)}°`)}
+            {fact('相位角', `${number(readout.moment.phaseAngle)}°`)}
             {fact(
               '地月距离',
               Math.round(readout.moment.distanceKm).toLocaleString(locale),
@@ -136,10 +140,8 @@ export default function MoonPhasePanel({
               `${number(readout.moment.azimuth)}°`,
               t(compassPoint(readout.moment.azimuth)),
             )}
-            {fact(
-              '赤经 / 赤纬',
-              `${rightAscensionLabel(readout.moment.ra)} / ${number(readout.moment.dec)}°`,
-            )}
+            {fact('赤经', rightAscensionLabel(readout.moment.ra))}
+            {fact('赤纬', `${number(readout.moment.dec)}°`)}
           </div>
           <div className="moon-window">
             <span className="concept-heading">

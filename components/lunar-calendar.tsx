@@ -83,12 +83,18 @@ export default function LunarCalendar({
       hourCycle: 'h23',
       timeZone: 'UTC',
     }).format(ms);
+  // Every local reading is printed by shifting the instant into the fixed
+  // offset and formatting it as UTC. Only the UTC column skips that shift: a
+  // bare `format` of local noon is already on another date wherever the offset
+  // passes twelve hours, which the observation point is allowed to do.
+  const local = (ms: number, options: Intl.DateTimeFormatOptions) =>
+    format(ms + offset, options);
   const localStamp = (ms: number) =>
-    format(ms + offset, { dateStyle: 'medium', timeStyle: 'short' });
+    local(ms, { dateStyle: 'medium', timeStyle: 'short' });
   const utcStamp = (ms: number) =>
     format(ms, { dateStyle: 'medium', timeStyle: 'short' });
   const clock = (ms: number | null) =>
-    ms === null ? '—' : format(ms + offset, { timeStyle: 'short' });
+    ms === null ? '—' : local(ms, { timeStyle: 'short' });
   const number = (value: number, digits = 1) =>
     value.toLocaleString(locale, {
       minimumFractionDigits: digits,
@@ -141,7 +147,7 @@ export default function LunarCalendar({
             flip={place.latitude < 0}
             size={20}
           />
-          {format(day.noon, { day: 'numeric', weekday: 'short' })}
+          {local(day.noon, { day: 'numeric', weekday: 'short' })}
         </span>
       </th>
       {/* The badges qualify the phase, and the date column stays narrow enough
@@ -192,6 +198,8 @@ export default function LunarCalendar({
         >
           <ChevronLeft size={16} />
         </button>
+        {/* The heading names the month key itself, not an instant, so it is
+            read from the middle of the month and left unshifted. */}
         <strong>
           {format(Date.parse(`${calendar.month}-15T00:00:00Z`), {
             year: 'numeric',
