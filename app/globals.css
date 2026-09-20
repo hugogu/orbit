@@ -820,19 +820,62 @@ button:disabled {
     margin-right: 0;
   }
 }
+/* The handle rides beside the title so a press that moves the card can never be
+   mistaken for the press that opens it. */
+.eclipse-progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 10px;
+  flex-shrink: 0;
+}
+.eclipse-progress-grip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  min-height: 44px;
+  margin-left: -5px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #6d7b8f;
+  cursor: grab;
+  touch-action: none;
+}
+/* A finger needs more than the dots are worth drawing, and the card is too
+   compact to spend that room on the row itself; the target grows into the
+   padding around it instead. */
+.eclipse-progress-grip::after {
+  content: '';
+  position: absolute;
+  inset: -8px -4px -8px -10px;
+}
+.eclipse-progress-grip:hover {
+  color: #dfc89e;
+}
+.eclipse-progress[data-dragging='true'] {
+  user-select: none;
+}
+.eclipse-progress[data-dragging='true'] .eclipse-progress-grip {
+  color: #dfc89e;
+  cursor: grabbing;
+}
 .eclipse-progress-heading {
   display: flex;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   min-height: 44px;
   border: 0;
-  padding: 0 0 10px;
+  padding: 0;
   background: transparent;
   color: #dfc89e;
   text-align: start;
-  flex-shrink: 0;
 }
 .eclipse-progress-heading strong {
   display: block;
@@ -942,37 +985,70 @@ button:disabled {
   padding: 6px 12px;
   width: 100%;
 }
+/* A phone has no room for a card beside the scene, so it parks in the corner the
+   playback bar already owns and grows upward from there: collapsed it is a strip
+   above the controls, and expanded it still leaves most of the globe visible. */
 @media (max-width: 900px), (max-height: 600px) {
   .eclipse-progress,
   .eclipse-retry {
-    top: 164px;
+    top: auto;
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 100px);
     right: max(12px, env(safe-area-inset-right));
-    width: 280px;
-    padding: 12px;
+    left: auto;
+    width: min(252px, calc(100vw - 24px));
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .eclipse-progress {
+    max-height: min(48dvh, 380px);
   }
   .eclipse-progress[data-expanded='false'] .eclipse-progress-details {
     display: none;
   }
-  .eclipse-progress {
-    max-height: calc(100dvh - 344px);
+  /* The simulation clock under the card already names the day. */
+  .eclipse-progress-heading small {
+    display: none;
   }
-}
-@media (max-width: 600px) {
-  .eclipse-progress,
-  .eclipse-retry {
-    left: max(12px, env(safe-area-inset-left));
-    width: auto;
+  .eclipse-progress-bar {
+    gap: 4px;
+    padding-bottom: 6px;
+  }
+  .eclipse-progress-heading {
+    min-height: 34px;
+  }
+  .eclipse-progress-grip {
+    min-height: 34px;
+  }
+  .eclipse-progress-heading strong {
+    font-size: 13px;
+  }
+  .eclipse-progress-heading > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .eclipse-progress-phase {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .eclipse-progress-details {
+    margin-top: 10px;
+    /* A scrollbar this narrow is drawn over the text rather than beside it. */
+    padding-right: 6px;
+  }
+  .eclipse-progress-note {
+    margin: 10px 0;
   }
 }
 @media (orientation: landscape) and (max-height: 600px) {
   .eclipse-progress,
   .eclipse-retry {
-    top: 112px;
-    left: auto;
-    width: 270px;
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 64px);
+    width: min(252px, calc(100vw - 24px));
   }
+  /* Short and wide: the open card stops below the tool rail it shares the right
+     edge with, rather than reaching up over it. */
   .eclipse-progress {
-    max-height: calc(100dvh - 192px);
+    max-height: min(calc(100dvh - 180px), 340px);
   }
 }
 .scene {

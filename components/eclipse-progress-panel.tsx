@@ -1,8 +1,24 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
+import { ChevronDown, GripVertical } from 'lucide-react';
 import { Progress } from './ui/progress';
 import { useI18n } from '../lib/i18n/provider';
+import {
+  clampDragOffset,
+  dragBounds,
+  noDragOffset,
+  sameDragOffset,
+  type DragBounds,
+  type DragOffset,
+} from '../lib/drag-offset';
 import {
   eclipseProgress,
   solarCircumstance,
@@ -20,6 +36,12 @@ const names: Record<string, string> = {
   'lunar-partial': '月偏食',
   'lunar-penumbral': '月半影食',
 };
+/** How far one arrow key moves the card, and how far it moves with Shift. */
+const nudgeStep = 8;
+const fastNudgeStep = 32;
+/** Pointer travel that turns a press on the handle into a drag rather than a tap. */
+const dragThreshold = 3;
+
 export default function EclipseProgressPanel({
   event,
   time,
@@ -42,6 +64,127 @@ export default function EclipseProgressPanel({
     wide.addEventListener('change', sync);
     return () => wide.removeEventListener('change', sync);
   }, []);
+  const card = useRef<HTMLElement>(null);
+  const [offset, setOffset] = useState(noDragOffset);
+  const [dragging, setDragging] = useState(false);
+  const grab = useRef<{
+    pointer: number;
+    x: number;
+    y: number;
+    from: DragOffset;
+    bounds: DragBounds;
+  } | null>(null);
+  /** Set once a press travels far enough that its click is a drag's tail, not a tap. */
+  const travelled = useRef(false);
+  const room = useCallback((applied: DragOffset) => {
+    const box = card.current?.getBoundingClientRect();
+    return box
+      ? dragBounds(box, applied, {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })
+      : null;
+  }, []);
+  /**
+   * Move the card and keep it on screen. Returning the very same offset when
+   * nothing changed leaves React with no re-render to do, which is what stops
+   * the fit-to-viewport effect below from feeding itself.
+   */
+  const settle = useCallback(
+    (to: (current: DragOffset) => DragOffset) =>
+      setOffset((current) => {
+        const bounds = room(current);
+        const next = to(current);
+        const held = bounds ? clampDragOffset(next, bounds) : next;
+        return sameDragOffset(held, current) ? current : held;
+      }),
+    [room],
+  );
+  // Expanding the card, rotating the phone or resizing the window all change how
+  // much room a dragged card has; it follows the corner it was left near.
+  useEffect(() => {
+    const fit = () => settle((current) => current);
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [expanded, settle]);
+  const startDrag = (pointer: PointerEvent<HTMLButtonElement>) => {
+    const box = card.current?.getBoundingClientRect();
+    if (pointer.button !== 0 || !box) return;
+    // Capture keeps the moves coming once the finger leaves the handle, but a
+    // pointer released in the same breath as it pressed no longer exists to
+    // capture. The drag is set up either way; without capture it simply ends
+    // when the pointer wanders off the handle.
+    try {
+      pointer.currentTarget.setPointerCapture(pointer.pointerId);
+    } catch {
+      /* The pointer is already gone. */
+    }
+    travelled.current = false;
+    grab.current = {
+      pointer: pointer.pointerId,
+      x: pointer.clientX,
+      y: pointer.clientY,
+      from: offset,
+      // Measured once: the card cannot change size mid-drag, so every move after
+      // this is arithmetic rather than another layout read.
+      bounds: dragBounds(box, offset, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }),
+    };
+    setDragging(true);
+  };
+  const moveDrag = (pointer: PointerEvent<HTMLButtonElement>) => {
+    const held = grab.current;
+    if (!held || held.pointer !== pointer.pointerId) return;
+    const dx = pointer.clientX - held.x;
+    const dy = pointer.clientY - held.y;
+    if (Math.hypot(dx, dy) > dragThreshold) travelled.current = true;
+    setOffset(
+      clampDragOffset(
+        { x: held.from.x + dx, y: held.from.y + dy },
+        held.bounds,
+      ),
+    );
+  };
+  /**
+   * Release the card. A press that never travelled is a tap rather than a drag,
+   * and a tap on the handle parks the card back in its corner. That is decided
+   * here and not on the click that may follow, because a drag does not always
+   * end in one — and a flag left over from the drag that did not would swallow
+   * the next real tap.
+   */
+  const endDrag = (
+    pointer: PointerEvent<HTMLButtonElement>,
+    tapped: boolean,
+  ) => {
+    const held = grab.current;
+    if (!held || held.pointer !== pointer.pointerId) return;
+    if (pointer.currentTarget.hasPointerCapture(pointer.pointerId))
+      pointer.currentTarget.releasePointerCapture(pointer.pointerId);
+    grab.current = null;
+    setDragging(false);
+    if (tapped && !travelled.current) setOffset(noDragOffset);
+  };
+  const nudge = (key: KeyboardEvent<HTMLButtonElement>) => {
+    if (key.key === 'Enter' || key.key === ' ') {
+      key.preventDefault();
+      setOffset(noDragOffset);
+      return;
+    }
+    const step = key.shiftKey ? fastNudgeStep : nudgeStep;
+    const moves: Record<string, DragOffset> = {
+      ArrowLeft: { x: -step, y: 0 },
+      ArrowRight: { x: step, y: 0 },
+      ArrowUp: { x: 0, y: -step },
+      ArrowDown: { x: 0, y: step },
+    };
+    const move = moves[key.key];
+    if (!move) return;
+    key.preventDefault();
+    settle((current) => ({ x: current.x + move.x, y: current.y + move.y }));
+  };
   const progress = eclipseProgress(event, time);
   const second = Math.floor(time / 1000) * 1000;
   const current = useMemo(
@@ -63,21 +206,38 @@ export default function EclipseProgressPanel({
       className="eclipse-progress panel"
       aria-label={t('天象进展')}
       data-expanded={expanded}
+      data-dragging={dragging}
+      ref={card}
+      style={{ translate: `${offset.x}px ${offset.y}px` }}
     >
-      <button
-        className="eclipse-progress-heading"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-        aria-controls="eclipse-progress-details"
-      >
-        <span>
-          <strong>
-            {t(names[`${event.type}-${event.kind}`])} · {t('进行中')}
-          </strong>
-          <small>{utcLabel(event.peak).slice(0, 10)} · UTC</small>
-        </span>
-        <ChevronDown size={18} aria-hidden="true" />
-      </button>
+      <div className="eclipse-progress-bar">
+        <button
+          className="eclipse-progress-grip"
+          aria-label={t('移动天象卡片')}
+          title={t('拖动移动卡片，点按复位，方向键微调')}
+          onPointerDown={startDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={(pointer) => endDrag(pointer, true)}
+          onPointerCancel={(pointer) => endDrag(pointer, false)}
+          onKeyDown={nudge}
+        >
+          <GripVertical size={16} aria-hidden="true" />
+        </button>
+        <button
+          className="eclipse-progress-heading"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-controls="eclipse-progress-details"
+        >
+          <span>
+            <strong>
+              {t(names[`${event.type}-${event.kind}`])} · {t('进行中')}
+            </strong>
+            <small>{utcLabel(event.peak).slice(0, 10)} · UTC</small>
+          </span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </button>
+      </div>
       <Progress value={progress.fraction * 100} aria-label={t('天象进展')} />
       <div className="eclipse-progress-phase">
         <span>{t(progress.stage)}</span>

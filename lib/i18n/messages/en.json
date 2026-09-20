@@ -24,6 +24,8 @@
   "浅金色为整场偏食覆盖区，本次没有全食或环食带。": "Pale gold marks the full partial-eclipse region. This event has no total or annular path.",
   "浅金色为完整全食／环食带，亮点为当前影轴位置。": "Pale gold marks the full total/annular path; the bright point marks the current shadow axis.",
   "全球进程 · 球形地球近似；各地见食时间不同。": "Global timing · spherical Earth approximation. Local contact times differ.",
+  "移动天象卡片": "Move the eclipse card",
+  "拖动移动卡片，点按复位，方向键微调": "Drag to move, tap to reset, arrow keys to nudge",
   "观察此天象": "Observe this eclipse",
   "天象进度计算失败，点击重试": "Eclipse calculation failed. Retry",
   "布局": "Layout",
