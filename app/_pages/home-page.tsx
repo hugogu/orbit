@@ -27,7 +27,6 @@ import {
   Info,
   CalendarDays,
   CalendarClock,
-  Moon,
   Sparkles,
   Share2,
   X,
@@ -37,6 +36,7 @@ import SolarScene, { type SceneHandle } from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';
 import LunarPanel from '@/components/lunar-panel';
+import MoonPhaseCard from '@/components/moon-phase-card';
 import BodyNavigation from '@/components/body-navigation';
 import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
@@ -745,8 +745,17 @@ export default function Home() {
     </>
   );
   const eclipse = useEclipseProgress(time);
+  // The Moon's own card and the eclipse progress card share the information
+  // column, so only one of them is up at a time; an eclipse in progress is the
+  // more urgent of the two and already answers where the Moon is.
+  const showMoonCard =
+    selected === 'moon-moon' && !eclipse.event && time !== null;
   return (
-    <main className="observatory" data-eclipse-active={!!eclipse.event}>
+    <main
+      className="observatory"
+      data-eclipse-active={!!eclipse.event}
+      data-moon-card={showMoonCard}
+    >
       <SolarScene
         state={{
           locale,
@@ -940,15 +949,6 @@ export default function Home() {
           <CalendarDays size={18} />
           {t('天象推演')}
         </button>
-        <button
-          className="astronomy-button"
-          aria-label={t('月相与观月')}
-          title={t('月相与观月')}
-          onClick={() => setLunar(true)}
-        >
-          <Moon size={18} />
-          {t('月相')}
-        </button>
         <a
           className="astronomy-button"
           href={eventsIndexPath(locale)}
@@ -958,6 +958,13 @@ export default function Home() {
           {t('天象事件')}
         </a>
       </div>
+      {showMoonCard && (
+        <MoonPhaseCard
+          time={time!}
+          location={observerLocation}
+          onOpen={() => setLunar(true)}
+        />
+      )}
       <aside className="info-panel glass">
         {tab === 'structure' && !body ? (
           <>
