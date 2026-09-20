@@ -1972,11 +1972,16 @@ button:disabled {
 /* The planner stands at the head of the body column, above the panel that
    answers it, instead of trailing the catalogue where it went unnoticed. Each
    top below is that column's own top, less this button and the rails' gap. */
+/* Three controls share this row, and the longest labels are Japanese, so it
+   wraps toward its own edge rather than running off the viewport. */
 .astronomy-actions {
   position: absolute;
   right: 32px;
   top: 152px;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: calc(100vw - 64px);
   gap: 8px;
 }
 .astronomy-button {
@@ -2129,9 +2134,20 @@ button:disabled {
   margin-top: 10px;
 }
 @media (max-width: 700px) {
+  /* Three controls, and the longest label is Japanese: the row keeps one line
+     here by tightening its own spacing rather than by truncating a label.
+     `flex-wrap` above is what guarantees it can never overflow instead. */
+  .astronomy-actions {
+    gap: 6px;
+  }
   .astronomy-button {
     padding: 8px;
     font-size: 12px;
+    gap: 5px;
+  }
+  .astronomy-button svg {
+    width: 16px;
+    height: 16px;
   }
   .header-actions .live {
     display: none;
@@ -2349,29 +2365,22 @@ button:disabled {
 .observer-actions .icon-button[aria-busy='true'] {
   color: #ead4ac;
 }
-/* The Moon's phase card sits where Earth carries its sunrise and sunset. */
-.moon-phase {
-  margin: 20px 0 22px;
-  padding: 14px 0 16px;
-  border-bottom: 1px solid #ffffff12;
-}
-/* The information panel is narrow on a desktop screen, so the disc keeps only
-   the width the phase name does not need, and the pair wraps before either is
-   squeezed. */
+/* The phase readout leads its own tab, where it has the dialog's full width;
+   the pair still wraps rather than letting either side be squeezed. */
 .moon-phase-hero {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 4px;
+  gap: 18px;
+  margin: 4px 0 18px;
 }
 .moon-phase-summary {
-  flex: 1 1 118px;
+  flex: 1 1 150px;
   min-width: 0;
 }
 .moon-phase-summary strong {
   display: block;
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 400;
   color: #ead5ad;
 }
@@ -2399,7 +2408,7 @@ button:disabled {
   stroke-width: 2;
 }
 .moon-phase-facts {
-  border-bottom: 0;
+  border-top: 0;
   margin-top: 4px;
 }
 .moon-phase-facts strong {
@@ -2427,10 +2436,6 @@ button:disabled {
   margin: 6px 0 0;
   line-height: 1.7;
   font-variant-numeric: tabular-nums;
-}
-.moon-calendar-action {
-  margin-top: 16px;
-  gap: 8px;
 }
 /* The almanac needs more width than the eclipse list: eleven columns of it. */
 .orbit-dialog.lunar-dialog {
@@ -3659,11 +3664,14 @@ button:disabled {
     display: none;
   }
   /* Every row on a phone is one control height tall, so a row reads as a row
-     however its two sides are built. */
+     however its two sides are built. The row is anchored left here, so it wraps
+     toward the right edge instead. */
   .astronomy-actions {
     left: max(12px, env(safe-area-inset-left));
-    right: auto;
+    right: max(12px, env(safe-area-inset-right));
     top: 148px;
+    justify-content: flex-start;
+    max-width: none;
   }
   .astronomy-button {
     min-height: 40px;

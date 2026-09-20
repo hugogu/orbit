@@ -7,14 +7,19 @@ import {
   compassPoint,
   lunarMonth,
   monthForTime,
+  moonMomentAt,
+  moonObservingWindow,
   moonQuarters,
   rightAscensionLabel,
   shiftMonth,
   type LunarDay,
   type LunarMonth,
+  type MoonMoment,
   type MoonQuarterEvent,
+  type ObservingWindow,
 } from '../lib/lunar-phase';
 import { localDayForTime, type SkyLocation } from '../lib/sky-events';
+import ConceptHint from './concept-hint';
 import {
   Dialog,
   DialogContent,
@@ -24,11 +29,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import MoonPhaseDisc from './moon-phase-disc';
 
-type Tab = 'quarters' | 'calendar';
+type Tab = 'now' | 'quarters' | 'calendar';
 /** The moment and place the open panel answers; the clock keeps running behind it. */
 type Anchor = { time: number; place: SkyLocation; month: string };
 
-export default function LunarCalendar({
+/**
+ * The Moon's phase, its principal phase times and a month of daily readings,
+ * opened from the observatory's own controls rather than from the Moon's
+ * information panel: the figures are about the sky tonight, not about the body,
+ * and one body's panel growing three times taller than every other body's is
+ * not where a reader looks for them.
+ */
+export default function LunarPanel({
   open,
   onOpenChange,
   time,
@@ -43,7 +55,7 @@ export default function LunarCalendar({
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [month, setMonth] = useState<string | null>(null);
   const [count, setCount] = useState(QUARTER_LIST_SIZE);
-  const [tab, setTab] = useState<Tab>('quarters');
+  const [tab, setTab] = useState<Tab>('now');
   // The list is a snapshot of the moment the panel opened: recalculating it
   // against the running clock would rewrite the answer under the reader. It is
   // deferred through a microtask, which is what the compiler lint rule asks of
@@ -67,6 +79,22 @@ export default function LunarCalendar({
       return [];
     }
   }, [anchor, count]);
+  // The moment's own readout is a few milliseconds of Astronomy Engine, and it
+  // answers the anchored moment rather than the running clock, like both lists.
+  const moment = useMemo<{
+    phase: MoonMoment;
+    window: ObservingWindow;
+  } | null>(() => {
+    if (!anchor) return null;
+    try {
+      return {
+        phase: moonMomentAt(anchor.time, anchor.place),
+        window: moonObservingWindow(anchor.time, anchor.place),
+      };
+    } catch {
+      return null;
+    }
+  }, [anchor]);
   const calendar = useMemo<LunarMonth | null>(() => {
     if (!anchor || !month) return null;
     try {
@@ -102,6 +130,107 @@ export default function LunarCalendar({
     });
   const offsetLabel = `${place.utcOffset >= 0 ? '+' : ''}${place.utcOffset}`;
   const today = anchor ? localDayForTime(anchor.time, place.utcOffset) : '';
+
+  const fact = (label: string, value: string, unit?: string) => (
+    <div key={label}>
+      <span>{t(label)}</span>
+      <strong>
+        {value} {unit && <small>{unit}</small>}
+      </strong>
+    </div>
+  );
+  const span = (from: number, to: number) =>
+    `${clock(from)} \u2013 ${clock(to)}`;
+  const nowTab = moment && (
+    <>
+      <div className="moon-phase-hero">
+        <MoonPhaseDisc
+          elongation={moment.phase.elongation}
+          flip={place.latitude < 0}
+          size={96}
+        />
+        <div className="moon-phase-summary">
+          <strong>{t(moment.phase.phase)}</strong>
+          <p>
+            {t('照明 {{percent}}% · 月龄 {{age}} 天', {
+              percent: number(moment.phase.illumination * 100),
+              age: number(moment.phase.age),
+            })}
+          </p>
+          <p className="little-note">
+            {t('本轮朔望月 {{length}} 天', {
+              length: number(moment.phase.lunation, 2),
+            })}
+          </p>
+        </div>
+      </div>
+      <div className="facts moon-phase-facts">
+        {/* Two different angles, each under its own name: the elongation is
+            what the phase name and the drawn disc follow, while the phase
+            angle is the one measured at the Moon. */}
+        {fact('日月黄经差', `${number(moment.phase.elongation)}\u00b0`)}
+        {fact('相位角', `${number(moment.phase.phaseAngle)}\u00b0`)}
+        {fact(
+          '地月距离',
+          Math.round(moment.phase.distanceKm).toLocaleString(locale),
+          'km',
+        )}
+        {fact('视直径', `${number(moment.phase.apparentDiameter, 2)}\u2032`)}
+        {fact(
+          '高度角',
+          `${number(moment.phase.altitude)}\u00b0`,
+          t(moment.phase.altitude > 0 ? '地平线上方' : '地平线下方'),
+        )}
+        {fact(
+          '方位角',
+          `${number(moment.phase.azimuth)}\u00b0`,
+          t(compassPoint(moment.phase.azimuth)),
+        )}
+        {fact('赤经', rightAscensionLabel(moment.phase.ra))}
+        {fact('赤纬', `${number(moment.phase.dec)}\u00b0`)}
+      </div>
+      <div className="moon-window">
+        <span className="concept-heading">
+          {t('今晚观月窗口')}
+          <ConceptHint
+            label={t(
+              '取当前所在或即将到来的一夜，从日落到次日日出之间月亮位于地平线以上的时段；天文暗夜指太阳低于地平线 18\u00b0 的时间。不考虑地形、建筑和天气。',
+            )}
+          />
+        </span>
+        {moment.window.start !== null && moment.window.end !== null ? (
+          <>
+            <strong>{span(moment.window.start, moment.window.end)}</strong>
+            {moment.window.best && (
+              <p>
+                {t(
+                  '最高在 {{time}}，高度 {{altitude}}\u00b0（{{direction}}）',
+                  {
+                    time: clock(moment.window.best.time),
+                    altitude: number(moment.window.best.altitude),
+                    direction: t(compassPoint(moment.window.best.azimuth)),
+                  },
+                )}
+              </p>
+            )}
+            {moment.window.darkStart !== null &&
+              moment.window.darkEnd !== null && (
+                <p>
+                  {t('天文暗夜 {{span}}', {
+                    span: span(moment.window.darkStart, moment.window.darkEnd),
+                  })}
+                </p>
+              )}
+          </>
+        ) : (
+          <strong>{t('今夜无观月窗口')}</strong>
+        )}
+        {moment.window.note && (
+          <p className="little-note">{t(moment.window.note)}</p>
+        )}
+      </div>
+    </>
+  );
 
   const quarterTable = (
     <table className="sky-table quarter-table">
@@ -298,10 +427,19 @@ export default function LunarCalendar({
           Astronomy Engine
         </a>{' '}
         {t(
-          '独立计算。每行的月龄、照明、距离、视直径与赤经赤纬取当地正午的瞬时值；月出、中天与月落是当日事件，月亮每天晚升约 50 分钟，因此某些日期本就没有其中之一，表中留空。地月距离与视直径为地心值，赤经赤纬与中天高度为观测点的视位置，不考虑地形、建筑和天气。',
+          '独立计算。地月距离与视直径为地心值，赤经赤纬、高度角与中天高度为观测点的视位置，不考虑地形、建筑和天气。',
         )}
       </p>
     </>
+  );
+  // What is true of a table of days is not true of a single moment, so the
+  // caveat about local noon and skipped events rides with the calendar alone.
+  const calendarNote = (
+    <p className="little-note">
+      {t(
+        '每行的月龄、照明、距离、视直径与赤经赤纬取当地正午的瞬时值；月出、中天与月落是当日事件，月亮每天晚升约 50 分钟，因此某些日期本就没有其中之一，表中留空。',
+      )}
+    </p>
   );
 
   return (
@@ -310,10 +448,10 @@ export default function LunarCalendar({
         closeLabel={t('Close')}
         className="orbit-dialog astronomy-dialog lunar-dialog"
       >
-        <DialogTitle>{t('月相日历')}</DialogTitle>
+        <DialogTitle>{t('月相与观月')}</DialogTitle>
         <DialogDescription>
           {anchor
-            ? t('从 {{date}} 起的月相，均为观测地点的当地时间。', {
+            ? t('以 {{date}} 为准，均为观测地点的当地时间。', {
                 date: localStamp(anchor.time),
               })
             : t('正在从当前模拟时间计算月相。')}
@@ -324,9 +462,21 @@ export default function LunarCalendar({
           className="settings-tabs"
         >
           <TabsList className="settings-tabs-list" aria-label={t('月相分类')}>
+            <TabsTrigger value="now">{t('当前月相')}</TabsTrigger>
             <TabsTrigger value="quarters">{t('四相时刻')}</TabsTrigger>
             <TabsTrigger value="calendar">{t('每日月历')}</TabsTrigger>
           </TabsList>
+          <TabsContent value="now" className="settings-tab-panel">
+            {nowTab ?? (
+              <p className="little-note">{t('正在从当前模拟时间计算月相。')}</p>
+            )}
+            <p className="little-note">
+              {t(
+                '月面按日月黄经差实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。日月黄经差从朔起算（0\u00b0 朔、90\u00b0 上弦、180\u00b0 望、270\u00b0 下弦），决定月相名称与月面形状；相位角是在月球上看太阳与地球的夹角（望时接近 0\u00b0），两者相加约为 180\u00b0。月龄从上一次朔起算，视直径为地心值。',
+              )}
+            </p>
+            {notes}
+          </TabsContent>
           <TabsContent value="quarters" className="settings-tab-panel">
             {quarters.length === 0 ? (
               <p className="little-note">
@@ -355,6 +505,7 @@ export default function LunarCalendar({
             {calendarTable ?? (
               <p className="little-note">{t('正在从当前模拟时间计算月相。')}</p>
             )}
+            {calendarNote}
             {notes}
           </TabsContent>
         </Tabs>

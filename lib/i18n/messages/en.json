@@ -1517,7 +1517,6 @@
   "最高在 {{time}}，高度 {{altitude}}°（{{direction}}）": "Highest at {{time}}, {{altitude}}° up ({{direction}})",
   "天文暗夜 {{span}}": "Astronomical darkness {{span}}",
   "今夜无观月窗口": "No observing window tonight",
-  "月相日历与四相时刻": "Lunar calendar and phase times",
   "四大月相的精确时刻，当地时间与 UTC 并列。": "Exact times of the four principal phases, local time beside UTC.",
   "上一个月": "Previous month",
   "下一个月": "Next month",
@@ -1538,9 +1537,6 @@
   "方位角": "Azimuth",
   "本月月食": "This month",
   "月相与位置由": "Phases and positions are calculated independently by ",
-  "独立计算。每行的月龄、照明、距离、视直径与赤经赤纬取当地正午的瞬时值；月出、中天与月落是当日事件，月亮每天晚升约 50 分钟，因此某些日期本就没有其中之一，表中留空。地月距离与视直径为地心值，赤经赤纬与中天高度为观测点的视位置，不考虑地形、建筑和天气。": ". Each row’s age, illumination, distance, apparent diameter and coordinates are the instantaneous values at local noon; moonrise, transit and moonset are that day’s own events. The Moon rises about fifty minutes later each day, so some dates genuinely have none of one of them and the cell is left empty. Distance and apparent diameter are geocentric; the coordinates and the transit altitude are apparent from the observing site. Terrain, buildings and weather are not considered.",
-  "月相日历": "Lunar calendar",
-  "从 {{date}} 起的月相，均为观测地点的当地时间。": "Phases from {{date}} onward, in the observing site’s local time.",
   "正在从当前模拟时间计算月相。": "Calculating phases from the current simulation time.",
   "月相分类": "Lunar calendar sections",
   "四相时刻": "Phase times",
@@ -1550,5 +1546,9 @@
   "日月黄经差": "Elongation",
   "赤经": "RA",
   "赤纬": "Dec",
-  "月面按日月黄经差实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。日月黄经差从朔起算（0° 朔、90° 上弦、180° 望、270° 下弦），决定月相名称与月面形状；相位角是在月球上看太阳与地球的夹角（望时接近 0°），两者相加约为 180°。月龄从上一次朔起算，视直径为地心值。": "The disc is drawn from the elongation itself, as a geocentric view with celestial north up. The southern hemisphere sees it the other way round, which the observer’s latitude mirrors. Elongation is measured from the new moon (0° new, 90° first quarter, 180° full, 270° last) and decides both the phase name and the shape; the phase angle is the Sun–Earth angle seen from the Moon, near 0° at full, and the two add up to about 180°. Age runs from the previous new moon, and the apparent diameter is geocentric."
+  "月面按日月黄经差实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。日月黄经差从朔起算（0° 朔、90° 上弦、180° 望、270° 下弦），决定月相名称与月面形状；相位角是在月球上看太阳与地球的夹角（望时接近 0°），两者相加约为 180°。月龄从上一次朔起算，视直径为地心值。": "The disc is drawn from the elongation itself, as a geocentric view with celestial north up. The southern hemisphere sees it the other way round, which the observer’s latitude mirrors. Elongation is measured from the new moon (0° new, 90° first quarter, 180° full, 270° last) and decides both the phase name and the shape; the phase angle is the Sun–Earth angle seen from the Moon, near 0° at full, and the two add up to about 180°. Age runs from the previous new moon, and the apparent diameter is geocentric.",
+  "月相与观月": "Lunar phases and observing",
+  "独立计算。地月距离与视直径为地心值，赤经赤纬、高度角与中天高度为观测点的视位置，不考虑地形、建筑和天气。": ". Distance and apparent diameter are geocentric; the coordinates, the altitude and the transit altitude are apparent from the observing site. Terrain, buildings and weather are not considered.",
+  "每行的月龄、照明、距离、视直径与赤经赤纬取当地正午的瞬时值；月出、中天与月落是当日事件，月亮每天晚升约 50 分钟，因此某些日期本就没有其中之一，表中留空。": "Each row’s age, illumination, distance, apparent diameter and coordinates are the instantaneous values at local noon; moonrise, transit and moonset are that day’s own events. The Moon rises about fifty minutes later each day, so some dates genuinely have none of one of them and the cell is left empty.",
+  "以 {{date}} 为准，均为观测地点的当地时间。": "Anchored to {{date}}, in the observing site’s local time."
 }

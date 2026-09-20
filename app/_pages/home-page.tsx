@@ -27,6 +27,7 @@ import {
   Info,
   CalendarDays,
   CalendarClock,
+  Moon,
   Sparkles,
   Share2,
   X,
@@ -35,7 +36,7 @@ import LanguagePicker from '../../components/language-picker';
 import SolarScene, { type SceneHandle } from '@/components/solar-scene';
 import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';
-import MoonPhasePanel from '@/components/moon-phase-panel';
+import LunarPanel from '@/components/lunar-panel';
 import BodyNavigation from '@/components/body-navigation';
 import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
@@ -143,6 +144,7 @@ export default function Home() {
     [time, setTime] = useState<number | null>(null),
     [epoch, setEpoch] = useState<number | null>(null),
     [astronomy, setAstronomy] = useState(false),
+    [lunar, setLunar] = useState(false),
     [timeJump, setTimeJump] = useState(false),
     [tab, setTab] = useState('explore'),
     [cometId, setCometId] = useState('halley'),
@@ -609,16 +611,6 @@ export default function Home() {
       moon={selectedMoon}
       curiosityIndex={curiosityPicks[selectedMoon.id]}
       onSelect={select}
-      extra={
-        selectedMoon.id === 'moon-moon' ? (
-          <MoonPhasePanel
-            time={time ?? J2000_MS}
-            location={observerLocation}
-            locationSource={observerLocationSource}
-            onLocationChange={updateObserverLocation}
-          />
-        ) : undefined
-      }
     />
   ) : body ? (
     <>
@@ -948,6 +940,15 @@ export default function Home() {
           <CalendarDays size={18} />
           {t('天象推演')}
         </button>
+        <button
+          className="astronomy-button"
+          aria-label={t('月相与观月')}
+          title={t('月相与观月')}
+          onClick={() => setLunar(true)}
+        >
+          <Moon size={18} />
+          {t('月相')}
+        </button>
         <a
           className="astronomy-button"
           href={eventsIndexPath(locale)}
@@ -1175,6 +1176,12 @@ export default function Home() {
           setSpeed(1);
           track('eclipse_select', { kind });
         }}
+      />
+      <LunarPanel
+        open={lunar}
+        onOpenChange={setLunar}
+        time={time ?? J2000_MS}
+        location={observerLocation}
       />
       <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent

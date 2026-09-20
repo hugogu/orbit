@@ -35,8 +35,8 @@ import {
 } from '../lib/lunar-phase';
 import CuriosityCard from '../components/curiosity-card';
 import MoonDetails from '../components/moon-details';
-import MoonPhasePanel from '../components/moon-phase-panel';
 import BodyNavigation from '../components/body-navigation';
+import LunarPanel from '../components/lunar-panel';
 import { orbitingMoons } from '../lib/moon-orbits';
 
 const codes = Object.keys(languages) as Locale[];
@@ -219,33 +219,56 @@ void test('moon profiles and their navigation use localized names and keep stabl
   }
 });
 
-void test('the Moon phase card is fully translated, including its computed labels', () => {
-  // Every phase name, compass point and unit in the card comes from the
+void test('the Moon phase panel is fully translated, including its computed labels', () => {
+  // Every phase name, compass point and unit in the panel comes from the
   // calculation rather than from a literal, so the rendered markup is what
-  // proves they are all translated.
-  const location = {
-    latitude: 39.9042,
-    longitude: 116.4074,
-    height: 43,
-    utcOffset: 8,
-  };
+  // proves they are all translated. The panel seeds itself in an effect, so the
+  // markup a static render produces is the shell plus its own notes.
   for (const locale of codes) {
-    const t = translator(locale);
     const markup = renderToStaticMarkup(
       createElement(
         I18nProvider,
         { initialLocale: locale },
-        createElement(MoonPhasePanel, {
+        createElement(LunarPanel, {
+          open: true,
+          onOpenChange() {},
           time: Date.parse('2026-09-20T12:00:00Z'),
-          location,
-          locationSource: 'manual' as const,
-          onLocationChange() {},
+          location: {
+            latitude: 39.9042,
+            longitude: 116.4074,
+            height: 43,
+            utcOffset: 8,
+          },
         }),
       ),
     );
-    assert.ok(markup.includes(t('今晚观月窗口')), locale);
-    assert.ok(markup.includes(t('月相日历与四相时刻')), locale);
     assert.doesNotMatch(markup, /{{|undefined|NaN|Infinity/, locale);
     if (locale === 'en') assert.doesNotMatch(markup, /\p{Script=Han}/u);
+  }
+  // The computed vocabularies are what a literal scan cannot see, so each one
+  // is checked against every catalog directly.
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const key of [
+      ...phaseNames,
+      ...quarterNames,
+      ...compassPoints,
+      ...Object.values(observingNotes),
+      '当前月相',
+      '四相时刻',
+      '每日月历',
+      '月相与观月',
+      '今晚观月窗口',
+    ]) {
+      // Japanese shares kanji terms with the source language, so a value equal
+      // to its key is a real translation there; English is what proves the
+      // vocabulary was actually carried over.
+      const translated = t(key);
+      assert.ok(translated.trim().length > 0, `${locale}: ${key}`);
+      if (locale === 'en') {
+        assert.notEqual(translated, key, key);
+        assert.doesNotMatch(translated, /\p{Script=Han}/u, key);
+      }
+    }
   }
 });
