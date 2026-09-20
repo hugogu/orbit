@@ -990,7 +990,7 @@ export default function Home() {
       <div className="side-rail rail-end">
         <button className="mobile-info glass" onClick={() => setDetails(true)}>
           <Info size={16} />
-          {t('天体知识')}
+          {t('天体百科')}
         </button>
         <div className="view-tools glass">
           <button
