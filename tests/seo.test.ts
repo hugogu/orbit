@@ -77,6 +77,10 @@ const eventPage = readFileSync(
   new URL('../app/_pages/event-page.tsx', import.meta.url),
   'utf8',
 );
+const globalStyles = readFileSync(
+  new URL('../app/globals.css', import.meta.url),
+  'utf8',
+);
 const seoModule = readFileSync(
   new URL('../lib/seo.ts', import.meta.url),
   'utf8',
@@ -465,6 +469,22 @@ void test('custom 404 offers noindex metadata and exploration links', () => {
 
 void test('Vercel serves extensionless paths for exported HTML profiles', () => {
   assert.equal(vercelConfig.cleanUrls, true);
+});
+
+void test('the home heading names the subject and survives the phone layout', () => {
+  assert.match(homePage, /<h1>\{t\('3D太阳系模拟器'\)\}<\/h1>/);
+  assert.match(
+    homePage,
+    /<p>\s*\{tab === 'structure'[\s\S]*?t\('在宇宙中，找到我们。'\)\}\s*<\/p>/,
+  );
+
+  // Phones and short landscape screens clear the scene by dropping the tagline;
+  // the heading itself must stay in the layout Google indexes.
+  assert.match(
+    globalStyles,
+    /\.scene-caption > p,\n\s*\.info-panel,\n\s*\.desktop-body-tree,/,
+  );
+  assert.doesNotMatch(globalStyles, /^\s*\.scene-caption,$/m);
 });
 
 void test('the built-in origin is the canonical host, not one that redirects', () => {

@@ -874,12 +874,12 @@ export default function Home() {
         </div>
       </header>
       <div className="scene-caption">
-        <span>{t('交互式天文观测台')}</span>
-        <h1>
+        <h1>{t('3D太阳系模拟器')}</h1>
+        <p>
           {tab === 'structure'
             ? t('从恒星，到星际空间。')
             : t('在宇宙中，找到我们。')}
-        </h1>
+        </p>
       </div>
       <div className="side-rail rail-start">
         <section

@@ -1415,16 +1415,19 @@ button:disabled {
   top: 113px;
   pointer-events: none;
 }
-.scene-caption > span {
+/* The heading carries the page's subject, so it is the small label above the
+   scene tagline rather than the display line itself. */
+.scene-caption > h1 {
   font-size: 12px;
+  font-weight: 400;
   letter-spacing: 0.18em;
+  margin: 0;
   color: #6e7b8e;
 }
-.scene-caption h1 {
+.scene-caption > p {
   font-size: 23px;
-  font-weight: 400;
   letter-spacing: 0.08em;
-  margin: 12px 0;
+  margin: 12px 0 0;
   color: #d9dfe9;
 }
 /* Each rail stacks its panel above its tools and stays transparent to pointer
@@ -2978,7 +2981,7 @@ button:disabled {
   .scene-caption {
     top: 104px;
   }
-  .scene-caption h1 {
+  .scene-caption > p {
     font-size: 20px;
     margin-top: 6px;
   }
@@ -3093,7 +3096,7 @@ button:disabled {
     left: 20px;
     top: 99px;
   }
-  .scene-caption h1 {
+  .scene-caption > p {
     font-size: 20px;
   }
   .body-option {
@@ -3199,14 +3202,16 @@ button:disabled {
   .fullscreen {
     display: none;
   }
+  /* The compact chrome claims the top of a phone screen, so the heading drops
+     below the sky-event button instead of crowding it. */
   .scene-caption {
-    top: 138px;
+    top: 198px;
     left: 20px;
   }
-  .scene-caption > span {
+  .scene-caption > h1 {
     font-size: 12px;
   }
-  .scene-caption h1 {
+  .scene-caption > p {
     font-size: 17px;
     margin-top: 8px;
   }
@@ -3370,7 +3375,7 @@ button:disabled {
     min-height: 0;
     height: 100dvh;
   }
-  .scene-caption,
+  .scene-caption > p,
   .info-panel,
   .desktop-body-tree,
   .catalog-title,
@@ -3645,6 +3650,11 @@ button:disabled {
   }
   .observatory .astronomy-actions {
     top: 110px;
+  }
+  /* The same chrome in a third of the height: the heading follows the
+     sky-event button down rather than printing across it. */
+  .observatory .scene-caption {
+    top: 160px;
   }
   .timeline {
     grid-template-columns: auto minmax(90px, 1fr) auto 44px 44px;
