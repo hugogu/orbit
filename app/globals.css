@@ -3537,9 +3537,11 @@ button:disabled {
     display: none;
   }
   /* The compact chrome claims the top of a phone screen, so the heading drops
-     below the sky-event button instead of crowding it. */
+     below the sky-event controls instead of crowding them. They stack here, so
+     it clears two rows rather than one: 148px + two 40px controls + the 8px
+     between them, and the same 10px of air the one-row version left. */
   .scene-caption {
-    top: 198px;
+    top: 246px;
     left: 20px;
   }
   .scene-caption > h1 {
