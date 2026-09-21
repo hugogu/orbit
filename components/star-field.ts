@@ -15,13 +15,15 @@ import {
 import { createSceneLabel } from './scene-label';
 
 /**
- * The sky is drawn on a unit sphere carried with the camera, so every star is
- * effectively at infinity no matter how far the view travels from the Sun.
- * Nothing here writes depth: the panorama, then the stars and their figures,
- * are painted before the rest of the scene and covered by whatever the solar
- * system draws in front of them.
+ * The sky is drawn on a sphere re-centred on the camera at draw time, so every
+ * star sits at infinity no matter where in the solar system the view travels:
+ * turning the camera turns the sky, moving it does not. The radius only has to
+ * stay well inside the far plane; a wide one keeps any residual offset far
+ * below a pixel. Nothing here writes depth: the panorama, then the stars and
+ * their figures, are painted before the rest of the scene and covered by
+ * whatever the solar system draws in front of them.
  */
-const SKY_RADIUS = 1;
+const SKY_RADIUS = 4000;
 const PANORAMA_INTENSITY = 0.35;
 const PANORAMA_ORDER = -2;
 const STAR_ORDER = -1;
@@ -101,6 +103,18 @@ type Figure = {
   place: ReturnType<typeof createSceneLabel>;
 };
 
+/**
+ * Pin an object to the camera the way the renderer pins its own background.
+ * Doing it here rather than in the frame loop keeps the sky exactly centred
+ * however late the camera moves — orbit damping updates it after everything
+ * else, and a lagging centre swings the whole sky as the view is dragged.
+ */
+function followCamera(object: THREE.Object3D) {
+  object.onBeforeRender = (_renderer, _scene, camera) => {
+    object.matrixWorld.copyPosition(camera.matrixWorld);
+  };
+}
+
 function sceneVector3(x: number, y: number, z: number) {
   return new THREE.Vector3(...sceneDirection(x, y, z));
 }
@@ -166,6 +180,7 @@ export function createStarField(
   panorama.quaternion.copy(panoramaOrientation());
   panorama.renderOrder = PANORAMA_ORDER;
   panorama.frustumCulled = false;
+  followCamera(panorama);
   panorama.visible = false;
   group.add(panorama);
 
@@ -177,7 +192,8 @@ export function createStarField(
   let loading: Promise<void> | null = null,
     failed = false,
     disposed = false;
-  const projected = new THREE.Vector3();
+  const projected = new THREE.Vector3(),
+    viewpoint = new THREE.Vector3();
 
   async function load() {
     const [catalogResponse, figureResponse] = await Promise.all([
@@ -228,6 +244,7 @@ export function createStarField(
     stars = new THREE.Points(geometry, starMaterial);
     stars.renderOrder = STAR_ORDER;
     stars.frustumCulled = false;
+    followCamera(stars);
     stars.visible = false;
     group.add(stars);
 
@@ -268,6 +285,7 @@ export function createStarField(
     figureLines = new THREE.LineSegments(figureGeometry, figureMaterial);
     figureLines.renderOrder = STAR_ORDER;
     figureLines.frustumCulled = false;
+    followCamera(figureLines);
     figureLines.visible = false;
     group.add(figureLines);
   }
@@ -282,7 +300,7 @@ export function createStarField(
       for (const figure of figures)
         figure.label.textContent = translate(constellationNames[figure.id]);
     },
-    update(camera: THREE.Camera, pixelRatio: number, options: SkyOptions) {
+    update(pixelRatio: number, options: SkyOptions) {
       const wanted = options.stars || options.figures;
       if (wanted && !loading && !failed) {
         loading = load().catch(() => {
@@ -290,7 +308,6 @@ export function createStarField(
           onStatus(starLoadFailureNotice);
         });
       }
-      camera.getWorldPosition(group.position);
       panorama.visible = options.galaxy && !!panoramaMaterial.map;
       if (stars && starMaterial) {
         stars.visible = options.stars;
@@ -308,11 +325,13 @@ export function createStarField(
       height: number,
       enabled: boolean,
     ) {
+      if (figures.length === 0) return;
+      camera.getWorldPosition(viewpoint);
       for (const figure of figures) {
         projected
           .copy(figure.anchor)
           .multiplyScalar(SKY_RADIUS)
-          .add(group.position)
+          .add(viewpoint)
           .project(camera);
         figure.place(projected, width, height, enabled);
       }

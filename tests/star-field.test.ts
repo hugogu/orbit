@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import sharp from 'sharp/lib/index.js';
 import { Body, DefineStar, GeoVector } from 'astronomy-engine';
+import { createStarField } from '../components/star-field';
 import { sceneDirection } from '../lib/ephemeris';
 import { constellationNames } from '../lib/constellations';
 import {
@@ -272,4 +273,40 @@ void test('the Milky Way panorama is turned to the frame it was photographed in'
   assert.ok(brightness(0, 0) > 20 * empty, 'galactic centre');
   assert.ok(brightness(280.5, -32.9) > 6 * empty, 'Large Magellanic Cloud');
   assert.ok(brightness(302.8, -44.3) > 3 * empty, 'Small Magellanic Cloud');
+});
+
+void test('the sky is re-centred on the camera as it is drawn, not a frame late', () => {
+  const scene = new THREE.Scene();
+  const field = createStarField(
+    scene,
+    null as unknown as HTMLElement,
+    () => {},
+  );
+  const sky = scene.children.find((child) => child.type === 'Group')!;
+  const panorama = sky.children[0] as THREE.Mesh;
+  const camera = new THREE.PerspectiveCamera();
+  // Orbit damping moves the camera after every other update, so a centre
+  // taken earlier in the frame swings the whole sky as the view is dragged.
+  camera.position.set(-180, 62, 940);
+  camera.updateMatrixWorld();
+  scene.updateMatrixWorld(true);
+  panorama.onBeforeRender(
+    null as never,
+    scene,
+    camera,
+    null as never,
+    null as never,
+    null as never,
+  );
+  const centre = new THREE.Vector3().setFromMatrixPosition(
+    panorama.matrixWorld,
+  );
+  assert.ok(centre.distanceTo(camera.position) < 1e-9);
+  // Re-centring must not disturb the orientation the panorama was given.
+  const turned = new THREE.Quaternion().setFromRotationMatrix(
+    panorama.matrixWorld,
+  );
+  assert.ok(turned.angleTo(panoramaOrientation()) < 1e-6);
+  field.dispose();
+  assert.equal(scene.children.length, 0);
 });

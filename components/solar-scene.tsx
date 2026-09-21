@@ -685,7 +685,7 @@ export default function SolarScene({
       }
       time = advanceTime(time, dt, s.speed, s.paused);
       const days = (time - J2000_MS) / DAY_MS;
-      starField.update(camera, renderer.getPixelRatio(), {
+      starField.update(renderer.getPixelRatio(), {
         stars: s.stars,
         figures: s.stars && s.constellations,
         galaxy: s.galaxy,
