@@ -1,0 +1,333 @@
+import * as THREE from 'three';
+import type { Translate } from '@/lib/i18n';
+import { sceneDirection } from '@/lib/ephemeris';
+import { constellationNames } from '@/lib/constellations';
+import {
+  panoramaOrientation,
+  parseConstellationFigures,
+  parseStarCatalog,
+  starBrightness,
+  starColor,
+  starPointSize,
+  type Constellation,
+  type StarCatalog,
+} from '@/lib/star-catalog';
+import { createSceneLabel } from './scene-label';
+
+/**
+ * The sky is drawn on a unit sphere carried with the camera, so every star is
+ * effectively at infinity no matter how far the view travels from the Sun.
+ * Nothing here writes depth: the panorama, then the stars and their figures,
+ * are painted before the rest of the scene and covered by whatever the solar
+ * system draws in front of them.
+ */
+const SKY_RADIUS = 1;
+const PANORAMA_INTENSITY = 0.35;
+const PANORAMA_ORDER = -2;
+const STAR_ORDER = -1;
+export const starDataPath = '/sky/bright-stars.bin';
+export const constellationDataPath = '/sky/constellations.json';
+export const starLoadFailureNotice = '真实星空数据加载失败，可刷新重试。';
+
+const properMotionVertexChunk = /* glsl */ `
+attribute vec3 motion;
+uniform float years;
+uniform float radius;
+vec4 skyPosition() {
+  return modelViewMatrix *
+    vec4(normalize(position + motion * years) * radius, 1.0);
+}
+`;
+
+const starVertexShader = /* glsl */ `
+${properMotionVertexChunk}
+attribute float size;
+attribute float brightness;
+attribute vec3 tint;
+uniform float pixelRatio;
+varying vec3 starTint;
+varying float starBrightness;
+void main() {
+  gl_Position = projectionMatrix * skyPosition();
+  gl_PointSize = size * pixelRatio;
+  starTint = tint;
+  starBrightness = brightness;
+}
+`;
+
+const starFragmentShader = /* glsl */ `
+uniform float opacity;
+varying vec3 starTint;
+varying float starBrightness;
+void main() {
+  // A soft disc keeps a bright star from reading as a square of pixels.
+  float falloff = smoothstep(0.5, 0.08, length(gl_PointCoord - vec2(0.5)));
+  if (falloff <= 0.0) discard;
+  gl_FragColor = vec4(starTint * starBrightness * opacity, falloff);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}
+`;
+
+const figureVertexShader = /* glsl */ `
+${properMotionVertexChunk}
+void main() {
+  gl_Position = projectionMatrix * skyPosition();
+}
+`;
+
+const figureFragmentShader = /* glsl */ `
+uniform vec3 tint;
+uniform float opacity;
+void main() {
+  gl_FragColor = vec4(tint * opacity, opacity);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}
+`;
+
+export type SkyOptions = {
+  stars: boolean;
+  figures: boolean;
+  galaxy: boolean;
+  /** Years since J2000, so proper motion matches the simulated date. */
+  years: number;
+};
+
+type Figure = {
+  id: string;
+  anchor: THREE.Vector3;
+  label: HTMLSpanElement;
+  place: ReturnType<typeof createSceneLabel>;
+};
+
+function sceneVector3(x: number, y: number, z: number) {
+  return new THREE.Vector3(...sceneDirection(x, y, z));
+}
+
+/** Stars and figures arrive in EQJ and are rotated once into scene axes. */
+function toSceneAxes(source: Float32Array) {
+  const values = new Float32Array(source.length);
+  for (let index = 0; index < source.length; index += 3) {
+    const [x, y, z] = sceneDirection(
+      source[index],
+      source[index + 1],
+      source[index + 2],
+    );
+    values[index] = x;
+    values[index + 1] = y;
+    values[index + 2] = z;
+  }
+  return values;
+}
+
+function starAttributes(catalog: StarCatalog) {
+  const count = catalog.magnitudes.length;
+  const sizes = new Float32Array(count),
+    brightness = new Float32Array(count),
+    tints = new Float32Array(count * 3),
+    color = new THREE.Color();
+  for (let index = 0; index < count; index++) {
+    sizes[index] = starPointSize(catalog.magnitudes[index]);
+    brightness[index] = starBrightness(catalog.magnitudes[index]);
+    color.setRGB(
+      ...starColor(catalog.colorIndices[index]),
+      THREE.SRGBColorSpace,
+    );
+    tints[index * 3] = color.r;
+    tints[index * 3 + 1] = color.g;
+    tints[index * 3 + 2] = color.b;
+  }
+  return { sizes, brightness, tints };
+}
+
+export function createStarField(
+  scene: THREE.Scene,
+  labelLayer: HTMLElement,
+  onStatus: (message: string) => void,
+) {
+  const group = new THREE.Group();
+  scene.add(group);
+  const panoramaMaterial = new THREE.MeshBasicMaterial({
+    // Matches the intensity the renderer's own background path applied, and
+    // like that path leaves an already-graded photograph untone-mapped.
+    color: new THREE.Color().setScalar(PANORAMA_INTENSITY),
+    side: THREE.BackSide,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const panorama = new THREE.Mesh(
+    // Dense enough that interpolating the sphere's own equirectangular
+    // coordinates stays well inside one pixel of the 8K map.
+    new THREE.SphereGeometry(SKY_RADIUS, 192, 96),
+    panoramaMaterial,
+  );
+  panorama.quaternion.copy(panoramaOrientation());
+  panorama.renderOrder = PANORAMA_ORDER;
+  panorama.frustumCulled = false;
+  panorama.visible = false;
+  group.add(panorama);
+
+  let stars: THREE.Points | null = null,
+    figureLines: THREE.LineSegments | null = null,
+    starMaterial: THREE.ShaderMaterial | null = null,
+    figureMaterial: THREE.ShaderMaterial | null = null;
+  const figures: Figure[] = [];
+  let loading: Promise<void> | null = null,
+    failed = false,
+    disposed = false;
+  const projected = new THREE.Vector3();
+
+  async function load() {
+    const [catalogResponse, figureResponse] = await Promise.all([
+      fetch(starDataPath),
+      fetch(constellationDataPath),
+    ]);
+    if (!catalogResponse.ok || !figureResponse.ok)
+      throw new Error('sky data unavailable');
+    const catalog = parseStarCatalog(await catalogResponse.arrayBuffer());
+    const { constellations } = parseConstellationFigures(
+      await figureResponse.json(),
+      catalog.magnitudes.length,
+    );
+    if (disposed) return;
+    build(catalog, constellations);
+  }
+
+  function build(catalog: StarCatalog, constellations: Constellation[]) {
+    const positions = toSceneAxes(catalog.positions),
+      motions = toSceneAxes(catalog.motions),
+      { sizes, brightness, tints } = starAttributes(catalog);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('motion', new THREE.BufferAttribute(motions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute(
+      'brightness',
+      new THREE.BufferAttribute(brightness, 1),
+    );
+    geometry.setAttribute('tint', new THREE.BufferAttribute(tints, 3));
+    starMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        years: { value: 0 },
+        radius: { value: SKY_RADIUS },
+        pixelRatio: { value: 1 },
+        opacity: { value: 1 },
+      },
+      vertexShader: starVertexShader,
+      fragmentShader: starFragmentShader,
+      blending: THREE.AdditiveBlending,
+      // Additive blending still applies to an opaque material, which keeps
+      // the sky in the opaque pass where its render order is honoured.
+      transparent: false,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    stars = new THREE.Points(geometry, starMaterial);
+    stars.renderOrder = STAR_ORDER;
+    stars.frustumCulled = false;
+    stars.visible = false;
+    group.add(stars);
+
+    const indices: number[] = [];
+    for (const constellation of constellations) {
+      indices.push(...constellation.lines);
+      const label = document.createElement('span');
+      label.className = 'constellation-label';
+      label.textContent = constellationNames[constellation.id];
+      label.style.display = 'none';
+      labelLayer.appendChild(label);
+      figures.push({
+        id: constellation.id,
+        anchor: sceneVector3(...constellation.anchor),
+        label,
+        place: createSceneLabel(label, -50),
+      });
+    }
+    const figureGeometry = new THREE.BufferGeometry();
+    figureGeometry.setAttribute('position', geometry.getAttribute('position'));
+    figureGeometry.setAttribute('motion', geometry.getAttribute('motion'));
+    figureGeometry.setIndex(indices);
+    figureMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        years: { value: 0 },
+        radius: { value: SKY_RADIUS },
+        tint: { value: new THREE.Color(0x5f7fb4) },
+        opacity: { value: 0.5 },
+      },
+      vertexShader: figureVertexShader,
+      fragmentShader: figureFragmentShader,
+      blending: THREE.AdditiveBlending,
+      transparent: false,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    figureLines = new THREE.LineSegments(figureGeometry, figureMaterial);
+    figureLines.renderOrder = STAR_ORDER;
+    figureLines.frustumCulled = false;
+    figureLines.visible = false;
+    group.add(figureLines);
+  }
+
+  return {
+    /** The panorama keeps its own toggle and its own texture slot. */
+    setPanorama(texture: THREE.Texture | null) {
+      panoramaMaterial.map = texture;
+      panoramaMaterial.needsUpdate = true;
+    },
+    localize(translate: Translate) {
+      for (const figure of figures)
+        figure.label.textContent = translate(constellationNames[figure.id]);
+    },
+    update(camera: THREE.Camera, pixelRatio: number, options: SkyOptions) {
+      const wanted = options.stars || options.figures;
+      if (wanted && !loading && !failed) {
+        loading = load().catch(() => {
+          failed = true;
+          onStatus(starLoadFailureNotice);
+        });
+      }
+      camera.getWorldPosition(group.position);
+      panorama.visible = options.galaxy && !!panoramaMaterial.map;
+      if (stars && starMaterial) {
+        stars.visible = options.stars;
+        starMaterial.uniforms.years.value = options.years;
+        starMaterial.uniforms.pixelRatio.value = pixelRatio;
+      }
+      if (figureLines && figureMaterial) {
+        figureLines.visible = options.figures;
+        figureMaterial.uniforms.years.value = options.years;
+      }
+    },
+    project(
+      camera: THREE.Camera,
+      width: number,
+      height: number,
+      enabled: boolean,
+    ) {
+      for (const figure of figures) {
+        projected
+          .copy(figure.anchor)
+          .multiplyScalar(SKY_RADIUS)
+          .add(group.position)
+          .project(camera);
+        figure.place(projected, width, height, enabled);
+      }
+    },
+    dispose() {
+      disposed = true;
+      for (const figure of figures) figure.label.remove();
+      figures.length = 0;
+      stars?.geometry.dispose();
+      figureLines?.geometry.dispose();
+      panorama.geometry.dispose();
+      starMaterial?.dispose();
+      figureMaterial?.dispose();
+      panoramaMaterial.dispose();
+      group.removeFromParent();
+    },
+  };
+}

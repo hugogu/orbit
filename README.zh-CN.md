@@ -27,6 +27,7 @@ ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计�
 | 🌒  | 选中月球后出现月相卡片，可展开四大月相时刻、整月每日数据与今晚观月窗口 | 月龄、照明、地月距离、视直径、月出中天月落，以及几点看 |
 | 🌗  | 显示天体昼夜分界、地球夜间灯光，以及日食时的本影、半影与影轴轨迹     | 日照、月食和日食的空间几何                       |
 | ✨  | 在自动、标准 2K 与最高 8K 纹理之间选择；银河背景可单独开关           | 视觉质量与设备性能之间的取舍                     |
+| 🌌  | 可开启真实星空：9,096 颗肉眼可见恒星按 J2000 坐标就位，附 88 星座连线，银河全景对齐到同一片天区 | 行星背后就是它们实际所处的星空                   |
 | 🗺️  | 可选：仅在跟随水星、金星、地球或火星时加载 2K 真实地形光照           | 公开地形数据增强近距离明暗起伏，但不改变球体网格 |
 | 📱  | 支持桌面鼠标和键盘、触屏手势、手机横屏与竖屏布局                     | 不同设备上的连续探索                             |
 | 🌐  | 支持简体中文、英语、日语，自动识别浏览器语言并记住手动选择           | 天体介绍、知识卡片、场景标签与天象工具完整翻译   |
@@ -181,10 +182,11 @@ ORBIT 用于天文学习，并在界面中说明模型的假设与适用范围�
 - [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
 - [NASA 日食几何](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy)（MIT）
-- 行星纹理主要来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形；银河全景是沉浸式背景，不是观测地点的实时星图。
+- 行星纹理主要来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形。银河全景是实拍照片：它按银道坐标转入场景所用的 J2000 参考系，因此银河带与星表恒星互相吻合，但仍是背景，而不是按观测者地平绘制的星图。
 - 可选的行星真实表面细节来自公开 NASA/USGS 地形数据，经固定版本的 CelestiaContent 法线贴图处理并下采样；详见 [`public/textures/planets/CREDITS.md`](public/textures/planets/CREDITS.md)。这些 2K 贴图只提供光照起伏，不进行几何位移；气态巨行星没有固体表面，仍使用大气表现。
 - 卫星贴图来自 [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent)，各文件采用的 CC BY 或 CC BY-SA 条款记录在 [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md)。天卫一、天卫五、天卫二、天卫三、天卫四和海卫一的 Voyager 贴图存在未测绘区域；本地副本用邻近的已观测纹理镜像填补缺口，避免近距离观察时出现单色半球。由于缺少完整全球反照率地图，海卫二、冥王星和冥卫一使用 CC BY 4.0 的 `asteroid.jpg` 作为明确标注的科普示意材质。彗星的形状模型来源和表面数据限制记录在 [`public/models/comets/CREDITS.md`](public/models/comets/CREDITS.md)。
 - 小行星贴图与转换后的形状资产分别记录在 [`public/textures/asteroids/CREDITS.md`](public/textures/asteroids/CREDITS.md) 和 [`public/models/asteroids/CREDITS.md`](public/models/asteroids/CREDITS.md)；命名小行星目录不再使用通用 `asteroid.jpg`。
+- 恒星数据来自[《耶鲁亮星星表》第 5 修订版](https://cdsarc.cds.unistra.fr/ftp/V/50/)（Hoffleit & Warren, 1991），以紧凑二进制随项目分发，含 J2000 位置、自行、星等与 B−V 色指数。星座连线与名称锚点来自 [d3-celestial](https://github.com/ofrohn/d3-celestial)（BSD-3-Clause），每个折线顶点都吸附到最近的星表恒星。来源与许可记录在 [`public/sky/source-manifest.json`](public/sky/source-manifest.json)，`npm run generate:sky` 可重新生成这两份资源。
 - 天王星使用 Solar System Scope 的 CC BY 4.0 大气示意图。原先禁止商业使用的天王星与冥卫一文件，以及再分发条款不明确的 NASA/JPL 冥王星示意图，已不再使用或随项目分发。
 
 ## 许可证

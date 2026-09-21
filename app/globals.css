@@ -1303,6 +1303,18 @@ button:disabled {
   color: #aab4c2;
   white-space: nowrap;
 }
+.constellation-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  color: #7f93b8b3;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 .planet-label:hover,
 .planet-label.selected {
   color: #edd5a6;

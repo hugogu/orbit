@@ -14,6 +14,7 @@ export async function buildPwa(clientDir = resolve('dist/client')) {
       'manifest.webmanifest',
       'favicon.svg',
       'textures/2k_*.{jpg,png}',
+      'sky/*.{bin,json}',
       'textures/satellites/2k_asteroid.jpg',
     ],
     maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,

@@ -157,6 +157,8 @@ export default function Home() {
     [shadowGuides, setShadowGuides] = useState(true),
     [eclipseView, setEclipseView] = useState(false),
     [galaxy, setGalaxy] = useState(true),
+    [stars, setStars] = useState(true),
+    [constellations, setConstellations] = useState(true),
     [solarActivity, setSolarActivity] = useState(true),
     [cometTails, setCometTails] = useState(true),
     [realSizes, setRealSizes] = useState(false),
@@ -239,6 +241,9 @@ export default function Home() {
       if (preferences.shadowGuides !== undefined)
         setShadowGuides(preferences.shadowGuides);
       if (preferences.galaxy !== undefined) setGalaxy(preferences.galaxy);
+      if (preferences.stars !== undefined) setStars(preferences.stars);
+      if (preferences.constellations !== undefined)
+        setConstellations(preferences.constellations);
       if (preferences.solarActivity !== undefined)
         setSolarActivity(preferences.solarActivity);
       if (preferences.cometTails !== undefined)
@@ -289,6 +294,8 @@ export default function Home() {
       shadows,
       shadowGuides,
       galaxy,
+      stars,
+      constellations,
       solarActivity,
       cometTails,
       realSizes,
@@ -314,6 +321,8 @@ export default function Home() {
     shadows,
     shadowGuides,
     galaxy,
+    stars,
+    constellations,
     solarActivity,
     cometTails,
     realSizes,
@@ -779,6 +788,8 @@ export default function Home() {
           eclipseView,
           activeEclipse: eclipse.event,
           galaxy,
+          stars,
+          constellations,
           solarActivity,
           cometTails,
           realSizes,
@@ -1231,7 +1242,27 @@ export default function Home() {
                 />
               </div>
               <p className="model-note">
-                {t('低亮度银河全景，保留暗色太空背景，避免掩盖天体。')}
+                {t(
+                  '低亮度银河全景，按银道坐标对齐到真实天区，保留暗色太空背景，避免掩盖天体。',
+                )}
+              </p>
+              <div className="setting-row">
+                <label htmlFor="stars">{t('真实星空')}</label>
+                <Switch id="stars" checked={stars} onCheckedChange={setStars} />
+              </div>
+              <div className="setting-row">
+                <label htmlFor="constellations">{t('星座连线')}</label>
+                <Switch
+                  id="constellations"
+                  checked={constellations}
+                  onCheckedChange={setConstellations}
+                  disabled={!stars}
+                />
+              </div>
+              <p className="model-note">
+                {t(
+                  '《耶鲁亮星星表》9,096 颗肉眼可见恒星，按 J2000 赤道坐标定位，亮度与颜色来自实测星等与 B−V 色指数，并按自行推算到当前模拟年份。星座连线为国际天文学联合会 88 星座的传统连线；打开「标签」后显示星座名称。',
+                )}
               </p>
               <div className="setting-row">
                 <label htmlFor="solar-activity">{t('太阳活动效果')}</label>

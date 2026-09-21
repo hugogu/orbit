@@ -24,6 +24,7 @@ import {
   asteroidSurfaceNote,
 } from '../lib/asteroids';
 import { moonSystems } from '../lib/moons';
+import { constellationNames } from '../lib/constellations';
 import { profileContent } from '../lib/profile-content';
 import { curiosities } from '../lib/curiosities';
 import { eventCategories, eventTopics } from '../lib/event-guide';
@@ -36,6 +37,7 @@ import {
 import CuriosityCard from '../components/curiosity-card';
 import MoonDetails from '../components/moon-details';
 import BodyNavigation from '../components/body-navigation';
+import { starLoadFailureNotice } from '../components/star-field';
 import LunarPanel from '../components/lunar-panel';
 import { orbitingMoons } from '../lib/moon-orbits';
 
@@ -118,6 +120,7 @@ void test('all educational data and literal translation keys have catalog entrie
     quarterNames,
     compassPoints,
     observingNotes,
+    constellationNames,
   ].forEach(check);
   const scan = (directory: string) => {
     for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -155,7 +158,11 @@ void test('all educational data and literal translation keys have catalog entrie
   ['app', 'components'].forEach(scan);
 });
 void test('comet model notes and load notices are translated in every locale', () => {
-  const keys = [cometModelNote, '部分彗星模型加载失败，暂用近似形状。'];
+  const keys = [
+    cometModelNote,
+    '部分彗星模型加载失败，暂用近似形状。',
+    starLoadFailureNotice,
+  ];
   for (const locale of codes) {
     const t = translator(locale);
     for (const key of keys) {

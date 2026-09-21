@@ -141,7 +141,13 @@ void test('production worker bundles offline dependencies and changes revision w
   const dir = await mkdtemp(join(tmpdir(), 'orbit-pwa-build-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const client = join(dir, 'client');
-  for (const path of ['assets', 'textures/satellites', 'models', '../server'])
+  for (const path of [
+    'assets',
+    'textures/satellites',
+    'models',
+    'sky',
+    '../server',
+  ])
     await mkdir(join(client, path), { recursive: true });
   await copyFile('public/favicon.svg', join(client, 'favicon.svg'));
   await generatePwaAssets(client);
@@ -155,6 +161,8 @@ void test('production worker bundles offline dependencies and changes revision w
     ['textures/8k_mars.jpg', 'optional large map'],
     ['textures/satellites/2k_asteroid.jpg', 'pluto map'],
     ['models/optional.bin', 'large model'],
+    ['sky/bright-stars.bin', 'star catalog'],
+    ['sky/constellations.json', '{}'],
   ])
     await writeFile(join(client, path), content);
   const first = await buildPwa(client);
@@ -165,6 +173,8 @@ void test('production worker bundles offline dependencies and changes revision w
     '/assets/eclipse-worker.js',
     '/assets/app.css',
     '/textures/2k_mars.jpg',
+    '/sky/bright-stars.bin',
+    '/sky/constellations.json',
     '/offline/en.html',
   ])
     assert.ok(urls.includes(url), url);

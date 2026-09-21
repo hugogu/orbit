@@ -6,7 +6,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bodies, type ScaleMode } from '@/lib/solar';
 import { planetPosition, bodyOrientation } from '@/lib/ephemeris';
-import { DAY_MS, J2000_MS, advanceTime } from '@/lib/simulation-time';
+import {
+  DAY_MS,
+  J2000_MS,
+  JULIAN_YEAR_DAYS,
+  advanceTime,
+} from '@/lib/simulation-time';
 import { comets } from '@/lib/comets';
 import { asteroids } from '@/lib/asteroids';
 import { createAsteroidSystem } from './asteroid-system';
@@ -32,6 +37,7 @@ import { createEclipseSystem } from './eclipse-system';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
+import { createStarField } from './star-field';
 import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
 import type { CameraPose } from '@/lib/share-view';
@@ -68,6 +74,8 @@ export type SceneState = {
   eclipseView: boolean;
   activeEclipse: EclipseProgressEvent | null;
   galaxy: boolean;
+  stars: boolean;
+  constellations: boolean;
   solarActivity: boolean;
   cometTails: boolean;
   realSizes: boolean;
@@ -167,15 +175,7 @@ export default function SolarScene({
         },
         options,
       );
-    let galaxyTexture: THREE.Texture | null = null;
-    const emptySky = new THREE.Color(0x020408);
-    textureManager.register('stars_milky_way', (texture) => {
-      texture.mapping = THREE.EquirectangularReflectionMapping;
-      galaxyTexture = texture;
-    });
-    scene.backgroundIntensity = 0.35;
-    scene.backgroundRotation.x = -0.55;
-    scene.backgroundRotation.y = Math.PI / 2;
+    scene.background = new THREE.Color(0x020408);
     const roots = new Map<string, THREE.Group>(),
       meshes = new Map<string, THREE.Mesh>(),
       orbitLines = new Map<string, OrbitLine>(),
@@ -188,6 +188,14 @@ export default function SolarScene({
     const labelLayer = document.createElement('div');
     labelLayer.className = 'scene-labels';
     container.appendChild(labelLayer);
+    // The sky owns the panorama as well as the catalogued stars, so the two
+    // are turned by the same measured frame instead of by eye.
+    const starField = createStarField(scene, labelLayer, (message) =>
+      latest.current.onAssetStatus(message),
+    );
+    textureManager.register('stars_milky_way', (texture) =>
+      starField.setPanorama(texture),
+    );
     const cometSystem = createCometSystem(
       scene,
       labelLayer,
@@ -602,6 +610,7 @@ export default function SolarScene({
         }
         moonSystem.localize(translate);
         asteroidSystem.localize(translate);
+        starField.localize(translate);
         lastLocale = s.locale;
       }
       const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
@@ -669,7 +678,6 @@ export default function SolarScene({
         activeBodyTextures,
         navigating,
       );
-      scene.background = s.galaxy ? (galaxyTexture ?? emptySky) : emptySky;
       const seek = s.epoch !== epoch;
       if (seek) {
         epoch = s.epoch;
@@ -677,6 +685,14 @@ export default function SolarScene({
       }
       time = advanceTime(time, dt, s.speed, s.paused);
       const days = (time - J2000_MS) / DAY_MS;
+      starField.update(camera, renderer.getPixelRatio(), {
+        stars: s.stars,
+        figures: s.stars && s.constellations,
+        galaxy: s.galaxy,
+        // Proper motion is published per Julian year, which is also how the
+        // simulation counts days away from J2000.
+        years: days / JULIAN_YEAR_DAYS,
+      });
       if (s.scale !== lastScale || seek) {
         lastScale = s.scale;
         for (const body of bodies) {
@@ -930,6 +946,12 @@ export default function SolarScene({
       );
       belt.update(camera.position, days);
       renderer.render(scene, camera);
+      starField.project(
+        camera,
+        width,
+        height,
+        s.stars && s.constellations && s.labels,
+      );
       asteroidSystem.project(
         camera,
         width,
@@ -1011,6 +1033,7 @@ export default function SolarScene({
       controls.dispose();
       eclipseSystem.dispose();
       eclipsePath.dispose();
+      starField.dispose();
       observerMarker?.dispose();
       belt.dispose();
       asteroidSystem.dispose();
