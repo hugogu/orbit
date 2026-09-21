@@ -28,8 +28,6 @@ export type StarCatalog = {
 export type Constellation = {
   /** IAU three-letter abbreviation; `lib/constellations.ts` names it. */
   id: string;
-  /** EQJ unit vector where the figure's name is written. */
-  anchor: [number, number, number];
   /** Star index pairs, two entries per drawn segment. */
   lines: number[];
 };
@@ -132,15 +130,9 @@ export function parseConstellationFigures(
     throw catalogError('figures list is missing');
   const constellations = source.constellations.map((entry): Constellation => {
     const figure = entry as Record<string, unknown>;
-    const { id, anchor, lines } = figure;
+    const { id, lines } = figure;
     if (typeof id !== 'string' || !Object.hasOwn(constellationNames, id))
       throw catalogError(`figure ${String(id)} is not a constellation`);
-    if (
-      !Array.isArray(anchor) ||
-      anchor.length !== 3 ||
-      anchor.some((component) => typeof component !== 'number')
-    )
-      throw catalogError(`figure ${id} has no anchor`);
     if (
       !Array.isArray(lines) ||
       lines.length === 0 ||
@@ -154,11 +146,7 @@ export function parseConstellationFigures(
       )
     )
       throw catalogError(`figure ${id} points outside the catalog`);
-    return {
-      id,
-      anchor: anchor as [number, number, number],
-      lines: lines as number[],
-    };
+    return { id, lines: lines as number[] };
   });
   return { starCount: stars, constellations };
 }
@@ -205,6 +193,70 @@ export function starColor(colorIndex: number): [number, number, number] {
 
 /** Naked-eye limit of the Bright Star Catalogue, used as the faint anchor. */
 export const NAKED_EYE_MAGNITUDE = 6.5;
+
+/** How far towards the top of its own figure a constellation's name sits. */
+const ANCHOR_LIFT = 0.35;
+const ANCHOR_LIFT_LIMIT = (5 * Math.PI) / 180;
+
+/**
+ * Where a figure's name belongs: among the stars it names, a little above
+ * their middle. A name written outside the figure leaves a reader guessing
+ * which stars it refers to, and a chart's own label point is chosen for a
+ * flat map rather than for a sky the viewer can turn.
+ *
+ * `up` is the scene's own up axis, which is where screen-up stays while the
+ * view orbits; a figure sitting on that axis has no meaningful up of its own
+ * and simply keeps its middle.
+ */
+export function figureAnchor(
+  positions: Float32Array,
+  magnitudes: Float32Array,
+  lines: number[],
+  up: Vector3,
+) {
+  const stars = new Set(lines);
+  const middle = new Vector3();
+  for (const index of stars)
+    middle.addScaledVector(
+      new Vector3(
+        positions[index * 3],
+        positions[index * 3 + 1],
+        positions[index * 3 + 2],
+      ),
+      // Weighted towards the stars a reader actually picks out, so the name
+      // lands on the shape they recognise rather than between its faint
+      // outlying limbs.
+      Math.max(NAKED_EYE_MAGNITUDE - magnitudes[index], 0.5),
+    );
+  middle.normalize();
+  const north = up.clone().projectOnPlane(middle);
+  if (north.lengthSq() < 1e-8) return middle;
+  north.normalize();
+  // Step towards the figure's own topmost star rather than towards the up
+  // axis itself: a fraction of the way to a star the figure really has is
+  // inside it by construction, however wide or flat the shape is.
+  let top: Vector3 | null = null,
+    reach = 0;
+  for (const index of stars) {
+    const star = new Vector3(
+      positions[index * 3],
+      positions[index * 3 + 1],
+      positions[index * 3 + 2],
+    );
+    if (star.dot(north) > reach) {
+      reach = star.dot(north);
+      top = star;
+    }
+  }
+  if (!top) return middle;
+  const lift = Math.min(middle.angleTo(top) * ANCHOR_LIFT, ANCHOR_LIFT_LIMIT);
+  const toTop = top.clone().projectOnPlane(middle);
+  if (toTop.lengthSq() < 1e-8) return middle;
+  return middle
+    .multiplyScalar(Math.cos(lift))
+    .addScaledVector(toTop.normalize(), Math.sin(lift))
+    .normalize();
+}
 
 /** Drawn diameter in CSS pixels before the device pixel ratio is applied. */
 export function starPointSize(magnitude: number) {

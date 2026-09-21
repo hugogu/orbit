@@ -3,6 +3,7 @@ import type { Translate } from '@/lib/i18n';
 import { sceneDirection } from '@/lib/ephemeris';
 import { constellationNames } from '@/lib/constellations';
 import {
+  figureAnchor,
   panoramaOrientation,
   parseConstellationFigures,
   parseStarCatalog,
@@ -24,6 +25,8 @@ import { createSceneLabel } from './scene-label';
  * whatever the solar system draws in front of them.
  */
 const SKY_RADIUS = 4000;
+/** Screen-up while the view orbits, which is the scene's own up axis. */
+const SKY_UP = new THREE.Vector3(0, 1, 0);
 const PANORAMA_INTENSITY = 0.35;
 const PANORAMA_ORDER = -2;
 const STAR_ORDER = -1;
@@ -113,10 +116,6 @@ function followCamera(object: THREE.Object3D) {
   object.onBeforeRender = (_renderer, _scene, camera) => {
     object.matrixWorld.copyPosition(camera.matrixWorld);
   };
-}
-
-function sceneVector3(x: number, y: number, z: number) {
-  return new THREE.Vector3(...sceneDirection(x, y, z));
 }
 
 /** Stars and figures arrive in EQJ and are rotated once into scene axes. */
@@ -258,7 +257,12 @@ export function createStarField(
       labelLayer.appendChild(label);
       figures.push({
         id: constellation.id,
-        anchor: sceneVector3(...constellation.anchor),
+        anchor: figureAnchor(
+          positions,
+          catalog.magnitudes,
+          constellation.lines,
+          SKY_UP,
+        ),
         label,
         place: createSceneLabel(label, -50),
       });

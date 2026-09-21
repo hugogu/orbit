@@ -9,6 +9,7 @@ import { sceneDirection } from '../lib/ephemeris';
 import { constellationNames } from '../lib/constellations';
 import {
   encodeStarCatalog,
+  figureAnchor,
   galacticBasis,
   panoramaOrientation,
   panoramaPixel,
@@ -169,7 +170,6 @@ void test('constellation figures join catalogued stars inside their own region',
   );
   let segments = 0;
   for (const figure of constellations) {
-    const anchor = new THREE.Vector3(...figure.anchor);
     for (let index = 0; index < figure.lines.length; index += 2) {
       const from = direction(catalog, figure.lines[index]),
         to = direction(catalog, figure.lines[index + 1]);
@@ -177,7 +177,6 @@ void test('constellation figures join catalogued stars inside their own region',
       // A drawn line joins neighbouring stars of one figure, never two
       // stars on opposite sides of the sky.
       assert.ok(separation(from, to) < 45, `${figure.id} segment`);
-      assert.ok(separation(from, anchor) < 65, `${figure.id} anchor`);
       segments++;
     }
   }
@@ -309,4 +308,98 @@ void test('the sky is re-centred on the camera as it is drawn, not a frame late'
   assert.ok(turned.angleTo(panoramaOrientation()) < 1e-6);
   field.dispose();
   assert.equal(scene.children.length, 0);
+});
+
+void test("a figure's name is written among its own stars, above their middle", () => {
+  const catalog = loadCatalog();
+  const { constellations } = loadFigures(catalog);
+  const up = new THREE.Vector3(0, 1, 0);
+  // Anchors are read in scene axes, which is where the label is projected.
+  const scene = new Float32Array(catalog.positions.length);
+  for (let index = 0; index < catalog.positions.length; index += 3)
+    scene.set(
+      sceneDirection(
+        catalog.positions[index],
+        catalog.positions[index + 1],
+        catalog.positions[index + 2],
+      ),
+      index,
+    );
+  const at = (index: number) =>
+    new THREE.Vector3(
+      scene[index * 3],
+      scene[index * 3 + 1],
+      scene[index * 3 + 2],
+    );
+  for (const figure of constellations) {
+    const stars = [...new Set(figure.lines)];
+    const anchor = figureAnchor(scene, catalog.magnitudes, figure.lines, up);
+    const distances = stars.map((index) => separation(anchor, at(index)));
+    const middle = stars
+      .map(at)
+      .reduce((total, star) => total.add(star), new THREE.Vector3())
+      .normalize();
+    const extent = Math.max(
+      ...stars.map((index) => separation(middle, at(index))),
+    );
+    // Inside the figure's own reach, never beyond the stars it joins, and
+    // close to one of them — a sprawling figure such as Ophiuchus is mostly
+    // empty in the middle, so how close scales with how large it is.
+    assert.ok(separation(anchor, middle) < extent, `${figure.id} overshoots`);
+    assert.ok(
+      Math.min(...distances) <= Math.max(7, extent * 0.5),
+      `${figure.id} is adrift`,
+    );
+  }
+  // Orion is the worked example: the name belongs between the shoulders,
+  // not above the raised club where the printed chart puts it.
+  const orion = constellations.find((figure) => figure.id === 'Ori')!;
+  const anchor = figureAnchor(scene, catalog.magnitudes, orion.lines, up);
+  const star = (magnitude: number) =>
+    at(
+      [...new Set(orion.lines)].find(
+        (index) => Math.abs(catalog.magnitudes[index] - magnitude) < 0.02,
+      )!,
+    );
+  assert.ok(separation(anchor, star(1.64)) < 5, 'Bellatrix');
+  assert.ok(separation(anchor, star(0.5)) < 9, 'Betelgeuse');
+  assert.ok(separation(anchor, star(0.12)) > 12, 'Rigel');
+});
+
+void test("the name is lifted from the middle towards the figure's top star", () => {
+  const corner = (x: number, y: number) =>
+    new THREE.Vector3(
+      Math.sin(x * degree),
+      Math.sin(y * degree),
+      1,
+    ).normalize();
+  const shape = [corner(-6, -3), corner(6, -3), corner(0, 7)];
+  const positions = new Float32Array(shape.flatMap((star) => star.toArray()));
+  const anchor = figureAnchor(
+    positions,
+    new Float32Array([3, 3, 3]),
+    [0, 1, 1, 2, 2, 0],
+    new THREE.Vector3(0, 1, 0),
+  );
+  const middle = shape
+    .reduce((total, star) => total.add(star), new THREE.Vector3())
+    .normalize();
+  const top = shape[2];
+  // A step along the arc towards a star the figure really has, so the name
+  // is inside the shape however wide or flat that shape is.
+  assert.ok(Math.abs(anchor.x) < 1e-9, "stays on the figure's axis");
+  assert.ok(anchor.y > middle.y, 'lifted');
+  assert.ok(
+    Math.abs(middle.angleTo(anchor) - middle.angleTo(top) * 0.35) < 1e-7,
+  );
+  assert.ok(anchor.angleTo(top) < middle.angleTo(top), 'towards the top star');
+  // A figure standing on the up axis has no up of its own and keeps its
+  // middle rather than being pushed to a pole.
+  const overhead = figureAnchor(
+    new Float32Array([0, 1, 0, 0.02, 0.9998, 0]),
+    new Float32Array([3, 3]),
+    [0, 1],
+    new THREE.Vector3(0, 1, 0),
+  );
+  assert.ok(overhead.angleTo(new THREE.Vector3(0, 1, 0)) < 0.02);
 });

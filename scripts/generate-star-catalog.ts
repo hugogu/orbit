@@ -26,12 +26,6 @@ export const starSources = {
     title: 'd3-celestial constellation figures (Olaf Frohn)',
     license: 'BSD-3-Clause',
   },
-  anchors: {
-    file: 'constellations.json',
-    url: 'https://raw.githubusercontent.com/ofrohn/d3-celestial/master/data/constellations.json',
-    title: 'd3-celestial constellation label anchors (Olaf Frohn)',
-    license: 'BSD-3-Clause',
-  },
 } as const;
 
 type ParsedStar = {
@@ -138,13 +132,6 @@ type FigureSource = {
     geometry: { coordinates: [number, number][][] };
   }[];
 };
-type AnchorSource = {
-  features: {
-    id: string;
-    geometry: { coordinates: [number, number] };
-  }[];
-};
-
 function directionFromDegrees(longitude: number, latitude: number) {
   const ra = longitude * degree,
     dec = latitude * degree;
@@ -163,17 +150,13 @@ function directionFromDegrees(longitude: number, latitude: number) {
  */
 export function snapFigures(
   figures: FigureSource,
-  anchors: AnchorSource,
   catalog: StarCatalog,
   tolerance = 0.6 * degree,
 ) {
   const count = catalog.magnitudes.length;
-  const anchored = new Map(anchors.features.map((entry) => [entry.id, entry]));
   const constellations: Constellation[] = [];
   const unmatched: string[] = [];
   for (const feature of figures.features) {
-    const entry = anchored.get(feature.id);
-    if (!entry) throw new Error(`No anchor for constellation ${feature.id}`);
     if (!Object.hasOwn(constellationNames, feature.id))
       throw new Error(`No name for constellation ${feature.id}`);
     const lines: number[] = [];
@@ -206,11 +189,7 @@ export function snapFigures(
       }
     }
     if (lines.length === 0) throw new Error(`No figure for ${feature.id}`);
-    constellations.push({
-      id: feature.id,
-      anchor: directionFromDegrees(...entry.geometry.coordinates),
-      lines,
-    });
+    constellations.push({ id: feature.id, lines });
   }
   return { constellations, unmatched };
 }
@@ -235,27 +214,22 @@ export function generateStarCatalog(inputRoot: string, outputRoot: string) {
   const figures = JSON.parse(
     readSource(inputRoot, starSources.figures).toString('utf8'),
   ) as FigureSource;
-  const anchors = JSON.parse(
-    readSource(inputRoot, starSources.anchors).toString('utf8'),
-  ) as AnchorSource;
-  const snapped = snapFigures(figures, anchors, catalog);
+  const snapped = snapFigures(figures, catalog);
   mkdirSync(outputRoot, { recursive: true });
   const catalogFile = resolve(outputRoot, 'bright-stars.bin');
   writeFileSync(catalogFile, Buffer.from(encodeStarCatalog(catalog)));
   const figuresFile = resolve(outputRoot, 'constellations.json');
+  // One figure per line: a committed asset should stay reviewable, and a
+  // pretty-printed index array would spread each one over a hundred lines.
+  const figureLines = snapped.constellations
+    .map(
+      (figure) =>
+        `  {"id": ${JSON.stringify(figure.id)}, "lines": [${figure.lines.join(',')}]}`,
+    )
+    .join(',\n');
   writeFileSync(
     figuresFile,
-    `${JSON.stringify(
-      {
-        starCount: stars.length,
-        constellations: snapped.constellations.map((figure) => ({
-          ...figure,
-          anchor: figure.anchor.map((value) => Number(value.toFixed(6))),
-        })),
-      },
-      null,
-      1,
-    )}\n`,
+    `{\n "starCount": ${stars.length},\n "constellations": [\n${figureLines}\n ]\n}\n`,
   );
   writeFileSync(
     resolve(outputRoot, 'source-manifest.json'),
