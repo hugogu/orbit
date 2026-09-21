@@ -129,7 +129,7 @@ export default function SolarScene({
     } catch {
       queueMicrotask(() =>
         setError(
-          '当前浏览器无法启动 3D 显示。请启用硬件加速或换用支持 WebGL 2 的浏览器。天体知识仍可通过列表阅读。',
+          '当前浏览器无法启动 3D 显示。请启用硬件加速或换用支持 WebGL 2 的浏览器。天体百科仍可通过列表阅读。',
         ),
       );
       return;

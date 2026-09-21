@@ -166,6 +166,7 @@ export default function Home() {
     [realTerrain, setRealTerrain] = useState(true),
     [systemView, setSystemView] = useState(false),
     [textureQuality, setTextureQuality] = useState<TextureQuality>('auto'),
+    [actionLabels, setActionLabels] = useState(true),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
     [details, setDetails] = useState(false),
     [share, setShare] = useState(false),
@@ -256,6 +257,8 @@ export default function Home() {
         setRealTerrain(preferences.realTerrain);
       if (preferences.textureQuality !== undefined)
         setTextureQuality(preferences.textureQuality);
+      if (preferences.actionLabels !== undefined)
+        setActionLabels(preferences.actionLabels);
       const savedLocation = preferences.observerLocation;
       const savedSource = preferences.observerLocationSource;
       if (savedLocation && savedSource) setObserverLocation(savedLocation);
@@ -302,6 +305,7 @@ export default function Home() {
       realSurface,
       realTerrain,
       textureQuality,
+      actionLabels,
     };
     if (
       observerLocationSource === 'device' ||
@@ -329,6 +333,7 @@ export default function Home() {
     realSurface,
     realTerrain,
     textureQuality,
+    actionLabels,
     observerLocation,
     observerLocationSource,
   ]);
@@ -759,11 +764,15 @@ export default function Home() {
   // more urgent of the two and already answers where the Moon is.
   const showMoonCard =
     selected === 'moon-moon' && !eclipse.event && time !== null;
+  // Hiding a label must not take the name away from a screen reader, so the
+  // text stays in the button and only leaves the picture.
+  const actionLabel = actionLabels ? undefined : 'sr-only';
   return (
     <main
       className="observatory"
       data-eclipse-active={!!eclipse.event}
       data-moon-card={showMoonCard}
+      data-action-labels={actionLabels}
     >
       <SolarScene
         state={{
@@ -958,7 +967,7 @@ export default function Home() {
           onClick={() => setAstronomy(true)}
         >
           <CalendarDays size={18} />
-          {t('天象推演')}
+          <span className={actionLabel}>{t('天象推演')}</span>
         </button>
         <a
           className="astronomy-button"
@@ -966,7 +975,7 @@ export default function Home() {
           title={t('天象事件')}
         >
           <Sparkles size={18} />
-          {t('天象事件')}
+          <span className={actionLabel}>{t('天象事件')}</span>
         </a>
       </div>
       {showMoonCard && (
@@ -999,9 +1008,13 @@ export default function Home() {
         )}
       </aside>
       <div className="side-rail rail-end">
-        <button className="mobile-info glass" onClick={() => setDetails(true)}>
+        <button
+          className="mobile-info glass"
+          title={t('天体百科')}
+          onClick={() => setDetails(true)}
+        >
           <Info size={16} />
-          {t('天体知识')}
+          <span className={actionLabel}>{t('天体百科')}</span>
         </button>
         <div className="view-tools glass">
           <button
@@ -1228,8 +1241,10 @@ export default function Home() {
                 realSizes={realSizes}
                 scale={displayScale}
                 distanceLocked={isComet || tab === 'structure'}
+                actionLabels={actionLabels}
                 onRealSizesChange={setRealSizes}
                 onScaleChange={setScale}
+                onActionLabelsChange={setActionLabels}
               />
             </TabsContent>
             <TabsContent value="environment" className="settings-tab-panel">

@@ -22,6 +22,7 @@ export type ObservatoryPreferences = {
   realSurface: boolean;
   realTerrain: boolean;
   textureQuality: TextureQuality;
+  actionLabels: boolean;
   observerLocation: SkyLocation;
   observerLocationSource: ChosenLocationSource;
 };
@@ -42,6 +43,7 @@ const booleanKeys = [
   'realSizes',
   'realSurface',
   'realTerrain',
+  'actionLabels',
 ] as const;
 
 export function sanitizePreferences(value: unknown): StoredPreferences {

@@ -26,6 +26,7 @@ void test('terrain lighting and geometry default to enabled for new users', () =
     'utf8',
   );
   assert.match(source, /\[realSurface, setRealSurface\] = useState\(true\)/);
+  assert.match(source, /\[actionLabels, setActionLabels\] = useState\(true\)/);
   assert.match(source, /\[realTerrain, setRealTerrain\] = useState\(true\)/);
   assert.match(
     source,
@@ -49,6 +50,7 @@ void test('preferences are validated and persisted as one versioned record', () 
         realSurface: true,
         realTerrain: true,
         labels: true,
+        actionLabels: false,
         orbitLineWidth: 4.5,
         observerLocation: {
           latitude: 31.23,
@@ -71,6 +73,7 @@ void test('preferences are validated and persisted as one versioned record', () 
     realSurface: true,
     realTerrain: true,
     labels: true,
+    actionLabels: false,
     orbitLineWidth: 4.5,
     observerLocation: {
       latitude: 31.23,
@@ -99,6 +102,7 @@ void test('preferences are validated and persisted as one versioned record', () 
     sanitizePreferences({ observerLocationSource: 'remote' }),
     {},
   );
+  assert.deepEqual(sanitizePreferences({ actionLabels: 'off' }), {});
 });
 
 void test('legacy individual keys are migrated when no versioned record exists', () => {
@@ -115,4 +119,32 @@ void test('legacy individual keys are migrated when no versioned record exists',
     textureQuality: 'standard',
   });
   assert.equal(storage.getItem(preferencesStorageKey), null);
+});
+
+void test('an unlabelled action button keeps its name for assistive technology', () => {
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  // The label is hidden, never dropped, so the icon alone still announces
+  // itself; the tooltip is what carries the name for a sighted reader.
+  assert.match(
+    page,
+    /const actionLabel = actionLabels \? undefined : 'sr-only';/,
+  );
+  // These are fixed snippets of JSX rather than patterns, and a brace only
+  // reads as a literal in a regular expression by legacy allowance.
+  for (const label of ['天象推演', '天象事件', '天体百科']) {
+    assert.ok(
+      page.includes(`<span className={actionLabel}>{t('${label}')}</span>`),
+      label,
+    );
+    assert.ok(page.includes(`title={t('${label}')}`), label);
+  }
+  const styles = readFileSync(
+    new URL('../app/globals.css', import.meta.url),
+    'utf8',
+  );
+  assert.match(styles, /\[data-action-labels='false'\] \.astronomy-button/);
+  assert.match(styles, /\[data-action-labels='false'\] \.mobile-info/);
 });
