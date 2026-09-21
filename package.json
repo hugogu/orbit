@@ -23,6 +23,7 @@
     "format": "oxfmt",
     "test": "node --import tsx --test tests/*.test.ts",
     "check:profiles": "node --import tsx scripts/check-profile-export.ts",
+    "generate:sky": "node --import tsx scripts/generate-star-catalog.ts",
     "check:events": "node --import tsx scripts/check-events-export.ts",
     "check:share": "node --import tsx scripts/check-share-export.ts",
     "predev": "node --import tsx scripts/generate-pwa-assets.ts",

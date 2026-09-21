@@ -1,4 +1,6 @@
 export const DAY_MS = 86_400_000;
+/** Star catalogues publish proper motion per Julian year. */
+export const JULIAN_YEAR_DAYS = 365.25;
 export const J2000_MS = Date.UTC(2000, 0, 1, 12);
 export const MIN_TIME = Date.UTC(1700, 0, 1);
 export const MAX_TIME = Date.UTC(2200, 11, 31, 23, 59, 59);

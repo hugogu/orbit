@@ -32,6 +32,17 @@ export function sceneVector(v: Vector): [number, number, number] {
   const e = RotateVector(eqjToEcliptic, v);
   return [e.x, e.z, -e.y];
 }
+// A direction has no epoch; the rotation between the two fixed J2000 frames
+// is the same at every instant, so one stand-in time serves them all.
+const fixedFrameTime = new AstroTime(0);
+/** Rotate a fixed EQJ direction, such as a catalogued star, into scene axes. */
+export function sceneDirection(
+  x: number,
+  y: number,
+  z: number,
+): [number, number, number] {
+  return sceneVector(new Vector(x, y, z, fixedFrameTime));
+}
 export function planetPosition(
   body: Body,
   days: number,

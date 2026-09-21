@@ -1,0 +1,17 @@
+[
+  {
+    "source": "Bright Star Catalogue, 5th Revised Ed. (Hoffleit & Warren, 1991)",
+    "url": "https://cdsarc.cds.unistra.fr/ftp/V/50/catalog.gz",
+    "license": "CDS/ADC catalogue V/50, free to redistribute with credit"
+  },
+  {
+    "source": "d3-celestial constellation figures (Olaf Frohn)",
+    "url": "https://raw.githubusercontent.com/ofrohn/d3-celestial/master/data/constellations.lines.json",
+    "license": "BSD-3-Clause"
+  },
+  {
+    "source": "d3-celestial constellation label anchors (Olaf Frohn)",
+    "url": "https://raw.githubusercontent.com/ofrohn/d3-celestial/master/data/constellations.json",
+    "license": "BSD-3-Clause"
+  }
+]
