@@ -132,14 +132,15 @@ void test('an unlabelled action button keeps its name for assistive technology',
     page,
     /const actionLabel = actionLabels \? undefined : 'sr-only';/,
   );
-  for (const label of ['天象推演', '天象事件', '天体百科'])
-    assert.match(
-      page,
-      new RegExp(`<span className={actionLabel}>{t\\('${label}'\\)}</span>`),
+  // These are fixed snippets of JSX rather than patterns, and a brace only
+  // reads as a literal in a regular expression by legacy allowance.
+  for (const label of ['天象推演', '天象事件', '天体百科']) {
+    assert.ok(
+      page.includes(`<span className={actionLabel}>{t('${label}')}</span>`),
       label,
     );
-  for (const title of ['天象推演', '天象事件', '天体百科'])
-    assert.match(page, new RegExp(`title={t\\('${title}'\\)}`), title);
+    assert.ok(page.includes(`title={t('${label}')}`), label);
+  }
   const styles = readFileSync(
     new URL('../app/globals.css', import.meta.url),
     'utf8',
