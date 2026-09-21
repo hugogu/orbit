@@ -71,7 +71,9 @@ void main() {
   float falloff =
     1.0 - smoothstep(0.08, 0.5, length(gl_PointCoord - vec2(0.5)));
   if (falloff <= 0.0) discard;
-  gl_FragColor = vec4(starTint * starBrightness * opacity, falloff);
+  // Premultiplied: the disc and the opacity are folded into the colour, so
+  // the result never depends on whether the blend factor reads alpha.
+  gl_FragColor = vec4(starTint * starBrightness * opacity * falloff, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
@@ -88,7 +90,9 @@ const figureFragmentShader = /* glsl */ `
 uniform vec3 tint;
 uniform float opacity;
 void main() {
-  gl_FragColor = vec4(tint * opacity, opacity);
+  // Premultiplied, as for the stars: writing the opacity into alpha as well
+  // applied it twice, because the additive blend factor is the source alpha.
+  gl_FragColor = vec4(tint * opacity, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }
@@ -281,7 +285,7 @@ export function createStarField(
         // Clear enough to read as a figure, and still lighter than the
         // orbit guides, which are wider and carry their own colour.
         tint: { value: new THREE.Color(0x6a89bd) },
-        opacity: { value: 0.7 },
+        opacity: { value: 0.5 },
       },
       vertexShader: figureVertexShader,
       fragmentShader: figureFragmentShader,
