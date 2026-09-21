@@ -66,7 +66,10 @@ varying vec3 starTint;
 varying float starBrightness;
 void main() {
   // A soft disc keeps a bright star from reading as a square of pixels.
-  float falloff = smoothstep(0.5, 0.08, length(gl_PointCoord - vec2(0.5)));
+  // GLSL leaves smoothstep undefined unless its first edge is the lower
+  // one, so the ramp is built the right way round and inverted.
+  float falloff =
+    1.0 - smoothstep(0.08, 0.5, length(gl_PointCoord - vec2(0.5)));
   if (falloff <= 0.0) discard;
   gl_FragColor = vec4(starTint * starBrightness * opacity, falloff);
   #include <tonemapping_fragment>
@@ -188,6 +191,11 @@ export function createStarField(
     starMaterial: THREE.ShaderMaterial | null = null,
     figureMaterial: THREE.ShaderMaterial | null = null;
   const figures: Figure[] = [];
+  // The figures are built after a fetch, so they miss the locale pass that
+  // renames everything else. Keep the current translator and name them as
+  // they are created, rather than leaving keys on screen until the reader
+  // happens to switch language.
+  let translate: Translate = (key) => key;
   let loading: Promise<void> | null = null,
     failed = false,
     disposed = false;
@@ -252,7 +260,7 @@ export function createStarField(
       indices.push(...constellation.lines);
       const label = document.createElement('span');
       label.className = 'constellation-label';
-      label.textContent = constellationNames[constellation.id];
+      label.textContent = translate(constellationNames[constellation.id]);
       label.style.display = 'none';
       labelLayer.appendChild(label);
       figures.push({
@@ -297,7 +305,8 @@ export function createStarField(
       panoramaMaterial.map = texture;
       panoramaMaterial.needsUpdate = true;
     },
-    localize(translate: Translate) {
+    localize(next: Translate) {
+      translate = next;
       for (const figure of figures)
         figure.label.textContent = translate(constellationNames[figure.id]);
     },
