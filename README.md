@@ -38,12 +38,16 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 
 <table>
   <tr>
-    <td width="50%" align="center"><img src="docs/images/earth-night-lights.jpg" alt="ORBIT running with Earth's night-side city lights visible" width="100%" /><br /><sub>Earth’s city lights emerge naturally on the night-facing hemisphere.</sub></td>
-    <td width="50%" align="center"><img src="docs/images/eclipse-shadow-path.jpg" alt="ORBIT running at the 8 April 2024 total solar eclipse, showing eclipse shadow boundaries and the shadow-axis path" width="100%" /><br /><sub>The 8 April 2024 total solar eclipse: surface shadow boundaries and the shadow-axis path.</sub></td>
+    <td width="50%" align="center"><img src="docs/images/star-field-constellations-en.jpg" alt="ORBIT's opening overview, with the planets on their orbits in front of the drawn figures of Orion, Monoceros, Lepus, and Canis Major" width="100%" /><br /><sub>The opening overview: planets on their orbits, against the constellations they are really seen among.</sub></td>
+    <td width="50%" align="center"><img src="docs/images/earth-night-lights-en.jpg" alt="ORBIT running with Earth's night-side city lights visible across Europe and Africa" width="100%" /><br /><sub>Earth’s city lights emerge naturally on the night-facing hemisphere.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="docs/images/eclipse-shadow-path-en.jpg" alt="ORBIT running at the 8 April 2024 total solar eclipse, showing the shadow boundary on Earth's surface, the shadow-axis path across North America, and the eclipse progress card" width="100%" /><br /><sub>The 8 April 2024 total solar eclipse: shadow boundaries, the shadow-axis path, and the live progress card.</sub></td>
+    <td width="50%" align="center"><img src="docs/images/moon-phase-card-en.jpg" alt="ORBIT following the Moon at first quarter, with the phase card showing the drawn disc, illumination, age, and tonight's observing window" width="100%" /><br /><sub>Selecting the Moon raises a phase card beside its profile, with tonight’s observing window.</sub></td>
   </tr>
 </table>
 
-Both images above were captured from a running ORBIT observatory. Texture selection considers the user setting, device class, data-saving preference, and GPU texture limits. High-resolution maps are loaded for the focused body only when needed, then the previous map is released.
+All four images above were captured from a running ORBIT observatory. Texture selection considers the user setting, device class, data-saving preference, and GPU texture limits. High-resolution maps are loaded for the focused body only when needed, then the previous map is released.
 
 The base scene preserves each planet's volumetric mean radius while applying observed flattening. **Observation settings → Textures → Real terrain lighting** and **Real terrain geometry** are independent options for Mercury, Venus, Earth, Mars, and the Moon. The settings use georeferenced public elevation data with 6× vertical exaggeration: lighting adds 2K object-space normals; geometry rebuilds the focused body's 256×128 mesh, including normals, bounds, and picking. Earth retains sea-level oceans. Venus switches to a cloud-free terrain view with an illustrative base color. Neither option computes terrain self-shadows. Giants keep their atmospheric appearances. See [data and regeneration](public/textures/planets/CREDITS.md).
 

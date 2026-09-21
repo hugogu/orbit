@@ -38,12 +38,16 @@ ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计�
 
 <table>
   <tr>
-    <td width="50%" align="center"><img src="docs/images/earth-night-lights.jpg" alt="运行中的 ORBIT：地球夜半球城市灯光" width="100%" /><br /><sub>地球夜半球：城市灯光会随太阳方向自然显现</sub></td>
-    <td width="50%" align="center"><img src="docs/images/eclipse-shadow-path.jpg" alt="运行中的 ORBIT：2024 年日全食本影半影与影轴轨迹" width="100%" /><br /><sub>2024 年 4 月 8 日日全食：地球表面的食影边界与影轴轨迹</sub></td>
+    <td width="50%" align="center"><img src="docs/images/star-field-constellations-zh.jpg" alt="运行中的 ORBIT：太阳系全景，行星轨道背后是猎户座、麒麟座、天兔座与大犬座连线" width="100%" /><br /><sub>打开即见的全景：行星运行在它们真实所处的星座之间</sub></td>
+    <td width="50%" align="center"><img src="docs/images/earth-night-lights-zh.jpg" alt="运行中的 ORBIT：地球夜半球欧洲与非洲的城市灯光" width="100%" /><br /><sub>地球夜半球：城市灯光会随太阳方向自然显现</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="docs/images/eclipse-shadow-path-zh.jpg" alt="运行中的 ORBIT：2024 年日全食的食影边界、横跨北美的影轴轨迹与天象进度卡片" width="100%" /><br /><sub>2024 年 4 月 8 日日全食：食影边界、影轴轨迹与实时进度卡片</sub></td>
+    <td width="50%" align="center"><img src="docs/images/moon-phase-card-zh.jpg" alt="运行中的 ORBIT：跟随上弦月，月相卡片显示月相圆面、照明比例、月龄与今晚观月窗口" width="100%" /><br /><sub>选中月球后，资料面板旁出现月相卡片，直接给出今晚的观月窗口</sub></td>
   </tr>
 </table>
 
-两张图片均从本项目实际运行的观测台截取。项目提供高分辨率日间与夜间纹理；会按设置、设备类型、节省流量偏好和 GPU 纹理限制选择加载质量。高分辨率材质只在需要时为当前跟随天体加载，并会在替换后释放上一份资源。
+四张图片均从本项目实际运行的观测台截取。项目提供高分辨率日间与夜间纹理；会按设置、设备类型、节省流量偏好和 GPU 纹理限制选择加载质量。高分辨率材质只在需要时为当前跟随天体加载，并会在替换后释放上一份资源。
 
 行星基础形状按观测扁率构建，并保持资料中的体积平均半径。“观测设置 → 材质”提供独立的“真实地形光照”和“真实地形几何”开关：两者采用统一经纬度的公开高程数据，起伏做 6 倍视觉增强。光照选项使用 2K 物体空间法线；几何选项重建当前跟随行星的 256×128 网格，并同步更新法线、包围范围和鼠标拾取。支持水星、金星、地球、火星；地球海平面以下按海面展示，金星显示去云地形及示意底色。两者均不计算山体投影，巨行星保留大气外观。详见[数据来源与生成方法](public/textures/planets/CREDITS.md)。
 
