@@ -194,67 +194,59 @@ export function starColor(colorIndex: number): [number, number, number] {
 /** Naked-eye limit of the Bright Star Catalogue, used as the faint anchor. */
 export const NAKED_EYE_MAGNITUDE = 6.5;
 
-/** How far towards the top of its own figure a constellation's name sits. */
-const ANCHOR_LIFT = 0.35;
-const ANCHOR_LIFT_LIMIT = (5 * Math.PI) / 180;
+/** Where down a figure's own height its name sits: 0 is its top star. */
+const ANCHOR_HEIGHT = 0.4;
 
 /**
- * Where a figure's name belongs: among the stars it names, a little above
- * their middle. A name written outside the figure leaves a reader guessing
- * which stars it refers to, and a chart's own label point is chosen for a
- * flat map rather than for a sky the viewer can turn.
+ * Where a figure's name belongs: among the stars it names, four tenths of
+ * the way down the figure's own height and centred across its width. A name
+ * written outside the figure leaves a reader guessing which stars it refers
+ * to, and a chart's printed label point is chosen for a flat map rather than
+ * for a sky the viewer can turn.
  *
- * `up` is the scene's own up axis, which is where screen-up stays while the
- * view orbits; a figure sitting on that axis has no meaningful up of its own
- * and simply keeps its middle.
+ * Height and width are measured in the frame the viewer sees: `up` is the
+ * scene's own up axis, which is where screen-up stays while the view orbits.
+ * A figure standing on that axis has no up of its own and keeps its middle.
  */
 export function figureAnchor(
   positions: Float32Array,
-  magnitudes: Float32Array,
   lines: number[],
   up: Vector3,
 ) {
-  const stars = new Set(lines);
-  const middle = new Vector3();
-  for (const index of stars)
-    middle.addScaledVector(
+  const stars = [...new Set(lines)].map(
+    (index) =>
       new Vector3(
         positions[index * 3],
         positions[index * 3 + 1],
         positions[index * 3 + 2],
       ),
-      // Weighted towards the stars a reader actually picks out, so the name
-      // lands on the shape they recognise rather than between its faint
-      // outlying limbs.
-      Math.max(NAKED_EYE_MAGNITUDE - magnitudes[index], 0.5),
-    );
-  middle.normalize();
-  const north = up.clone().projectOnPlane(middle);
-  if (north.lengthSq() < 1e-8) return middle;
-  north.normalize();
-  // Step towards the figure's own topmost star rather than towards the up
-  // axis itself: a fraction of the way to a star the figure really has is
-  // inside it by construction, however wide or flat the shape is.
-  let top: Vector3 | null = null,
-    reach = 0;
-  for (const index of stars) {
-    const star = new Vector3(
-      positions[index * 3],
-      positions[index * 3 + 1],
-      positions[index * 3 + 2],
-    );
-    if (star.dot(north) > reach) {
-      reach = star.dot(north);
-      top = star;
-    }
+  );
+  const middle = stars
+    .reduce((total, star) => total.add(star), new Vector3())
+    .normalize();
+  const vertical = up.clone().projectOnPlane(middle);
+  if (vertical.lengthSq() < 1e-8) return middle;
+  vertical.normalize();
+  const across = vertical.clone().cross(middle).normalize();
+  let top = -Infinity,
+    bottom = Infinity,
+    left = Infinity,
+    right = -Infinity;
+  for (const star of stars) {
+    top = Math.max(top, star.dot(vertical));
+    bottom = Math.min(bottom, star.dot(vertical));
+    right = Math.max(right, star.dot(across));
+    left = Math.min(left, star.dot(across));
   }
-  if (!top) return middle;
-  const lift = Math.min(middle.angleTo(top) * ANCHOR_LIFT, ANCHOR_LIFT_LIMIT);
-  const toTop = top.clone().projectOnPlane(middle);
-  if (toTop.lengthSq() < 1e-8) return middle;
-  return middle
-    .multiplyScalar(Math.cos(lift))
-    .addScaledVector(toTop.normalize(), Math.sin(lift))
+  const height = top - (top - bottom) * ANCHOR_HEIGHT,
+    width = (left + right) / 2;
+  return new Vector3()
+    .addScaledVector(across, width)
+    .addScaledVector(vertical, height)
+    .addScaledVector(
+      middle,
+      Math.sqrt(Math.max(0, 1 - width * width - height * height)),
+    )
     .normalize();
 }
 

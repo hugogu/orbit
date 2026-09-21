@@ -257,12 +257,7 @@ export function createStarField(
       labelLayer.appendChild(label);
       figures.push({
         id: constellation.id,
-        anchor: figureAnchor(
-          positions,
-          catalog.magnitudes,
-          constellation.lines,
-          SKY_UP,
-        ),
+        anchor: figureAnchor(positions, constellation.lines, SKY_UP),
         label,
         place: createSceneLabel(label, -50),
       });
@@ -275,8 +270,10 @@ export function createStarField(
       uniforms: {
         years: { value: 0 },
         radius: { value: SKY_RADIUS },
-        tint: { value: new THREE.Color(0x5f7fb4) },
-        opacity: { value: 0.5 },
+        // Clear enough to read as a figure, and still lighter than the
+        // orbit guides, which are wider and carry their own colour.
+        tint: { value: new THREE.Color(0x6a89bd) },
+        opacity: { value: 0.7 },
       },
       vertexShader: figureVertexShader,
       fragmentShader: figureFragmentShader,

@@ -310,7 +310,7 @@ void test('the sky is re-centred on the camera as it is drawn, not a frame late'
   assert.equal(scene.children.length, 0);
 });
 
-void test("a figure's name is written among its own stars, above their middle", () => {
+void test("a figure's name is written among its own stars, four tenths down", () => {
   const catalog = loadCatalog();
   const { constellations } = loadFigures(catalog);
   const up = new THREE.Vector3(0, 1, 0);
@@ -332,72 +332,81 @@ void test("a figure's name is written among its own stars, above their middle", 
       scene[index * 3 + 2],
     );
   for (const figure of constellations) {
-    const stars = [...new Set(figure.lines)];
-    const anchor = figureAnchor(scene, catalog.magnitudes, figure.lines, up);
-    const distances = stars.map((index) => separation(anchor, at(index)));
+    const stars = [...new Set(figure.lines)].map(at);
+    const anchor = figureAnchor(scene, figure.lines, up);
     const middle = stars
-      .map(at)
-      .reduce((total, star) => total.add(star), new THREE.Vector3())
+      .reduce((total, star) => total.add(star.clone()), new THREE.Vector3())
       .normalize();
-    const extent = Math.max(
-      ...stars.map((index) => separation(middle, at(index))),
-    );
-    // Inside the figure's own reach, never beyond the stars it joins, and
-    // close to one of them — a sprawling figure such as Ophiuchus is mostly
-    // empty in the middle, so how close scales with how large it is.
-    assert.ok(separation(anchor, middle) < extent, `${figure.id} overshoots`);
+    const vertical = up.clone().projectOnPlane(middle).normalize();
+    const heights = stars.map((star) => star.dot(vertical));
+    const top = Math.max(...heights),
+      bottom = Math.min(...heights);
+    // Four tenths down the figure's own height, in the frame the viewer
+    // sees, and centred across its width.
     assert.ok(
-      Math.min(...distances) <= Math.max(7, extent * 0.5),
+      Math.abs((top - anchor.dot(vertical)) / (top - bottom) - 0.4) < 1e-6,
+      `${figure.id} height`,
+    );
+    const across = vertical.clone().cross(middle).normalize();
+    const widths = stars.map((star) => star.dot(across));
+    const centre = (Math.min(...widths) + Math.max(...widths)) / 2;
+    assert.ok(
+      Math.abs(anchor.dot(across) - centre) < 1e-6,
+      `${figure.id} width`,
+    );
+    // Close to a star of the figure: a sprawling shape such as Ophiuchus is
+    // mostly empty in the middle, so how close scales with how large it is.
+    const extent = Math.max(...stars.map((star) => separation(star, middle)));
+    assert.ok(
+      Math.min(...stars.map((star) => separation(anchor, star))) <=
+        Math.max(7, extent * 0.5),
       `${figure.id} is adrift`,
     );
   }
-  // Orion is the worked example: the name belongs between the shoulders,
-  // not above the raised club where the printed chart puts it.
-  const orion = constellations.find((figure) => figure.id === 'Ori')!;
-  const anchor = figureAnchor(scene, catalog.magnitudes, orion.lines, up);
-  const star = (magnitude: number) =>
-    at(
-      [...new Set(orion.lines)].find(
-        (index) => Math.abs(catalog.magnitudes[index] - magnitude) < 0.02,
-      )!,
-    );
-  assert.ok(separation(anchor, star(1.64)) < 5, 'Bellatrix');
-  assert.ok(separation(anchor, star(0.5)) < 9, 'Betelgeuse');
-  assert.ok(separation(anchor, star(0.12)) > 12, 'Rigel');
 });
 
-void test("the name is lifted from the middle towards the figure's top star", () => {
+void test("the name is placed by the figure's own height and width", () => {
   const corner = (x: number, y: number) =>
     new THREE.Vector3(
       Math.sin(x * degree),
       Math.sin(y * degree),
       1,
     ).normalize();
-  const shape = [corner(-6, -3), corner(6, -3), corner(0, 7)];
+  // A tall triangle leaning to one side: the name follows the figure's own
+  // box rather than the middle of its stars.
+  const shape = [corner(-8, -6), corner(2, -6), corner(-3, 10)];
   const positions = new Float32Array(shape.flatMap((star) => star.toArray()));
   const anchor = figureAnchor(
     positions,
-    new Float32Array([3, 3, 3]),
     [0, 1, 1, 2, 2, 0],
     new THREE.Vector3(0, 1, 0),
   );
   const middle = shape
-    .reduce((total, star) => total.add(star), new THREE.Vector3())
+    .reduce((total, star) => total.add(star.clone()), new THREE.Vector3())
     .normalize();
-  const top = shape[2];
-  // A step along the arc towards a star the figure really has, so the name
-  // is inside the shape however wide or flat that shape is.
-  assert.ok(Math.abs(anchor.x) < 1e-9, "stays on the figure's axis");
-  assert.ok(anchor.y > middle.y, 'lifted');
+  const vertical = new THREE.Vector3(0, 1, 0)
+    .projectOnPlane(middle)
+    .normalize();
+  const across = vertical.clone().cross(middle).normalize();
+  const heights = shape.map((star) => star.dot(vertical));
+  const widths = shape.map((star) => star.dot(across));
+  const top = Math.max(...heights);
   assert.ok(
-    Math.abs(middle.angleTo(anchor) - middle.angleTo(top) * 0.35) < 1e-7,
+    Math.abs(
+      anchor.dot(vertical) - (top - (top - Math.min(...heights)) * 0.4),
+    ) < 1e-7,
   );
-  assert.ok(anchor.angleTo(top) < middle.angleTo(top), 'towards the top star');
+  assert.ok(
+    Math.abs(
+      anchor.dot(across) - (Math.min(...widths) + Math.max(...widths)) / 2,
+    ) < 1e-7,
+  );
+  assert.ok(anchor.dot(vertical) < top, 'below the topmost star');
+  assert.ok(anchor.dot(vertical) > Math.min(...heights), 'above the lowest');
   // A figure standing on the up axis has no up of its own and keeps its
   // middle rather than being pushed to a pole.
   const overhead = figureAnchor(
     new Float32Array([0, 1, 0, 0.02, 0.9998, 0]),
-    new Float32Array([3, 3]),
     [0, 1],
     new THREE.Vector3(0, 1, 0),
   );

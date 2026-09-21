@@ -186,7 +186,7 @@ ORBIT 用于天文学习，并在界面中说明模型的假设与适用范围�
 - 可选的行星真实表面细节来自公开 NASA/USGS 地形数据，经固定版本的 CelestiaContent 法线贴图处理并下采样；详见 [`public/textures/planets/CREDITS.md`](public/textures/planets/CREDITS.md)。这些 2K 贴图只提供光照起伏，不进行几何位移；气态巨行星没有固体表面，仍使用大气表现。
 - 卫星贴图来自 [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent)，各文件采用的 CC BY 或 CC BY-SA 条款记录在 [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md)。天卫一、天卫五、天卫二、天卫三、天卫四和海卫一的 Voyager 贴图存在未测绘区域；本地副本用邻近的已观测纹理镜像填补缺口，避免近距离观察时出现单色半球。由于缺少完整全球反照率地图，海卫二、冥王星和冥卫一使用 CC BY 4.0 的 `asteroid.jpg` 作为明确标注的科普示意材质。彗星的形状模型来源和表面数据限制记录在 [`public/models/comets/CREDITS.md`](public/models/comets/CREDITS.md)。
 - 小行星贴图与转换后的形状资产分别记录在 [`public/textures/asteroids/CREDITS.md`](public/textures/asteroids/CREDITS.md) 和 [`public/models/asteroids/CREDITS.md`](public/models/asteroids/CREDITS.md)；命名小行星目录不再使用通用 `asteroid.jpg`。
-- 恒星数据来自[《耶鲁亮星星表》第 5 修订版](https://cdsarc.cds.unistra.fr/ftp/V/50/)（Hoffleit & Warren, 1991），以紧凑二进制随项目分发，含 J2000 位置、自行、星等与 B−V 色指数。星座连线来自 [d3-celestial](https://github.com/ofrohn/d3-celestial)（BSD-3-Clause），每个折线顶点都吸附到最近的星表恒星。星座名写在所属恒星之间——从星座亮星加权的中心朝最靠上的那颗星迈出一小步——而不是沿用平面星图印在图形之外的标注点。来源与许可记录在 [`public/sky/source-manifest.json`](public/sky/source-manifest.json)，`npm run generate:sky` 可重新生成这两份资源。
+- 恒星数据来自[《耶鲁亮星星表》第 5 修订版](https://cdsarc.cds.unistra.fr/ftp/V/50/)（Hoffleit & Warren, 1991），以紧凑二进制随项目分发，含 J2000 位置、自行、星等与 B−V 色指数。星座连线来自 [d3-celestial](https://github.com/ofrohn/d3-celestial)（BSD-3-Clause），每个折线顶点都吸附到最近的星表恒星。星座名写在所属恒星之间：取图形自身高度自上而下四成处、水平居中，而不是沿用平面星图印在图形之外的标注点。来源与许可记录在 [`public/sky/source-manifest.json`](public/sky/source-manifest.json)，`npm run generate:sky` 可重新生成这两份资源。
 - 天王星使用 Solar System Scope 的 CC BY 4.0 大气示意图。原先禁止商业使用的天王星与冥卫一文件，以及再分发条款不明确的 NASA/JPL 冥王星示意图，已不再使用或随项目分发。
 
 ## 许可证
