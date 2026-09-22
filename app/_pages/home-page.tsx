@@ -92,7 +92,16 @@ import {
 } from '@/lib/texture-quality';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandboxPanel from '@/components/sandbox-panel';
+import SandboxBodyEditor from '@/components/sandbox-body-editor';
 import { createRun } from '@/lib/sandbox/run';
+import {
+  addBody,
+  removeBody,
+  resetBody,
+  updateBody,
+  type NewBody,
+  type SandboxField,
+} from '@/lib/sandbox/edits';
 import { forkScenario, type SandboxScenario } from '@/lib/sandbox/scenario';
 import {
   elapsedLabel,
@@ -439,6 +448,35 @@ export default function Home() {
         : current,
     );
   }, []);
+  // Every edit rewrites the scenario, which rebuilds the run. Restarting from
+  // the fork is what keeps the comparison honest: both systems then begin at
+  // the same instant, so the gap between them is the edit and nothing else.
+  const editSandboxBody = useCallback(
+    (id: string, field: SandboxField, value: number) =>
+      setSandboxScenario((current) =>
+        current ? updateBody(current, id, field, value) : current,
+      ),
+    [],
+  );
+  const removeSandboxBody = useCallback((id: string) => {
+    setSandboxScenario((current) =>
+      current ? removeBody(current, id) : current,
+    );
+    setSelected((current) => (current === id ? null : current));
+  }, []);
+  const addSandboxBody = useCallback((body: NewBody) => {
+    setSandboxScenario((current) =>
+      current ? addBody(current, body) : current,
+    );
+    track('sandbox_add_body', {});
+  }, []);
+  const resetSandboxBody = useCallback(
+    (id: string) =>
+      setSandboxScenario((current) =>
+        current ? resetBody(current, id) : current,
+      ),
+    [],
+  );
   const select = useCallback((id: string) => {
     if (window.location.hash !== `#${id}`)
       window.history.pushState(
@@ -1049,13 +1087,17 @@ export default function Home() {
           </div>
           {tab === 'sandbox' ? (
             <SandboxPanel
+              scenario={sandboxScenario}
               run={sandboxRun}
-              active={!!sandboxRun}
+              selected={selected}
               baseline={sandboxBaseline}
               trails={sandboxTrails}
               onEnter={enterSandbox}
               onLeave={leaveSandbox}
               onRestart={restartSandbox}
+              onSelect={select}
+              onRemove={removeSandboxBody}
+              onAdd={addSandboxBody}
               onBaselineChange={setSandboxBaseline}
               onTrailsChange={setSandboxTrails}
             />
@@ -1086,7 +1128,7 @@ export default function Home() {
             {tab === 'explore'
               ? t('点击天体，开启近距离观察')
               : tab === 'sandbox'
-                ? t('点质量近似 · 自转与倾角不参与受力')
+                ? t('点质量近似 · 地球以地月质心参与计算')
                 : t('距离单位 AU ≈ 1.496 亿公里')}
           </div>
         </section>
@@ -1118,7 +1160,17 @@ export default function Home() {
         />
       )}
       <aside className="info-panel glass">
-        {tab === 'structure' && !body ? (
+        {/* While a run is on, this column edits the selected body instead of
+            reciting catalogue figures the simulation has already left behind. */}
+        {sandboxScenario && sandboxRun && selected ? (
+          <SandboxBodyEditor
+            scenario={sandboxScenario}
+            run={sandboxRun}
+            selected={selected}
+            onChange={(field, value) => editSandboxBody(selected, field, value)}
+            onReset={() => resetSandboxBody(selected)}
+          />
+        ) : tab === 'structure' && !body ? (
           <>
             <div className="eyebrow">
               {t('结构档案 /')}

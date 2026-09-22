@@ -31,6 +31,21 @@ import {
   surfaceGravity,
 } from '../lib/sandbox/derived.ts';
 import { createRun, MAX_STEPS_PER_ADVANCE } from '../lib/sandbox/run.ts';
+import {
+  addBody,
+  centralBody,
+  escapeSpeedAt,
+  fieldPosition,
+  fieldSpec,
+  fieldValue,
+  readField,
+  removeBody,
+  resetBody,
+  sandboxFields,
+  updateBody,
+  writeField,
+  type SandboxField,
+} from '../lib/sandbox/edits.ts';
 
 const point = (
   id: string,
@@ -261,4 +276,180 @@ void test('an emptied or single-body scenario advances without failing', () => {
   assert.equal(run.energyDrift, 0);
   assert.ok(run.variant[0].position.every(Number.isFinite));
   assert.equal(systemEnergy(run.variant), 0);
+});
+
+void test('slider positions round-trip through both linear and ratio spacing', () => {
+  for (const spec of sandboxFields) {
+    for (const ratio of [0, 0.25, 0.5, 0.75, 1]) {
+      const value = fieldValue(spec, ratio);
+      // A ratio-spaced field reaches 10^31, where an absolute epsilon means
+      // nothing; compare against the range the value sits in.
+      const slack = Math.max(Math.abs(spec.max), 1) * 1e-12;
+      assert.ok(
+        value >= spec.min - slack && value <= spec.max + slack,
+        `${spec.id}: ${value}`,
+      );
+      assert.ok(
+        Math.abs(fieldPosition(spec, value) - ratio) < 1e-9,
+        `${spec.id}: ${fieldPosition(spec, value)} vs ${ratio}`,
+      );
+    }
+    // A ratio-spaced field puts its midpoint at the geometric mean, which is
+    // the whole reason mass and radius are not linear.
+    if (spec.logarithmic)
+      assert.ok(
+        Math.abs(fieldValue(spec, 0.5) / Math.sqrt(spec.min * spec.max) - 1) <
+          1e-9,
+        spec.id,
+      );
+  }
+});
+
+void test('every field reads back exactly what was written', () => {
+  const scenario = forkScenario(J2000_MS);
+  const sun = centralBody(scenario);
+  assert.equal(sun.id, 'sun');
+  const earth = scenario.bodies.find((body) => body.id === 'earth')!;
+  const cases: [SandboxField, number][] = [
+    ['mass', 1.2e25],
+    ['speed', 41.3],
+    ['distance', 2.5],
+    ['radius', 9000],
+    ['spinDays', -3.25],
+    ['tilt', 97.7],
+  ];
+  for (const [field, value] of cases) {
+    const written = writeField(earth, field, value, sun.mass);
+    assert.ok(
+      Math.abs(readField(written, field) - value) < 1e-6,
+      `${field}: ${readField(written, field)}`,
+    );
+  }
+});
+
+void test('a field is clamped to its own range rather than accepting nonsense', () => {
+  const scenario = forkScenario(J2000_MS);
+  const sun = centralBody(scenario);
+  const earth = scenario.bodies.find((body) => body.id === 'earth')!;
+  const heavy = writeField(earth, 'mass', 1e40, sun.mass);
+  assert.equal(heavy.mass, fieldSpec('mass').max);
+  const tiny = writeField(earth, 'radius', -50, sun.mass);
+  assert.equal(tiny.radius, fieldSpec('radius').min);
+});
+
+void test('moving a body re-places it on a circular orbit in its own plane', () => {
+  const scenario = forkScenario(J2000_MS);
+  const sun = centralBody(scenario);
+  const pluto = scenario.bodies.find((body) => body.id === 'pluto')!;
+  const before = orbitState(
+    {
+      id: 'p',
+      mass: 0,
+      radius: 0,
+      position: pluto.position,
+      velocity: pluto.velocity,
+    },
+    { id: 's', mass: 1, radius: 0, position: [0, 0, 0], velocity: [0, 0, 0] },
+  );
+  const moved = writeField(pluto, 'distance', 5, sun.mass);
+  const after = orbitState(
+    {
+      id: 'p',
+      mass: 0,
+      radius: 0,
+      position: moved.position,
+      velocity: moved.velocity,
+    },
+    { id: 's', mass: 1, radius: 0, position: [0, 0, 0], velocity: [0, 0, 0] },
+  );
+  assert.ok(Math.abs(Math.hypot(...moved.position) - 5) < 1e-9);
+  assert.ok(after.eccentricity < 1e-6, String(after.eccentricity));
+  // Pluto's steep orbit is preserved: only the distance was asked for.
+  assert.ok(Math.abs(after.inclination - before.inclination) < 1e-6);
+});
+
+void test('scaling a body’s speed keeps its heading', () => {
+  const scenario = forkScenario(J2000_MS);
+  const sun = centralBody(scenario);
+  const mars = scenario.bodies.find((body) => body.id === 'mars')!;
+  const faster = writeField(mars, 'speed', 40, sun.mass);
+  const was = Math.hypot(...mars.velocity);
+  const now = Math.hypot(...faster.velocity);
+  for (let axis = 0; axis < 3; axis++)
+    assert.ok(
+      Math.abs(faster.velocity[axis] / now - mars.velocity[axis] / was) < 1e-12,
+    );
+});
+
+void test('bodies can be added, removed and restored to their catalogue values', () => {
+  const forked = forkScenario(J2000_MS);
+  const without = removeBody(forked, 'jupiter');
+  assert.equal(without.bodies.length, forked.bodies.length - 1);
+  assert.ok(!without.bodies.some((body) => body.id === 'jupiter'));
+  const added = addBody(without, {
+    name: 'Nemesis',
+    mass: 1e29,
+    radius: 60000,
+    distance: 8,
+    color: '#ff0000',
+  });
+  const created = added.bodies.at(-1)!;
+  assert.equal(created.sourceId, null);
+  assert.ok(Math.abs(Math.hypot(...created.position) - 8) < 1e-9);
+  // Added bodies start on a circular orbit, so one does not immediately fall in.
+  const state = orbitState(
+    {
+      id: created.id,
+      mass: 0,
+      radius: 0,
+      position: created.position,
+      velocity: created.velocity,
+    },
+    { id: 'sun', mass: 1, radius: 0, position: [0, 0, 0], velocity: [0, 0, 0] },
+  );
+  assert.ok(state.eccentricity < 1e-6);
+  assert.equal(state.escaping, false);
+  // A second addition is placed away from the first.
+  const twice = addBody(added, {
+    name: 'Nemesis II',
+    mass: 1e29,
+    radius: 60000,
+    distance: 8,
+    color: '#00ff00',
+  });
+  const second = twice.bodies.at(-1)!;
+  assert.ok(
+    Math.hypot(
+      ...second.position.map((value, axis) => value - created.position[axis]),
+    ) > 1,
+  );
+  const edited = updateBody(forked, 'earth', 'mass', 9e25);
+  assert.equal(edited.bodies.find((body) => body.id === 'earth')!.mass, 9e25);
+  const restored = resetBody(edited, 'earth');
+  const original = forked.bodies.find((body) => body.id === 'earth')!;
+  assert.equal(
+    restored.bodies.find((b) => b.id === 'earth')!.mass,
+    original.mass,
+  );
+  // A body the viewer created has no catalogue entry to fall back to.
+  assert.deepEqual(resetBody(twice, second.id), twice);
+});
+
+void test('an edited scenario runs, and the escape threshold matches the model', () => {
+  const scenario = forkScenario(J2000_MS);
+  const sun = centralBody(scenario);
+  const earth = scenario.bodies.find((body) => body.id === 'earth')!;
+  const escape = escapeSpeedAt(Math.hypot(...earth.position), sun.mass);
+  // Earth orbits at about 29.8 km/s and leaves above roughly 42 km/s.
+  assert.ok(Math.abs(escape - 42.1) < 0.4, String(escape));
+  const run = createRun(updateBody(scenario, 'earth', 'speed', escape * 1.05));
+  run.advance(60);
+  assert.ok(
+    run.events.some((event) => event.kind === 'escape' && event.id === 'earth'),
+  );
+  const bound = createRun(
+    updateBody(scenario, 'earth', 'speed', escape * 0.95),
+  );
+  bound.advance(60);
+  assert.ok(!bound.events.some((event) => event.kind === 'escape'));
 });

@@ -151,10 +151,11 @@ void test('outer structures stand at their published distances once distances ar
     auOf('pluto') > outerStructures.kuiper.au[0] &&
       auOf('pluto') < outerStructures.kuiper.au[1],
   );
-  // The schematic Oort cloud has no honest placement at this scale.
+  // The schematic Oort cloud has no honest placement at this scale, and a
+  // sandbox run has no catalogue populations at all.
   assert.ok(!Object.hasOwn(outerStructures, 'oort'));
   assert.match(
     scene,
-    /oort\.visible = s\.belts && s\.view >= 400 && s\.scale === 'illustrated'/,
+    /oort\.visible =\s*s\.belts && !sandbox && s\.view >= 400 && s\.scale === 'illustrated'/,
   );
 });

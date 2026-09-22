@@ -850,20 +850,22 @@ export default function SolarScene({
               ASTEROID_BELT_MAX_RADIUS
           : 1,
       );
-      belt.root.visible = s.belts;
+      belt.root.visible = s.belts && !sandbox;
       // With distances to scale the outer bands move to the heliocentric
       // distances their own cards quote; illustrated mode keeps the authored
       // layout and reveals farther layers as the view widens.
       kuiper.scale.setScalar(outerStructureScale('kuiper', s.scale));
       scattered.scale.setScalar(outerStructureScale('scattered', s.scale));
       heliosphere.scale.setScalar(outerStructureScale('heliosphere', s.scale));
-      kuiper.visible = s.belts;
-      scattered.visible = s.belts && (s.view >= 350 || s.scale === 'distance');
+      kuiper.visible = s.belts && !sandbox;
+      scattered.visible =
+        s.belts && !sandbox && (s.view >= 350 || s.scale === 'distance');
       // The Oort cloud begins near 2,000 AU. There is no honest place for the
       // schematic shell once distances are to scale, so it stays illustrated.
-      oort.visible = s.belts && s.view >= 400 && s.scale === 'illustrated';
+      oort.visible =
+        s.belts && !sandbox && s.view >= 400 && s.scale === 'illustrated';
       heliosphere.visible =
-        s.belts && (s.view >= 400 || s.scale === 'distance');
+        s.belts && !sandbox && (s.view >= 400 || s.scale === 'distance');
       cometSystem.update(
         s.cometId,
         days,
