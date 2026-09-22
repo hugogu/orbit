@@ -586,7 +586,7 @@ export default async function BodyPage({ params }: PageProps) {
                       ? asteroidSurfaceNote
                       : entry.kind === 'comet'
                         ? cometVisualNote
-                      : '图像基于已有贴图重新投影与布光，不代表实时观测照片。',
+                        : '图像基于已有贴图重新投影与布光，不代表实时观测照片。',
                   )}
                 </p>
                 <p>
