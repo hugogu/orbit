@@ -18,6 +18,7 @@ import { DAY_MS, J2000_MS } from '../simulation-time';
 import { bodies } from '../solar';
 import { sceneVector } from '../ephemeris';
 import { GRAVITY, SOLAR_MASS_KG, type Vec3 } from './physics';
+import type { SandboxField } from './field-names';
 
 export type SandboxBodySpec = {
   id: string;
@@ -41,10 +42,28 @@ export type SandboxBodySpec = {
   velocity: Vec3;
 };
 
+/**
+ * A change the viewer made, and when they made it.
+ *
+ * A run is described as a recipe rather than as a frozen starting state: the
+ * untouched fork at `epoch` plus the changes applied at their own elapsed
+ * times. That is what lets an edit land mid-run without restarting, and what
+ * lets a link carry a run in a few dozen characters — the recipient replays
+ * the same recipe and reaches the same path.
+ */
+export type SandboxEdit =
+  | { kind: 'set'; id: string; field: SandboxField; value: number }
+  | { kind: 'add'; body: SandboxBodySpec }
+  | { kind: 'remove'; id: string };
+
+/** An edit with the elapsed day it belongs to. */
+export type SandboxChange = SandboxEdit & { at: number };
+
 export type SandboxScenario = {
   /** UTC milliseconds the run forks from. */
   epoch: number;
-  bodies: SandboxBodySpec[];
+  /** Ordered by `at`; everything the viewer did to the untouched fork. */
+  changes: SandboxChange[];
 };
 
 /**
@@ -88,31 +107,31 @@ export function auToKm(au: number) {
   return au * AU_KM;
 }
 
-/** The unedited system at an epoch: the baseline every comparison runs against. */
+/** An empty recipe: the real system at an epoch, with nothing changed. */
 export function forkScenario(epoch: number): SandboxScenario {
+  return { epoch, changes: [] };
+}
+
+/** The unedited system at an epoch: the baseline every comparison runs against. */
+export function forkBodies(epoch: number): SandboxBodySpec[] {
   const days = daysFromEpoch(epoch);
-  return {
-    epoch,
-    bodies: sandboxSources.map(({ id, astro }) => {
-      const state = HelioState(astro, days);
-      const body = bodies.find((item) => item.id === id)!;
-      return {
-        id,
-        sourceId: id,
-        name: body.name,
-        color: body.color,
-        texture: body.texture,
-        mass: catalogueMass(astro),
-        radius: body.radius,
-        spinDays: body.day,
-        tilt: body.tilt,
-        position: sceneVector(new Vector(state.x, state.y, state.z, state.t)),
-        velocity: sceneVector(
-          new Vector(state.vx, state.vy, state.vz, state.t),
-        ),
-      };
-    }),
-  };
+  return sandboxSources.map(({ id, astro }) => {
+    const state = HelioState(astro, days);
+    const body = bodies.find((item) => item.id === id)!;
+    return {
+      id,
+      sourceId: id,
+      name: body.name,
+      color: body.color,
+      texture: body.texture,
+      mass: catalogueMass(astro),
+      radius: body.radius,
+      spinDays: body.day,
+      tilt: body.tilt,
+      position: sceneVector(new Vector(state.x, state.y, state.z, state.t)),
+      velocity: sceneVector(new Vector(state.vx, state.vy, state.vz, state.t)),
+    };
+  });
 }
 
 /** Orbital speed of a circular orbit at `au` around `centralMassKg`, in AU/day. */

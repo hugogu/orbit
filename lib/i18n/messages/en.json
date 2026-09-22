@@ -1669,14 +1669,12 @@
   "{{name}} 已脱离系统": "{{name}} has left the system",
   "{{absorbed}} 并入 {{into}}": "{{absorbed}} merged into {{into}}",
   "从当前模拟时刻分叉，用牛顿万有引力逐步积分。质量与速度真正参与受力计算，天体可以被抛出、被俘获或相撞。": "Forks from the current simulated moment and integrates Newtonian gravity step by step. Mass and velocity genuinely enter the force law, so a body can be thrown clear, captured, or run into another.",
-  "沙盘运行无法分享：链接只能重现真实历表。": "A sandbox run cannot be shared: a link can only replay the real ephemeris.",
   "质量": "Mass",
   "轨道速度": "Orbital speed",
   "日心距离": "Distance from the Sun",
   "半径": "Radius",
   "轴倾角": "Axial tilt",
   "恢复真实数值": "Restore the real values",
-  "改动参数后，演算会从分叉时刻重新开始。": "Changing a parameter restarts the run from the moment it forked.",
   "参与引力计算": "Enters the force law",
   "中心天体的位置与速度定义了整个系统。": "The central body’s position and velocity define the whole system.",
   "在此距离上，逃逸速度约为 {{value}} km/s。": "Escape speed at this distance is about {{value}} km/s.",
@@ -1703,8 +1701,11 @@
   "褐矮星": "Brown dwarf",
   "点质量近似 · 地球以地月质心参与计算": "Point masses · Earth carries the Earth–Moon barycentre",
   "沙盘模式离开历表，改用牛顿万有引力对质点做速度 Verlet 积分：太阳、八大行星与冥王星共 10 个天体，地球以地月质心参与计算，不含卫星、彗星与小行星。积分步长按当前最紧密的一对天体自动选取，能量误差有界并实时显示。未计入广义相对论效应；不加改动运行一年，各天体与真实历表的差距约在 10⁻³ AU 以内，属于模型差异而非积分误差。这是用于理解引力的实验装置，不是预测工具。": "Sandbox mode leaves the ephemeris behind and integrates Newtonian gravity over point masses with velocity Verlet: ten bodies — the Sun, the eight planets and Pluto — with Earth carried as the Earth–Moon barycentre, and no satellites, comets or asteroids. The step is chosen from whichever pair is currently tightest, and the energy error stays bounded and is shown live. General relativity is not modelled; run unchanged for a year, each body sits within about 10⁻³ AU of the real ephemeris, which is the model’s distance from reality rather than the integrator’s. This is an instrument for understanding gravity, not a prediction tool.",
-  "沙盘中的自转周期与轴倾角只改变外观：点质量模型没有自转与轨道的耦合，它们不产生任何引力效应。天体相撞按完全非弹性合并处理，质量与动量守恒、体积相加。对照用的原始轨迹由同一积分器、同一步长从同一时刻推进，因此两条路径的差异只来自你所做的改动。": "Rotation period and axial tilt change only the appearance: a point-mass model has no spin–orbit coupling, so they produce no gravitational effect at all. A collision is treated as a perfectly inelastic merge, conserving mass and momentum and adding volumes. The original path shown for comparison is advanced by the same integrator, on the same step, from the same instant, so the difference between the two paths is your change and nothing else.",
   "重置": "Reset",
   "退出": "Exit",
-  "当前时间流速下，真实自转已快过画面刷新，屏幕上的转动按比例放慢显示。": "At this time rate the real rotation outruns the frame rate, so the turn on screen is shown proportionally slowed."
+  "当前时间流速下，真实自转已快过画面刷新，屏幕上的转动按比例放慢显示。": "At this time rate the real rotation outruns the frame rate, so the turn on screen is shown proportionally slowed.",
+  "改动立即在当前时刻生效，已经走过的路径会保留下来。": "A change takes effect at the current moment; the path already travelled is kept.",
+  "分享这个沙盘": "Share this sandbox",
+  "沙盘中的自转周期与轴倾角只改变外观：点质量模型没有自转与轨道的耦合，它们不产生任何引力效应。天体相撞按完全非弹性合并处理，质量与动量守恒、体积相加。对照用的原始轨迹由同一积分器、同一步长从同一时刻推进，因此两条路径的差异只来自你所做的改动。改动带有发生时刻，会在运行中即时生效而不重来；分享链接携带的也正是这份「配方」——分叉时刻与全部改动，而不是算出来的轨迹，所以对方打开后会演算出同一条路径。": "Rotation period and axial tilt change only the appearance: a point-mass model has no spin–orbit coupling, so they produce no gravitational effect at all. A collision is treated as a perfectly inelastic merge, conserving mass and momentum and adding volumes. The original path shown for comparison is advanced by the same integrator, on the same step, from the same instant, so the difference between the two paths is your change and nothing else. A change carries the moment it was made and takes effect mid-run rather than restarting it, and a share link carries exactly that recipe — the fork and every change, never the computed trajectory — so whoever opens it works out the same path.",
+  "打开链接的人会从同一时刻分叉，按同样的改动演算出同一条路径。": "Whoever opens the link forks from the same moment and works out the same path from the same changes."
 }

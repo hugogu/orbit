@@ -85,9 +85,9 @@ export function createSandboxSystem(
   const meshUnit = (id: string) =>
     bodies.find((body) => body.id === id)?.size ?? 1;
   const colorOf = (run: SandboxRun, id: string) =>
-    run.scenario.bodies.find((body) => body.id === id)?.color ?? '#ffffff';
+    run.facts.find((body) => body.id === id)?.color ?? '#ffffff';
   const sourceOf = (run: SandboxRun, id: string) =>
-    run.scenario.bodies.find((body) => body.id === id)?.sourceId ?? null;
+    run.facts.find((body) => body.id === id)?.sourceId ?? null;
 
   function extraFor(run: SandboxRun, point: PointMass) {
     const existing = extras.get(point.id);
@@ -190,7 +190,7 @@ export function createSandboxSystem(
     run: SandboxRun,
     options: SandboxSceneOptions,
   ) {
-    const spec = run.scenario.bodies.find((body) => body.id === id);
+    const spec = run.facts.find((body) => body.id === id);
     const turned =
       (phase.get(id) ?? 0) +
       spinStep(spec?.spinDays ?? 0, options.daysPerSecond, options.seconds);
@@ -306,7 +306,7 @@ export function createSandboxSystem(
     },
     localize(run: SandboxRun, t: Translate) {
       for (const [id, extra] of extras) {
-        const spec = run.scenario.bodies.find((body) => body.id === id);
+        const spec = run.facts.find((body) => body.id === id);
         extra.label.textContent = spec ? t(spec.name) : id;
         extra.label.setAttribute(
           'aria-label',

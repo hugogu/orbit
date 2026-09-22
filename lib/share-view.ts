@@ -38,6 +38,12 @@ export type ShareView = {
   region: string | null;
   /** Absent when the scene could not be read, which falls back to auto framing. */
   camera: CameraPose | null;
+  /**
+   * An encoded sandbox recipe, when the link was shared from a run. It carries
+   * what was changed and when, never the computed path: the recipient replays
+   * it from the same fork and reaches the same trajectory.
+   */
+  sandbox: string | null;
 };
 
 export const defaultShareView: ShareView = {
@@ -52,6 +58,7 @@ export const defaultShareView: ShareView = {
   cometClose: false,
   region: null,
   camera: null,
+  sandbox: null,
 };
 
 /** Overview distances stay inside the range the structure tour and reset use. */
@@ -78,7 +85,7 @@ function readCamera(value: string | null): CameraPose | null {
   return { azimuth, polar, zoom };
 }
 
-const shareKeys = ['t', 'p', 's', 'v', 'top', 'cc', 'r', 'c'] as const;
+const shareKeys = ['t', 'p', 's', 'v', 'top', 'cc', 'r', 'c', 'sb'] as const;
 
 let cachedIds: Set<string> | undefined;
 function catalogIds() {
@@ -122,6 +129,7 @@ export function encodeShareView(view: ShareView) {
         .map(compact)
         .join(','),
     );
+  if (view.sandbox) params.set('sb', view.sandbox);
   if (view.selected) {
     if (comets.some((comet) => comet.id === view.selected))
       params.set('cc', view.cometClose ? '1' : '0');
@@ -170,6 +178,7 @@ export function decodeShareView(
     cometClose:
       cometClose === null ? defaultShareView.cometClose : cometClose === '1',
     region: !body && isShareableRegion(region) ? region : null,
+    sandbox: params.get('sb') || null,
   };
 }
 

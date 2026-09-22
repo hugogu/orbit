@@ -4,7 +4,6 @@ import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
 import type { SandboxEvent, SandboxRun } from '../lib/sandbox/run';
-import type { SandboxScenario } from '../lib/sandbox/scenario';
 import type { NewBody } from '../lib/sandbox/edits';
 import { elapsedLabel } from '../lib/sandbox/view';
 
@@ -31,7 +30,6 @@ function eventLabel(
 }
 
 export default function SandboxPanel({
-  scenario,
   run,
   selected,
   baseline,
@@ -45,7 +43,6 @@ export default function SandboxPanel({
   onBaselineChange,
   onTrailsChange,
 }: {
-  scenario: SandboxScenario | null;
   run: SandboxRun | null;
   selected: string | null;
   baseline: boolean;
@@ -65,7 +62,7 @@ export default function SandboxPanel({
   const [distance, setDistance] = useState('3');
   const [name, setName] = useState('');
 
-  if (!scenario || !run)
+  if (!run)
     return (
       <div className="sandbox-panel">
         <p className="sandbox-intro">
@@ -81,7 +78,7 @@ export default function SandboxPanel({
     );
 
   const label = (id: string) => {
-    const spec = scenario.bodies.find((body) => body.id === id);
+    const spec = run.facts.find((body) => body.id === id);
     return spec ? t(spec.name) : id;
   };
   const recent = run.events.slice(-4).reverse();
@@ -129,7 +126,7 @@ export default function SandboxPanel({
       <div className="sandbox-bodies">
         <h3>{t('天体列表')}</h3>
         <ul>
-          {scenario.bodies.map((body) => (
+          {run.facts.map((body) => (
             <li key={body.id} data-gone={!alive.has(body.id)}>
               <button
                 className={`sandbox-body${body.id === selected ? ' active' : ''}`}
@@ -193,8 +190,8 @@ export default function SandboxPanel({
                     distance: Number(distance) || 3,
                     color:
                       palette[
-                        scenario.bodies.filter((body) => !body.sourceId)
-                          .length % palette.length
+                        run.facts.filter((body) => !body.sourceId).length %
+                          palette.length
                       ],
                   });
                   setAdding(false);

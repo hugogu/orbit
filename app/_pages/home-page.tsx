@@ -95,14 +95,15 @@ import SandboxPanel from '@/components/sandbox-panel';
 import SandboxBodyEditor from '@/components/sandbox-body-editor';
 import { createRun } from '@/lib/sandbox/run';
 import {
-  addBody,
-  removeBody,
-  resetBody,
-  updateBody,
+  catalogueDefaults,
+  centralBody,
+  createdBody,
   type NewBody,
   type SandboxField,
 } from '@/lib/sandbox/edits';
 import { forkScenario, type SandboxScenario } from '@/lib/sandbox/scenario';
+import { decodeSandbox, encodeSandbox } from '@/lib/sandbox/share';
+import { SOLAR_MASS_KG } from '@/lib/sandbox/physics';
 import {
   elapsedLabel,
   sandboxSpeeds,
@@ -385,7 +386,10 @@ export default function Home() {
   // the moment out from under the captured frame and its link.
   function openShare() {
     setShareView({
-      time: time ?? Date.now(),
+      // A run's link is anchored to the instant it forked from, not to
+      // wherever the simulation has since reached: the recipient replays the
+      // recipe from the same start and arrives at the same path.
+      time: sandboxScenario ? sandboxScenario.epoch : (time ?? Date.now()),
       paused,
       speedIndex: speed,
       selected,
@@ -394,6 +398,7 @@ export default function Home() {
       cometClose,
       region: tab === 'structure' && !selected ? region : null,
       camera: scene.current?.pose() ?? null,
+      sandbox: sandboxScenario ? encodeSandbox(sandboxScenario) : null,
     });
     setShare(true);
   }
@@ -406,6 +411,9 @@ export default function Home() {
   }
   // Rebuilt whenever the scenario changes, which is how an edit or a reset
   // restarts the run: the scene reads this object every frame and advances it.
+  // Rebuilt only when the recipe is replaced outright — entering, resetting,
+  // or opening a shared link. An edit is recorded on the running simulation
+  // instead, so the elapsed time and the travelled path both survive it.
   const sandboxRun = useMemo(
     () => (sandboxScenario ? createRun(sandboxScenario) : null),
     [sandboxScenario],
@@ -441,41 +449,61 @@ export default function Home() {
     setReset((v) => v + 1);
     track('sandbox_leave', {});
   }, []);
-  const restartSandbox = useCallback(() => {
-    setSandboxScenario((current) =>
-      current
-        ? { ...current, bodies: current.bodies.map((b) => ({ ...b })) }
-        : current,
-    );
-  }, []);
-  // Every edit rewrites the scenario, which rebuilds the run. Restarting from
-  // the fork is what keeps the comparison honest: both systems then begin at
-  // the same instant, so the gap between them is the edit and nothing else.
-  const editSandboxBody = useCallback(
-    (id: string, field: SandboxField, value: number) =>
+  // Replays the same recipe from the fork: a fresh object for the same epoch
+  // and changes, so the memo rebuilds the run and it retraces its own path.
+  const restartSandbox = useCallback(
+    () =>
       setSandboxScenario((current) =>
-        current ? updateBody(current, id, field, value) : current,
+        current
+          ? { epoch: current.epoch, changes: [...current.changes] }
+          : current,
       ),
     [],
   );
-  const removeSandboxBody = useCallback((id: string) => {
-    setSandboxScenario((current) =>
-      current ? removeBody(current, id) : current,
-    );
-    setSelected((current) => (current === id ? null : current));
-  }, []);
-  const addSandboxBody = useCallback((body: NewBody) => {
-    setSandboxScenario((current) =>
-      current ? addBody(current, body) : current,
-    );
-    track('sandbox_add_body', {});
-  }, []);
+  const editSandboxBody = useCallback(
+    (id: string, field: SandboxField, value: number) =>
+      sandboxRun?.apply({ kind: 'set', id, field, value }),
+    [sandboxRun],
+  );
+  const removeSandboxBody = useCallback(
+    (id: string) => {
+      sandboxRun?.apply({ kind: 'remove', id });
+      setSelected((current) => (current === id ? null : current));
+    },
+    [sandboxRun],
+  );
+  const addSandboxBody = useCallback(
+    (body: NewBody) => {
+      if (!sandboxRun) return;
+      const created = sandboxRun.facts.filter((item) => !item.sourceId).length;
+      sandboxRun.apply({
+        kind: 'add',
+        body: createdBody(
+          body,
+          created,
+          (centralBody(sandboxRun.variant)?.mass ?? 1) * SOLAR_MASS_KG,
+          `added-${created + 1}`,
+        ),
+      });
+      track('sandbox_add_body', {});
+    },
+    [sandboxRun],
+  );
   const resetSandboxBody = useCallback(
-    (id: string) =>
-      setSandboxScenario((current) =>
-        current ? resetBody(current, id) : current,
-      ),
-    [],
+    (id: string) => {
+      const defaults = catalogueDefaults(
+        sandboxRun?.facts.find((item) => item.id === id)?.sourceId ?? null,
+      );
+      if (!defaults || !sandboxRun) return;
+      for (const [field, value] of Object.entries(defaults))
+        sandboxRun.apply({
+          kind: 'set',
+          id,
+          field: field as SandboxField,
+          value,
+        });
+    },
+    [sandboxRun],
   );
   const select = useCallback((id: string) => {
     if (window.location.hash !== `#${id}`)
@@ -542,6 +570,16 @@ export default function Home() {
       setView(shared.view);
     }
     setCameraPose(shared.camera);
+    // A shared run reopens the sandbox on the fork it was shared from and
+    // replays the recipe, so the recipient watches the same path form.
+    const recipe = decodeSandbox(shared.sandbox, shared.time);
+    if (recipe) {
+      setSandboxScenario(recipe);
+      setSandboxPaused(shared.paused);
+      setTab('sandbox');
+      setSelected(null);
+      setView(205);
+    }
     setReset((value) => value + 1);
   }, []);
   useEffect(() => {
@@ -1003,12 +1041,7 @@ export default function Home() {
           <button
             className="icon-button"
             aria-label={t('分享此刻所见')}
-            title={
-              sandboxScenario
-                ? t('沙盘运行无法分享：链接只能重现真实历表。')
-                : t('分享此刻所见')
-            }
-            disabled={!!sandboxScenario}
+            title={sandboxScenario ? t('分享这个沙盘') : t('分享此刻所见')}
             onClick={openShare}
           >
             <Share2 />
@@ -1087,7 +1120,6 @@ export default function Home() {
           </div>
           {tab === 'sandbox' ? (
             <SandboxPanel
-              scenario={sandboxScenario}
               run={sandboxRun}
               selected={selected}
               baseline={sandboxBaseline}
@@ -1164,7 +1196,6 @@ export default function Home() {
             reciting catalogue figures the simulation has already left behind. */}
         {sandboxScenario && sandboxRun && selected ? (
           <SandboxBodyEditor
-            scenario={sandboxScenario}
             run={sandboxRun}
             selected={selected}
             daysPerSecond={sandboxPaused ? 0 : sandboxSpeeds[sandboxSpeed]}
@@ -1762,7 +1793,7 @@ export default function Home() {
                 </p>
                 <p>
                   {t(
-                    '沙盘中的自转周期与轴倾角只改变外观：点质量模型没有自转与轨道的耦合，它们不产生任何引力效应。天体相撞按完全非弹性合并处理，质量与动量守恒、体积相加。对照用的原始轨迹由同一积分器、同一步长从同一时刻推进，因此两条路径的差异只来自你所做的改动。',
+                    '沙盘中的自转周期与轴倾角只改变外观：点质量模型没有自转与轨道的耦合，它们不产生任何引力效应。天体相撞按完全非弹性合并处理，质量与动量守恒、体积相加。对照用的原始轨迹由同一积分器、同一步长从同一时刻推进，因此两条路径的差异只来自你所做的改动。改动带有发生时刻，会在运行中即时生效而不重来；分享链接携带的也正是这份「配方」——分叉时刻与全部改动，而不是算出来的轨迹，所以对方打开后会演算出同一条路径。',
                   )}
                 </p>
                 <p>

@@ -5,6 +5,13 @@
  * Both systems advance with the same step and reach the same elapsed time, so
  * a body's two positions can be compared directly — that lockstep is the whole
  * point of carrying the baseline at all.
+ *
+ * A run is driven by a recipe, not by a starting state. Changes carry the
+ * elapsed time they were made at and are applied when the run reaches it, so
+ * an edit lands mid-flight without restarting, and replaying the same recipe
+ * reproduces the same path. Steps are a fixed size between review points and
+ * are cut exactly at each change, which keeps the state at a given elapsed
+ * time independent of how the frames happened to fall.
  */
 import {
   advance,
@@ -14,22 +21,43 @@ import {
   suggestedStep,
   systemEnergy,
   zeroVectors,
+  SOLAR_MASS_KG,
   type Collision,
   type PointMass,
   type Vec3,
 } from './physics';
 import { orbitState } from './derived';
-import { forkScenario, kmToAu, type SandboxScenario } from './scenario';
-import { SOLAR_MASS_KG } from './physics';
+import { writeField } from './edits';
+import {
+  forkBodies,
+  kmToAu,
+  auToKm,
+  type SandboxBodySpec,
+  type SandboxChange,
+  type SandboxEdit,
+  type SandboxScenario,
+} from './scenario';
 
 /** Work ceiling for one advance, so a fast rate can never stall a frame. */
 export const MAX_STEPS_PER_ADVANCE = 600;
 /** Trail points kept per body before the history is thinned. */
 export const TRAIL_CAPACITY = 900;
+/**
+ * Whole steps between step reviews. Recomputing the step on a fixed count
+ * rather than every frame is what keeps a replay on the same footing as the
+ * run it came from, while still letting a close encounter refine it.
+ */
+const STEPS_PER_REVIEW = 32;
 
 export type SandboxEvent =
   | { kind: 'collision'; absorbed: string; into: string; day: number }
   | { kind: 'escape'; id: string; day: number };
+
+/** Presentation a body carries that the integrator has no use for. */
+export type BodyFacts = Pick<
+  SandboxBodySpec,
+  'id' | 'sourceId' | 'name' | 'color' | 'texture' | 'spinDays' | 'tilt'
+>;
 
 export type SandboxRun = {
   readonly scenario: SandboxScenario;
@@ -37,29 +65,47 @@ export type SandboxRun = {
   elapsedDays: number;
   /** The edited system. */
   variant: PointMass[];
-  /** The same fork with no edits, for comparison. */
+  /** The same fork with no changes, for comparison. */
   baseline: PointMass[];
+  /** Every body the run has carried, in the order it gained them. */
+  facts: BodyFacts[];
   trails: Map<string, Vec3[]>;
   baselineTrails: Map<string, Vec3[]>;
   events: SandboxEvent[];
-  /** Integration step last used, in days. */
+  /** Integration step in days. */
   step: number;
-  /** Steps taken in the last advance, before the ceiling was applied. */
+  /** Steps taken in the last advance. */
   steps: number;
   /** True while the step ceiling is holding the run below the chosen rate. */
   throttled: boolean;
   /** |E − E₀| / |E₀| for the edited system. */
   energyDrift: number;
   advance(days: number): void;
+  /** Applies an edit now, at the run's current elapsed time, and records it. */
+  apply(edit: SandboxEdit & { at?: number }): void;
+  /** A body's current parameters in the units the editor shows. */
+  liveSpec(id: string): SandboxBodySpec | null;
 };
 
-function toPointMass(spec: SandboxScenario['bodies'][number]): PointMass {
+function toPointMass(spec: SandboxBodySpec): PointMass {
   return {
     id: spec.id,
     mass: spec.mass / SOLAR_MASS_KG,
     radius: kmToAu(spec.radius),
     position: [...spec.position],
     velocity: [...spec.velocity],
+  };
+}
+
+function toFacts(spec: SandboxBodySpec): BodyFacts {
+  return {
+    id: spec.id,
+    sourceId: spec.sourceId,
+    name: spec.name,
+    color: spec.color,
+    texture: spec.texture,
+    spinDays: spec.spinDays,
+    tilt: spec.tilt,
   };
 }
 
@@ -77,8 +123,8 @@ type Track = {
   escaped: Set<string>;
 };
 
-function createTrack(scenario: SandboxScenario): Track {
-  const points = scenario.bodies.map(toPointMass);
+function createTrack(specs: SandboxBodySpec[]): Track {
+  const points = specs.map(toPointMass);
   const acceleration = zeroVectors(points.length);
   accelerations(points, acceleration);
   return {
@@ -122,44 +168,101 @@ function thin(tracks: Track[]) {
 }
 
 export function createRun(scenario: SandboxScenario): SandboxRun {
-  const variant = createTrack(scenario);
-  const baseline = createTrack(forkScenario(scenario.epoch));
-  const referenceEnergy = systemEnergy(variant.points);
+  const start = forkBodies(scenario.epoch);
+  const variant = createTrack(start);
+  const baseline = createTrack(start);
+  const facts = start.map(toFacts);
+  let referenceEnergy = systemEnergy(variant.points);
   // A run that starts from a single body, or from nothing, has no interactions
   // to measure drift against; reporting zero beats reporting a ratio over zero.
-  const scale = Math.abs(referenceEnergy) > 0 ? Math.abs(referenceEnergy) : 1;
+  let scale = Math.abs(referenceEnergy) > 0 ? Math.abs(referenceEnergy) : 1;
   let sampleEvery = suggestedStep(variant.points) * 8;
   let sampledAt = 0;
+  // Changes not yet reached, soonest first.
+  const queue = [...scenario.changes].sort((a, b) => a.at - b.at);
+  let step = suggestedStep(variant.points);
+  let sinceReview = 0;
+  let pending = 0;
+
+  const review = () => {
+    step = Math.min(
+      suggestedStep(variant.points),
+      suggestedStep(baseline.points),
+    );
+    sinceReview = 0;
+  };
 
   const run: SandboxRun = {
     scenario,
     elapsedDays: 0,
     variant: variant.points,
     baseline: baseline.points,
+    facts,
     trails: variant.trails,
     baselineTrails: baseline.trails,
     events: [],
-    step: suggestedStep(variant.points),
+    step,
     steps: 0,
     throttled: false,
     energyDrift: 0,
+
+    liveSpec(id) {
+      const fact = facts.find((item) => item.id === id);
+      const point = variant.points.find((item) => item.id === id);
+      if (!fact || !point) return null;
+      return {
+        ...fact,
+        mass: point.mass * SOLAR_MASS_KG,
+        radius: auToKm(point.radius),
+        position: [...point.position],
+        velocity: [...point.velocity],
+      };
+    },
+
+    apply(edit) {
+      const timed: SandboxChange = { ...edit, at: edit.at ?? run.elapsedDays };
+      // Recorded as well as performed: the recipe is what a reset replays and
+      // what a link carries, so the two can never describe different runs.
+      scenario.changes.push(timed);
+      perform(timed);
+    },
+
     advance(days: number) {
-      if (!(days > 0) || variant.points.length === 0) {
-        run.steps = 0;
-        return;
-      }
-      // One step for both systems keeps their sampled times identical, which
-      // is what makes "the same instant" a true statement in the comparison.
-      const step = Math.min(
-        suggestedStep(variant.points),
-        suggestedStep(baseline.points),
-      );
-      const wanted = Math.ceil(days / step);
-      const steps = Math.min(wanted, MAX_STEPS_PER_ADVANCE);
-      for (let index = 0; index < steps; index++) {
-        advance(variant.points, step, variant.acceleration);
-        advance(baseline.points, step, baseline.acceleration);
-        run.elapsedDays += step;
+      run.steps = 0;
+      if (!(days > 0) || variant.points.length === 0) return;
+      pending += days;
+      let taken = 0;
+      let starved = false;
+      while (taken < MAX_STEPS_PER_ADVANCE) {
+        if (sinceReview >= STEPS_PER_REVIEW) review();
+        // A change lands at its own elapsed time, not at whichever step
+        // happens to straddle it, so a replay cannot drift away from the run
+        // it was recorded from.
+        const next = queue[0];
+        const toChange = next ? next.at - run.elapsedDays : Infinity;
+        if (toChange <= 0) {
+          perform(queue.shift()!);
+          continue;
+        }
+        // Whole steps only, with the remainder banked for the next frame. A
+        // step trimmed to whatever time a frame happened to bring would let
+        // the frame rate into the trajectory, and a replay could not then
+        // retrace the run it came from.
+        const size = Math.min(step, toChange);
+        if (pending < size) {
+          starved = true;
+          break;
+        }
+        advance(variant.points, size, variant.acceleration);
+        advance(baseline.points, size, baseline.acceleration);
+        // Landing on a change takes the recorded time itself rather than a
+        // sum that rounds near it, so the recipe stays the authority on when
+        // the change happened however many steps led up to it.
+        run.elapsedDays =
+          size === toChange && next ? next.at : run.elapsedDays + size;
+        pending -= size;
+        sinceReview += 1;
+        taken += 1;
         // Checked every step, not once per frame: a fast body crossing a slow
         // one would otherwise pass clean through it between contact tests.
         collide(variant, run);
@@ -173,12 +276,64 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       }
       watchEscapes(variant, run);
       run.step = step;
-      run.steps = steps;
-      run.throttled = wanted > MAX_STEPS_PER_ADVANCE;
+      run.steps = taken;
+      // Time left over because a whole step did not fit yet is banked for the
+      // next frame. Time the ceiling could not cover is dropped rather than
+      // owed, so a slow device runs behind the chosen rate instead of falling
+      // further behind every frame and never catching up.
+      run.throttled = !starved && pending > 0;
+      if (run.throttled) pending = 0;
       run.energyDrift =
         Math.abs(systemEnergy(variant.points) - referenceEnergy) / scale;
     },
   };
+
+  /** Applies one change to the edited system; the baseline never sees these. */
+  function perform(change: SandboxChange) {
+    if (change.kind === 'remove') {
+      const index = variant.points.findIndex((p) => p.id === change.id);
+      if (index >= 0) variant.points.splice(index, 1);
+      variant.trails.delete(change.id);
+    } else if (change.kind === 'add') {
+      if (!facts.some((item) => item.id === change.body.id))
+        facts.push(toFacts(change.body));
+      if (!variant.points.some((p) => p.id === change.body.id)) {
+        variant.points.push(toPointMass(change.body));
+        variant.trails.set(change.body.id, [[...change.body.position]]);
+      }
+    } else {
+      const fact = facts.find((item) => item.id === change.id);
+      const live = run.liveSpec(change.id);
+      const point = variant.points.find((item) => item.id === change.id);
+      if (!live || !point || !fact) return;
+      // The same writer the editor uses, so a recorded change and a live one
+      // can never mean different things.
+      const centre = variant.points.reduce(
+        (heaviest, item) => (item.mass > heaviest.mass ? item : heaviest),
+        variant.points[0],
+      );
+      const next = writeField(
+        live,
+        change.field,
+        change.value,
+        centre.mass * SOLAR_MASS_KG,
+      );
+      fact.spinDays = next.spinDays;
+      fact.tilt = next.tilt;
+      point.mass = next.mass / SOLAR_MASS_KG;
+      point.radius = kmToAu(next.radius);
+      point.position = [...next.position];
+      point.velocity = [...next.velocity];
+    }
+    variant.acceleration = zeroVectors(variant.points.length);
+    accelerations(variant.points, variant.acceleration);
+    // A change moves the system's energy on purpose. Re-baselining here keeps
+    // the drift figure a measure of the integrator rather than of the edit.
+    referenceEnergy = systemEnergy(variant.points);
+    scale = Math.abs(referenceEnergy) > 0 ? Math.abs(referenceEnergy) : 1;
+    review();
+  }
+
   return run;
 }
 

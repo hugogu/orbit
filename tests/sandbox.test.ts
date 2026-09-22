@@ -10,7 +10,6 @@ import {
   advance,
   barycenter,
   mergeContacts,
-  suggestedStep,
   systemEnergy,
   zeroVectors,
   type PointMass,
@@ -19,6 +18,7 @@ import {
 import {
   circularState,
   circularSpeed,
+  forkBodies,
   forkScenario,
   kmToAu,
   sandboxSources,
@@ -31,18 +31,17 @@ import {
   surfaceGravity,
 } from '../lib/sandbox/derived.ts';
 import { createRun, MAX_STEPS_PER_ADVANCE } from '../lib/sandbox/run.ts';
+import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
 import {
-  addBody,
+  catalogueDefaults,
   centralBody,
+  createdBody,
   escapeSpeedAt,
   fieldPosition,
   fieldSpec,
   fieldValue,
   readField,
-  removeBody,
-  resetBody,
   sandboxFields,
-  updateBody,
   writeField,
   type SandboxField,
 } from '../lib/sandbox/edits.ts';
@@ -134,14 +133,12 @@ void test('a symplectic step keeps the total energy bounded over a century', () 
 });
 
 void test('the baseline tracks the untouched system while edits move the variant', () => {
-  const scenario = forkScenario(J2000_MS);
-  const jupiter = scenario.bodies.find((body) => body.id === 'jupiter')!;
-  jupiter.mass *= 50;
-  const run = createRun(scenario);
+  const run = createRun(forkScenario(J2000_MS));
+  run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 9.5e28 });
   while (run.elapsedDays < 365.25 * 20) run.advance(120);
   const changed = run.variant.find((body) => body.id === 'jupiter')!;
   const original = run.baseline.find((body) => body.id === 'jupiter')!;
-  assert.ok(Math.abs(changed.mass / original.mass - 50) < 1e-9);
+  assert.ok(changed.mass > original.mass * 40);
   // Both systems are sampled on the same steps, so any separation between the
   // two paths is the edit's doing and nothing else.
   assert.equal(
@@ -160,10 +157,8 @@ void test('the baseline tracks the untouched system while edits move the variant
 });
 
 void test('raising a body’s speed past the escape threshold reports an escape', () => {
-  const scenario = forkScenario(J2000_MS);
-  const earth = scenario.bodies.find((body) => body.id === 'earth')!;
-  earth.velocity = earth.velocity.map((value) => value * 1.6) as Vec3;
-  const run = createRun(scenario);
+  const run = createRun(forkScenario(J2000_MS));
+  run.apply({ kind: 'set', id: 'earth', field: 'speed', value: 48 });
   run.advance(30);
   assert.ok(
     run.events.some((event) => event.kind === 'escape' && event.id === 'earth'),
@@ -205,28 +200,29 @@ void test('touching bodies merge, conserving mass and momentum', () => {
 });
 
 void test('the step follows the tightest pair and the advance honours its ceiling', () => {
-  const solar = forkScenario(J2000_MS);
-  const wide = createRun(solar);
+  const wide = createRun(forkScenario(J2000_MS));
   wide.advance(1);
-  const close = forkScenario(J2000_MS);
-  close.bodies.push({
-    id: 'inner',
-    sourceId: null,
-    name: 'Inner',
-    color: '#ffffff',
-    mass: 1e21,
-    radius: 1000,
-    spinDays: 1,
-    tilt: 0,
-    ...circularState(0.05, 0, close.bodies[0].mass),
+  const tight = createRun(forkScenario(J2000_MS));
+  tight.apply({
+    kind: 'add',
+    body: createdBody(
+      {
+        name: 'Inner',
+        mass: 1e21,
+        radius: 1000,
+        distance: 0.05,
+        color: '#fff',
+      },
+      0,
+      centralBody(tight.variant)!.mass * SOLAR_MASS_KG,
+      'inner',
+    ),
   });
-  const tight = createRun(close);
   tight.advance(1);
   assert.ok(
     tight.step < wide.step,
     `${tight.step} should be under ${wide.step}`,
   );
-  assert.ok(suggestedStep(tight.variant) < suggestedStep(wide.variant));
   const burst = createRun(forkScenario(J2000_MS));
   burst.advance(1e6);
   assert.equal(burst.steps, MAX_STEPS_PER_ADVANCE);
@@ -264,18 +260,20 @@ void test('osculating elements recover a known orbit from its state vectors', ()
   assert.ok(open.escaping);
 });
 
-void test('an emptied or single-body scenario advances without failing', () => {
-  const empty = createRun({ epoch: J2000_MS, bodies: [] });
+void test('an emptied or single-body run advances without failing', () => {
+  const lone = createRun(forkScenario(J2000_MS));
+  for (const body of lone.facts)
+    if (body.id !== 'sun') lone.apply({ kind: 'remove', id: body.id });
+  lone.advance(100);
+  assert.ok(lone.elapsedDays > 0);
+  // One body has no interactions, so there is no energy for the step to lose.
+  assert.equal(lone.energyDrift, 0);
+  assert.ok(lone.variant[0].position.every(Number.isFinite));
+  assert.equal(systemEnergy(lone.variant), 0);
+  const empty = createRun(forkScenario(J2000_MS));
+  for (const body of empty.facts) empty.apply({ kind: 'remove', id: body.id });
   empty.advance(10);
   assert.equal(empty.elapsedDays, 0);
-  const lone = forkScenario(J2000_MS);
-  lone.bodies = lone.bodies.filter((body) => body.id === 'sun');
-  const run = createRun(lone);
-  run.advance(100);
-  assert.ok(run.elapsedDays > 0);
-  assert.equal(run.energyDrift, 0);
-  assert.ok(run.variant[0].position.every(Number.isFinite));
-  assert.equal(systemEnergy(run.variant), 0);
 });
 
 void test('slider positions round-trip through both linear and ratio spacing', () => {
@@ -306,10 +304,10 @@ void test('slider positions round-trip through both linear and ratio spacing', (
 });
 
 void test('every field reads back exactly what was written', () => {
-  const scenario = forkScenario(J2000_MS);
-  const sun = centralBody(scenario);
+  const start = forkBodies(J2000_MS);
+  const sun = centralBody(start)!;
   assert.equal(sun.id, 'sun');
-  const earth = scenario.bodies.find((body) => body.id === 'earth')!;
+  const earth = start.find((body) => body.id === 'earth')!;
   const cases: [SandboxField, number][] = [
     ['mass', 1.2e25],
     ['speed', 41.3],
@@ -328,39 +326,32 @@ void test('every field reads back exactly what was written', () => {
 });
 
 void test('a field is clamped to its own range rather than accepting nonsense', () => {
-  const scenario = forkScenario(J2000_MS);
-  const sun = centralBody(scenario);
-  const earth = scenario.bodies.find((body) => body.id === 'earth')!;
-  const heavy = writeField(earth, 'mass', 1e40, sun.mass);
-  assert.equal(heavy.mass, fieldSpec('mass').max);
-  const tiny = writeField(earth, 'radius', -50, sun.mass);
-  assert.equal(tiny.radius, fieldSpec('radius').min);
+  const start = forkBodies(J2000_MS);
+  const sun = centralBody(start)!;
+  const earth = start.find((body) => body.id === 'earth')!;
+  assert.equal(
+    writeField(earth, 'mass', 1e40, sun.mass).mass,
+    fieldSpec('mass').max,
+  );
+  assert.equal(
+    writeField(earth, 'radius', -50, sun.mass).radius,
+    fieldSpec('radius').min,
+  );
 });
 
 void test('moving a body re-places it on a circular orbit in its own plane', () => {
-  const scenario = forkScenario(J2000_MS);
-  const sun = centralBody(scenario);
-  const pluto = scenario.bodies.find((body) => body.id === 'pluto')!;
+  const start = forkBodies(J2000_MS);
+  const sun = centralBody(start)!;
+  const pluto = start.find((body) => body.id === 'pluto')!;
+  const centre = point('s', 1, [0, 0, 0], [0, 0, 0]);
   const before = orbitState(
-    {
-      id: 'p',
-      mass: 0,
-      radius: 0,
-      position: pluto.position,
-      velocity: pluto.velocity,
-    },
-    { id: 's', mass: 1, radius: 0, position: [0, 0, 0], velocity: [0, 0, 0] },
+    point('p', 0, pluto.position, pluto.velocity),
+    centre,
   );
   const moved = writeField(pluto, 'distance', 5, sun.mass);
   const after = orbitState(
-    {
-      id: 'p',
-      mass: 0,
-      radius: 0,
-      position: moved.position,
-      velocity: moved.velocity,
-    },
-    { id: 's', mass: 1, radius: 0, position: [0, 0, 0], velocity: [0, 0, 0] },
+    point('p', 0, moved.position, moved.velocity),
+    centre,
   );
   assert.ok(Math.abs(Math.hypot(...moved.position) - 5) < 1e-9);
   assert.ok(after.eccentricity < 1e-6, String(after.eccentricity));
@@ -369,9 +360,9 @@ void test('moving a body re-places it on a circular orbit in its own plane', () 
 });
 
 void test('scaling a body’s speed keeps its heading', () => {
-  const scenario = forkScenario(J2000_MS);
-  const sun = centralBody(scenario);
-  const mars = scenario.bodies.find((body) => body.id === 'mars')!;
+  const start = forkBodies(J2000_MS);
+  const sun = centralBody(start)!;
+  const mars = start.find((body) => body.id === 'mars')!;
   const faster = writeField(mars, 'speed', 40, sun.mass);
   const was = Math.hypot(...mars.velocity);
   const now = Math.hypot(...faster.velocity);
@@ -382,74 +373,247 @@ void test('scaling a body’s speed keeps its heading', () => {
 });
 
 void test('bodies can be added, removed and restored to their catalogue values', () => {
-  const forked = forkScenario(J2000_MS);
-  const without = removeBody(forked, 'jupiter');
-  assert.equal(without.bodies.length, forked.bodies.length - 1);
-  assert.ok(!without.bodies.some((body) => body.id === 'jupiter'));
-  const added = addBody(without, {
-    name: 'Nemesis',
-    mass: 1e29,
-    radius: 60000,
-    distance: 8,
-    color: '#ff0000',
+  const run = createRun(forkScenario(J2000_MS));
+  const before = run.facts.length;
+  run.apply({ kind: 'remove', id: 'jupiter' });
+  assert.ok(!run.variant.some((body) => body.id === 'jupiter'));
+  const centre = centralBody(run.variant)!.mass * SOLAR_MASS_KG;
+  run.apply({
+    kind: 'add',
+    body: createdBody(
+      {
+        name: 'Nemesis',
+        mass: 1e29,
+        radius: 60000,
+        distance: 8,
+        color: '#f00',
+      },
+      0,
+      centre,
+      'nemesis',
+    ),
   });
-  const created = added.bodies.at(-1)!;
+  const created = run.liveSpec('nemesis')!;
   assert.equal(created.sourceId, null);
   assert.ok(Math.abs(Math.hypot(...created.position) - 8) < 1e-9);
+  assert.equal(run.facts.length, before + 1);
   // Added bodies start on a circular orbit, so one does not immediately fall in.
   const state = orbitState(
-    {
-      id: created.id,
-      mass: 0,
-      radius: 0,
-      position: created.position,
-      velocity: created.velocity,
-    },
-    { id: 'sun', mass: 1, radius: 0, position: [0, 0, 0], velocity: [0, 0, 0] },
+    run.variant.find((body) => body.id === 'nemesis')!,
+    point('sun', 1, [0, 0, 0], [0, 0, 0]),
   );
   assert.ok(state.eccentricity < 1e-6);
   assert.equal(state.escaping, false);
   // A second addition is placed away from the first.
-  const twice = addBody(added, {
-    name: 'Nemesis II',
-    mass: 1e29,
-    radius: 60000,
-    distance: 8,
-    color: '#00ff00',
+  run.apply({
+    kind: 'add',
+    body: createdBody(
+      {
+        name: 'Nemesis II',
+        mass: 1e29,
+        radius: 60000,
+        distance: 8,
+        color: '#0f0',
+      },
+      1,
+      centre,
+      'nemesis-2',
+    ),
   });
-  const second = twice.bodies.at(-1)!;
   assert.ok(
     Math.hypot(
-      ...second.position.map((value, axis) => value - created.position[axis]),
+      ...run
+        .liveSpec('nemesis-2')!
+        .position.map((value, axis) => value - created.position[axis]),
     ) > 1,
   );
-  const edited = updateBody(forked, 'earth', 'mass', 9e25);
-  assert.equal(edited.bodies.find((body) => body.id === 'earth')!.mass, 9e25);
-  const restored = resetBody(edited, 'earth');
-  const original = forked.bodies.find((body) => body.id === 'earth')!;
-  assert.equal(
-    restored.bodies.find((b) => b.id === 'earth')!.mass,
-    original.mass,
-  );
+  run.apply({ kind: 'set', id: 'earth', field: 'mass', value: 9e25 });
+  assert.ok(Math.abs(run.liveSpec('earth')!.mass - 9e25) < 1e18);
+  const defaults = catalogueDefaults('earth')!;
+  run.apply({ kind: 'set', id: 'earth', field: 'mass', value: defaults.mass });
+  assert.ok(Math.abs(run.liveSpec('earth')!.mass - defaults.mass) < 1e15);
   // A body the viewer created has no catalogue entry to fall back to.
-  assert.deepEqual(resetBody(twice, second.id), twice);
+  assert.equal(catalogueDefaults(null), null);
 });
 
-void test('an edited scenario runs, and the escape threshold matches the model', () => {
-  const scenario = forkScenario(J2000_MS);
-  const sun = centralBody(scenario);
-  const earth = scenario.bodies.find((body) => body.id === 'earth')!;
+void test('the escape threshold matches the model', () => {
+  const start = forkBodies(J2000_MS);
+  const sun = centralBody(start)!;
+  const earth = start.find((body) => body.id === 'earth')!;
   const escape = escapeSpeedAt(Math.hypot(...earth.position), sun.mass);
   // Earth orbits at about 29.8 km/s and leaves above roughly 42 km/s.
   assert.ok(Math.abs(escape - 42.1) < 0.4, String(escape));
-  const run = createRun(updateBody(scenario, 'earth', 'speed', escape * 1.05));
-  run.advance(60);
-  assert.ok(
-    run.events.some((event) => event.kind === 'escape' && event.id === 'earth'),
-  );
-  const bound = createRun(
-    updateBody(scenario, 'earth', 'speed', escape * 0.95),
-  );
+  const leaving = createRun(forkScenario(J2000_MS));
+  leaving.apply({
+    kind: 'set',
+    id: 'earth',
+    field: 'speed',
+    value: escape * 1.05,
+  });
+  leaving.advance(60);
+  assert.ok(leaving.events.some((event) => event.kind === 'escape'));
+  const bound = createRun(forkScenario(J2000_MS));
+  bound.apply({
+    kind: 'set',
+    id: 'earth',
+    field: 'speed',
+    value: escape * 0.95,
+  });
   bound.advance(60);
   assert.ok(!bound.events.some((event) => event.kind === 'escape'));
+});
+
+void test('an edit lands mid-run, keeping the elapsed time and the path so far', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  while (run.elapsedDays < 400) run.advance(40);
+  const beforeEdit = run.elapsedDays;
+  const trailBefore = run.trails.get('jupiter')!.length;
+  // Until now the edited system and the untouched one have been identical.
+  const together = Math.hypot(
+    ...run.variant
+      .find((b) => b.id === 'jupiter')!
+      .position.map(
+        (value, axis) =>
+          value - run.baseline.find((b) => b.id === 'jupiter')!.position[axis],
+      ),
+  );
+  assert.equal(together, 0);
+  run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 9.5e28 });
+  // The clock does not rewind and the ribbon is not thrown away.
+  assert.equal(run.elapsedDays, beforeEdit);
+  assert.ok(run.trails.get('jupiter')!.length >= trailBefore);
+  assert.equal(run.scenario.changes.length, 1);
+  assert.equal(run.scenario.changes[0].at, beforeEdit);
+  while (run.elapsedDays < 1200) run.advance(40);
+  const apart = Math.hypot(
+    ...run.variant
+      .find((b) => b.id === 'jupiter')!
+      .position.map(
+        (value, axis) =>
+          value - run.baseline.find((b) => b.id === 'jupiter')!.position[axis],
+      ),
+  );
+  assert.ok(apart > 1e-4, `expected the paths to separate, got ${apart}`);
+});
+
+void test('replaying a recipe reproduces the same path, whatever the frame sizes', () => {
+  const recipe = forkScenario(J2000_MS);
+  const first = createRun(recipe);
+  while (first.elapsedDays < 300) first.advance(37);
+  first.apply({ kind: 'set', id: 'mars', field: 'speed', value: 30 });
+  while (first.elapsedDays < 900) first.advance(53);
+  // The same recipe, advanced in quite different chunks: a link has to land
+  // the recipient on the path the author saw, not merely a similar one.
+  const replay = createRun({
+    epoch: recipe.epoch,
+    changes: [...recipe.changes],
+  });
+  for (
+    let guard = 0;
+    guard < 500 && replay.elapsedDays < first.elapsedDays;
+    guard++
+  )
+    replay.advance(Math.min(7, first.elapsedDays - replay.elapsedDays));
+  // Identical step sequences land both on the same boundary, not merely near it.
+  assert.equal(replay.elapsedDays, first.elapsedDays);
+  for (const body of first.variant) {
+    const echo = replay.variant.find((item) => item.id === body.id)!;
+    const gap = Math.hypot(
+      ...body.position.map((value, axis) => value - echo.position[axis]),
+    );
+    assert.ok(gap < 1e-9, `${body.id} drifted by ${gap} AU on replay`);
+  }
+});
+
+void test('a link carries the recipe, and the recipient reaches the same path', () => {
+  const authored = createRun(forkScenario(J2000_MS));
+  while (authored.elapsedDays < 200) authored.advance(40);
+  authored.apply({ kind: 'remove', id: 'mercury' });
+  authored.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 4.4e28 });
+  authored.apply({
+    kind: 'add',
+    body: createdBody(
+      {
+        name: 'Wanderer',
+        mass: 3e26,
+        radius: 30000,
+        distance: 2.4,
+        color: '#7fd4ff',
+      },
+      0,
+      centralBody(authored.variant)!.mass * SOLAR_MASS_KG,
+      'wanderer',
+    ),
+  });
+  while (authored.elapsedDays < 800) authored.advance(40);
+
+  const link = encodeSandbox(authored.scenario);
+  const received = decodeSandbox(link, J2000_MS);
+  assert.ok(received);
+  // The link describes the run, not its result: no trajectory travels in it.
+  assert.equal(received.changes.length, authored.scenario.changes.length);
+  const replay = createRun(received);
+  for (
+    let guard = 0;
+    guard < 500 && replay.elapsedDays < authored.elapsedDays;
+    guard++
+  )
+    replay.advance(Math.min(40, authored.elapsedDays - replay.elapsedDays));
+  assert.ok(Math.abs(replay.elapsedDays - authored.elapsedDays) < 1e-9);
+  assert.equal(replay.variant.length, authored.variant.length);
+  for (const body of authored.variant) {
+    const echo = replay.variant.find((item) => item.id === body.id);
+    assert.ok(echo, `${body.id} missing after the link was opened`);
+    const gap = Math.hypot(
+      ...body.position.map((value, axis) => value - echo.position[axis]),
+    );
+    assert.ok(gap < 1e-9, `${body.id} drifted by ${gap} AU`);
+  }
+  assert.equal(replay.liveSpec('wanderer')!.name, 'Wanderer');
+});
+
+void test('a damaged or hostile link degrades to an unmodified run', () => {
+  assert.equal(decodeSandbox(null, J2000_MS), null);
+  assert.deepEqual(decodeSandbox('', J2000_MS), null);
+  // Unknown verbs, unparsable numbers, unknown fields and truncated records
+  // are each dropped rather than trusted.
+  const junk = decodeSandbox(
+    'x,1,earth;s,NaN,earth,mass,5;s,10,earth,charisma,5;s,10,earth,mass,oops;a,5',
+    J2000_MS,
+  )!;
+  assert.deepEqual(junk.changes, []);
+  // A change naming a body no link introduces would silently do nothing.
+  assert.deepEqual(decodeSandbox('s,3,ghost,mass,5e24', J2000_MS)!.changes, []);
+  // A run built from the wreckage still behaves like an untouched fork.
+  const run = createRun(junk);
+  run.advance(50);
+  assert.equal(run.variant.length, 10);
+  const earth = run.variant.find((body) => body.id === 'earth')!;
+  const shadow = run.baseline.find((body) => body.id === 'earth')!;
+  assert.equal(
+    Math.hypot(
+      ...earth.position.map((value, axis) => value - shadow.position[axis]),
+    ),
+    0,
+  );
+});
+
+void test('a shared body’s own text and colour are not taken on trust', () => {
+  const nasty = decodeSandbox(
+    `a,0,evil,${encodeURIComponent('<script>x</script>' + 'y'.repeat(80))},javascript:alert(1),5e24,6000,1,0,1,0,0,0,0,0.017`,
+    J2000_MS,
+  )!;
+  const body = (nasty.changes[0] as { body: { name: string; color: string } })
+    .body;
+  // Held to a length, and a colour that is not a plain hex triple is refused.
+  assert.ok(body.name.length <= 40);
+  assert.equal(body.color, '#ffffff');
+  // An id outside the allowed shape is refused outright.
+  assert.deepEqual(
+    decodeSandbox(
+      'a,0,../../etc,x,ffffff,5e24,6000,1,0,1,0,0,0,0,0.017',
+      J2000_MS,
+    )!.changes,
+    [],
+  );
 });

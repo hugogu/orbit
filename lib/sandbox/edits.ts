@@ -7,6 +7,7 @@
  * mean one thing in the panel and another in the physics.
  */
 import { bodies } from '../solar';
+import type { SandboxField } from './field-names';
 import { GRAVITY, SOLAR_MASS_KG, type Vec3 } from './physics';
 import {
   catalogueMass,
@@ -14,7 +15,6 @@ import {
   circularState,
   sandboxSources,
   type SandboxBodySpec,
-  type SandboxScenario,
 } from './scenario';
 import { auPerDayToKmPerSecond, kmPerSecondToAuPerDay } from './derived';
 
@@ -27,13 +27,7 @@ import { auPerDayToKmPerSecond, kmPerSecondToAuPerDay } from './derived';
  */
 export type FieldKind = 'dynamical' | 'appearance';
 
-export type SandboxField =
-  | 'mass'
-  | 'speed'
-  | 'distance'
-  | 'radius'
-  | 'spinDays'
-  | 'tilt';
+export type { SandboxField };
 
 export type FieldSpec = {
   id: SandboxField;
@@ -153,11 +147,14 @@ function cross(a: Vec3, b: Vec3): Vec3 {
   ];
 }
 
-/** The body everything else is measured against: the heaviest in the run. */
-export function centralBody(scenario: SandboxScenario) {
-  return scenario.bodies.reduce(
-    (heaviest, body) => (body.mass > heaviest.mass ? body : heaviest),
-    scenario.bodies[0],
+/** The body everything else is measured against: the heaviest present. */
+export function centralBody<T extends { mass: number }>(
+  list: readonly T[],
+): T | undefined {
+  return list.reduce<T | undefined>(
+    (heaviest, body) =>
+      !heaviest || body.mass > heaviest.mass ? body : heaviest,
+    undefined,
   );
 }
 
@@ -230,55 +227,16 @@ export function writeField(
   }
 }
 
-export function updateBody(
-  scenario: SandboxScenario,
-  id: string,
-  field: SandboxField,
-  value: number,
-): SandboxScenario {
-  const centre = centralBody(scenario);
+/** The catalogue values a forked body can be restored to. */
+export function catalogueDefaults(sourceId: string | null) {
+  const source = sandboxSources.find((item) => item.id === sourceId);
+  const catalogue = bodies.find((item) => item.id === sourceId);
+  if (!source || !catalogue) return null;
   return {
-    ...scenario,
-    bodies: scenario.bodies.map((body) =>
-      body.id === id
-        ? writeField(body, field, value, centre?.mass ?? SOLAR_MASS_KG)
-        : body,
-    ),
-  };
-}
-
-export function removeBody(
-  scenario: SandboxScenario,
-  id: string,
-): SandboxScenario {
-  return {
-    ...scenario,
-    bodies: scenario.bodies.filter((body) => body.id !== id),
-  };
-}
-
-/** Restores a forked body to the catalogue values it started from. */
-export function resetBody(
-  scenario: SandboxScenario,
-  id: string,
-): SandboxScenario {
-  const body = scenario.bodies.find((item) => item.id === id);
-  const source = sandboxSources.find((item) => item.id === body?.sourceId);
-  const catalogue = bodies.find((item) => item.id === body?.sourceId);
-  if (!body || !source || !catalogue) return scenario;
-  return {
-    ...scenario,
-    bodies: scenario.bodies.map((item) =>
-      item.id === id
-        ? {
-            ...item,
-            mass: catalogueMass(source.astro),
-            radius: catalogue.radius,
-            spinDays: catalogue.day,
-            tilt: catalogue.tilt,
-          }
-        : item,
-    ),
+    mass: catalogueMass(source.astro),
+    radius: catalogue.radius,
+    spinDays: catalogue.day,
+    tilt: catalogue.tilt,
   };
 }
 
@@ -296,34 +254,33 @@ export type NewBody = {
 /** Angle, in radians, that keeps an added body clear of the last one added. */
 const ADDED_SPACING = 2.399963;
 
-export function addBody(
-  scenario: SandboxScenario,
+/**
+ * Resolves a description into a body the run can carry, on a circular orbit.
+ * Successive additions are spread by the golden angle so a handful of new
+ * bodies do not all start on the same ray and immediately merge.
+ */
+export function createdBody(
   body: NewBody,
-): SandboxScenario {
-  const added = scenario.bodies.filter((item) => !item.sourceId).length;
-  const centre = centralBody(scenario);
+  index: number,
+  centralMassKg: number,
+  id: string,
+): SandboxBodySpec {
   return {
-    ...scenario,
-    bodies: [
-      ...scenario.bodies,
-      {
-        id: `added-${added + 1}-${Math.round(scenario.epoch % 1e7)}`,
-        sourceId: null,
-        name: body.name,
-        color: body.color,
-        mass: body.mass,
-        radius: body.radius,
-        spinDays: 1,
-        tilt: 0,
-        // Successive additions are spread by the golden angle so a handful of
-        // new bodies do not all start on the same ray and immediately merge.
-        ...circularState(
-          body.distance,
-          added * ADDED_SPACING,
-          centre?.mass ?? SOLAR_MASS_KG,
-        ),
-      },
-    ],
+    id,
+    sourceId: null,
+    name: body.name,
+    color: body.color,
+    mass: body.mass,
+    radius: body.radius,
+    spinDays: 1,
+    tilt: 0,
+    // The circular speed follows the two-body mu, so a heavy addition starts
+    // on a circle too rather than on a quietly eccentric orbit.
+    ...circularState(
+      body.distance,
+      index * ADDED_SPACING,
+      centralMassKg + body.mass,
+    ),
   };
 }
 

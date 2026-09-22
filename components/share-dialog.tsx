@@ -208,9 +208,17 @@ export default function ShareDialog({
         closeLabel={t('Close')}
         className="orbit-dialog share-dialog"
       >
-        <DialogTitle>{t('分享此刻所见')}</DialogTitle>
+        <DialogTitle>
+          {t(view.sandbox ? '分享这个沙盘' : '分享此刻所见')}
+        </DialogTitle>
         <DialogDescription>
-          {t('打开链接的人会看到同一时刻、同一天体的太阳系。')}
+          {/* A run's link carries the recipe, so what the recipient gets is
+              the same experiment replayed, not the same instant. */}
+          {t(
+            view.sandbox
+              ? '打开链接的人会从同一时刻分叉，按同样的改动演算出同一条路径。'
+              : '打开链接的人会看到同一时刻、同一天体的太阳系。',
+          )}
         </DialogDescription>
         <figure className="share-preview">
           {preview.status === 'ready' ? (

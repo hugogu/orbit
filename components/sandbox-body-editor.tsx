@@ -20,7 +20,7 @@ import {
   surfaceGravity,
 } from '@/lib/sandbox/derived';
 import { spinIsSlowed } from '@/lib/sandbox/display';
-import { auToKm, kmToAu, type SandboxScenario } from '@/lib/sandbox/scenario';
+import { auToKm, kmToAu } from '@/lib/sandbox/scenario';
 import { SOLAR_MASS_KG } from '@/lib/sandbox/physics';
 import type { SandboxRun } from '@/lib/sandbox/run';
 
@@ -39,14 +39,12 @@ function format(value: number, precision: number, locale: string) {
 }
 
 export default function SandboxBodyEditor({
-  scenario,
   run,
   selected,
   daysPerSecond,
   onChange,
   onReset,
 }: {
-  scenario: SandboxScenario;
   run: SandboxRun;
   selected: string;
   /** The live time rate, which sets how fast the rotation can be shown. */
@@ -61,12 +59,14 @@ export default function SandboxBodyEditor({
     field: SandboxField;
     value: number;
   } | null>(null);
-  const spec = scenario.bodies.find((body) => body.id === selected);
+  // Read live rather than from the recipe: a run keeps going while it is
+  // edited, so the panel has to show where the body is now, not where it set out.
+  const spec = run.liveSpec(selected);
   if (!spec) return null;
-  const centre = centralBody(scenario);
+  const centre = centralBody(run.variant);
   const point = run.variant.find((body) => body.id === selected);
   const shadow = run.baseline.find((body) => body.id === selected);
-  const central = run.variant.find((body) => body.id === centre?.id);
+  const central = centre;
   const orbit =
     point && central && point !== central ? orbitState(point, central) : null;
   const divergence =
@@ -118,7 +118,10 @@ export default function SandboxBodyEditor({
 
   const dynamical = sandboxFields.filter((f) => f.kind === 'dynamical');
   const appearance = sandboxFields.filter((f) => f.kind === 'appearance');
-  const escape = escapeSpeedAt(read('distance'), centre?.mass ?? SOLAR_MASS_KG);
+  const escape = escapeSpeedAt(
+    read('distance'),
+    (centre?.mass ?? 1) * SOLAR_MASS_KG,
+  );
 
   return (
     <div className="sandbox-editor">
@@ -132,7 +135,7 @@ export default function SandboxBodyEditor({
         )}
       </div>
       <p className="sandbox-note">
-        {t('改动参数后，演算会从分叉时刻重新开始。')}
+        {t('改动立即在当前时刻生效，已经走过的路径会保留下来。')}
       </p>
 
       <h4 className="sandbox-group">{t('参与引力计算')}</h4>

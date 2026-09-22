@@ -50,12 +50,16 @@ void test('orbital position changes and stays finite even after long integration
 });
 
 void test('eight planets carry physical oblate flattening while terrain stays terrestrial-only', () => {
-  const planets = bodies.filter((body) => body.id !== 'sun' && body.id !== 'pluto');
+  const planets = bodies.filter(
+    (body) => body.id !== 'sun' && body.id !== 'pluto',
+  );
   assert.ok(planets.every((body) => body.flattening !== undefined));
   assert.ok(planets.every((body) => body.flattening! >= 0));
   assert.ok(
-    planets.filter((body) => body.heightTexture).map((body) => body.id).join(',') ===
-      'mercury,venus,earth,mars',
+    planets
+      .filter((body) => body.heightTexture)
+      .map((body) => body.id)
+      .join(',') === 'mercury,venus,earth,mars',
   );
   assert.ok(
     planets.find((body) => body.id === 'jupiter')!.flattening! >
