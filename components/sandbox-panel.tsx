@@ -234,9 +234,14 @@ export default function SandboxPanel({
       </div>
 
       <div className="sandbox-actions">
-        <button className="ghost-action" onClick={onRestart}>
+        <button
+          className="ghost-action"
+          aria-label={t('重新开始')}
+          title={t('重新开始')}
+          onClick={onRestart}
+        >
           <RotateCcw size={15} />
-          {t('重新开始')}
+          {t('重置')}
         </button>
         <button className="ghost-action" onClick={onLeave}>
           <LogOut size={15} />

@@ -1811,6 +1811,11 @@ button:disabled {
   display: flex;
   gap: 8px;
 }
+/* Two short labels side by side in a narrow rail: wrapping one of them mid-word
+   reads as a layout fault, and every language here has a one-word label. */
+.sandbox-actions .ghost-action {
+  white-space: nowrap;
+}
 .ghost-action {
   flex: 1;
   display: flex;
