@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { speeds, speedLabel } from '../lib/solar';
+import { sandboxSpeeds } from '../lib/sandbox/view';
 import { languages, translator, type Locale } from '../lib/i18n';
 
 const page = readFileSync(
@@ -15,7 +16,14 @@ const styles = readFileSync(
 const compactStyles = styles.replace(/\s+/g, ' ');
 
 // Labels that stay visible once `.speed-marker--optional` is hidden.
-const always = [speeds[0], 1, speeds.at(-1)];
+const visibleAlways = (presets: readonly number[]) => [
+  presets[0],
+  1,
+  presets.at(-1),
+];
+// The observatory clock and the sandbox clock share one control, so both
+// preset lists have to satisfy every rule below.
+const presetLists = [speeds, sandboxSpeeds];
 
 void test('time speed markers are generated from every discrete slider value', () => {
   const positions = speeds.map(
@@ -26,7 +34,7 @@ void test('time speed markers are generated from every discrete slider value', (
   assert.equal(new Set(positions).size, speeds.length);
   assert.equal(positions[0], 0);
   assert.equal(positions.at(-1), 100);
-  assert.match(page, /speeds\.map\(\(value, index\) =>/);
+  assert.match(page, /clockSpeeds\.map\(\(value, index\) =>/);
   assert.match(page, /data-speed-index=\{index\}/);
   assert.match(page, /speedLabel\(value, t\)/);
   assert.match(page, /--speed-position/);
@@ -34,14 +42,17 @@ void test('time speed markers are generated from every discrete slider value', (
   // silently mislabels the markers as soon as a speed is added or reordered.
   assert.match(
     page,
-    /className=\{`speed-marker\$\{speedMarkerModifier\(value\)\}`\}/,
+    /className=\{`speed-marker\$\{speedMarkerModifier\(value, clockSpeeds\)\}`\}/,
   );
   assert.doesNotMatch(page, /speed-marker--optional'\s*:\s*''/);
-  assert.equal(
-    speeds.filter((value) => always.includes(value)).length,
-    always.length,
-    'the always-visible markers must exist among the presets',
-  );
+  for (const presets of presetLists) {
+    const required = visibleAlways(presets);
+    assert.equal(
+      presets.filter((value) => required.includes(value)).length,
+      required.length,
+      'the always-visible markers must exist among the presets',
+    );
+  }
 });
 
 void test('speed markers share the slider track and the thumb has a larger target', () => {
@@ -72,6 +83,11 @@ void test('speed markers share the slider track and the thumb has a larger targe
 });
 
 void test('every marker tier has room for its labels in every language', () => {
+  for (const presets of presetLists) checkTiers(presets);
+});
+
+function checkTiers(speeds: readonly number[]) {
+  const always = visibleAlways(speeds);
   // A coarse advance model: CJK glyphs are full width and the UI font's widest
   // Latin glyphs measure just under half the size. It is an over-estimate of
   // real metrics, so a tier that clears it here clears it in a browser too.
@@ -117,4 +133,4 @@ void test('every marker tier has room for its labels in every language', () => {
         );
     }
   }
-});
+}

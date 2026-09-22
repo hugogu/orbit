@@ -23,6 +23,7 @@ import {
 } from './asteroid-belt';
 import { createCometSystem } from './comet-system';
 import { createMoonSystem } from './moon-system';
+import { createSandboxSystem } from './sandbox-system';
 import { moonTextureNames, orbitingMoons } from '@/lib/moon-orbits';
 import {
   displayRadius,
@@ -34,6 +35,8 @@ import { createTextureManager, type RegisterOptions } from './texture-manager';
 import { registerPlanetSurface } from './planet-surface';
 import { oblateScale } from '@/lib/planet-terrain';
 import { createEclipseSystem } from './eclipse-system';
+import { daysFromEpoch } from '@/lib/sandbox/scenario';
+import type { SandboxView } from '@/lib/sandbox/view';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
@@ -52,6 +55,10 @@ import {
   setOrbitLineWidth,
   type OrbitLine,
 } from './orbit-line';
+/** Ecliptic north and the axis the catalogue tilts a body around. */
+const SCENE_NORTH = new THREE.Vector3(0, 1, 0);
+const SCENE_ROLL = new THREE.Vector3(0, 0, 1);
+
 export type SceneState = {
   locale: Locale;
   speed: number;
@@ -86,6 +93,8 @@ export type SceneState = {
   observerLocationReady: boolean;
   /** A shared pose to adopt instead of the next automatic framing. */
   cameraPose: CameraPose | null;
+  /** An active what-if run, which takes over placement while it lasts. */
+  sandbox: SandboxView | null;
 };
 export type SceneHandle = {
   /**
@@ -196,8 +205,13 @@ export default function SolarScene({
     textureManager.register('stars_milky_way', (texture) =>
       starField.setPanorama(texture),
     );
+    // The moons, comets and asteroids all ride on real ephemerides, so a
+    // sandbox run has nothing true to say about them. One container makes
+    // them leave and come back together.
+    const ephemerisOnly = new THREE.Group();
+    scene.add(ephemerisOnly);
     const cometSystem = createCometSystem(
-      scene,
+      ephemerisOnly,
       labelLayer,
       (id) => latest.current.onSelect(id),
       () =>
@@ -295,7 +309,7 @@ export default function SolarScene({
     }
     if (earthPivot) observerMarker = createObserverMarker(earthPivot);
     const moonSystem = createMoonSystem(
-      scene,
+      ephemerisOnly,
       roots,
       meshes,
       labelLayer,
@@ -319,7 +333,7 @@ export default function SolarScene({
     }
     const eclipseSystem = createEclipseSystem(meshes);
     const asteroidSystem = createAsteroidSystem(
-      scene,
+      ephemerisOnly,
       roots,
       meshes,
       labelLayer,
@@ -354,6 +368,9 @@ export default function SolarScene({
           },
         );
     }
+    const sandboxSystem = createSandboxSystem(scene, roots, labelLayer, (id) =>
+      latest.current.onSelect(id),
+    );
     const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
     const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
@@ -550,6 +567,16 @@ export default function SolarScene({
     const navigationTextureGraceMs = 5000;
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
+    let sandboxActive = false;
+    const tiltRotation = new THREE.Quaternion();
+    const sandboxOptions = (state: SceneState, view: SandboxView) => ({
+      baseline: view.baseline,
+      trails: view.trails,
+      realSizes: state.realSizes,
+      selected: state.selected,
+      labels: state.labels,
+      lineWidth: state.orbitLineWidth,
+    });
     // A shared pose replaces automatic framing until the viewer takes over.
     let adoptedPose: CameraPose | null | undefined,
       sharedPose: CameraPose | null = null;
@@ -617,10 +644,12 @@ export default function SolarScene({
       const selectedAsteroid = asteroids.find((item) => item.id === s.selected);
       void asteroidSystem.setFocus(selectedAsteroid?.id ?? null);
       const selectedMoonTexture = selectedMoon?.texture ?? null;
-      const selectedMoonSurface =
-        s.realSurface ? (selectedMoon?.surfaceTexture ?? null) : null;
-      const selectedMoonTerrain =
-        s.realTerrain ? (selectedMoon?.heightTexture ?? null) : null;
+      const selectedMoonSurface = s.realSurface
+        ? (selectedMoon?.surfaceTexture ?? null)
+        : null;
+      const selectedMoonTerrain = s.realTerrain
+        ? (selectedMoon?.heightTexture ?? null)
+        : null;
       const selectedAsteroidTextures = selectedAsteroid
         ? [selectedAsteroid.texture, selectedAsteroid.normalTexture].filter(
             (name): name is string => !!name,
@@ -683,8 +712,29 @@ export default function SolarScene({
         epoch = s.epoch;
         time = s.epoch ?? Date.now();
       }
-      time = advanceTime(time, dt, s.speed, s.paused);
-      const days = (time - J2000_MS) / DAY_MS;
+      // A sandbox run owns the clock while it lasts: its time is integrated,
+      // not looked up, so it can only move forward from where it forked.
+      // The observatory clock holds at the instant the run forked, so leaving
+      // the sandbox returns to the date the viewer left rather than to a
+      // diverged one the ephemeris tools could not honour.
+      const sandbox = s.sandbox;
+      if (sandbox && !sandbox.paused) sandbox.run.advance(dt * sandbox.speed);
+      if (!sandbox) time = advanceTime(time, dt, s.speed, s.paused);
+      const days = sandbox
+        ? daysFromEpoch(sandbox.run.scenario.epoch) + sandbox.run.elapsedDays
+        : (time - J2000_MS) / DAY_MS;
+      if (sandboxActive !== !!sandbox) {
+        sandboxActive = !!sandbox;
+        sandboxSystem.setVisible(sandboxActive);
+        ephemerisOnly.visible = !sandboxActive;
+        for (const line of orbitLines.values()) line.visible = false;
+        // Coming back, the catalogue meshes have to be released from whatever
+        // size and place the run left them in.
+        if (!sandboxActive) {
+          for (const body of bodies) roots.get(body.id)!.visible = true;
+          lastScale = '' as ScaleMode;
+        }
+      }
       starField.update(renderer.getPixelRatio(), {
         stars: s.stars,
         figures: s.stars && s.constellations,
@@ -693,7 +743,7 @@ export default function SolarScene({
         // simulation counts days away from J2000.
         years: days / JULIAN_YEAR_DAYS,
       });
-      if (s.scale !== lastScale || seek) {
+      if (!sandbox && (s.scale !== lastScale || seek)) {
         lastScale = s.scale;
         for (const body of bodies) {
           const line = orbitLines.get(body.id);
@@ -708,58 +758,87 @@ export default function SolarScene({
           }
         }
       }
-      for (const body of bodies) {
-        const root = roots.get(body.id)!;
-        root.position.set(...planetPosition(body, days, s.scale));
-        root.scale.setScalar(
-          displayRadius(body.id, s.scale, s.realSizes) / body.size,
-        );
-        meshes
-          .get(body.id)!
-          .parent!.quaternion.copy(bodyOrientation(body.id, days));
-        const line = orbitLines.get(body.id);
-        if (line) {
-          line.visible = s.orbits;
-          setOrbitLineForeground(line, s.realSizes && s.selected === body.id);
-          setOrbitLineWidth(line, s.orbitLineWidth);
+      if (sandbox) {
+        const gone = sandboxSystem.missing(sandbox.run);
+        for (const body of bodies) {
+          roots.get(body.id)!.visible = !gone(body.id);
+          const spec = sandbox.run.scenario.bodies.find(
+            (item) => item.id === body.id,
+          );
+          // Spin is the body's own, not the catalogue's: the editor can change
+          // it, and it is read straight off the elapsed time rather than from
+          // an orientation model that only exists for real dates.
+          meshes
+            .get(body.id)!
+            .parent!.quaternion.setFromAxisAngle(
+              SCENE_NORTH,
+              spec?.spinDays
+                ? (Math.PI * 2 * sandbox.run.elapsedDays) / spec.spinDays
+                : 0,
+            )
+            .premultiply(
+              tiltRotation.setFromAxisAngle(
+                SCENE_ROLL,
+                ((spec?.tilt ?? 0) * Math.PI) / 180,
+              ),
+            );
         }
-      }
+        sandboxSystem.update(sandbox.run, sandboxOptions(s, sandbox));
+      } else
+        for (const body of bodies) {
+          const root = roots.get(body.id)!;
+          root.position.set(...planetPosition(body, days, s.scale));
+          root.scale.setScalar(
+            displayRadius(body.id, s.scale, s.realSizes) / body.size,
+          );
+          meshes
+            .get(body.id)!
+            .parent!.quaternion.copy(bodyOrientation(body.id, days));
+          const line = orbitLines.get(body.id);
+          if (line) {
+            line.visible = s.orbits;
+            setOrbitLineForeground(line, s.realSizes && s.selected === body.id);
+            setOrbitLineWidth(line, s.orbitLineWidth);
+          }
+        }
       observerMarker?.update(
         s.observerLocation.latitude,
         s.observerLocation.longitude,
-        s.observerLocationReady && s.selected === 'earth',
+        !sandbox && s.observerLocationReady && s.selected === 'earth',
         now,
       );
-      moonSystem.update(
-        days,
-        s.scale,
-        s.selected,
-        s.orbits,
-        s.realSizes,
-        s.orbitLineWidth,
-      );
-      asteroidSystem.update(
-        days,
-        s.scale,
-        s.realSizes,
-        s.selected,
-        s.orbits,
-        s.orbitLineWidth,
-      );
-      eclipseSystem.update(
-        days,
-        s.selected,
-        s.shadows,
-        s.shadowGuides,
-        seek,
-        !!s.activeEclipse?.path,
-      );
-      eclipsePath.update(
-        s.activeEclipse,
-        time,
-        s.shadows && s.shadowGuides && s.selected === 'earth',
-        earthDisplayRadius,
-      );
+      if (!sandbox) {
+        moonSystem.update(
+          days,
+          s.scale,
+          s.selected,
+          s.orbits,
+          s.realSizes,
+          s.orbitLineWidth,
+        );
+        asteroidSystem.update(
+          days,
+          s.scale,
+          s.realSizes,
+          s.selected,
+          s.orbits,
+          s.orbitLineWidth,
+        );
+        eclipseSystem.update(
+          days,
+          s.selected,
+          s.shadows,
+          s.shadowGuides,
+          seek,
+          !!s.activeEclipse?.path,
+        );
+        eclipsePath.update(
+          s.activeEclipse,
+          time,
+          s.shadows && s.shadowGuides && s.selected === 'earth',
+          earthDisplayRadius,
+        );
+      }
       belt.setRadiusRange(
         ...(s.scale === 'distance'
           ? ASTEROID_BELT_DISTANCE_RADII
@@ -880,7 +959,9 @@ export default function SolarScene({
             ? cometSystem.position
             : cometSystem.center
           : s.selected
-            ? (roots.get(s.selected)?.position ?? new THREE.Vector3())
+            ? (roots.get(s.selected)?.position ??
+              (sandbox && sandboxSystem.positionOf(sandbox.run, s.selected)) ??
+              new THREE.Vector3())
             : new THREE.Vector3(),
       );
       if (transition > 0 && sharedPose) {
@@ -952,44 +1033,57 @@ export default function SolarScene({
         height,
         s.stars && s.constellations && s.labels,
       );
+      // The populations themselves are hidden during a run, and their labels
+      // are DOM nodes that would otherwise keep floating over an empty sky.
+      const ephemerisLabels = s.labels && !sandbox;
       asteroidSystem.project(
         camera,
         width,
         height,
         s.selected,
-        s.labels,
+        ephemerisLabels,
         labelOcclusion.isOccluded,
       );
       cometSystem.project(
         camera,
         width,
         height,
-        s.labels,
-        s.labels ? labelOcclusion.isOccluded : undefined,
+        ephemerisLabels,
+        ephemerisLabels ? labelOcclusion.isOccluded : undefined,
       );
       moonSystem.project(
         camera,
         width,
         height,
         s.selected,
-        s.labels,
-        s.labels ? labelOcclusion.isOccluded : undefined,
+        ephemerisLabels,
+        ephemerisLabels ? labelOcclusion.isOccluded : undefined,
       );
       for (const body of bodies) {
-        projected.copy(roots.get(body.id)!.position);
-        projected.y += displayRadius(body.id, s.scale, s.realSizes) * 1.2;
+        const root = roots.get(body.id)!;
+        projected.copy(root.position);
+        projected.y +=
+          (sandbox
+            ? root.scale.x
+            : displayRadius(body.id, s.scale, s.realSizes)) * 1.2;
         projected.project(camera);
         projectLabels.get(body.id)!(
           projected,
           width,
           height,
-          s.labels,
+          s.labels && root.visible,
           body.id === s.selected,
-          s.labels
-            ? labelOcclusion.isOccluded(body.id, roots.get(body.id)!.position)
-            : false,
+          s.labels ? labelOcclusion.isOccluded(body.id, root.position) : false,
         );
       }
+      if (sandbox)
+        sandboxSystem.project(
+          sandbox.run,
+          camera,
+          width,
+          height,
+          sandboxOptions(s, sandbox),
+        );
       if (now - lastReport > 350) {
         latest.current.onTime(time);
         lastReport = now;
@@ -1031,6 +1125,7 @@ export default function SolarScene({
       observer.disconnect();
       window.removeEventListener('keydown', onKey);
       controls.dispose();
+      sandboxSystem.dispose();
       eclipseSystem.dispose();
       eclipsePath.dispose();
       starField.dispose();

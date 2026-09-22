@@ -56,7 +56,7 @@ function modelGeometry(model: AsteroidModelData) {
 }
 
 export function createCometSystem(
-  scene: THREE.Scene,
+  scene: THREE.Object3D,
   labelLayer: HTMLElement,
   onSelect?: (id: string) => void,
   onModelError: () => void = () => {},
@@ -70,10 +70,7 @@ export function createCometSystem(
       { length: ORBIT_PATH_SEGMENTS + 1 },
       (_, i) =>
         new THREE.Vector3(
-          ...cometOrbitPoint(
-            comet,
-            (i / ORBIT_PATH_SEGMENTS) * Math.PI * 2,
-          ),
+          ...cometOrbitPoint(comet, (i / ORBIT_PATH_SEGMENTS) * Math.PI * 2),
         ),
     );
     const line = createOrbitLine(comet.color, 0.7, points);

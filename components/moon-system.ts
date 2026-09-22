@@ -16,7 +16,7 @@ import { registerTerrainGeometry } from './planet-surface';
 import type { createTextureManager } from './texture-manager';
 
 export function createMoonSystem(
-  scene: THREE.Scene,
+  scene: THREE.Object3D,
   roots: Map<string, THREE.Group>,
   meshes: Map<string, THREE.Mesh>,
   layer: HTMLElement,

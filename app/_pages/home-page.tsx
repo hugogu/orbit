@@ -3,6 +3,7 @@ import { track } from '@vercel/analytics';
 import { useI18n } from '../../lib/i18n/provider';
 import {
   useEffect,
+  useMemo,
   useState,
   useCallback,
   useRef,
@@ -14,6 +15,7 @@ import {
   Orbit,
   Globe2,
   Layers3,
+  FlaskConical,
   Maximize,
   Minimize,
   HelpCircle,
@@ -89,6 +91,14 @@ import {
   type TextureQuality,
 } from '@/lib/texture-quality';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SandboxPanel from '@/components/sandbox-panel';
+import { createRun } from '@/lib/sandbox/run';
+import { forkScenario, type SandboxScenario } from '@/lib/sandbox/scenario';
+import {
+  elapsedLabel,
+  sandboxSpeeds,
+  defaultSandboxSpeed,
+} from '@/lib/sandbox/view';
 import {
   Dialog,
   DialogContent,
@@ -120,11 +130,12 @@ import {
   MIN_ORBIT_LINE_WIDTH,
   ORBIT_LINE_WIDTH_STEP,
 } from '@/lib/orbit-line-width';
-// Real time, one day per second, and the fastest preset stay labelled at any
+// The slowest preset, one day per second, and the fastest stay labelled at any
 // control width. The remaining stops appear only where the track is wide enough
-// for them, so the class follows the preset rather than its index.
-function speedMarkerModifier(value: number) {
-  return value === speeds[0] || value === 1 || value === speeds.at(-1)
+// for them, so the class follows the preset rather than its index. The set is
+// read from whichever list is live, because the sandbox offers its own.
+function speedMarkerModifier(value: number, presets: readonly number[]) {
+  return value === presets[0] || value === 1 || value === presets.at(-1)
     ? ''
     : ' speed-marker--optional';
 }
@@ -133,6 +144,15 @@ export default function Home() {
   const [selected, setSelected] = useState<string | null>(null),
     [paused, setPaused] = useState(false),
     [speed, setSpeed] = useState(0),
+    [sandboxScenario, setSandboxScenario] = useState<SandboxScenario | null>(
+      null,
+    ),
+    [sandboxSpeed, setSandboxSpeed] = useState(
+      sandboxSpeeds.indexOf(defaultSandboxSpeed),
+    ),
+    [sandboxPaused, setSandboxPaused] = useState(false),
+    [sandboxBaseline, setSandboxBaseline] = useState(true),
+    [sandboxTrails, setSandboxTrails] = useState(true),
     [orbits, setOrbits] = useState(true),
     [orbitLineWidth, setOrbitLineWidth] = useState(DEFAULT_ORBIT_LINE_WIDTH),
     [labels, setLabels] = useState(true),
@@ -197,8 +217,10 @@ export default function Home() {
   const followLabel = followed ? t(followed.name) : null;
   // Read live from the followed body's own path, so the numbers and the orbit
   // on screen can never disagree. The Sun holds the origin and reports nothing.
+  // A run has left the ephemeris behind, so the catalogue's own speed and
+  // longitude no longer describe what is on screen.
   const motion =
-    followed && time !== null
+    followed && time !== null && !sandboxScenario
       ? bodyMotion(followed.id, (time - J2000_MS) / DAY_MS)
       : null;
   const motionReadout = motion
@@ -221,11 +243,17 @@ export default function Home() {
       })
     : undefined;
   // Topic views choose a distance mode without overwriting the user's layout preference.
-  const displayScale = isComet
+  // One set of playback controls drives whichever clock is in charge.
+  const clockSpeeds = sandboxScenario ? sandboxSpeeds : speeds;
+  const clockSpeed = sandboxScenario ? sandboxSpeed : speed;
+  const running = sandboxScenario ? !sandboxPaused : !paused;
+  const displayScale = sandboxScenario
     ? 'distance'
-    : tab === 'structure'
-      ? 'illustrated'
-      : scale;
+    : isComet
+      ? 'distance'
+      : tab === 'structure'
+        ? 'illustrated'
+        : scale;
   useEffect(() => {
     queueMicrotask(() => {
       const now = Date.now();
@@ -367,6 +395,50 @@ export default function Home() {
     setObserverLocation(next);
     setObserverLocationSource(source);
   }
+  // Rebuilt whenever the scenario changes, which is how an edit or a reset
+  // restarts the run: the scene reads this object every frame and advances it.
+  const sandboxRun = useMemo(
+    () => (sandboxScenario ? createRun(sandboxScenario) : null),
+    [sandboxScenario],
+  );
+  // The scene advances the run on the render clock; the readouts and the
+  // elapsed clock sample it a few times a second instead of re-rendering the
+  // page on every frame.
+  const [, setSandboxTick] = useState(0);
+  useEffect(() => {
+    if (!sandboxRun) return;
+    const timer = setInterval(() => setSandboxTick((v) => v + 1), 250);
+    return () => clearInterval(timer);
+  }, [sandboxRun]);
+  const enterSandbox = useCallback(() => {
+    setSandboxScenario(forkScenario(time ?? Date.now()));
+    setSandboxPaused(false);
+    setSandboxSpeed(sandboxSpeeds.indexOf(defaultSandboxSpeed));
+    // A physical run only reads correctly against true distances; the
+    // illustrated layout gives every body its own invented distance. The
+    // layout change needs a reframe, and a run belongs to the whole system
+    // rather than to whichever body happened to be followed.
+    setSystemView(false);
+    setEclipseView(false);
+    setCameraPose(null);
+    setSelected(null);
+    setView(205);
+    setReset((v) => v + 1);
+    track('sandbox_enter', {});
+  }, [time]);
+  const leaveSandbox = useCallback(() => {
+    setSandboxScenario(null);
+    setSelected(null);
+    setReset((v) => v + 1);
+    track('sandbox_leave', {});
+  }, []);
+  const restartSandbox = useCallback(() => {
+    setSandboxScenario((current) =>
+      current
+        ? { ...current, bodies: current.bodies.map((b) => ({ ...b })) }
+        : current,
+    );
+  }, []);
   const select = useCallback((id: string) => {
     if (window.location.hash !== `#${id}`)
       window.history.pushState(
@@ -387,7 +459,9 @@ export default function Home() {
       setReset((v) => v + 1);
       return;
     }
-    setTab('explore');
+    // A run keeps its own tab: picking a body out of the scene is how the
+    // sandbox is steered, and it must not close the panel doing the steering.
+    setTab((current) => (current === 'sandbox' ? current : 'explore'));
     setSelected(id);
     setReset((v) => v + 1);
   }, []);
@@ -788,6 +862,15 @@ export default function Home() {
           view,
           reset,
           top,
+          sandbox: sandboxRun
+            ? {
+                run: sandboxRun,
+                speed: sandboxSpeeds[sandboxSpeed],
+                paused: sandboxPaused,
+                baseline: sandboxBaseline,
+                trails: sandboxTrails,
+              }
+            : null,
           cometId: isComet ? cometId : null,
           cometClose,
           epoch,
@@ -852,7 +935,7 @@ export default function Home() {
           onValueChange={(v) => {
             setTab(String(v));
             if (v === 'structure') goRegion(region);
-            else home();
+            else if (v === 'explore') home();
           }}
         >
           <TabsList className="view-tabs">
@@ -864,17 +947,30 @@ export default function Home() {
               <Layers3 />
               {t('太阳系结构')}
             </TabsTrigger>
+            <TabsTrigger value="sandbox">
+              <FlaskConical />
+              {t('沙盘')}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="header-actions">
           <span className="live">
             <i />
-            {paused ? t('模拟暂停') : t('按日期演算')}
+            {!running
+              ? t('模拟暂停')
+              : sandboxRun
+                ? t('沙盘演算中')
+                : t('按日期演算')}
           </span>
           <button
             className="icon-button"
             aria-label={t('分享此刻所见')}
-            title={t('分享此刻所见')}
+            title={
+              sandboxScenario
+                ? t('沙盘运行无法分享：链接只能重现真实历表。')
+                : t('分享此刻所见')
+            }
+            disabled={!!sandboxScenario}
             onClick={openShare}
           >
             <Share2 />
@@ -915,21 +1011,55 @@ export default function Home() {
       </div>
       <div className="side-rail rail-start">
         <section
-          className={`catalog glass ${tab === 'explore' ? 'catalog-body' : 'catalog-regions'}`}
-          aria-label={tab === 'explore' ? t('选择天体') : t('选择太阳系区域')}
+          className={`catalog glass ${
+            tab === 'explore'
+              ? 'catalog-body'
+              : tab === 'sandbox'
+                ? 'catalog-sandbox'
+                : 'catalog-regions'
+          }`}
+          aria-label={
+            tab === 'explore'
+              ? t('选择天体')
+              : tab === 'sandbox'
+                ? t('沙盘模式')
+                : t('选择太阳系区域')
+          }
         >
           <h2 className="sr-only">
-            {tab === 'explore' ? t('天体导航') : t('太阳系结构')}
+            {tab === 'explore'
+              ? t('天体导航')
+              : tab === 'sandbox'
+                ? t('沙盘模式')
+                : t('太阳系结构')}
           </h2>
           <div className="catalog-title">
-            {tab === 'explore' ? t('天体导航') : t('由内向外')}
+            {tab === 'explore'
+              ? t('天体导航')
+              : tab === 'sandbox'
+                ? t('沙盘模式')
+                : t('由内向外')}
             <span>
               {tab === 'explore'
                 ? `01 — ${bodies.length + comets.length + asteroids.length}`
-                : '01 — 07'}
+                : tab === 'sandbox'
+                  ? t('牛顿引力')
+                  : '01 — 07'}
             </span>
           </div>
-          {tab === 'explore' ? (
+          {tab === 'sandbox' ? (
+            <SandboxPanel
+              run={sandboxRun}
+              active={!!sandboxRun}
+              baseline={sandboxBaseline}
+              trails={sandboxTrails}
+              onEnter={enterSandbox}
+              onLeave={leaveSandbox}
+              onRestart={restartSandbox}
+              onBaselineChange={setSandboxBaseline}
+              onTrailsChange={setSandboxTrails}
+            />
+          ) : tab === 'explore' ? (
             <BodyNavigation
               selected={selected}
               onSelect={select}
@@ -955,7 +1085,9 @@ export default function Home() {
             <span className="tiny-cross">+</span>
             {tab === 'explore'
               ? t('点击天体，开启近距离观察')
-              : t('距离单位 AU ≈ 1.496 亿公里')}
+              : tab === 'sandbox'
+                ? t('点质量近似 · 自转与倾角不参与受力')
+                : t('距离单位 AU ≈ 1.496 亿公里')}
           </div>
         </section>
       </div>
@@ -1071,47 +1203,50 @@ export default function Home() {
           <div className="playback">
             <button
               className="play-button"
-              aria-label={paused ? t('开始运行') : t('暂停运行')}
-              onClick={() => setPaused((v) => !v)}
+              aria-label={running ? t('暂停运行') : t('开始运行')}
+              onClick={() =>
+                sandboxRun ? setSandboxPaused((v) => !v) : setPaused((v) => !v)
+              }
             >
-              {paused ? (
-                <Play size={20} fill="currentColor" />
-              ) : (
+              {running ? (
                 <Pause size={20} fill="currentColor" />
+              ) : (
+                <Play size={20} fill="currentColor" />
               )}
             </button>
             <div>
               <span>{t('时间流速')}</span>
-              <strong>{speedLabel(speeds[speed], t)}</strong>
+              <strong>{speedLabel(clockSpeeds[clockSpeed], t)}</strong>
             </div>
           </div>
           <div className="speed-control">
             <Slider
               aria-label={t('时间流速')}
               min={0}
-              max={speeds.length - 1}
+              max={clockSpeeds.length - 1}
               step={1}
-              value={[speed]}
+              value={[clockSpeed]}
               onValueChange={(v) => {
                 const next = Array.isArray(v) ? v[0] : v;
-                setSpeed(next);
+                if (sandboxRun) setSandboxSpeed(next);
+                else setSpeed(next);
                 track('speed_change', {
                   source: 'slider',
                   speed_index: next,
-                  days_per_second: speeds[next],
+                  days_per_second: clockSpeeds[next],
                 });
               }}
             />
             <div className="speed-markers" aria-hidden="true">
-              {speeds.map((value, index) => (
+              {clockSpeeds.map((value, index) => (
                 <span
                   key={`${value}-${index}`}
-                  className={`speed-marker${speedMarkerModifier(value)}`}
+                  className={`speed-marker${speedMarkerModifier(value, clockSpeeds)}`}
                   data-speed-index={index}
                   style={
                     {
                       '--speed-position': `${
-                        (index / (speeds.length - 1)) * 100
+                        (index / (clockSpeeds.length - 1)) * 100
                       }%`,
                     } as CSSProperties
                   }
@@ -1121,36 +1256,64 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div
-            className="simulation-clock"
-            aria-label={t('模拟日期，协调世界时 UTC')}
-          >
-            <span>{t('模拟日期 · UTC')}</span>
-            <strong>
-              {time ? utcLabel(time).slice(0, 10) : t('正在同步')}
-            </strong>
-            <small>{time ? utcLabel(time).slice(11) : '—'}</small>
-          </div>
-          <button
-            className="jump-button"
-            aria-label={t('跳到指定时间')}
-            title={t('跳到指定时间')}
-            onClick={() => setTimeJump(true)}
-          >
-            <CalendarClock size={16} />
-          </button>
-          <button
-            className="now-button"
-            aria-label={t('回到当前时间并实时运行')}
-            title={t('回到当前时间并实时运行')}
-            onClick={() => {
-              seekTime(Date.now(), true);
-              track('time_jump', { source: 'now_button' });
-            }}
-          >
-            <RotateCcw size={16} />
-            <span>{t('现在')}</span>
-          </button>
+          {sandboxRun ? (
+            <>
+              <div
+                className="simulation-clock"
+                aria-label={t('沙盘已运行的模拟时间')}
+              >
+                <span>{t('已运行')}</span>
+                <strong>{elapsedLabel(sandboxRun.elapsedDays, t)}</strong>
+                <small>
+                  {t('自 {{date}} 分叉', {
+                    date: utcLabel(sandboxScenario!.epoch).slice(0, 10),
+                  })}
+                </small>
+              </div>
+              <button
+                className="now-button"
+                aria-label={t('重新开始')}
+                title={t('重新开始')}
+                onClick={restartSandbox}
+              >
+                <RotateCcw size={16} />
+                <span>{t('重新开始')}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <div
+                className="simulation-clock"
+                aria-label={t('模拟日期，协调世界时 UTC')}
+              >
+                <span>{t('模拟日期 · UTC')}</span>
+                <strong>
+                  {time ? utcLabel(time).slice(0, 10) : t('正在同步')}
+                </strong>
+                <small>{time ? utcLabel(time).slice(11) : '—'}</small>
+              </div>
+              <button
+                className="jump-button"
+                aria-label={t('跳到指定时间')}
+                title={t('跳到指定时间')}
+                onClick={() => setTimeJump(true)}
+              >
+                <CalendarClock size={16} />
+              </button>
+              <button
+                className="now-button"
+                aria-label={t('回到当前时间并实时运行')}
+                title={t('回到当前时间并实时运行')}
+                onClick={() => {
+                  seekTime(Date.now(), true);
+                  track('time_jump', { source: 'now_button' });
+                }}
+              >
+                <RotateCcw size={16} />
+                <span>{t('现在')}</span>
+              </button>
+            </>
+          )}
         </section>
         <footer className="footer">
           <div className="footer-hints">

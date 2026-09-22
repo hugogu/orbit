@@ -1,0 +1,42 @@
+/**
+ * What the scene and the panel need to know about a sandbox run, beyond the
+ * physics itself.
+ */
+import type { Translate } from '../i18n';
+import type { SandboxRun } from './run';
+
+/**
+ * Rates offered inside the sandbox, in simulated days per real second.
+ *
+ * The observatory's own presets reach ten years a second, which is fine for
+ * replaying a solution that was solved in closed form. A sandbox integrates
+ * instead, and at that rate a century of Mercury's motion arrives as an
+ * accumulated phase error rather than a prediction. Half a year a second is
+ * the fastest rate this model can carry without overstating what it knows: a
+ * century still takes about three minutes to watch.
+ */
+export const sandboxSpeeds = [0.1, 0.5, 1, 5, 20, 60, 180];
+export const defaultSandboxSpeed = 20;
+
+export type SandboxView = {
+  run: SandboxRun;
+  /** Simulated days per real second. */
+  speed: number;
+  paused: boolean;
+  /** Draw the untouched fork beside the edited system. */
+  baseline: boolean;
+  trails: boolean;
+};
+
+const DAYS_PER_YEAR = 365.25;
+
+/** Elapsed simulated time, as years and days once a run passes a year. */
+export function elapsedLabel(days: number, t: Translate) {
+  const years = Math.floor(days / DAYS_PER_YEAR);
+  return years > 0
+    ? t('{{years}} 年 {{days}} 天', {
+        years,
+        days: Math.floor(days - years * DAYS_PER_YEAR),
+      })
+    : t('{{value}} 天', { value: days.toFixed(1) });
+}

@@ -18,7 +18,7 @@ import {
 import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
 
 export function createAsteroidSystem(
-  scene: THREE.Scene,
+  scene: THREE.Object3D,
   roots: Map<string, THREE.Group>,
   meshes: Map<string, THREE.Mesh>,
   layer: HTMLElement,
@@ -216,11 +216,7 @@ export function createAsteroidSystem(
             sampleClosedOrbit(
               (phase) =>
                 new THREE.Vector3(
-                  ...asteroidOrbitPoint(
-                    asteroid,
-                    phase * Math.PI * 2,
-                    scale,
-                  ),
+                  ...asteroidOrbitPoint(asteroid, phase * Math.PI * 2, scale),
                 ),
             ),
           );
