@@ -1167,6 +1167,7 @@ export default function Home() {
             scenario={sandboxScenario}
             run={sandboxRun}
             selected={selected}
+            daysPerSecond={sandboxPaused ? 0 : sandboxSpeeds[sandboxSpeed]}
             onChange={(field, value) => editSandboxBody(selected, field, value)}
             onReset={() => resetSandboxBody(selected)}
           />
@@ -1329,7 +1330,7 @@ export default function Home() {
                 onClick={restartSandbox}
               >
                 <RotateCcw size={16} />
-                <span>{t('重新开始')}</span>
+                <span>{t('重置')}</span>
               </button>
             </>
           ) : (

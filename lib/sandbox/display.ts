@@ -45,3 +45,38 @@ export function sandboxRadius(
     : DEFAULT_ILLUSTRATED_RADIUS;
   return authored * Math.cbrt(radiusKm / (body?.radius ?? EARTH_RADIUS_KM));
 }
+
+/**
+ * Fastest rotation the display will turn a body, in turns per real second.
+ *
+ * A body's true spin is its period against the chosen time rate, and at the
+ * rates a sandbox run uses that is routinely hundreds of turns a second —
+ * far past what a frame can sample. The body then strobes: it appears to
+ * creep backwards at a rate that says nothing about the simulation, which is
+ * exactly the impression that the spin is unconnected to the clock. Holding
+ * the rendered rate at a value the eye can follow keeps it proportional to
+ * the time rate wherever it can be seen at all.
+ */
+export const MAX_VISIBLE_TURNS_PER_SECOND = 0.4;
+
+/** How far to turn a body this frame, in radians, sign carrying direction. */
+export function spinStep(
+  spinDays: number,
+  daysPerSecond: number,
+  seconds: number,
+) {
+  if (!spinDays || !Number.isFinite(spinDays)) return 0;
+  const turnsPerSecond = daysPerSecond / spinDays;
+  const limited =
+    Math.sign(turnsPerSecond) *
+    Math.min(Math.abs(turnsPerSecond), MAX_VISIBLE_TURNS_PER_SECOND);
+  return limited * seconds * Math.PI * 2;
+}
+
+/** Whether the shown rotation is slower than the body's own, and so only indicative. */
+export function spinIsSlowed(spinDays: number, daysPerSecond: number) {
+  return (
+    !!spinDays &&
+    Math.abs(daysPerSecond / spinDays) > MAX_VISIBLE_TURNS_PER_SECOND
+  );
+}

@@ -55,10 +55,6 @@ import {
   setOrbitLineWidth,
   type OrbitLine,
 } from './orbit-line';
-/** Ecliptic north and the axis the catalogue tilts a body around. */
-const SCENE_NORTH = new THREE.Vector3(0, 1, 0);
-const SCENE_ROLL = new THREE.Vector3(0, 0, 1);
-
 export type SceneState = {
   locale: Locale;
   speed: number;
@@ -368,8 +364,12 @@ export default function SolarScene({
           },
         );
     }
-    const sandboxSystem = createSandboxSystem(scene, roots, labelLayer, (id) =>
-      latest.current.onSelect(id),
+    const sandboxSystem = createSandboxSystem(
+      scene,
+      roots,
+      meshes,
+      labelLayer,
+      (id) => latest.current.onSelect(id),
     );
     const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
@@ -568,14 +568,19 @@ export default function SolarScene({
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
     let sandboxActive = false;
-    const tiltRotation = new THREE.Quaternion();
-    const sandboxOptions = (state: SceneState, view: SandboxView) => ({
+    const sandboxOptions = (
+      state: SceneState,
+      view: SandboxView,
+      seconds: number,
+    ) => ({
       baseline: view.baseline,
       trails: view.trails,
       realSizes: state.realSizes,
       selected: state.selected,
       labels: state.labels,
       lineWidth: state.orbitLineWidth,
+      seconds: view.paused ? 0 : seconds,
+      daysPerSecond: view.speed,
     });
     // A shared pose replaces automatic framing until the viewer takes over.
     let adoptedPose: CameraPose | null | undefined,
@@ -760,30 +765,8 @@ export default function SolarScene({
       }
       if (sandbox) {
         const gone = sandboxSystem.missing(sandbox.run);
-        for (const body of bodies) {
-          roots.get(body.id)!.visible = !gone(body.id);
-          const spec = sandbox.run.scenario.bodies.find(
-            (item) => item.id === body.id,
-          );
-          // Spin is the body's own, not the catalogue's: the editor can change
-          // it, and it is read straight off the elapsed time rather than from
-          // an orientation model that only exists for real dates.
-          meshes
-            .get(body.id)!
-            .parent!.quaternion.setFromAxisAngle(
-              SCENE_NORTH,
-              spec?.spinDays
-                ? (Math.PI * 2 * sandbox.run.elapsedDays) / spec.spinDays
-                : 0,
-            )
-            .premultiply(
-              tiltRotation.setFromAxisAngle(
-                SCENE_ROLL,
-                ((spec?.tilt ?? 0) * Math.PI) / 180,
-              ),
-            );
-        }
-        sandboxSystem.update(sandbox.run, sandboxOptions(s, sandbox));
+        for (const body of bodies) roots.get(body.id)!.visible = !gone(body.id);
+        sandboxSystem.update(sandbox.run, sandboxOptions(s, sandbox, dt));
       } else
         for (const body of bodies) {
           const root = roots.get(body.id)!;
@@ -1084,7 +1067,7 @@ export default function SolarScene({
           camera,
           width,
           height,
-          sandboxOptions(s, sandbox),
+          sandboxOptions(s, sandbox, dt),
         );
       if (now - lastReport > 350) {
         latest.current.onTime(time);

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { FlaskConical, Plus, RotateCcw, X } from 'lucide-react';
+import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
 import type { SandboxEvent, SandboxRun } from '../lib/sandbox/run';
@@ -242,7 +242,8 @@ export default function SandboxPanel({
           {t('重新开始')}
         </button>
         <button className="ghost-action" onClick={onLeave}>
-          {t('退出沙盘')}
+          <LogOut size={15} />
+          {t('退出')}
         </button>
       </div>
     </div>

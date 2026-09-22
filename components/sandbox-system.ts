@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Translate } from '../lib/i18n';
 import { AU_SCENE_UNITS } from '../lib/display-scale';
 import { bodies } from '../lib/solar';
-import { sandboxRadius, scenePosition } from '../lib/sandbox/display';
+import { sandboxRadius, scenePosition, spinStep } from '../lib/sandbox/display';
 import { auToKm } from '../lib/sandbox/scenario';
 import type { PointMass, Vec3 } from '../lib/sandbox/physics';
 import type { SandboxRun } from '../lib/sandbox/run';
@@ -28,6 +28,10 @@ export type SandboxSceneOptions = {
   selected: string | null;
   labels: boolean;
   lineWidth: number;
+  /** Real seconds since the last frame, for the rotation. */
+  seconds: number;
+  /** Simulated days per real second, the rate the rotation follows. */
+  daysPerSecond: number;
 };
 
 type Extra = {
@@ -49,6 +53,7 @@ type Extra = {
 export function createSandboxSystem(
   scene: THREE.Scene,
   roots: Map<string, THREE.Group>,
+  meshes: Map<string, THREE.Mesh>,
   layer: HTMLElement,
   onSelect: (id: string) => void,
 ) {
@@ -62,6 +67,13 @@ export function createSandboxSystem(
   // One segment from a body to where it would have been: the clearest way to
   // read "the same instant" off the screen rather than off the panel.
   const drawn = new Map<OrbitLine, number>();
+  // Accumulated display rotation per body. Integrating the rate frame by
+  // frame keeps the turn continuous when the viewer changes the time rate,
+  // which reading an angle straight off elapsed time could not do once the
+  // rate is capped for legibility.
+  const phase = new Map<string, number>();
+  const spinRotation = new THREE.Quaternion();
+  const tiltRotation = new THREE.Quaternion();
   const connector = createOrbitLine(0xffffff, 0.75);
   connector.visible = false;
   group.add(connector);
@@ -168,6 +180,30 @@ export function createSandboxSystem(
   }
 
   const projected = new THREE.Vector3();
+  const north = new THREE.Vector3(0, 1, 0);
+  const roll = new THREE.Vector3(0, 0, 1);
+
+  /** Turns a body about its own axis and leans it by its tilt. */
+  function orient(
+    pivot: THREE.Object3D,
+    id: string,
+    run: SandboxRun,
+    options: SandboxSceneOptions,
+  ) {
+    const spec = run.scenario.bodies.find((body) => body.id === id);
+    const turned =
+      (phase.get(id) ?? 0) +
+      spinStep(spec?.spinDays ?? 0, options.daysPerSecond, options.seconds);
+    phase.set(id, turned % (Math.PI * 2));
+    pivot.quaternion
+      .copy(spinRotation.setFromAxisAngle(north, turned))
+      .premultiply(
+        tiltRotation.setFromAxisAngle(
+          roll,
+          ((spec?.tilt ?? 0) * Math.PI) / 180,
+        ),
+      );
+  }
 
   return {
     /** Catalogue bodies the run no longer contains, so the scene can hide them. */
@@ -194,6 +230,8 @@ export function createSandboxSystem(
         // comes from the simulation.
         const root = roots.get(point.id);
         if (root) {
+          const pivot = meshes.get(point.id)?.parent;
+          if (pivot) orient(pivot, point.id, run, options);
           root.position.set(...scenePosition(point.position));
           root.scale.setScalar(
             sandboxRadius(
@@ -205,6 +243,7 @@ export function createSandboxSystem(
         } else {
           const extra = extraFor(run, point);
           extra.root.visible = true;
+          orient(extra.mesh, point.id, run, options);
           place(extra.root, point, run, options.realSizes);
         }
         drawTrail(
