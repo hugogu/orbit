@@ -40,8 +40,21 @@ import {
 
 /** Work ceiling for one advance, so a fast rate can never stall a frame. */
 export const MAX_STEPS_PER_ADVANCE = 600;
-/** Trail points kept per body before the history is thinned. */
+/** Trail points kept per body before the history is compacted. */
 export const TRAIL_CAPACITY = 900;
+/**
+ * Coarsest a trail may be sampled, as a multiple of the integration step.
+ *
+ * Halving a trail to keep the whole run in bounded memory costs resolution,
+ * and the cost falls hardest on the fastest body: after sixty years Mercury
+ * was being recorded under twice per orbit, where the ribbon no longer
+ * describes a path at all. Resolution stops giving way here — about twenty
+ * points per orbit for the tightest pair — and the oldest history gives way
+ * instead, so what is drawn is always something the body actually did.
+ */
+export const MAX_SAMPLE_STEPS = 24;
+/** Fraction of the capacity kept when the oldest history is dropped. */
+const TRAIL_KEEP = 0.75;
 /**
  * Whole steps between step reviews. Recomputing the step on a fixed count
  * rather than every frame is what keeps a replay on the same footing as the
@@ -144,27 +157,37 @@ function record(track: Track) {
 }
 
 /**
- * Halves every trail once the longest one fills up, doubling the interval each
- * point stands for. The ribbon then keeps covering the whole run at a bounded
- * cost, instead of either eating memory or shrinking to a recent stub.
+ * Keeps the trails inside their capacity, and returns the sampling interval
+ * to carry on with.
+ *
+ * While the sampling is still finer than the floor, halving every trail buys
+ * room and keeps the whole run on screen. Once it reaches the floor the
+ * ribbon stops losing detail and starts losing its oldest end instead.
  */
-function thin(tracks: Track[]) {
+function compact(tracks: Track[], sampleEvery: number, coarsest: number) {
   const longest = Math.max(
     0,
     ...tracks.flatMap((track) =>
       [...track.trails.values()].map((trail) => trail.length),
     ),
   );
-  if (longest < TRAIL_CAPACITY) return false;
+  if (longest < TRAIL_CAPACITY) return sampleEvery;
+  if (sampleEvery * 2 <= coarsest) {
+    for (const track of tracks)
+      for (const [id, trail] of track.trails)
+        track.trails.set(
+          id,
+          trail.filter(
+            (_, index) => index % 2 === 0 || index === trail.length - 1,
+          ),
+        );
+    return sampleEvery * 2;
+  }
+  const keep = Math.round(TRAIL_CAPACITY * TRAIL_KEEP);
   for (const track of tracks)
-    for (const [id, trail] of track.trails)
-      track.trails.set(
-        id,
-        trail.filter(
-          (_, index) => index % 2 === 0 || index === trail.length - 1,
-        ),
-      );
-  return true;
+    for (const trail of track.trails.values())
+      if (trail.length > keep) trail.splice(0, trail.length - keep);
+  return sampleEvery;
 }
 
 export function createRun(scenario: SandboxScenario): SandboxRun {
@@ -276,7 +299,11 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
           record(variant);
           record(baseline);
           sampledAt = run.elapsedDays;
-          if (thin([variant, baseline])) sampleEvery *= 2;
+          sampleEvery = compact(
+            [variant, baseline],
+            sampleEvery,
+            step * MAX_SAMPLE_STEPS,
+          );
         }
       }
       watchEscapes(variant, run);

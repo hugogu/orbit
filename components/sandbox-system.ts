@@ -18,6 +18,48 @@ import { createSceneLabel } from './scene-label';
 const GHOST_OPACITY = 0.42;
 const GHOST_TRAIL_BRIGHTNESS = 0.32;
 const VARIANT_TRAIL_BRIGHTNESS = 0.85;
+/** Points a smoothed trail may be drawn with, whatever it was sampled at. */
+const TRAIL_RENDER_CAP = 1800;
+
+/**
+ * A trail is recorded on a time grid, so the faster a body goes round the
+ * fewer points its orbit gets — a long run leaves the innermost planet with a
+ * couple of dozen per lap. Joining those straight draws an ellipse as a
+ * polygon. A centripetal Catmull-Rom spline follows the arc the samples
+ * actually lie on, which is the curve the body travelled; it is uneven
+ * spacing this handles, not missing physics, so it cannot invent a path the
+ * samples do not support.
+ */
+export function smoothed(points: THREE.Vector3[]) {
+  if (points.length < 3) return points;
+  // A trail has nothing beyond its oldest point or beyond the body itself,
+  // and asked to guess a tangent there the spline swings wide: a bulge thirty
+  // times the interior error sat on the first and last segment. Each end gets
+  // a reflected neighbour to take its tangent from, and the curve is then
+  // read back over the real span alone so those extensions are never drawn.
+  // Continued to second order (3a − 3b + c), which carries the curvature on
+  // past the end. A straight continuation sits on the chord's extension, off
+  // the arc, and hands the end segment the very tangent error it was meant
+  // to remove.
+  const continued = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) =>
+    a.clone().sub(b).multiplyScalar(3).add(c);
+  const last = points.length - 1;
+  const control = [
+    continued(points[0], points[1], points[2]),
+    ...points,
+    continued(points[last], points[last - 1], points[last - 2]),
+  ];
+  const curve = new THREE.CatmullRomCurve3(control, false, 'centripetal');
+  // `getPoint` walks control points, not arc length, so the real span is
+  // simply the segments between the two phantoms.
+  const segments = control.length - 1;
+  const from = 1 / segments;
+  const span = (segments - 2) / segments;
+  const count = Math.min(TRAIL_RENDER_CAP, (points.length - 1) * 4);
+  return Array.from({ length: count + 1 }, (_, index) =>
+    curve.getPoint(from + (span * index) / count),
+  );
+}
 
 export type SandboxSceneOptions = {
   /** Draw the untouched fork alongside the edited system. */
@@ -177,10 +219,13 @@ export function createSandboxSystem(
     // vertices for nothing. The head trails the body by at most one sample.
     if (drawn.get(line) === history.length) return;
     drawn.set(line, history.length);
-    setOrbitLinePoints(line, [
-      ...history.map((point) => new THREE.Vector3(...scenePosition(point))),
-      new THREE.Vector3(...scenePosition(head)),
-    ]);
+    setOrbitLinePoints(
+      line,
+      smoothed([
+        ...history.map((point) => new THREE.Vector3(...scenePosition(point))),
+        new THREE.Vector3(...scenePosition(head)),
+      ]),
+    );
   }
 
   function place(

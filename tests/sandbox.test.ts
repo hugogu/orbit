@@ -32,6 +32,8 @@ import {
 } from '../lib/sandbox/derived.ts';
 import { createRun, MAX_STEPS_PER_ADVANCE } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
+import { smoothed } from '../components/sandbox-system.ts';
+import { Vector3 } from 'three';
 import {
   catalogueDefaults,
   centralBody,
@@ -663,6 +665,30 @@ void test('a body a run created carries a readable label as soon as it appears',
   assert.equal(run.liveSpec('drifter')!.name, '流浪者');
 });
 
+void test('a long run keeps enough trail resolution to describe a path', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  while (run.elapsedDays < 365.25 * 60) run.advance(300);
+  const mercury = run.trails.get('mercury')!;
+  const sun = run.trails.get('sun')!;
+  assert.ok(mercury.length > 100);
+  assert.equal(mercury.length, sun.length);
+  // Measured where it matters: the angle the innermost body sweeps between
+  // one recorded point and the next. Left to halve forever, sixty years of
+  // running took this past 180 degrees, where a ribbon stops describing an
+  // orbit and starts inventing one.
+  const swept: number[] = [];
+  for (let index = 1; index < mercury.length; index++) {
+    const before = mercury[index - 1].map((v, a) => v - sun[index - 1][a]);
+    const after = mercury[index].map((v, a) => v - sun[index][a]);
+    const dot = before.reduce((sum, v, a) => sum + v * after[a], 0);
+    const cosine = dot / (Math.hypot(...before) * Math.hypot(...after));
+    swept.push((Math.acos(Math.min(1, Math.max(-1, cosine))) * 180) / Math.PI);
+  }
+  const sorted = [...swept].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  assert.ok(median < 30, `${median.toFixed(1)}° between samples is too coarse`);
+});
+
 void test('each body coming loose is announced once, at its own moment', () => {
   const run = createRun(forkScenario(J2000_MS));
   run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 8e29 });
@@ -712,4 +738,31 @@ void test('a merge adds the absorbed body’s mass and keeps the momentum', () =
   // The panel reads mass from the run, so the gain is what the editor shows.
   assert.ok(run.liveSpec('sun')!.mass > 1.9e30);
   assert.equal(run.liveSpec('earth'), null);
+});
+
+void test('smoothing a coarse trail follows the arc rather than inventing one', () => {
+  // Twenty points around a circle is about what a long run leaves the
+  // innermost body per orbit, and joining them straight is the polygon the
+  // ribbon used to draw.
+  const radius = 3.1;
+  const samples = Array.from({ length: 21 }, (_, index) => {
+    const angle = (index / 20) * Math.PI * 2;
+    return new Vector3(radius * Math.cos(angle), 0, radius * Math.sin(angle));
+  });
+  // How far a straight chord between two samples bows inside the circle.
+  const chordSag = radius * (1 - Math.cos(Math.PI / 20));
+  const curve = smoothed(samples);
+  assert.ok(curve.length > samples.length * 3);
+  // Every drawn point, ends included, sits an order of magnitude closer to the
+  // circle the samples came from than the straight chords did. The ends are
+  // where a naive spline bulges, so they are measured along with the rest.
+  const worst = Math.max(
+    ...curve.map((point) => Math.abs(Math.hypot(point.x, point.z) - radius)),
+  );
+  assert.ok(worst < chordSag / 10, `${worst} AU off the arc`);
+  // The ends are held, so a trail still starts and finishes where it did.
+  assert.ok(curve[0].distanceTo(samples[0]) < 1e-9);
+  assert.ok(curve.at(-1)!.distanceTo(samples.at(-1)!) < 1e-9);
+  // Too few points to interpolate are passed through untouched.
+  assert.deepEqual(smoothed(samples.slice(0, 2)), samples.slice(0, 2));
 });
