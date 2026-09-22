@@ -662,3 +662,54 @@ void test('a body a run created carries a readable label as soon as it appears',
   assert.equal(fact.name, '流浪者');
   assert.equal(run.liveSpec('drifter')!.name, '流浪者');
 });
+
+void test('each body coming loose is announced once, at its own moment', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 8e29 });
+  while (run.elapsedDays < 365.25 * 12) run.advance(40);
+  const escapes = run.events.filter((event) => event.kind === 'escape');
+  assert.ok(escapes.length > 2, 'expected a disturbed system to shed bodies');
+  // They used to be looked for only between frames, so a burst of them all
+  // carried the instant the frame ended and the list read as one moment.
+  assert.equal(new Set(escapes.map((event) => event.day)).size, escapes.length);
+  // A body that simply leaves is announced once, not on every later look.
+  const leaving = createRun(forkScenario(J2000_MS));
+  leaving.apply({ kind: 'set', id: 'earth', field: 'speed', value: 60 });
+  while (leaving.elapsedDays < 3000) leaving.advance(100);
+  assert.equal(
+    leaving.events.filter(
+      (event) => event.kind === 'escape' && event.id === 'earth',
+    ).length,
+    1,
+  );
+});
+
+void test('a merge adds the absorbed body’s mass and keeps the momentum', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  // Stall Earth in its orbit and it falls into the Sun.
+  run.apply({ kind: 'set', id: 'earth', field: 'speed', value: 0.2 });
+  const sunBefore = run.variant.find((body) => body.id === 'sun')!.mass;
+  const earthMass = run.variant.find((body) => body.id === 'earth')!.mass;
+  const before = barycenter(run.variant);
+  while (run.elapsedDays < 200) run.advance(20);
+  assert.ok(
+    run.events.some(
+      (event) => event.kind === 'collision' && event.absorbed === 'earth',
+    ),
+  );
+  const sun = run.variant.find((body) => body.id === 'sun')!;
+  assert.ok(!run.variant.some((body) => body.id === 'earth'));
+  // The Sun is heavier by exactly what it swallowed, and the system's total
+  // momentum is untouched by the merge.
+  assert.ok(Math.abs(sun.mass - (sunBefore + earthMass)) < 1e-18);
+  const after = barycenter(run.variant);
+  for (let axis = 0; axis < 3; axis++)
+    assert.ok(
+      Math.abs(
+        after.velocity[axis] * after.mass - before.velocity[axis] * before.mass,
+      ) < 1e-15,
+    );
+  // The panel reads mass from the run, so the gain is what the editor shows.
+  assert.ok(run.liveSpec('sun')!.mass > 1.9e30);
+  assert.equal(run.liveSpec('earth'), null);
+});

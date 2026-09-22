@@ -234,7 +234,12 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       let taken = 0;
       let starved = false;
       while (taken < MAX_STEPS_PER_ADVANCE) {
-        if (sinceReview >= STEPS_PER_REVIEW) review();
+        if (sinceReview >= STEPS_PER_REVIEW) {
+          review();
+          // Looked for on the review rather than between frames: a burst of
+          // them would otherwise all carry the moment the frame ended.
+          watchEscapes(variant, run);
+        }
         // A change lands at its own elapsed time, not at whichever step
         // happens to straddle it, so a replay cannot drift away from the run
         // it was recorded from.
@@ -353,16 +358,30 @@ function collide(track: Track, run: SandboxRun | null) {
   }
 }
 
+/**
+ * Announces a body coming loose, once.
+ *
+ * A body thrown onto a wide, heavily perturbed orbit crosses the escape
+ * threshold repeatedly, and reporting each crossing filled the list with the
+ * same few names at ever-newer times — which read as though every event had
+ * taken the newest one's timestamp. The announcement is armed again only once
+ * the body is comfortably bound, so a genuine recapture still reports while
+ * chatter around the threshold does not.
+ */
+const REARM_ECCENTRICITY = 0.9;
+
 function watchEscapes(track: Track, run: SandboxRun) {
   if (track.points.length < 2) return;
   const central = dominant(track.points);
   for (const point of track.points) {
     if (point === central) continue;
-    const escaping = orbitState(point, central).escaping;
-    if (escaping && !track.escaped.has(point.id)) {
+    const orbit = orbitState(point, central);
+    if (orbit.escaping) {
+      if (track.escaped.has(point.id)) continue;
       track.escaped.add(point.id);
       run.events.push({ kind: 'escape', id: point.id, day: run.elapsedDays });
-    } else if (!escaping) track.escaped.delete(point.id);
+    } else if (orbit.eccentricity < REARM_ECCENTRICITY)
+      track.escaped.delete(point.id);
   }
 }
 
