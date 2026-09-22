@@ -32,6 +32,7 @@ import {
   Sparkles,
   Share2,
   X,
+  Telescope,
 } from 'lucide-react';
 import LanguagePicker from '../../components/language-picker';
 import SolarScene, { type SceneHandle } from '@/components/solar-scene';
@@ -51,6 +52,9 @@ import TimeJump from '@/components/time-jump';
 import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
+import GroundControls from '@/components/ground-controls';
+import { useDeviceAttitude } from '@/components/use-device-attitude';
+import { currentLocation, zoneOffsetHours } from '@/lib/geolocation';
 import ShareDialog from '@/components/share-dialog';
 import GitHubLink from '@/components/github-link';
 import {
@@ -176,6 +180,8 @@ export default function Home() {
     [view, setView] = useState(205),
     [reset, setReset] = useState(0),
     [top, setTop] = useState(false),
+    [ground, setGround] = useState(false),
+    [nearNow, setNearNow] = useState(true),
     [time, setTime] = useState<number | null>(null),
     [epoch, setEpoch] = useState<number | null>(null),
     [astronomy, setAstronomy] = useState(false),
@@ -215,7 +221,19 @@ export default function Home() {
       useState<SkyLocation>(fallbackSkyLocation),
     [observerLocationSource, setObserverLocationSource] =
       useState<ObserverLocationSource>('fallback');
+  const sensor = useDeviceAttitude(ground, observerLocation);
+  const locationTicket = useRef(0);
+  useEffect(
+    () => () => {
+      locationTicket.current++;
+    },
+    [],
+  );
   const scene = useRef<SceneHandle | null>(null);
+  const reportTime = useCallback((value: number) => {
+    setTime(value);
+    setNearNow(Math.abs(value - Date.now()) < 30000);
+  }, []);
   const capture = useCallback(() => scene.current?.capture() ?? null, []);
   const selectedMoon = orbitingMoons.find((m) => m.id === selected);
   const selectedAsteroid = asteroids.find((item) => item.id === selected);
@@ -262,7 +280,9 @@ export default function Home() {
   const clockSpeeds = sandboxScenario ? sandboxSpeeds : speeds;
   const clockSpeed = sandboxScenario ? sandboxSpeed : speed;
   const running = sandboxScenario ? !sandboxPaused : !paused;
-  const displayScale = sandboxScenario
+  const displayScale = ground
+    ? scale
+    : sandboxScenario
     ? 'distance'
     : isComet
       ? 'distance'
@@ -411,6 +431,7 @@ export default function Home() {
     next: SkyLocation,
     source: ChosenLocationSource = 'manual',
   ) {
+    locationTicket.current++;
     setObserverLocation(next);
     setObserverLocationSource(source);
   }
@@ -547,6 +568,8 @@ export default function Home() {
     [sandboxRun, applyToRun],
   );
   const select = useCallback((id: string) => {
+    setGround(false);
+    locationTicket.current++;
     if (window.location.hash !== `#${id}`)
       window.history.pushState(
         null,
@@ -584,6 +607,8 @@ export default function Home() {
     setSelected(null);
   }, []);
   const home = useCallback(() => {
+    setGround(false);
+    locationTicket.current++;
     if (window.location.hash)
       window.history.pushState(
         null,
@@ -599,6 +624,45 @@ export default function Home() {
     setReset((v) => v + 1);
     setTop(false);
   }, []);
+  function enterGround() {
+    if (ground) {
+      setGround(false);
+      locationTicket.current++;
+      return;
+    }
+    setGround(true);
+    setTop(false);
+    setEclipseView(false);
+    setCameraPose(null);
+    seekTime(Date.now(), true);
+    // Permission APIs must be called during this tap, before any location await.
+    if (window.matchMedia('(pointer: coarse)').matches) void sensor.start();
+    if (observerLocationSource !== 'manual') {
+      const pending = ++locationTicket.current;
+      void currentLocation(navigator.geolocation, window.isSecureContext)
+        .then((fix) => {
+          if (pending !== locationTicket.current) return;
+          const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          updateObserverLocation(
+            {
+              ...observerLocation,
+              ...fix,
+              utcOffset:
+                zoneOffsetHours(Date.now(), zone) ?? observerLocation.utcOffset,
+            },
+            'device',
+          );
+        })
+        .catch((error: unknown) => {
+          if (pending === locationTicket.current)
+            setNotice(
+              error instanceof Error
+                ? error.message
+                : '定位失败，请手动填写经纬度。',
+            );
+        });
+    }
+  }
   // A share link arrives with its moment and framing in the query string, and
   // is applied after the hash has selected the body. The query stays in the
   // address bar so the link can still be reloaded, bookmarked or passed on.
@@ -689,6 +753,8 @@ export default function Home() {
     }
   }
   function goRegion(id: string) {
+    setGround(false);
+    locationTicket.current++;
     const r = regions.find((r) => r.id === id)!;
     setRegion(id);
     setView(r.view);
@@ -979,6 +1045,7 @@ export default function Home() {
       data-sandbox={tab === 'sandbox'}
       data-moon-card={showMoonCard}
       data-action-labels={actionLabels}
+      data-ground={ground}
     >
       <SolarScene
         state={{
@@ -1003,6 +1070,8 @@ export default function Home() {
                 trails: sandboxTrails,
               }
             : null,
+          ground,
+          attitude: sensor.attitude,
           cometId: isComet ? cometId : null,
           cometClose,
           epoch,
@@ -1027,12 +1096,22 @@ export default function Home() {
           cameraPose,
         }}
         onSelect={select}
-        onTime={setTime}
+        onTime={reportTime}
         onAssetStatus={setNotice}
         sceneRef={scene}
       />
       <div className="vignette" />
-      {eclipse.event && time !== null && (
+      {ground && (
+        <GroundControls
+          time={time ?? epoch ?? J2000_MS}
+          location={observerLocation}
+          source={observerLocationSource}
+          onChange={updateObserverLocation}
+          sensor={sensor}
+          live={!paused && speed === 0 && nearNow}
+        />
+      )}
+      {!ground && eclipse.event && time !== null && (
         <EclipseProgressPanel
           key={eclipse.event.id}
           event={eclipse.event}
@@ -1098,6 +1177,7 @@ export default function Home() {
             className="icon-button"
             aria-label={t('分享此刻所见')}
             title={sandboxScenario ? t('分享这个沙盘') : t('分享此刻所见')}
+            hidden={ground}
             onClick={openShare}
           >
             <Share2 />
@@ -1321,12 +1401,25 @@ export default function Home() {
             <LocateFixed />
           </button>
           <button
-            className={`icon-button ${top ? 'active' : ''}`}
+            className={`icon-button ${top && !ground ? 'active' : ''}`}
             aria-label={t('切换俯视角度')}
             title={t('俯视轨道')}
-            onClick={() => setTop((v) => !v)}
+            onClick={() => {
+              setGround(false);
+              locationTicket.current++;
+              setTop((v) => !v);
+            }}
           >
             <Layers3 />
+          </button>
+          <button
+            className={`icon-button ${ground ? 'active' : ''}`}
+            aria-label={t('地表观星')}
+            title={t('地表观星')}
+            aria-pressed={ground}
+            onClick={enterGround}
+          >
+            <Telescope />
           </button>
         </div>
       </div>
@@ -1335,31 +1428,39 @@ export default function Home() {
           <span className="follow-status">
             <i />
             <span className="follow-name">
-              {isComet
-                ? t('{{v0}} · {{v1}}', {
-                    v0: t(cometClose ? '正在跟随' : '轨道全景'),
-                    v1: followLabel,
-                  })
-                : followLabel
-                  ? t('正在跟随 · {{v0}}', { v0: followLabel })
-                  : tab === 'structure'
-                    ? t(activeRegion.name)
-                    : t('太阳系全景')}
+              {ground
+                ? t('地表观星')
+                : isComet
+                  ? t('{{v0}} · {{v1}}', {
+                      v0: t(cometClose ? '正在跟随' : '轨道全景'),
+                      v1: followLabel,
+                    })
+                  : followLabel
+                    ? t('正在跟随 · {{v0}}', { v0: followLabel })
+                    : tab === 'structure'
+                      ? t(activeRegion.name)
+                      : t('太阳系全景')}
             </span>
-            {motion && (
+            {!ground && motion && (
               <span className="follow-motion" title={motionFrame}>
                 {motionReadout}
               </span>
             )}
           </span>
           <span className="scale-status">
-            {realSizes
-              ? displayScale === 'distance'
-                ? t('大小与距离采用同一比例')
-                : t('天体大小按真实比例 · 距离示意')
-              : displayScale === 'distance'
-                ? t('距离按比例 · 天体已放大')
-                : t('演示比例 · 距离与天体大小已调整')}
+            {ground
+              ? t(
+                  realSizes
+                    ? '实际视角大小 · 方位准确'
+                    : '天体放大演示 · 方位准确',
+                )
+              : realSizes
+                ? displayScale === 'distance'
+                  ? t('大小与距离采用同一比例')
+                  : t('天体大小按真实比例 · 距离示意')
+                : displayScale === 'distance'
+                  ? t('距离按比例 · 天体已放大')
+                  : t('演示比例 · 距离与天体大小已调整')}
           </span>
         </div>
         <section className="timeline glass" aria-label={t('时间控制')}>
@@ -1480,11 +1581,11 @@ export default function Home() {
         </section>
         <footer className="footer">
           <div className="footer-hints">
-            <span>{t('拖动旋转')}</span>
+            <span>{t(ground ? '拖动转向' : '拖动旋转')}</span>
             <b>·</b>
             <span>{t('滚轮 / 双指缩放')}</span>
             <b>·</b>
-            <span>{t('W A S D 平移')}</span>
+            <span>{t(ground ? '方向键转向' : 'W A S D 平移')}</span>
             <b>·</b>
             <span>{t('空格暂停')}</span>
           </div>
@@ -1566,7 +1667,8 @@ export default function Home() {
               <LayoutSettings
                 realSizes={realSizes}
                 scale={displayScale}
-                distanceLocked={isComet || tab === 'structure'}
+                distanceLocked={!ground && (isComet || tab === 'structure')}
+                ground={ground}
                 actionLabels={actionLabels}
                 onRealSizesChange={setRealSizes}
                 onScaleChange={setScale}
@@ -1918,7 +2020,7 @@ export default function Home() {
                 </p>
                 <p>
                   {t(
-                    '星空采用 Solar System Scope 的银河全景贴图，位于无限远背景；未按观测地点校准为实时星图。高清源文件中的未测绘区域也可能为示意填充。',
+                    '星空采用真实亮星星表和 Solar System Scope 银河全景。地表观星按观测地点和模拟时间对齐天空；银河图中未测绘区域可能为示意填充。',
                   )}{' '}
                   {t(
                     '动态食影按有限大小的太阳与遮挡天体计算，独立于画面中的放大比例；地月及伽利略卫星使用星历，其他卫星沿用近似轨道。轮廓表示当前影区边界，日食显示完整食带与中心线，纯偏食显示覆盖区；其他食影保留过去 90 分钟的影轴轨迹。模型采用球形天体、均匀日面，未计入大气折射、太阳临边昏暗和月缘地形；月全食保留微弱亮度作示意，颜色不预测真实红月亮。星环及彗核不参与食影计算。',

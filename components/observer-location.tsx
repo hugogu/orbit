@@ -16,9 +16,7 @@ import type {
   SkyLocation,
 } from '../lib/sky-events';
 
-// The observation point only decides sunrise, sunset and local eclipse
-// visibility, so it is edited beside the day's Sun times on Earth rather than
-// inside the event planner.
+// One observation point serves Sun times, eclipse visibility and ground sky.
 export default function ObserverLocation({
   time,
   location,
@@ -96,8 +94,16 @@ export default function ObserverLocation({
         onChange={(e) => {
           const value = Number(e.target.value);
           setMessage('');
-          if (e.target.value.trim() && Number.isFinite(value))
-            onChange({ ...location, [key]: value }, 'manual');
+          if (!e.target.value.trim()) return;
+          if (
+            !Number.isFinite(value) ||
+            value < range.min ||
+            value > range.max
+          ) {
+            setMessage('请检查经纬度、海拔和 UTC 时差。');
+            return;
+          }
+          onChange({ ...location, [key]: value }, 'manual');
         }}
       />
     </label>
@@ -116,7 +122,7 @@ export default function ObserverLocation({
             label={t(
               source === 'fallback'
                 ? '当前使用北京参考坐标，可用右侧按钮定位或手动调整。'
-                : '用于日出日落与日月食的当地可见性判断。',
+                : '用于地表星空、日出日落与日月食的当地可见性判断。',
             )}
           />
         </span>
@@ -140,7 +146,9 @@ export default function ObserverLocation({
           </button>
         </span>
       </p>
-      {message && <output className="little-note">{t(message, values)}</output>}
+      {message && !open && (
+        <output className="little-note">{t(message, values)}</output>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           closeLabel={t('Close')}
@@ -148,9 +156,12 @@ export default function ObserverLocation({
         >
           <DialogTitle>{t('观测地点')}</DialogTitle>
           <DialogDescription>
-            {t('用于计算日出日落，以及日月食在此地的可见性。')}
+            {t('用于地表星空的方位、日出日落，以及日月食在此地的可见性。')}
           </DialogDescription>
           <div className="astro-form">
+            {message && (
+              <output className="wide little-note">{t(message, values)}</output>
+            )}
             {field('纬度（北正南负）', 'latitude', { min: -90, max: 90 })}
             {field('经度（东正西负）', 'longitude', { min: -180, max: 180 })}
             {field('海拔（米）', 'height', {

@@ -69,6 +69,14 @@ ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计�
 
 展开卡片得到完整面板，分三个标签页。**当前月相**补上距角、相位角、地月距离、视直径、地平高度与方位角、赤经与赤纬，以及今晚观月窗口——即从日落到次日日出的这一夜里，月亮真正位于地平线以上的那一段。**四相时刻**列出此后 12 次朔望四相：新月、上弦、满月、下弦。**每日月历**给出整月逐日数据——月相、月龄、照明、月出、中天、月落、中天高度、距离与视直径——并在四相所在那天标出精确时刻。所有数值都使用与日出日落、日月食工具相同的观测点坐标与固定 UTC 偏移。
 
+## 地表观星
+
+点击“总览”“俯视”旁的望远镜按钮，站到共用的地球观测点，并从当前时刻实时观察。没有手动指定地点时会请求设备定位；地平线、东南西北、太阳、月球、行星和星空随地点及模拟时间计算。观测地点与日出日落、食象工具共用，可在观星面板中定位或修改。
+
+手机允许朝向权限后，背面朝向哪片天空，画面就跟到哪里。支持横竖屏姿态转换；Safari 的磁北读数通过 [geomagnetism 的 WMM2025 模型](https://github.com/naturalatlas/geomagnetism)（Apache-2.0）按设备实际日期校正为真北，并提供方位微调。需要 HTTPS；权限被拒绝或没有可靠指南针时，可拖动或在场景获得焦点后使用方向键，滚轮/双指调整视野。实际对齐精度仍受手机传感器和周围磁场影响。
+
+“真实大小”显示实际视角直径；演示模式将太阳、月球放大 10 倍，并为行星保留可见的最小尺寸。“真实距离”保留观测者到天体的距离比例，关闭则压缩深度；四种组合都保持中心方位准确，单独改变距离不会改变视角大小。地平线遮挡下半球。为教学保留白天的星空显示，不模拟天气、光污染、大气折射和当地地形。观星模式不生成分享链接，因为分享链接按设计不携带观测地点。
+
 ## 交互方式
 
 导航中新增独立折叠的**小行星**与**彗星**分组。谷神星（矮行星）、智神星、婚神星、灶神星、灵神星、爱神星、丝川、贝努和龙宫均可在场景内定位，也有三语独立资料页、物理数据与带署名的分享图。为保持全景清晰，仅显示当前选中小行星的标签与轨道。
@@ -204,7 +212,7 @@ ORBIT 用于天文学习，并在界面中说明模型的假设与适用范围�
 - [JPL Small-Body Database](https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html)
 - [NASA 日食几何](https://eclipse.gsfc.nasa.gov/SEhelp/SEgeometry.html)
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy)（MIT）
-- 行星纹理主要来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形。银河全景是实拍照片：它按银道坐标转入场景所用的 J2000 参考系，因此银河带与星表恒星互相吻合，但仍是背景，而不是按观测者地平绘制的星图。
+- 行星纹理主要来自 [Solar System Scope Textures](https://www.solarsystemscope.com/textures/)，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 使用。实际文件尺寸、下载来源与许可记录在 [`public/textures/source-manifest.json`](public/textures/source-manifest.json)。部分纹理使用增强色彩或示意性地形。银河全景是实拍照片：它按银道坐标转入场景所用的 J2000 参考系，因此银河带与星表恒星互相吻合，地表模式再将观测者的地平坐标转换到同一参考系。
 - 可选的行星真实表面细节来自公开 NASA/USGS 地形数据，经固定版本的 CelestiaContent 法线贴图处理并下采样；详见 [`public/textures/planets/CREDITS.md`](public/textures/planets/CREDITS.md)。这些 2K 贴图只提供光照起伏，不进行几何位移；气态巨行星没有固体表面，仍使用大气表现。
 - 卫星贴图来自 [CelestiaContent](https://github.com/CelestiaProject/CelestiaContent)，各文件采用的 CC BY 或 CC BY-SA 条款记录在 [`public/textures/satellites/CREDITS.md`](public/textures/satellites/CREDITS.md)。天卫一、天卫五、天卫二、天卫三、天卫四和海卫一的 Voyager 贴图存在未测绘区域；本地副本用邻近的已观测纹理镜像填补缺口，避免近距离观察时出现单色半球。由于缺少完整全球反照率地图，海卫二、冥王星和冥卫一使用 CC BY 4.0 的 `asteroid.jpg` 作为明确标注的科普示意材质。彗星的形状模型来源和表面数据限制记录在 [`public/models/comets/CREDITS.md`](public/models/comets/CREDITS.md)。
 - 小行星贴图与转换后的形状资产分别记录在 [`public/textures/asteroids/CREDITS.md`](public/textures/asteroids/CREDITS.md) 和 [`public/models/asteroids/CREDITS.md`](public/models/asteroids/CREDITS.md)；命名小行星目录不再使用通用 `asteroid.jpg`。

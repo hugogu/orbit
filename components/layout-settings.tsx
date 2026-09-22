@@ -6,6 +6,7 @@ import { Switch } from './ui/switch';
 
 export default function LayoutSettings({
   realSizes,
+  ground = false,
   scale,
   distanceLocked,
   actionLabels,
@@ -14,6 +15,7 @@ export default function LayoutSettings({
   onActionLabelsChange,
 }: {
   realSizes: boolean;
+  ground?: boolean;
   scale: ScaleMode;
   distanceLocked: boolean;
   actionLabels: boolean;
@@ -45,7 +47,9 @@ export default function LayoutSettings({
       </div>
       <p className="model-note layout-note">
         {t(
-          '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星、卫星与小行星会使用同一物理尺度。彗核形状使用公开模型或观测约束的明确近似；彗核表面、彗尾和光晕仍为示意。',
+          ground
+            ? '地表模式中，真实大小显示实际视角大小；演示大小放大天体。真实距离保留观测者到天体的距离比例，关闭则压缩深度；两者都保持准确方位和所选视角大小。'
+            : '大小与距离可分别设置；同时开启真实大小和真实距离时，太阳、行星、卫星与小行星会使用同一物理尺度。彗核形状使用公开模型或观测约束的明确近似；彗核表面、彗尾和光晕仍为示意。',
         )}
       </p>
       {distanceLocked && (

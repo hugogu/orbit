@@ -41,6 +41,7 @@ import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
 import { createStarField } from './star-field';
+import { createGroundSky } from './ground-sky';
 import type { TextureQuality } from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
 import type { CameraPose } from '@/lib/share-view';
@@ -68,6 +69,8 @@ export type SceneState = {
   view: number;
   reset: number;
   top: boolean;
+  ground: boolean;
+  attitude: React.RefObject<THREE.Quaternion | null>;
   cometId: string | null;
   cometClose: boolean;
   epoch: number | null;
@@ -154,6 +157,8 @@ export default function SolarScene({
     renderer.domElement.tabIndex = 0;
     const scene = new THREE.Scene(),
       camera = new THREE.PerspectiveCamera(47, 1, 0.05, 20000);
+    const spaceScene = new THREE.Scene();
+    scene.add(spaceScene);
     camera.position.set(0, 115, 170);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -162,9 +167,9 @@ export default function SolarScene({
     controls.maxDistance = 10000;
     controls.maxPolarAngle = Math.PI * 0.97;
     controls.enablePan = true;
-    scene.add(new THREE.AmbientLight(0x8098c4, 0.65));
+    spaceScene.add(new THREE.AmbientLight(0x8098c4, 0.65));
     const sunlight = new THREE.PointLight(0xffead0, 3.5, 0, 0);
-    scene.add(sunlight);
+    spaceScene.add(sunlight);
     const textureManager = createTextureManager(renderer, (message) =>
       latest.current.onAssetStatus(message),
     );
@@ -198,7 +203,10 @@ export default function SolarScene({
     container.appendChild(labelLayer);
     // The sky owns the panorama as well as the catalogued stars, so the two
     // are turned by the same measured frame instead of by eye.
-    const starField = createStarField(scene, labelLayer, (message) =>
+    const skyLabelLayer = document.createElement('div');
+    skyLabelLayer.className = 'scene-labels';
+    container.appendChild(skyLabelLayer);
+    const starField = createStarField(scene, skyLabelLayer, (message) =>
       latest.current.onAssetStatus(message),
     );
     textureManager.register('stars_milky_way', (texture) =>
@@ -208,7 +216,7 @@ export default function SolarScene({
     // sandbox run has nothing true to say about them. One container makes
     // them leave and come back together.
     const ephemerisOnly = new THREE.Group();
-    scene.add(ephemerisOnly);
+    spaceScene.add(ephemerisOnly);
     const cometSystem = createCometSystem(
       ephemerisOnly,
       labelLayer,
@@ -218,7 +226,7 @@ export default function SolarScene({
     );
     for (const body of bodies) {
       const root = new THREE.Group();
-      scene.add(root);
+      spaceScene.add(root);
       roots.set(body.id, root);
       const pivot = new THREE.Group();
       pivot.rotation.z = (body.tilt * Math.PI) / 180;
@@ -295,7 +303,7 @@ export default function SolarScene({
       if (body.period) {
         const line = createOrbitLine(body.color, 0.2);
         orbitLines.set(body.id, line);
-        scene.add(line);
+        spaceScene.add(line);
       }
       const label = document.createElement('button');
       label.className = 'planet-label';
@@ -443,11 +451,11 @@ export default function SolarScene({
       };
       material.customProgramCacheKey = () => 'outer-points-round-v2';
       const cloud = new THREE.Points(geometry, material);
-      scene.add(cloud);
+      spaceScene.add(cloud);
       return cloud;
     }
     const belt = createAsteroidBelt(rand);
-    scene.add(belt.root);
+    spaceScene.add(belt.root);
     const kuiper = points(
         2200,
         ...outerStructures.kuiper.illustrated,
@@ -480,7 +488,13 @@ export default function SolarScene({
         opacity: 0.028,
       }),
     );
-    scene.add(heliosphere);
+    spaceScene.add(heliosphere);
+    const groundSky = createGroundSky(
+      scene,
+      skyLabelLayer,
+      renderer.domElement,
+      meshes,
+    );
     const raycaster = new THREE.Raycaster(),
       pointer = new THREE.Vector2();
     let downX = 0,
@@ -490,6 +504,7 @@ export default function SolarScene({
       downY = e.clientY;
     };
     const onUp = (e: PointerEvent) => {
+      if (latest.current.state.ground) return;
       if (Math.hypot(e.clientX - downX, e.clientY - downY) > 5) return;
       const r = renderer.domElement.getBoundingClientRect();
       pointer.set(
@@ -525,6 +540,7 @@ export default function SolarScene({
     };
     wakeScene.current = wake;
     const onKey = (e: KeyboardEvent) => {
+      if (latest.current.state.ground) return;
       if (
         e.target instanceof HTMLElement &&
         (e.target.matches('input,button,[role="slider"]') ||
@@ -638,7 +654,8 @@ export default function SolarScene({
     const connection = (
       navigator as Navigator & { connection?: { saveData?: boolean } }
     ).connection;
-    let lastLocale: Locale | undefined;
+    let lastLocale: Locale | undefined,
+      lastGround = false;
     const animate = (now: number) => {
       const s = latest.current.state,
         dt = Math.min((now - previous) / 1000, 0.08);
@@ -668,10 +685,14 @@ export default function SolarScene({
         lastEclipseFraming = framingKey;
       }
       const translate = translator(s.locale);
-      if (s.locale !== lastLocale) {
+      if (s.locale !== lastLocale || s.ground !== lastGround) {
         renderer.domElement.setAttribute(
           'aria-label',
-          translate('太阳系三维场景，可拖动旋转、滚轮或双指缩放'),
+          translate(
+            s.ground
+              ? '地表星空，可拖动转向、滚轮或双指缩放'
+              : '太阳系三维场景，可拖动旋转、滚轮或双指缩放',
+          ),
         );
         for (const body of bodies) {
           const label = labels.get(body.id)!;
@@ -686,6 +707,7 @@ export default function SolarScene({
         starField.localize(translate);
         if (s.sandbox) sandboxSystem.localize(s.sandbox.run, translate);
         lastLocale = s.locale;
+        lastGround = s.ground;
       }
       const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
       const selectedAsteroid = asteroids.find((item) => item.id === s.selected);
@@ -790,6 +812,38 @@ export default function SolarScene({
         // simulation counts days away from J2000.
         years: days / JULIAN_YEAR_DAYS,
       });
+      groundSky.setActive(s.ground);
+      spaceScene.visible = !s.ground;
+      labelLayer.hidden = s.ground;
+      controls.enabled = !s.ground;
+      if (s.ground) {
+        // A seek here must also refresh orbit paths when returning to space.
+        lastScale = '';
+        groundSky.update(
+          days,
+          s.observerLocation,
+          s.scale,
+          s.realSizes,
+          s.attitude.current,
+          width,
+          height,
+          s.labels,
+          translate,
+        );
+        renderer.render(scene, groundSky.camera);
+        starField.project(
+          groundSky.camera,
+          width,
+          height,
+          s.stars && s.constellations && s.labels,
+          groundSky.up,
+        );
+        if (now - lastReport > 350) {
+          latest.current.onTime(time);
+          lastReport = now;
+        }
+        return;
+      }
       if (!sandbox && (s.scale !== lastScale || seek)) {
         lastScale = s.scale;
         for (const body of bodies) {
@@ -1125,7 +1179,10 @@ export default function SolarScene({
       handle.current = {
         capture: () => {
           try {
-            renderer.render(scene, camera);
+            renderer.render(
+              scene,
+              latest.current.state.ground ? groundSky.camera : camera,
+            );
             return renderer.domElement.toDataURL('image/png');
           } catch {
             return null;
@@ -1165,6 +1222,7 @@ export default function SolarScene({
       eclipseSystem.dispose();
       eclipsePath.dispose();
       starField.dispose();
+      groundSky.dispose();
       observerMarker?.dispose();
       belt.dispose();
       asteroidSystem.dispose();
