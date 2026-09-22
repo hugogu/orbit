@@ -1169,25 +1169,30 @@ export default function Home() {
           </div>
         </section>
       </div>
-      <div className="astronomy-actions">
-        <button
-          className="astronomy-button"
-          aria-label={t('天象推演')}
-          title={t('天象推演')}
-          onClick={() => setAstronomy(true)}
-        >
-          <CalendarDays size={18} />
-          <span className={actionLabel}>{t('天象推演')}</span>
-        </button>
-        <a
-          className="astronomy-button"
-          href={eventsIndexPath(locale)}
-          title={t('天象事件')}
-        >
-          <Sparkles size={18} />
-          <span className={actionLabel}>{t('天象事件')}</span>
-        </a>
-      </div>
+      {/* Both tools answer questions about the real sky on a real date, which
+          a run has left behind, so they step aside for the duration rather
+          than offering an answer that no longer describes what is on screen. */}
+      {tab !== 'sandbox' && (
+        <div className="astronomy-actions">
+          <button
+            className="astronomy-button"
+            aria-label={t('天象推演')}
+            title={t('天象推演')}
+            onClick={() => setAstronomy(true)}
+          >
+            <CalendarDays size={18} />
+            <span className={actionLabel}>{t('天象推演')}</span>
+          </button>
+          <a
+            className="astronomy-button"
+            href={eventsIndexPath(locale)}
+            title={t('天象事件')}
+          >
+            <Sparkles size={18} />
+            <span className={actionLabel}>{t('天象事件')}</span>
+          </a>
+        </div>
+      )}
       {showMoonCard && (
         <MoonPhaseCard
           time={time!}
