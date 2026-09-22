@@ -617,3 +617,48 @@ void test('a shared body’s own text and colour are not taken on trust', () => 
     [],
   );
 });
+
+void test('a malformed escape in a shared name falls back instead of throwing', () => {
+  // `decodeURIComponent` throws on a bare `%` or an invalid pair, and this
+  // text comes from whoever wrote the link.
+  for (const name of ['%', '%zz', '%E0%A4%A', 'ok%']) {
+    const link = `a,0,rogue,${name},7fd4ff,5e24,6000,1,0,1,0,0,0,0,0.017`;
+    const decoded = decodeSandbox(link, J2000_MS);
+    assert.ok(decoded, name);
+    const change = decoded.changes[0];
+    assert.equal(change.kind, 'add');
+    assert.ok(
+      change.kind === 'add' && change.body.name.length > 0,
+      `${name} left the body unnamed`,
+    );
+    // The run still builds, which is the contract the module states.
+    const run = createRun(decoded);
+    run.advance(5);
+    assert.ok(run.variant.some((body) => body.id === 'rogue'));
+  }
+});
+
+void test('a body a run created carries a readable label as soon as it appears', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  run.apply({
+    kind: 'add',
+    body: createdBody(
+      {
+        name: '流浪者',
+        mass: 1e26,
+        radius: 20000,
+        distance: 4,
+        color: '#7fd4ff',
+      },
+      0,
+      centralBody(run.variant)!.mass * SOLAR_MASS_KG,
+      'drifter',
+    ),
+  });
+  // The scene reads a created body's name from the run, so a blank label can
+  // only come from the renderer forgetting to ask for it.
+  const fact = run.facts.find((body) => body.id === 'drifter');
+  assert.ok(fact);
+  assert.equal(fact.name, '流浪者');
+  assert.equal(run.liveSpec('drifter')!.name, '流浪者');
+});

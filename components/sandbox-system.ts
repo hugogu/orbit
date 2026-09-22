@@ -32,6 +32,8 @@ export type SandboxSceneOptions = {
   seconds: number;
   /** Simulated days per real second, the rate the rotation follows. */
   daysPerSecond: number;
+  /** Names a body's label the moment it appears, not only on a locale change. */
+  translate: Translate;
 };
 
 type Extra = {
@@ -89,7 +91,13 @@ export function createSandboxSystem(
   const sourceOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.sourceId ?? null;
 
-  function extraFor(run: SandboxRun, point: PointMass) {
+  /** A body's label text and the reading of it, from one place. */
+  function nameLabel(label: HTMLButtonElement, name: string, t: Translate) {
+    label.textContent = t(name);
+    label.setAttribute('aria-label', t('探索{{name}}', { name: t(name) }));
+  }
+
+  function extraFor(run: SandboxRun, point: PointMass, t: Translate) {
     const existing = extras.get(point.id);
     if (existing) return existing;
     const root = new THREE.Group();
@@ -106,6 +114,14 @@ export function createSandboxSystem(
     const label = document.createElement('button');
     label.className = 'planet-label';
     label.onclick = () => onSelect(point.id);
+    // Named here rather than only on a locale change: a body added mid-run
+    // would otherwise sit in the scene as a blank, unreadable button until
+    // the viewer happened to switch language.
+    nameLabel(
+      label,
+      run.facts.find((b) => b.id === point.id)?.name ?? point.id,
+      t,
+    );
     layer.appendChild(label);
     const entry = { root, mesh, label, project: createSceneLabel(label) };
     extras.set(point.id, entry);
@@ -241,7 +257,7 @@ export function createSandboxSystem(
             ) / meshUnit(point.id),
           );
         } else {
-          const extra = extraFor(run, point);
+          const extra = extraFor(run, point, options.translate);
           extra.root.visible = true;
           orient(extra.mesh, point.id, run, options);
           place(extra.root, point, run, options.realSizes);
@@ -305,14 +321,12 @@ export function createSandboxSystem(
         ]);
     },
     localize(run: SandboxRun, t: Translate) {
-      for (const [id, extra] of extras) {
-        const spec = run.facts.find((body) => body.id === id);
-        extra.label.textContent = spec ? t(spec.name) : id;
-        extra.label.setAttribute(
-          'aria-label',
-          t('探索{{name}}', { name: spec ? t(spec.name) : id }),
+      for (const [id, extra] of extras)
+        nameLabel(
+          extra.label,
+          run.facts.find((b) => b.id === id)?.name ?? id,
+          t,
         );
-      }
     },
     project(
       run: SandboxRun,

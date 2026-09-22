@@ -581,6 +581,7 @@ export default function SolarScene({
       lineWidth: state.orbitLineWidth,
       seconds: view.paused ? 0 : seconds,
       daysPerSecond: view.speed,
+      translate: translator(state.locale),
     });
     // A shared pose replaces automatic framing until the viewer takes over.
     let adoptedPose: CameraPose | null | undefined,
@@ -643,6 +644,7 @@ export default function SolarScene({
         moonSystem.localize(translate);
         asteroidSystem.localize(translate);
         starField.localize(translate);
+        if (s.sandbox) sandboxSystem.localize(s.sandbox.run, translate);
         lastLocale = s.locale;
       }
       const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
@@ -1047,9 +1049,12 @@ export default function SolarScene({
       for (const body of bodies) {
         const root = roots.get(body.id)!;
         projected.copy(root.position);
+        // `root.scale` divides out the mesh's authored size, so the rendered
+        // radius is the scale times that size again. Using the bare factor
+        // put the Sun's label inside the Sun.
         projected.y +=
           (sandbox
-            ? root.scale.x
+            ? root.scale.x * body.size
             : displayRadius(body.id, s.scale, s.realSizes)) * 1.2;
         projected.project(camera);
         projectLabels.get(body.id)!(

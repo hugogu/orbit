@@ -87,6 +87,19 @@ export function encodeSandbox(scenario: SandboxScenario) {
     .join(SEPARATOR);
 }
 
+/**
+ * `decodeURIComponent` throws on a malformed escape such as a bare `%`, and
+ * the text here arrives from whoever wrote the link. A name that cannot be
+ * read falls back to the id rather than taking the page down with it.
+ */
+function readName(value: string | undefined, fallback: string) {
+  try {
+    return decodeURIComponent(value ?? '').slice(0, 40) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function readAdd(parts: string[]): SandboxBodySpec | null {
   const [, , id, name, color] = parts;
   const mass = readNumber(parts[5]);
@@ -113,7 +126,7 @@ function readAdd(parts: string[]): SandboxBodySpec | null {
     sourceId: null,
     // A shared name is another person's text: it is shown, never resolved as
     // a translation key or written anywhere it could be read as markup.
-    name: decodeURIComponent(name ?? '').slice(0, 40) || id,
+    name: readName(name, id),
     color: /^[0-9a-f]{6}$/i.test(color ?? '') ? `#${color}` : '#ffffff',
     mass,
     radius,

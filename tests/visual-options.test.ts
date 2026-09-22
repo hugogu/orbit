@@ -151,6 +151,11 @@ void test('outer structures stand at their published distances once distances ar
     auOf('pluto') > outerStructures.kuiper.au[0] &&
       auOf('pluto') < outerStructures.kuiper.au[1],
   );
+  // A sandbox label sits above the body by its rendered radius. `root.scale`
+  // has the mesh's authored size divided out of it, so the offset has to put
+  // that size back; the bare factor tucked the Sun's label inside the Sun.
+  assert.match(scene, /root\.scale\.x \* body\.size/);
+  assert.doesNotMatch(scene, /\?\s*root\.scale\.x\s*\n?\s*:/);
   // The schematic Oort cloud has no honest placement at this scale, and a
   // sandbox run has no catalogue populations at all.
   assert.ok(!Object.hasOwn(outerStructures, 'oort'));
