@@ -1707,5 +1707,6 @@
   "改动立即在当前时刻生效，已经走过的路径会保留下来。": "A change takes effect at the current moment; the path already travelled is kept.",
   "分享这个沙盘": "Share this sandbox",
   "沙盘中的自转周期与轴倾角只改变外观：点质量模型没有自转与轨道的耦合，它们不产生任何引力效应。天体相撞按完全非弹性合并处理，质量与动量守恒、体积相加。对照用的原始轨迹由同一积分器、同一步长从同一时刻推进，因此两条路径的差异只来自你所做的改动。改动带有发生时刻，会在运行中即时生效而不重来；分享链接携带的也正是这份「配方」——分叉时刻与全部改动，而不是算出来的轨迹，所以对方打开后会演算出同一条路径。": "Rotation period and axial tilt change only the appearance: a point-mass model has no spin–orbit coupling, so they produce no gravitational effect at all. A collision is treated as a perfectly inelastic merge, conserving mass and momentum and adding volumes. The original path shown for comparison is advanced by the same integrator, on the same step, from the same instant, so the difference between the two paths is your change and nothing else. A change carries the moment it was made and takes effect mid-run rather than restarting it, and a share link carries exactly that recipe — the fork and every change, never the computed trajectory — so whoever opens it works out the same path.",
-  "打开链接的人会从同一时刻分叉，按同样的改动演算出同一条路径。": "Whoever opens the link forks from the same moment and works out the same path from the same changes."
+  "打开链接的人会从同一时刻分叉，按同样的改动演算出同一条路径。": "Whoever opens the link forks from the same moment and works out the same path from the same changes.",
+  "调整这颗天体的参数，观察它如何改变轨迹。": "Adjust this body’s parameters and watch how its path changes."
 }

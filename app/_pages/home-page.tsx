@@ -427,6 +427,9 @@ export default function Home() {
     const timer = setInterval(() => setSandboxTick((v) => v + 1), 250);
     return () => clearInterval(timer);
   }, [sandboxRun]);
+  // The editor appears in the information column on a wide screen and in the
+  // details sheet on a phone; both ask the same question.
+  const sandboxEditing = !!sandboxRun && !!selected;
   const enterSandbox = useCallback(() => {
     setSandboxScenario(forkScenario(time ?? Date.now()));
     setSandboxPaused(false);
@@ -921,6 +924,7 @@ export default function Home() {
     <main
       className="observatory"
       data-eclipse-active={!!eclipse.event}
+      data-sandbox={tab === 'sandbox'}
       data-moon-card={showMoonCard}
       data-action-labels={actionLabels}
     >
@@ -1194,7 +1198,7 @@ export default function Home() {
       <aside className="info-panel glass">
         {/* While a run is on, this column edits the selected body instead of
             reciting catalogue figures the simulation has already left behind. */}
-        {sandboxScenario && sandboxRun && selected ? (
+        {sandboxEditing ? (
           <SandboxBodyEditor
             run={sandboxRun}
             selected={selected}
@@ -1968,17 +1972,37 @@ export default function Home() {
           className="mobile-details"
         >
           <SheetTitle>
-            {isComet
-              ? t(activeComet.name)
-              : t(
-                  selectedAsteroid?.name ??
-                    selectedMoon?.name ??
-                    body?.name ??
-                    '太阳系知识',
-                )}
+            {sandboxEditing
+              ? t(sandboxRun.liveSpec(selected)?.name ?? '沙盘模式')
+              : isComet
+                ? t(activeComet.name)
+                : t(
+                    selectedAsteroid?.name ??
+                      selectedMoon?.name ??
+                      body?.name ??
+                      '太阳系知识',
+                  )}
           </SheetTitle>
-          <SheetDescription>{t('探索天体的特征与运行规律。')}</SheetDescription>
-          {tab === 'structure' && !body ? (
+          <SheetDescription>
+            {t(
+              sandboxEditing
+                ? '调整这颗天体的参数，观察它如何改变轨迹。'
+                : '探索天体的特征与运行规律。',
+            )}
+          </SheetDescription>
+          {/* A phone has no information column, so the sandbox editor reaches
+              it through the same sheet the catalogue entries use. */}
+          {sandboxEditing ? (
+            <SandboxBodyEditor
+              run={sandboxRun}
+              selected={selected}
+              daysPerSecond={sandboxPaused ? 0 : sandboxSpeeds[sandboxSpeed]}
+              onChange={(field, value) =>
+                editSandboxBody(selected, field, value)
+              }
+              onReset={() => resetSandboxBody(selected)}
+            />
+          ) : tab === 'structure' && !body ? (
             <>
               <h2>{t(activeRegion.name)}</h2>
               <p>{t(activeRegion.text)}</p>
