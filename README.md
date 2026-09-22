@@ -26,6 +26,7 @@ ORBIT combines an explorable 3D scene, a controllable simulation clock, and astr
 | 🌑  | Find the next solar eclipse, lunar eclipse, and locally visible solar eclipse                                                            | Event timing and eclipse geometry                                                             |
 | 🌒  | Select the Moon for a phase card that opens the next twelve principal phase times, a month of daily readings, and tonight’s observing window | Moon age, illumination, distance, apparent diameter, rise, transit, set, and when to look     |
 | 🌗  | See terminators, Earth’s city lights at night, and solar-eclipse umbra, penumbra, and shadow-axis tracks                                 | Illumination and eclipse geometry                                                             |
+| 🧪  | Enter Sandbox mode to fork the current instant into a Newtonian N-body run: edit any body’s mass, orbital speed or distance, add or remove bodies, and watch the new path against the original one at the same instant | What actually holds a solar system together, and what it takes to break it                    |
 | ✨  | Choose automatic, standard 2K, or ultra textures up to 8K; the Milky Way can be toggled separately                                       | A practical balance between detail and device performance                                     |
 | 🌌  | Turn on a real star field: 9,096 catalogued naked-eye stars carried to the simulated year by their own proper motion, the 88 IAU constellation figures, and a Milky Way panorama aligned to the same sky | The background behind the planets is the sky those planets are really seen against            |
 | 🗺️  | Optionally load 2K real-surface relief and high-density terrain geometry for Mercury, Venus, Earth, Mars, and the Moon only when focused | Published topography can change close-up lighting and silhouette; the geometry mode is opt-in |
@@ -92,8 +93,10 @@ flowchart LR
   B --> C[Clock and application state]
   C --> D[Astronomy Engine<br/>planets, Moon, Galilean moons]
   C --> E[JPL orbital elements<br/>other moons and comets]
+  C -.sandbox mode.-> I[Newtonian N-body run<br/>edited system + untouched fork]
   D --> F[Three.js scene]
   E --> F
+  I --> F
   C --> G[Web Worker<br/>sunrise/sunset and eclipse search]
   G --> B
   F --> H[WebGL on desktop and mobile]
