@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
@@ -15,6 +15,12 @@ const templates: { label: string; mass: number; radius: number }[] = [
   { label: '褐矮星', mass: 4e28, radius: 80000 },
 ];
 const palette = ['#7fd4ff', '#ffb37f', '#b6ff9c', '#ff9cc7', '#d4b6ff'];
+/**
+ * Vertical travel that counts as a swipe rather than a tap. Below it the
+ * gesture falls through to the button's own click, which is what keeps the
+ * handle working from a keyboard as well as a finger.
+ */
+const SWIPE_PX = 24;
 
 function eventLabel(
   event: SandboxEvent,
@@ -61,10 +67,45 @@ export default function SandboxPanel({
   const [template, setTemplate] = useState(1);
   const [distance, setDistance] = useState('3');
   const [name, setName] = useState('');
+  // On a phone the panel covers the sky it exists to explain, so it folds
+  // down to its handle. The state lives here because only that layout uses
+  // it; a wide screen has room for the whole panel and ignores it.
+  const [collapsed, setCollapsed] = useState(false);
+  const swipe = useRef({ from: 0, handled: false });
+
+  const handle = (
+    <button
+      className="sandbox-handle"
+      aria-expanded={!collapsed}
+      aria-label={t(collapsed ? '展开沙盘面板' : '收起沙盘面板')}
+      title={t(collapsed ? '展开沙盘面板' : '收起沙盘面板')}
+      onPointerDown={(event) => {
+        swipe.current = { from: event.clientY, handled: false };
+      }}
+      onPointerUp={(event) => {
+        const travelled = event.clientY - swipe.current.from;
+        if (Math.abs(travelled) < SWIPE_PX) return;
+        // A swipe says which way to go; a tap only toggles.
+        swipe.current.handled = true;
+        setCollapsed(travelled > 0);
+      }}
+      onClick={() => {
+        if (swipe.current.handled) {
+          swipe.current.handled = false;
+          return;
+        }
+        setCollapsed((value) => !value);
+      }}
+    >
+      <span className="sandbox-grip" aria-hidden="true" />
+      {collapsed && run && <em>{elapsedLabel(run.elapsedDays, t)}</em>}
+    </button>
+  );
 
   if (!run)
     return (
-      <div className="sandbox-panel">
+      <div className="sandbox-panel" data-collapsed={collapsed}>
+        {handle}
         <p className="sandbox-intro">
           {t(
             '从当前模拟时刻分叉，用牛顿万有引力逐步积分。质量与速度真正参与受力计算，天体可以被抛出、被俘获或相撞。',
@@ -88,7 +129,8 @@ export default function SandboxPanel({
   const alive = new Set(run.variant.map((body) => body.id));
 
   return (
-    <div className="sandbox-panel">
+    <div className="sandbox-panel" data-collapsed={collapsed}>
+      {handle}
       <dl className="sandbox-readout">
         <div>
           <dt>{t('已运行')}</dt>

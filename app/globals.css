@@ -1733,6 +1733,11 @@ button:disabled {
   color: #8b94a4;
   margin: 0;
 }
+/* The fold handle belongs to the phone sheet; a wide screen shows the whole
+   panel and has no use for it. */
+.sandbox-handle {
+  display: none;
+}
 .sandbox-readout {
   display: flex;
   flex-direction: column;
@@ -4293,6 +4298,53 @@ button:disabled {
   .observatory[data-sandbox='true'] .catalog-title,
   .observatory[data-sandbox='true'] .catalog-footer {
     display: flex;
+  }
+  /* A sheet this tall hides the sky it is describing, so it folds away to a
+     grab bar. Swiping it down leaves the scene clear; swiping up or tapping
+     brings the controls back, with the elapsed time staying legible either
+     way so a folded run still shows it is running. */
+  .sandbox-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: sticky;
+    top: -12px;
+    z-index: 1;
+    margin: -12px -10px 2px;
+    padding: 10px;
+    border: 0;
+    background: transparent;
+    color: #8b94a4;
+    font-size: 12px;
+    /* The handle owns vertical gestures; the panel below it keeps scrolling. */
+    touch-action: none;
+  }
+  .sandbox-grip {
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: #ffffff2e;
+  }
+  .sandbox-handle em {
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    color: #c4ccd9;
+  }
+  .sandbox-panel[data-collapsed='true'] > :not(.sandbox-handle) {
+    display: none;
+  }
+  .observatory[data-sandbox='true']
+    .catalog:has(.sandbox-panel[data-collapsed='true']) {
+    padding-bottom: 4px;
+  }
+  .observatory[data-sandbox='true']
+    .catalog:has(.sandbox-panel[data-collapsed='true'])
+    .catalog-title,
+  .observatory[data-sandbox='true']
+    .catalog:has(.sandbox-panel[data-collapsed='true'])
+    .catalog-footer {
+    display: none;
   }
   /* A third tab pushed the strip under the view tools. The icons go first —
      the labels already say what each tab is — and the strip is then bounded

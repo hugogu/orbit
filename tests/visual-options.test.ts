@@ -111,6 +111,33 @@ void test('Earth night texture follows solar direction even with eclipse shadows
   system.dispose();
 });
 
+void test('the sandbox fold handle belongs to the phone layout alone', () => {
+  const compactStyles = readFileSync(
+    new URL('../app/globals.css', import.meta.url),
+    'utf8',
+  ).replace(/\s+/g, ' ');
+  // The handle is hidden by default and only shown inside a narrow or short
+  // query, and collapsing hides the panel's contents only there. A wide
+  // screen therefore ignores a collapse a phone left behind, rather than
+  // presenting an empty panel with no way to reopen it.
+  assert.match(compactStyles, /\.sandbox-handle \{ display: none; \}/);
+  const mobile = compactStyles.slice(
+    compactStyles.indexOf(
+      '@media (max-width: 600px), (orientation: landscape)',
+    ),
+  );
+  assert.match(mobile, /\.sandbox-handle \{ display: flex;/);
+  assert.match(
+    mobile,
+    /\.sandbox-panel\[data-collapsed='true'\] > :not\(\.sandbox-handle\) \{ display: none; \}/,
+  );
+  const beforeAnyQuery = compactStyles.slice(
+    0,
+    compactStyles.indexOf('@media'),
+  );
+  assert.doesNotMatch(beforeAnyQuery, /data-collapsed/);
+});
+
 void test('outer structures stand at their published distances once distances are to scale', () => {
   const scene = readFileSync(
     new URL('../components/solar-scene.tsx', import.meta.url),
