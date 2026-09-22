@@ -30,7 +30,11 @@ import {
   orbitState,
   surfaceGravity,
 } from '../lib/sandbox/derived.ts';
-import { createRun, MAX_STEPS_PER_ADVANCE } from '../lib/sandbox/run.ts';
+import {
+  createRun,
+  MAX_STEPS_PER_ADVANCE,
+  type SandboxRun,
+} from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
 import { smoothed } from '../components/sandbox-system.ts';
 import { Vector3 } from 'three';
@@ -663,6 +667,47 @@ void test('a body a run created carries a readable label as soon as it appears',
   assert.ok(fact);
   assert.equal(fact.name, '流浪者');
   assert.equal(run.liveSpec('drifter')!.name, '流浪者');
+});
+
+void test('a faster rate takes more steps, never longer ones', () => {
+  // Asking for far more time than a frame can carry does not buy a longer
+  // step: the request is capped at the work ceiling and the run falls behind
+  // the chosen rate instead.
+  const hurried = createRun(forkScenario(J2000_MS));
+  const first = hurried.step;
+  hurried.advance(10_000);
+  assert.ok(hurried.throttled);
+  assert.equal(hurried.steps, MAX_STEPS_PER_ADVANCE);
+  assert.ok(hurried.elapsedDays <= MAX_STEPS_PER_ADVANCE * first + 1e-9);
+  // The step follows the tightest pair in the system as it moves, never how
+  // much time the caller asked for — so two runs at the same elapsed time
+  // agree on it however differently they were driven there, and accuracy per
+  // simulated day does not depend on the chosen rate.
+  // Same span, wildly different helpings, same state to the last bit.
+  const dribbled = createRun(forkScenario(J2000_MS));
+  const gulped = createRun(forkScenario(J2000_MS));
+  // Both stop on the last whole step at or before the same instant, so the
+  // comparison is between two runs at one moment rather than two moments.
+  const driveTo = (run: SandboxRun, target: number, chunk: number) => {
+    for (let guard = 0; guard < 4000; guard += 1) {
+      const before = run.elapsedDays;
+      run.advance(Math.min(chunk, target - before));
+      if (run.elapsedDays === before) return;
+    }
+  };
+  driveTo(dribbled, 400, 0.7);
+  driveTo(gulped, 400, 80);
+  assert.equal(gulped.elapsedDays, dribbled.elapsedDays);
+  assert.equal(gulped.step, dribbled.step);
+  for (const body of dribbled.variant) {
+    const other = gulped.variant.find((item) => item.id === body.id)!;
+    assert.ok(
+      Math.hypot(
+        ...body.position.map((value, axis) => value - other.position[axis]),
+      ) < 1e-12,
+      body.id,
+    );
+  }
 });
 
 void test('a long run keeps enough trail resolution to describe a path', () => {

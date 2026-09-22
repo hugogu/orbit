@@ -145,6 +145,11 @@ export default function SandboxPanel({
           <dd>{(run.energyDrift * 100).toExponential(1)}%</dd>
         </div>
       </dl>
+      {run.throttled && (
+        <p className="sandbox-note">
+          {t('设备跟不上所选流速，演算正在放慢。步长不变，精度不受影响。')}
+        </p>
+      )}
 
       <div className="sandbox-toggles">
         <label>
