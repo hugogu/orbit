@@ -70,12 +70,12 @@ export function groundBodyDisplay(
   vector: Vector3,
   scale: ScaleMode,
   realSizes: boolean,
+  radiusKm = groundBodies.find((body) => body.id === id)!.radius,
 ) {
-  const radiusKm = groundBodies.find((body) => body.id === id)!.radius;
-  const distanceAU = vector.length();
+  const distanceAU = Math.max(vector.length(), 1e-12);
   const distance =
     scale === 'distance' ? distanceAU * 100 : 100 + Math.log1p(distanceAU) * 20;
-  const physicalAngle = Math.asin(radiusKm / (distanceAU * AU_KM));
+  const physicalAngle = Math.asin(Math.min(1, radiusKm / (distanceAU * AU_KM)));
   const angle = realSizes
     ? physicalAngle
     : Math.max(
@@ -84,6 +84,6 @@ export function groundBodyDisplay(
       );
   return {
     position: vector.clone().setLength(distance),
-    radius: distance * Math.sin(angle),
+    radius: distance * Math.sin(Math.min(Math.PI / 2, angle)),
   };
 }

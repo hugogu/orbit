@@ -4561,7 +4561,7 @@ button:disabled {
      so it scrolls inside itself rather than sliding beneath the tools, which
      a longer translation such as サンドボックス would otherwise still do. */
   .topbar [data-slot='tabs'] {
-    right: 96px;
+    right: 134px;
     max-width: none;
   }
   .view-tabs {
@@ -4590,7 +4590,7 @@ button:disabled {
     order: -1;
   }
   .topbar [data-slot='tabs'] {
-    max-width: calc(100% - 106px);
+    max-width: calc(100% - 144px);
   }
   .view-tabs {
     height: 40px !important;

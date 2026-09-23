@@ -40,6 +40,8 @@
 
 ## Review guardrails
 
+- Ground view during a sandbox run reads `lib/sandbox/ground-sky.ts`: subtract the simulated spherical Earth's surface observer from `run.variant`, use each surviving body's live radius, and include added bodies. The horizon starts at the fork's Earth orientation and integrates physical spin through the run's timed spin edits, never `spinStep`'s capped visual rotation. Entering ground and returning to overview preserve the run and playback; a missing Earth exits ground explicitly. Put the sandbox group inside `spaceScene` so its ghosts and trails cannot leak into ground sky, and never draw the ephemeris Moon there.
+
 - Keep UI labels and metadata strings separate. Do not reuse labels containing decorative separators (`/`, `·`, arrows, or similar) in document titles, Open Graph, Twitter, or JSON-LD names.
 - Treat metadata as untrusted output: escape `<`, `>`, and `&` when serializing JSON-LD into a `<script>` element, and test that a value containing `</script>` cannot close the block.
 - For App Router/Vinext, use route-group root layouts when routes need different document languages. Each root layout must directly render exactly one `<html>` and `<body>` and import global CSS; shared providers may remain child components. Keep async `params` Promise types for the current Vinext/Next 15+ contract.

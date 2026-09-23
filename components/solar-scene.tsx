@@ -376,7 +376,7 @@ export default function SolarScene({
         );
     }
     const sandboxSystem = createSandboxSystem(
-      scene,
+      spaceScene,
       roots,
       meshes,
       labelLayer,
@@ -829,6 +829,7 @@ export default function SolarScene({
           height,
           s.labels,
           translate,
+          sandbox?.run ?? null,
         );
         renderer.render(scene, groundSky.camera);
         starField.project(

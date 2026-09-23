@@ -15,6 +15,9 @@ import {
 } from '../lib/device-attitude';
 import { DAY_MS, J2000_MS } from '../lib/simulation-time';
 import { astroBodies } from '../lib/ephemeris';
+import { createRun } from '../lib/sandbox/run';
+import { forkScenario } from '../lib/sandbox/scenario';
+import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
 
 const radians = Math.PI / 180;
 const site = {
@@ -316,6 +319,71 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
       sky.camera.getWorldDirection(new THREE.Vector3()).distanceTo(before),
       0,
     );
+    const run = createRun(forkScenario(J2000_MS + days * DAY_MS));
+    const sandboxUpdate = () =>
+      sky.update(
+        days,
+        site,
+        'illustrated',
+        false,
+        null,
+        390,
+        844,
+        true,
+        translator('en'),
+        run,
+      );
+    sandboxUpdate();
+    const drawnIds = () =>
+      scene.children[0].children
+        .map((object) => object.userData.id)
+        .filter(Boolean);
+    assert.ok(!drawnIds().includes('moon-moon'));
+    const sunMesh = () =>
+      scene.children[0].children.find(
+        (object) => object.userData.id === 'sun',
+      )!;
+    close(
+      sunMesh()
+        .position.clone()
+        .normalize()
+        .distanceTo(
+          sandboxGroundSnapshot(run, site)!
+            .bodies[0].vector.clone()
+            .normalize(),
+        ),
+      0,
+    );
+    run.apply({
+      kind: 'add',
+      body: {
+        ...run.liveSpec('venus')!,
+        id: 'visitor',
+        sourceId: null,
+        name: 'Visitor',
+        position: [2, 0, 0],
+      },
+    });
+    sandboxUpdate();
+    assert.ok(drawnIds().includes('visitor'));
+    assert.ok(elements.some((element) => element.textContent === 'Visitor'));
+    const visitor = scene.children[0].children.find(
+      (object) => object.userData.id === 'visitor',
+    ) as THREE.Mesh;
+    let disposed = false;
+    (visitor.material as THREE.Material).addEventListener('dispose', () => {
+      disposed = true;
+    });
+    run.apply({ kind: 'remove', id: 'visitor' });
+    sandboxUpdate();
+    assert.ok(!drawnIds().includes('visitor'));
+    assert.ok(disposed);
+    run.apply({ kind: 'remove', id: 'earth' });
+    sandboxUpdate();
+    assert.equal(scene.children[0].visible, false);
+    update(null);
+    assert.equal(scene.children[0].visible, true);
+    assert.ok(drawnIds().includes('moon-moon'));
     sky.setActive(false);
     assert.equal(scene.children[0].visible, false);
     sky.dispose();

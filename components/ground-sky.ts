@@ -10,6 +10,8 @@ import type { ScaleMode } from '../lib/solar';
 import type { SkyLocation } from '../lib/sky-events';
 import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
+import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
+import type { SandboxRun } from '../lib/sandbox/run';
 
 /** Shares the star field and loaded textures, but never the illustrative orbit geometry. */
 export function createGroundSky(
@@ -33,7 +35,12 @@ export function createGroundSky(
     return { element, place: createSceneLabel(element) };
   };
   const sphere = new THREE.SphereGeometry(1, 64, 40);
-  const entries = groundBodies.map((body) => {
+  const makeEntry = (body: {
+    id: string;
+    name: string;
+    color: string;
+    sourceId: string | null;
+  }) => {
     const material = new THREE.MeshBasicMaterial({
       color: body.id === 'sun' ? 0xffffff : body.color,
     });
@@ -59,6 +66,7 @@ export function createGroundSky(
       material.customProgramCacheKey = () => 'ground-sunlight';
     }
     const mesh = new THREE.Mesh(sphere, material);
+    mesh.userData.id = body.id;
     root.add(mesh);
     return {
       body,
@@ -67,7 +75,10 @@ export function createGroundSky(
       vector: new THREE.Vector3(),
       ...makeLabel('planet-label ground-body-label'),
     };
-  });
+  };
+  const entries = groundBodies.map((body) =>
+    makeEntry({ ...body, sourceId: body.id }),
+  );
   const groundMaterial = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthTest: false,
@@ -100,6 +111,7 @@ export function createGroundSky(
     altitude = 15,
     lastKey = '',
     lastLocale: Translate | null = null;
+  let lastSandbox: SandboxRun | null = null;
   let frame = horizonFrame(0, {
     latitude: 0,
     longitude: 0,
@@ -191,32 +203,79 @@ export function createGroundSky(
       height: number,
       showLabels: boolean,
       translate: Translate,
+      sandbox: SandboxRun | null = null,
     ) {
       // A 100 ms sky snapshot is far below sensor accuracy, including the Moon.
       const key = `${Math.floor(days * 864000)}:${location.latitude}:${location.longitude}:${location.height}:${scale}:${realSizes}`;
-      if (key !== lastKey) {
-        frame = horizonFrame(days, location);
-        const sun = groundBodyVector('sun', days, location);
-        for (const entry of entries) {
-          entry.vector.copy(groundBodyVector(entry.body.id, days, location));
+      if (sandbox || key !== lastKey || sandbox !== lastSandbox) {
+        const snapshot = sandbox
+          ? sandboxGroundSnapshot(sandbox, location)
+          : null;
+        if (sandbox && !snapshot) {
+          root.visible = false;
+          labels.hidden = true;
+          return;
+        }
+        root.visible = active;
+        labels.hidden = !active;
+        frame = snapshot?.frame ?? horizonFrame(days, location);
+        const skyBodies =
+          snapshot?.bodies ??
+          groundBodies.map((body) => ({
+            ...body,
+            sourceId: body.id,
+            vector: groundBodyVector(body.id, days, location),
+            orientation: bodyOrientation(body.id, days),
+          }));
+        const present = new Set(skyBodies.map((body) => body.id));
+        for (let index = entries.length - 1; index >= 0; index--) {
+          const entry = entries[index];
+          if (present.has(entry.body.id)) continue;
+          entry.mesh.removeFromParent();
+          entry.mesh.material.dispose();
+          entry.element.remove();
+          entries.splice(index, 1);
+        }
+        const sun = skyBodies.find((body) => body.id === 'sun')?.vector;
+        for (const body of skyBodies) {
+          let entry = entries.find((item) => item.body.id === body.id);
+          if (!entry) {
+            entry = makeEntry(body);
+            entries.push(entry);
+          }
+          if (
+            entry.body.name !== body.name ||
+            lastLocale !== translate ||
+            !entry.element.textContent
+          )
+            entry.element.textContent = translate(body.name);
+          entry.body = body;
+          if (!entry.mesh.material.map)
+            entry.mesh.material.color.set(
+              body.id === 'sun' ? '#ffffff' : body.color,
+            );
+          entry.vector.copy(body.vector);
           const display = groundBodyDisplay(
             entry.body.id,
             entry.vector,
             scale,
             realSizes,
+            body.radius,
           );
           entry.mesh.position.copy(display.position);
           entry.mesh.scale.setScalar(display.radius);
-          entry.mesh.quaternion.copy(bodyOrientation(entry.body.id, days));
-          entry.sunDirection.value.copy(sun).sub(entry.vector).normalize();
+          entry.mesh.quaternion.copy(body.orientation);
+          if (sun)
+            entry.sunDirection.value.copy(sun).sub(entry.vector).normalize();
+          else entry.sunDirection.value.set(0, 0, 0);
         }
         groundMaterial.uniforms.up.value.copy(frame.up);
         lastKey = key;
+        lastSandbox = sandbox;
       }
       for (const entry of entries) {
-        const material = sources.get(entry.body.id)?.material as
-          | THREE.MeshStandardMaterial
-          | undefined;
+        const material = sources.get(entry.body.sourceId ?? entry.body.id)
+          ?.material as THREE.MeshStandardMaterial | undefined;
         if (material?.map && material.map !== entry.mesh.material.map) {
           entry.mesh.material.map = material.map;
           entry.mesh.material.color.set(0xffffff);

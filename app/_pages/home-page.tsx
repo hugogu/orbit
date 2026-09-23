@@ -283,12 +283,12 @@ export default function Home() {
   const displayScale = ground
     ? scale
     : sandboxScenario
-    ? 'distance'
-    : isComet
       ? 'distance'
-      : tab === 'structure'
-        ? 'illustrated'
-        : scale;
+      : isComet
+        ? 'distance'
+        : tab === 'structure'
+          ? 'illustrated'
+          : scale;
   useEffect(() => {
     queueMicrotask(() => {
       const now = Date.now();
@@ -444,6 +444,16 @@ export default function Home() {
     () => (sandboxScenario ? createRun(sandboxScenario) : null),
     [sandboxScenario],
   );
+  const sandboxEarthAvailable =
+    !sandboxRun || sandboxRun.variant.some((point) => point.id === 'earth');
+  useEffect(() => {
+    if (!ground || sandboxEarthAvailable) return;
+    queueMicrotask(() => {
+      setGround(false);
+      locationTicket.current++;
+      setNotice('沙盘中的地球已被移除或吞并，已返回总览。');
+    });
+  }, [ground, sandboxEarthAvailable]);
   // The scene advances the run on the render clock; the readouts and the
   // elapsed clock sample it a few times a second instead of re-rendering the
   // page on every frame.
@@ -608,6 +618,7 @@ export default function Home() {
   }, []);
   const home = useCallback(() => {
     setGround(false);
+    setSandboxScenario(null);
     locationTicket.current++;
     if (window.location.hash)
       window.history.pushState(
@@ -624,17 +635,27 @@ export default function Home() {
     setReset((v) => v + 1);
     setTop(false);
   }, []);
+  const overview = useCallback(() => {
+    if (!sandboxRun) return home();
+    setGround(false);
+    locationTicket.current++;
+    setSelected(null);
+    setTop(false);
+    setView(205);
+    setReset((value) => value + 1);
+  }, [home, sandboxRun]);
   function enterGround() {
     if (ground) {
       setGround(false);
       locationTicket.current++;
       return;
     }
+    if (!sandboxEarthAvailable) return;
     setGround(true);
     setTop(false);
     setEclipseView(false);
     setCameraPose(null);
-    seekTime(Date.now(), true);
+    if (!sandboxRun) seekTime(Date.now(), true);
     // Permission APIs must be called during this tap, before any location await.
     if (window.matchMedia('(pointer: coarse)').matches) void sensor.start();
     if (observerLocationSource !== 'manual') {
@@ -648,7 +669,13 @@ export default function Home() {
               ...observerLocation,
               ...fix,
               utcOffset:
-                zoneOffsetHours(Date.now(), zone) ?? observerLocation.utcOffset,
+                zoneOffsetHours(
+                  sandboxRun
+                    ? sandboxRun.scenario.epoch +
+                        sandboxRun.elapsedDays * DAY_MS
+                    : Date.now(),
+                  zone,
+                ) ?? observerLocation.utcOffset,
             },
             'device',
           );
@@ -729,14 +756,15 @@ export default function Home() {
         return;
       if (e.code === 'Space') {
         e.preventDefault();
-        setPaused((v) => !v);
+        if (sandboxRun) setSandboxPaused((v) => !v);
+        else setPaused((v) => !v);
       }
-      if (e.key.toLowerCase() === 'r') home();
+      if (e.key.toLowerCase() === 'r') overview();
       if (e.key === 'Escape') setSelected(null);
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [home]);
+  }, [overview, sandboxRun]);
   useEffect(() => {
     const f = () => setFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', f);
@@ -754,6 +782,7 @@ export default function Home() {
   }
   function goRegion(id: string) {
     setGround(false);
+    setSandboxScenario(null);
     locationTicket.current++;
     const r = regions.find((r) => r.id === id)!;
     setRegion(id);
@@ -1103,12 +1132,17 @@ export default function Home() {
       <div className="vignette" />
       {ground && (
         <GroundControls
-          time={time ?? epoch ?? J2000_MS}
+          time={
+            sandboxRun
+              ? sandboxRun.scenario.epoch + sandboxRun.elapsedDays * DAY_MS
+              : (time ?? epoch ?? J2000_MS)
+          }
           location={observerLocation}
           source={observerLocationSource}
           onChange={updateObserverLocation}
           sensor={sensor}
-          live={!paused && speed === 0 && nearNow}
+          live={!sandboxRun && !paused && speed === 0 && nearNow}
+          sandbox={!!sandboxRun}
         />
       )}
       {!ground && eclipse.event && time !== null && (
@@ -1147,6 +1181,10 @@ export default function Home() {
             setTab(String(v));
             if (v === 'structure') goRegion(region);
             else if (v === 'explore') home();
+            else {
+              setGround(false);
+              locationTicket.current++;
+            }
           }}
         >
           <TabsList className="view-tabs">
@@ -1396,7 +1434,7 @@ export default function Home() {
             className="icon-button"
             aria-label={t('返回总览')}
             title={t('返回总览 · R')}
-            onClick={home}
+            onClick={overview}
           >
             <LocateFixed />
           </button>
@@ -1415,7 +1453,12 @@ export default function Home() {
           <button
             className={`icon-button ${ground ? 'active' : ''}`}
             aria-label={t('地表观星')}
-            title={t('地表观星')}
+            title={t(
+              sandboxEarthAvailable
+                ? '地表观星'
+                : '沙盘中没有地球，无法进入地表视角。',
+            )}
+            disabled={!sandboxEarthAvailable}
             aria-pressed={ground}
             onClick={enterGround}
           >
