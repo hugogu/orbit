@@ -116,10 +116,13 @@ export default function SolarScene({
 }) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null),
-    latest = useRef({ state, onSelect, onTime, onAssetStatus, sceneRef });
+    latest = useRef({ state, onSelect, onTime, onAssetStatus, sceneRef }),
+    wakeScene = useRef<() => void>(() => {});
   const [error, setError] = useState('');
   useEffect(() => {
     latest.current = { state, onSelect, onTime, onAssetStatus, sceneRef };
+    // A change on the page is a change on screen, and the scene may be asleep.
+    wakeScene.current();
   }, [state, onSelect, onTime, onAssetStatus, sceneRef]);
   useEffect(() => {
     const container = host.current!;
@@ -499,6 +502,28 @@ export default function SolarScene({
     };
     renderer.domElement.addEventListener('pointerdown', onDown);
     renderer.domElement.addEventListener('pointerup', onUp);
+    // A still scene sleeps between a few frames a second instead of asking for
+    // every display frame. Paused, with the camera at rest and nothing on the
+    // page changed, every frame paints the same picture, and asking for one at
+    // display rate kept the renderer and the GPU busy for nothing even when
+    // little was drawn. Anything that moves the picture — the clock, a drag, a
+    // key, a camera flight, a change on the page, a resize — wakes it at once;
+    // the slow beat still catches what arrives on its own, such as a texture
+    // that has finished loading.
+    const IDLE_FRAME_MS = 250;
+    /** How long full rate outlasts the last sign of movement. */
+    const WAKE_MS = 600;
+    let awakeUntil = 0,
+      lastState: SceneState | null = null,
+      sleeping: ReturnType<typeof setTimeout> | undefined;
+    const wake = () => {
+      awakeUntil = performance.now() + WAKE_MS;
+      if (sleeping === undefined) return;
+      clearTimeout(sleeping);
+      sleeping = undefined;
+      frame = requestAnimationFrame(animate);
+    };
+    wakeScene.current = wake;
     const onKey = (e: KeyboardEvent) => {
       if (
         e.target instanceof HTMLElement &&
@@ -506,6 +531,7 @@ export default function SolarScene({
           e.target.closest('[role="dialog"]'))
       )
         return;
+      wake();
       const step = camera.position.distanceTo(controls.target) * 0.04;
       const offset = camera.position.clone().sub(controls.target);
       const right = new THREE.Vector3()
@@ -537,6 +563,7 @@ export default function SolarScene({
     let width = 0,
       height = 0;
     const resize = () => {
+      wake();
       width = container.clientWidth;
       height = container.clientHeight;
       renderer.setSize(width, height);
@@ -591,10 +618,13 @@ export default function SolarScene({
       desired = new THREE.Vector3(),
       poseOffset = new THREE.Spherical();
     controls.addEventListener('start', () => {
+      wake();
       transition = 0;
       following = null;
       sharedPose = null;
     });
+    // Damping keeps the camera gliding after a drag ends, one change a frame.
+    controls.addEventListener('change', wake);
     const compactScreen = window.matchMedia(
       '(max-width: 700px), (pointer: coarse)',
     );
@@ -610,10 +640,20 @@ export default function SolarScene({
     ).connection;
     let lastLocale: Locale | undefined;
     const animate = (now: number) => {
-      frame = requestAnimationFrame(animate);
       const s = latest.current.state,
         dt = Math.min((now - previous) / 1000, 0.08);
       previous = now;
+      if (s !== lastState) {
+        lastState = s;
+        awakeUntil = now + WAKE_MS;
+      }
+      const running = s.sandbox ? !s.sandbox.paused : !s.paused;
+      if (!running && transition <= 0 && now > awakeUntil)
+        sleeping = setTimeout(() => {
+          sleeping = undefined;
+          frame = requestAnimationFrame(animate);
+        }, IDLE_FRAME_MS);
+      else frame = requestAnimationFrame(animate);
       if (document.hidden) return;
       const compactEclipse =
         s.eclipseView && !!s.activeEclipse && width <= 600 && height < 720;
@@ -1103,11 +1143,17 @@ export default function SolarScene({
     const onContextLost = (e: Event) => {
       e.preventDefault();
       cancelAnimationFrame(frame);
+      clearTimeout(sleeping);
+      // Forgotten as well as cleared, so a later drag cannot start it again.
+      sleeping = undefined;
       setError('3D 图形连接已中断，请刷新页面恢复。');
     };
     renderer.domElement.addEventListener('webglcontextlost', onContextLost);
     return () => {
       cancelAnimationFrame(frame);
+      clearTimeout(sleeping);
+      sleeping = undefined;
+      wakeScene.current = () => {};
       if (handle) handle.current = null;
       if (texturePreload.kind === 'idle')
         idleWindow.cancelIdleCallback?.(texturePreload.handle);

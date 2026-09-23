@@ -1325,3 +1325,16 @@ void test('the panel starts a shared run over clean; the timeline only rewinds i
   assert.match(page, /forkScenario\(current\.epoch\)/);
   assert.match(page, /pathname \+ withoutShareView\(search\) \+ hash/);
 });
+
+void test('a still scene sleeps between frames', () => {
+  const scene = readFileSync(
+    new URL('../components/solar-scene.tsx', import.meta.url),
+    'utf8',
+  );
+  // Still, the scene waits for a slow beat instead of every display frame,
+  // and anything that moves the picture wakes it at once.
+  assert.match(scene, /sleeping = setTimeout\(/);
+  assert.match(scene, /controls\.addEventListener\('change', wake\)/);
+  assert.match(scene, /wakeScene\.current\(\);/);
+  assert.match(scene, /const resize = \(\) => \{\s*wake\(\);/);
+});
