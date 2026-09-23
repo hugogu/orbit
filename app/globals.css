@@ -4383,8 +4383,8 @@ button:disabled {
   }
   /* A sheet this tall hides the sky it is describing, so it folds away to a
      grab bar. Swiping it down leaves the scene clear; swiping up or tapping
-     brings the controls back, with the elapsed time staying legible either
-     way so a folded run still shows it is running. */
+     brings the controls back. Folded, it still names the latest event; the
+     elapsed time is already on the timeline below. */
   .sandbox-handle {
     display: flex;
     align-items: center;

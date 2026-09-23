@@ -42,7 +42,8 @@ import { scenePosition } from '../lib/sandbox/display.ts';
 import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import { createSandboxSystem } from '../components/sandbox-system.ts';
 import { isOrbitLine } from '../components/orbit-line.ts';
-import SandboxPanel from '../components/sandbox-panel.tsx';
+import SandboxPanel, { foldedLabel } from '../components/sandbox-panel.tsx';
+import { translator } from '../lib/i18n/index.ts';
 import SandboxBodyEditor from '../components/sandbox-body-editor.tsx';
 import { I18nProvider } from '../lib/i18n/provider.tsx';
 import { createElement } from 'react';
@@ -1209,4 +1210,12 @@ void test('the viewer’s own changes join the event log, before and after', () 
   assert.match(log, /Jupiter: Mass changed/);
   assert.match(log, /Pluto was removed/);
   assert.match(log, /Nova joined the system/);
+});
+
+void test('the folded sheet names what matters, not the time it repeats', () => {
+  const t = translator('en');
+  const run = createRun(forkScenario(J2000_MS));
+  assert.equal(foldedLabel(run, t), 'Nothing has changed yet');
+  run.apply({ kind: 'remove', id: 'pluto' });
+  assert.equal(foldedLabel(run, t), 'Pluto was removed');
 });

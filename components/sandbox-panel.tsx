@@ -26,6 +26,11 @@ const MAX_LOGGED_EVENTS = 100;
 /** How near the foot of the log still counts as following it. */
 const FOLLOW_SLACK_PX = 8;
 
+function bodyName(run: SandboxRun, id: string, t: Translate) {
+  const spec = run.facts.find((body) => body.id === id);
+  return spec ? t(spec.name) : id;
+}
+
 function eventLabel(
   event: SandboxEvent,
   name: (id: string) => string,
@@ -51,6 +56,18 @@ function eventLabel(
         field: t(fieldSpec(event.field).label),
       });
   }
+}
+
+/**
+ * What the folded sheet still says: the latest thing that happened. The
+ * elapsed time is not repeated here, since the timeline right below the sheet
+ * already shows it.
+ */
+export function foldedLabel(run: SandboxRun, t: Translate) {
+  const latest = run.events.at(-1);
+  return latest
+    ? eventLabel(latest, (id) => bodyName(run, id, t), t)
+    : t('暂未发生变化');
 }
 
 /** The before and after of a changed value, read the way the editor shows it. */
@@ -147,7 +164,7 @@ export default function SandboxPanel({
       }}
     >
       <span className="sandbox-grip" aria-hidden="true" />
-      {collapsed && run && <em>{elapsedLabel(run.elapsedDays, t)}</em>}
+      {collapsed && run && <em>{foldedLabel(run, t)}</em>}
     </button>
   );
 
@@ -167,10 +184,7 @@ export default function SandboxPanel({
       </div>
     );
 
-  const label = (id: string) => {
-    const spec = run.facts.find((body) => body.id === id);
-    return spec ? t(spec.name) : id;
-  };
+  const label = (id: string) => bodyName(run, id, t);
   const history = run.events.slice(-MAX_LOGGED_EVENTS);
   // Where the shown part of the log starts within the whole: the log only
   // ever grows, so an entry's place in it is a key that never changes hands.
