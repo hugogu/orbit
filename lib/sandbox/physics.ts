@@ -238,12 +238,14 @@ export function mergeContacts(points: PointMass[]): Collision[] {
     for (let j = i + 1; j < points.length; j++) {
       const a = points[i];
       const b = points[j];
-      const distance = Math.hypot(
-        a.position[0] - b.position[0],
-        a.position[1] - b.position[1],
-        a.position[2] - b.position[2],
-      );
-      if (distance > a.radius + b.radius) continue;
+      // Compared squared: this runs over every pair on every step, and a
+      // square root per pair to answer a yes-or-no question was most of its
+      // cost.
+      const dx = a.position[0] - b.position[0];
+      const dy = a.position[1] - b.position[1];
+      const dz = a.position[2] - b.position[2];
+      const reach = a.radius + b.radius;
+      if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
       // The heavier body keeps its identity so the scene can carry on
       // following whatever the viewer had selected in the usual case.
       const [keep, lost] = a.mass >= b.mass ? [a, b] : [b, a];
