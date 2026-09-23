@@ -40,3 +40,22 @@ export function elapsedLabel(days: number, t: Translate) {
       })
     : t('{{value}} 天', { value: days.toFixed(1) });
 }
+
+/**
+ * A parameter reading as the panel shows it: plain digits in the locale's own
+ * style, switching to exponent form where digits would stop being readable.
+ */
+export function formatReading(
+  value: number,
+  precision: number,
+  locale: string,
+) {
+  if (!Number.isFinite(value)) return '—';
+  const size = Math.abs(value);
+  if (size !== 0 && (size >= 1e6 || size < 1e-3))
+    return value.toExponential(Math.min(precision, 3));
+  return value.toLocaleString(locale, {
+    maximumFractionDigits: precision,
+    minimumFractionDigits: 0,
+  });
+}

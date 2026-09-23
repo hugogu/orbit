@@ -23,20 +23,10 @@ import { spinIsSlowed } from '@/lib/sandbox/display';
 import { auToKm, kmToAu } from '@/lib/sandbox/scenario';
 import { SOLAR_MASS_KG } from '@/lib/sandbox/physics';
 import type { SandboxRun } from '@/lib/sandbox/run';
+import { formatReading as format } from '@/lib/sandbox/view';
 
 /** Slider steps across a field's whole range. */
 const STEPS = 1000;
-
-function format(value: number, precision: number, locale: string) {
-  if (!Number.isFinite(value)) return '—';
-  const size = Math.abs(value);
-  if (size !== 0 && (size >= 1e6 || size < 1e-3))
-    return value.toExponential(Math.min(precision, 3));
-  return value.toLocaleString(locale, {
-    maximumFractionDigits: precision,
-    minimumFractionDigits: 0,
-  });
-}
 
 export default function SandboxBodyEditor({
   run,
