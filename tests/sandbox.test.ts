@@ -36,7 +36,8 @@ import {
   type SandboxRun,
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
-import { smoothed } from '../components/sandbox-system.ts';
+import { scenePosition } from '../lib/sandbox/display.ts';
+import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import SandboxPanel from '../components/sandbox-panel.tsx';
 import { I18nProvider } from '../lib/i18n/provider.tsx';
 import { createElement } from 'react';
@@ -149,11 +150,11 @@ void test('the baseline tracks the untouched system while edits move the variant
   const changed = run.variant.find((body) => body.id === 'jupiter')!;
   const original = run.baseline.find((body) => body.id === 'jupiter')!;
   assert.ok(changed.mass > original.mass * 40);
-  // Both systems are sampled on the same steps, so any separation between the
-  // two paths is the edit's doing and nothing else.
-  assert.equal(
-    run.trails.get('earth')!.length,
-    run.baselineTrails.get('earth')!.length,
+  // Both paths are kept from the same fork, so any separation between them is
+  // the edit's doing and nothing else.
+  assert.deepEqual(
+    run.trails.get('earth')![0],
+    run.baselineTrails.get('earth')![0],
   );
   const drift = Math.hypot(
     ...run.variant
@@ -714,28 +715,111 @@ void test('a faster rate takes more steps, never longer ones', () => {
   }
 });
 
-void test('a long run keeps enough trail resolution to describe a path', () => {
+void test('a trail keeps the whole run, a point for each turn of the path', () => {
   const run = createRun(forkScenario(J2000_MS));
+  const start = new Map(
+    run.variant.map((body) => [body.id, [...body.position]]),
+  );
   while (run.elapsedDays < 365.25 * 60) run.advance(300);
+  // Sixty years on, every trail still begins where its body set out.
+  for (const [id, trail] of run.trails)
+    assert.deepEqual(trail[0], start.get(id), id);
+  // Recorded on the turn rather than the clock, a lap gets about the same
+  // points whether it takes three months or twelve years, and a slow lap no
+  // longer costs thousands.
+  const laps = { mercury: 87.969, earth: 365.256, jupiter: 4332.59 };
+  for (const [id, period] of Object.entries(laps)) {
+    const perLap = run.trails.get(id)!.length / (run.elapsedDays / period);
+    assert.ok(perLap > 20 && perLap < 28, `${id}: ${perLap.toFixed(1)} a lap`);
+  }
+  assert.ok(run.trails.get('neptune')!.length < 20);
+  // Measured on the path itself: the angle between one recorded chord and the
+  // next. Recorded on the clock, sixty years once took Mercury past 180
+  // degrees between points, where a ribbon stops describing an orbit.
   const mercury = run.trails.get('mercury')!;
-  const sun = run.trails.get('sun')!;
-  assert.ok(mercury.length > 100);
-  assert.equal(mercury.length, sun.length);
-  // Measured where it matters: the angle the innermost body sweeps between
-  // one recorded point and the next. Left to halve forever, sixty years of
-  // running took this past 180 degrees, where a ribbon stops describing an
-  // orbit and starts inventing one.
-  const swept: number[] = [];
-  for (let index = 1; index < mercury.length; index++) {
-    const before = mercury[index - 1].map((v, a) => v - sun[index - 1][a]);
-    const after = mercury[index].map((v, a) => v - sun[index][a]);
+  const turns: number[] = [];
+  for (let index = 2; index < mercury.length; index++) {
+    const before = mercury[index - 1].map((v, a) => v - mercury[index - 2][a]);
+    const after = mercury[index].map((v, a) => v - mercury[index - 1][a]);
     const dot = before.reduce((sum, v, a) => sum + v * after[a], 0);
     const cosine = dot / (Math.hypot(...before) * Math.hypot(...after));
-    swept.push((Math.acos(Math.min(1, Math.max(-1, cosine))) * 180) / Math.PI);
+    turns.push((Math.acos(Math.min(1, Math.max(-1, cosine))) * 180) / Math.PI);
   }
-  const sorted = [...swept].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)];
-  assert.ok(median < 30, `${median.toFixed(1)}° between samples is too coarse`);
+  assert.ok(Math.max(...turns) < 20, `${Math.max(...turns).toFixed(1)}°`);
+});
+
+void test('a change pins the trail on both sides of it', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  while (run.elapsedDays < 100) run.advance(20);
+  const before = [...run.variant.find((body) => body.id === 'mars')!.position];
+  run.apply({ kind: 'set', id: 'mars', field: 'distance', value: 3 });
+  const after = [...run.variant.find((body) => body.id === 'mars')!.position];
+  // The jump is drawn from where the body was to where it was put, rather
+  // than smoothed across from wherever the last point happened to fall.
+  assert.deepEqual(run.trails.get('mars')!.slice(-2), [before, after]);
+});
+
+void test('a trail drawn a piece at a time is the whole curve, seams and all', () => {
+  // A wobbling spiral, recorded a point at a time with the body moving on
+  // between recordings, the way a run feeds the scene.
+  const path: Vec3[] = Array.from({ length: 40 }, (_, index) => {
+    const angle = index * 0.3;
+    const radius = 2 + 0.05 * index;
+    return [
+      radius * Math.cos(angle),
+      0.1 * Math.sin(3 * angle),
+      -radius * Math.sin(angle),
+    ];
+  });
+  const trail = createSandboxTrail(0xffffff, 1);
+  const drawnPoints = () => {
+    const geometry = trail.line.geometry;
+    const start = geometry.getAttribute('instanceStart');
+    const end = geometry.getAttribute('instanceEnd');
+    const count = trail.line.visible ? geometry.instanceCount : 0;
+    const points: Vector3[] = [];
+    for (let index = 0; index < count; index++) {
+      const from = new Vector3(
+        start.getX(index),
+        start.getY(index),
+        start.getZ(index),
+      );
+      // Every segment starts where the one before it ended: no seams.
+      if (index > 0) assert.ok(from.distanceTo(points.at(-1)!) < 1e-6);
+      else points.push(from);
+      points.push(
+        new Vector3(end.getX(index), end.getY(index), end.getZ(index)),
+      );
+    }
+    return points;
+  };
+  const expect = (history: Vec3[], head: Vec3 | null) => {
+    const whole = smoothed(
+      [...history, ...(head ? [head] : [])].map(
+        (point) => new Vector3(...scenePosition(point)),
+      ),
+    );
+    const drawn = drawnPoints();
+    assert.equal(drawn.length, whole.length < 2 ? 0 : whole.length);
+    // Written as 32-bit floats, so equal to within their precision.
+    drawn.forEach((point, index) =>
+      assert.ok(point.distanceTo(whole[index]) < 1e-4 * (1 + point.length())),
+    );
+  };
+  const history: Vec3[] = [];
+  for (const [index, point] of path.entries()) {
+    history.push(point);
+    trail.draw(history, point);
+    expect(history, null);
+    const next = path[index + 1] ?? point;
+    const head = point.map((value, axis) => (value + next[axis]) / 2) as Vec3;
+    trail.draw(history, head);
+    expect(history, index + 1 < path.length ? head : null);
+  }
+  // A trail that lost its oldest part is drawn again from its new start.
+  history.splice(0, 12);
+  trail.draw(history, history.at(-1)!);
+  expect(history, null);
 });
 
 void test('each body coming loose is announced once, at its own moment', () => {

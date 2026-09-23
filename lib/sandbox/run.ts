@@ -41,21 +41,25 @@ import {
 
 /** Work ceiling for one advance, so a fast rate can never stall a frame. */
 export const MAX_STEPS_PER_ADVANCE = 600;
-/** Trail points kept per body before the history is compacted. */
-export const TRAIL_CAPACITY = 900;
 /**
- * Coarsest a trail may be sampled, as a multiple of the integration step.
+ * How far a body's heading turns between the points its trail records.
  *
- * Halving a trail to keep the whole run in bounded memory costs resolution,
- * and the cost falls hardest on the fastest body: after sixty years Mercury
- * was being recorded under twice per orbit, where the ribbon no longer
- * describes a path at all. Resolution stops giving way here — about twenty
- * points per orbit for the tightest pair — and the oldest history gives way
- * instead, so what is drawn is always something the body actually did.
+ * Recording on the clock gave every body the same points per year: what the
+ * fastest needs, and thousands a lap for Neptune. Holding the whole run that
+ * way meant dropping the start of it after a few years. Recording on the turn
+ * gives every lap about the same two dozen points whether it takes three
+ * months or a century and a half — densest at perihelion, where an orbit
+ * bends hardest, and next to none on a straight run — so the whole run fits.
  */
-export const MAX_SAMPLE_STEPS = 24;
-/** Fraction of the capacity kept when the oldest history is dropped. */
+export const TRAIL_TURN_DEGREES = 15;
+/**
+ * Points one trail may hold, a ceiling for pathological runs rather than a
+ * window: Mercury, the tightest lap in the real system, reaches it after about
+ * two centuries. Past it the oldest quarter gives way.
+ */
+export const TRAIL_LIMIT = 20_000;
 const TRAIL_KEEP = 0.75;
+const TURN_COSINE_SQUARED = Math.cos((TRAIL_TURN_DEGREES * Math.PI) / 180) ** 2;
 /**
  * Whole steps between step reviews. Recomputing the step on a fixed count
  * rather than every frame is what keeps a replay on the same footing as the
@@ -148,6 +152,8 @@ type Track = {
   points: PointMass[];
   acceleration: Vec3[];
   trails: Map<string, Vec3[]>;
+  /** Each body's velocity when its trail last recorded a point. */
+  headings: Map<string, Vec3>;
   escaped: Set<string>;
 };
 
@@ -155,54 +161,49 @@ function createTrack(specs: SandboxBodySpec[]): Track {
   const points = specs.map(toPointMass);
   const acceleration = zeroVectors(points.length);
   accelerations(points, acceleration);
-  return {
+  const track: Track = {
     points,
     acceleration,
-    trails: new Map(points.map((point) => [point.id, [[...point.position]]])),
+    trails: new Map(),
+    headings: new Map(),
     escaped: new Set(),
   };
+  for (const point of points) mark(track, point);
+  return track;
+}
+
+/** Records where a body is now and measures its next turn from here. */
+function mark(track: Track, point: PointMass) {
+  track.headings.set(point.id, [...point.velocity]);
+  const trail = track.trails.get(point.id);
+  if (!trail) {
+    track.trails.set(point.id, [[...point.position]]);
+    return;
+  }
+  // A point on top of the last one is a span of no length, which leaves the
+  // drawn curve without a direction to take.
+  const last = trail[trail.length - 1];
+  if (point.position.every((value, axis) => value === last[axis])) return;
+  trail.push([...point.position]);
+  if (trail.length > TRAIL_LIMIT)
+    trail.splice(0, trail.length - Math.round(TRAIL_LIMIT * TRAIL_KEEP));
+}
+
+/** Whether a body's heading has turned far enough to be worth a point. */
+function turned(from: Vec3, to: Vec3) {
+  const was = from[0] * from[0] + from[1] * from[1] + from[2] * from[2];
+  const now = to[0] * to[0] + to[1] * to[1] + to[2] * to[2];
+  // Setting off from rest starts a heading; coming to rest ends one.
+  if (was === 0 || now === 0) return was === 0 && now > 0;
+  const dot = from[0] * to[0] + from[1] * to[1] + from[2] * to[2];
+  return dot <= 0 || dot * dot < TURN_COSINE_SQUARED * was * now;
 }
 
 function record(track: Track) {
   for (const point of track.points) {
-    const trail = track.trails.get(point.id);
-    if (trail) trail.push([...point.position]);
-    else track.trails.set(point.id, [[...point.position]]);
+    const heading = track.headings.get(point.id);
+    if (!heading || turned(heading, point.velocity)) mark(track, point);
   }
-}
-
-/**
- * Keeps the trails inside their capacity, and returns the sampling interval
- * to carry on with.
- *
- * While the sampling is still finer than the floor, halving every trail buys
- * room and keeps the whole run on screen. Once it reaches the floor the
- * ribbon stops losing detail and starts losing its oldest end instead.
- */
-function compact(tracks: Track[], sampleEvery: number, coarsest: number) {
-  const longest = Math.max(
-    0,
-    ...tracks.flatMap((track) =>
-      [...track.trails.values()].map((trail) => trail.length),
-    ),
-  );
-  if (longest < TRAIL_CAPACITY) return sampleEvery;
-  if (sampleEvery * 2 <= coarsest) {
-    for (const track of tracks)
-      for (const [id, trail] of track.trails)
-        track.trails.set(
-          id,
-          trail.filter(
-            (_, index) => index % 2 === 0 || index === trail.length - 1,
-          ),
-        );
-    return sampleEvery * 2;
-  }
-  const keep = Math.round(TRAIL_CAPACITY * TRAIL_KEEP);
-  for (const track of tracks)
-    for (const trail of track.trails.values())
-      if (trail.length > keep) trail.splice(0, trail.length - keep);
-  return sampleEvery;
 }
 
 export function createRun(scenario: SandboxScenario): SandboxRun {
@@ -214,8 +215,6 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
   // A run that starts from a single body, or from nothing, has no interactions
   // to measure drift against; reporting zero beats reporting a ratio over zero.
   let scale = Math.abs(referenceEnergy) > 0 ? Math.abs(referenceEnergy) : 1;
-  let sampleEvery = suggestedStep(variant.points) * 8;
-  let sampledAt = 0;
   // Changes not yet reached, soonest first.
   const queue = [...scenario.changes].sort((a, b) => a.at - b.at);
   let step = suggestedStep(variant.points);
@@ -310,16 +309,8 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
         // one would otherwise pass clean through it between contact tests.
         collide(variant, run);
         collide(baseline, null);
-        if (run.elapsedDays - sampledAt >= sampleEvery) {
-          record(variant);
-          record(baseline);
-          sampledAt = run.elapsedDays;
-          sampleEvery = compact(
-            [variant, baseline],
-            sampleEvery,
-            step * MAX_SAMPLE_STEPS,
-          );
-        }
+        record(variant);
+        record(baseline);
       }
       watchEscapes(variant, run);
       run.step = step;
@@ -346,12 +337,14 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
         run.events.push({ kind: 'remove', id: change.id, day: change.at });
       }
       variant.trails.delete(change.id);
+      variant.headings.delete(change.id);
     } else if (change.kind === 'add') {
       if (!facts.some((item) => item.id === change.body.id))
         facts.push(toFacts(change.body));
       if (!variant.points.some((p) => p.id === change.body.id)) {
-        variant.points.push(toPointMass(change.body));
-        variant.trails.set(change.body.id, [[...change.body.position]]);
+        const point = toPointMass(change.body);
+        variant.points.push(point);
+        mark(variant, point);
         run.events.push({ kind: 'add', id: change.body.id, day: change.at });
       }
     } else {
@@ -384,12 +377,17 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
           to,
           day: change.at,
         });
+      // The trail is pinned on both sides of the change, so a path that bends
+      // or a body that jumps does so at the moment it did, not somewhere on a
+      // curve smoothed across it.
+      mark(variant, point);
       fact.spinDays = next.spinDays;
       fact.tilt = next.tilt;
       point.mass = next.mass / SOLAR_MASS_KG;
       point.radius = kmToAu(next.radius);
       point.position = [...next.position];
       point.velocity = [...next.velocity];
+      mark(variant, point);
     }
     variant.acceleration = zeroVectors(variant.points.length);
     accelerations(variant.points, variant.acceleration);
@@ -410,6 +408,11 @@ function collide(track: Track, run: SandboxRun | null) {
   accelerations(track.points, track.acceleration);
   for (const collision of collisions) {
     track.trails.delete(collision.absorbed);
+    track.headings.delete(collision.absorbed);
+    // A merge moves the survivor to the pair's centre of mass and changes its
+    // course, so its trail takes a point there.
+    const survivor = track.points.find((item) => item.id === collision.into);
+    if (survivor) mark(track, survivor);
     run?.events.push({
       kind: 'collision',
       absorbed: collision.absorbed,

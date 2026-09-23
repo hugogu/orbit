@@ -10,57 +10,14 @@ import {
   createOrbitLine,
   setOrbitLinePoints,
   setOrbitLineWidth,
-  type OrbitLine,
 } from './orbit-line';
+import { createSandboxTrail, type SandboxTrail } from './sandbox-trail';
 import { createSceneLabel } from './scene-label';
 
 /** How dim the untouched system is drawn against the edited one. */
 const GHOST_OPACITY = 0.42;
 const GHOST_TRAIL_BRIGHTNESS = 0.32;
 const VARIANT_TRAIL_BRIGHTNESS = 0.85;
-/** Points a smoothed trail may be drawn with, whatever it was sampled at. */
-const TRAIL_RENDER_CAP = 1800;
-
-/**
- * A trail is recorded on a time grid, so the faster a body goes round the
- * fewer points its orbit gets — a long run leaves the innermost planet with a
- * couple of dozen per lap. Joining those straight draws an ellipse as a
- * polygon. A centripetal Catmull-Rom spline follows the arc the samples
- * actually lie on, which is the curve the body travelled; it is uneven
- * spacing this handles, not missing physics, so it cannot invent a path the
- * samples do not support.
- */
-export function smoothed(points: THREE.Vector3[]) {
-  if (points.length < 3) return points;
-  // A trail has nothing beyond its oldest point or beyond the body itself,
-  // and asked to guess a tangent there the spline swings wide: a bulge thirty
-  // times the interior error sat on the first and last segment. Each end gets
-  // a reflected neighbour to take its tangent from, and the curve is then
-  // read back over the real span alone so those extensions are never drawn.
-  // Continued to second order (3a − 3b + c), which carries the curvature on
-  // past the end. A straight continuation sits on the chord's extension, off
-  // the arc, and hands the end segment the very tangent error it was meant
-  // to remove.
-  const continued = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) =>
-    a.clone().sub(b).multiplyScalar(3).add(c);
-  const last = points.length - 1;
-  const control = [
-    continued(points[0], points[1], points[2]),
-    ...points,
-    continued(points[last], points[last - 1], points[last - 2]),
-  ];
-  const curve = new THREE.CatmullRomCurve3(control, false, 'centripetal');
-  // `getPoint` walks control points, not arc length, so the real span is
-  // simply the segments between the two phantoms.
-  const segments = control.length - 1;
-  const from = 1 / segments;
-  const span = (segments - 2) / segments;
-  const count = Math.min(TRAIL_RENDER_CAP, (points.length - 1) * 4);
-  return Array.from({ length: count + 1 }, (_, index) =>
-    curve.getPoint(from + (span * index) / count),
-  );
-}
-
 export type SandboxSceneOptions = {
   /** Draw the untouched fork alongside the edited system. */
   baseline: boolean;
@@ -106,11 +63,8 @@ export function createSandboxSystem(
   scene.add(group);
   const extras = new Map<string, Extra>();
   const ghosts = new Map<string, THREE.Mesh>();
-  const trails = new Map<string, OrbitLine>();
-  const ghostTrails = new Map<string, OrbitLine>();
-  // One segment from a body to where it would have been: the clearest way to
-  // read "the same instant" off the screen rather than off the panel.
-  const drawn = new Map<OrbitLine, number>();
+  const trails = new Map<string, SandboxTrail>();
+  const ghostTrails = new Map<string, SandboxTrail>();
   // Accumulated display rotation per body. Integrating the rate frame by
   // frame keeps the turn continuous when the viewer changes the time rate,
   // which reading an angle straight off elapsed time could not do once the
@@ -118,6 +72,8 @@ export function createSandboxSystem(
   const phase = new Map<string, number>();
   const spinRotation = new THREE.Quaternion();
   const tiltRotation = new THREE.Quaternion();
+  // One segment from a body to where it would have been: the clearest way to
+  // read "the same instant" off the screen rather than off the panel.
   const connector = createOrbitLine(0xffffff, 0.75);
   connector.visible = false;
   group.add(connector);
@@ -170,18 +126,18 @@ export function createSandboxSystem(
     return entry;
   }
 
-  function lineFor(
-    store: Map<string, OrbitLine>,
+  function trailFor(
+    store: Map<string, SandboxTrail>,
     id: string,
     color: THREE.ColorRepresentation,
     brightness: number,
   ) {
     const existing = store.get(id);
     if (existing) return existing;
-    const line = createOrbitLine(color, brightness);
-    group.add(line);
-    store.set(id, line);
-    return line;
+    const trail = createSandboxTrail(color, brightness);
+    group.add(trail.line);
+    store.set(id, trail);
+    return trail;
   }
 
   function ghostFor(run: SandboxRun, point: PointMass) {
@@ -202,30 +158,18 @@ export function createSandboxSystem(
   }
 
   function drawTrail(
-    line: OrbitLine,
+    trail: SandboxTrail,
     history: Vec3[] | undefined,
     head: Vec3,
     show: boolean,
     width: number,
   ) {
-    line.visible = show;
-    if (!show || !history || history.length < 2) {
-      line.visible = false;
+    if (!show || !history?.length) {
+      trail.line.visible = false;
       return;
     }
-    setOrbitLineWidth(line, width);
-    // The history only grows a point every sampling interval, so rebuilding
-    // the geometry on every frame would rewrite hundreds of unchanged
-    // vertices for nothing. The head trails the body by at most one sample.
-    if (drawn.get(line) === history.length) return;
-    drawn.set(line, history.length);
-    setOrbitLinePoints(
-      line,
-      smoothed([
-        ...history.map((point) => new THREE.Vector3(...scenePosition(point))),
-        new THREE.Vector3(...scenePosition(head)),
-      ]),
-    );
+    setOrbitLineWidth(trail.line, width);
+    trail.draw(history, head);
   }
 
   function place(
@@ -308,7 +252,7 @@ export function createSandboxSystem(
           place(extra.root, point, run, options.realSizes);
         }
         drawTrail(
-          lineFor(
+          trailFor(
             trails,
             point.id,
             colorOf(run, point.id),
@@ -320,7 +264,8 @@ export function createSandboxSystem(
           options.lineWidth,
         );
       }
-      for (const [id, line] of trails) if (!live.has(id)) line.visible = false;
+      for (const [id, trail] of trails)
+        if (!live.has(id)) trail.line.visible = false;
 
       const shadowed = new Set(run.baseline.map((point) => point.id));
       for (const point of run.baseline) {
@@ -328,7 +273,7 @@ export function createSandboxSystem(
         ghost.visible = options.baseline;
         place(ghost, point, run, options.realSizes);
         drawTrail(
-          lineFor(
+          trailFor(
             ghostTrails,
             point.id,
             colorOf(run, point.id),
@@ -342,8 +287,8 @@ export function createSandboxSystem(
       }
       for (const [id, ghost] of ghosts)
         if (!shadowed.has(id)) ghost.visible = false;
-      for (const [id, line] of ghostTrails)
-        if (!shadowed.has(id)) line.visible = false;
+      for (const [id, trail] of ghostTrails)
+        if (!shadowed.has(id)) trail.line.visible = false;
 
       const focus = options.selected;
       const here = run.variant.find((point) => point.id === focus);
