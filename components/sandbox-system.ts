@@ -157,19 +157,32 @@ export function createSandboxSystem(
     return mesh;
   }
 
-  function drawTrail(
-    trail: SandboxTrail,
-    history: Vec3[] | undefined,
-    head: Vec3,
+  /**
+   * Draws every trail a system has kept. A body absorbed in a merge is gone
+   * from the system but not from its trails, whose end is where it hit, so its
+   * trail is drawn on to that point rather than on to a body.
+   */
+  function drawTrails(
+    run: SandboxRun,
+    store: Map<string, SandboxTrail>,
+    histories: Map<string, Vec3[]>,
+    points: PointMass[],
+    brightness: number,
     show: boolean,
     width: number,
   ) {
-    if (!show || !history?.length) {
-      trail.line.visible = false;
-      return;
+    const heads = new Map(points.map((point) => [point.id, point.position]));
+    for (const [id, history] of histories) {
+      const trail = trailFor(store, id, colorOf(run, id), brightness);
+      if (!show || history.length === 0) {
+        trail.line.visible = false;
+        continue;
+      }
+      setOrbitLineWidth(trail.line, width);
+      trail.draw(history, heads.get(id) ?? history[history.length - 1]);
     }
-    setOrbitLineWidth(trail.line, width);
-    trail.draw(history, head);
+    for (const [id, trail] of store)
+      if (!histories.has(id)) trail.line.visible = false;
   }
 
   function place(
@@ -251,44 +264,34 @@ export function createSandboxSystem(
           orient(extra.mesh, point.id, run, options);
           place(extra.root, point, run, options.realSizes);
         }
-        drawTrail(
-          trailFor(
-            trails,
-            point.id,
-            colorOf(run, point.id),
-            VARIANT_TRAIL_BRIGHTNESS,
-          ),
-          run.trails.get(point.id),
-          point.position,
-          options.trails,
-          options.lineWidth,
-        );
       }
-      for (const [id, trail] of trails)
-        if (!live.has(id)) trail.line.visible = false;
+      drawTrails(
+        run,
+        trails,
+        run.trails,
+        run.variant,
+        VARIANT_TRAIL_BRIGHTNESS,
+        options.trails,
+        options.lineWidth,
+      );
 
       const shadowed = new Set(run.baseline.map((point) => point.id));
       for (const point of run.baseline) {
         const ghost = ghostFor(run, point);
         ghost.visible = options.baseline;
         place(ghost, point, run, options.realSizes);
-        drawTrail(
-          trailFor(
-            ghostTrails,
-            point.id,
-            colorOf(run, point.id),
-            GHOST_TRAIL_BRIGHTNESS,
-          ),
-          run.baselineTrails.get(point.id),
-          point.position,
-          options.baseline && options.trails,
-          options.lineWidth,
-        );
       }
       for (const [id, ghost] of ghosts)
         if (!shadowed.has(id)) ghost.visible = false;
-      for (const [id, trail] of ghostTrails)
-        if (!shadowed.has(id)) trail.line.visible = false;
+      drawTrails(
+        run,
+        ghostTrails,
+        run.baselineTrails,
+        run.baseline,
+        GHOST_TRAIL_BRIGHTNESS,
+        options.baseline && options.trails,
+        options.lineWidth,
+      );
 
       const focus = options.selected;
       const here = run.variant.find((point) => point.id === focus);

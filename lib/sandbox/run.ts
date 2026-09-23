@@ -174,21 +174,23 @@ function createTrack(specs: SandboxBodySpec[]): Track {
   return track;
 }
 
+/** Adds a point to a trail, unless the body has not left the last one. */
+function extend(trail: Vec3[], position: Vec3) {
+  // A point on top of the last one is a span of no length, which leaves the
+  // drawn curve without a direction to take.
+  const last = trail[trail.length - 1];
+  if (position.every((value, axis) => value === last[axis])) return;
+  trail.push([...position]);
+  if (trail.length > TRAIL_LIMIT)
+    trail.splice(0, trail.length - Math.round(TRAIL_LIMIT * TRAIL_KEEP));
+}
+
 /** Records where a body is now and measures its next turn from here. */
 function mark(track: Track, point: PointMass) {
   track.headings.set(point.id, [...point.velocity]);
   const trail = track.trails.get(point.id);
-  if (!trail) {
-    track.trails.set(point.id, [[...point.position]]);
-    return;
-  }
-  // A point on top of the last one is a span of no length, which leaves the
-  // drawn curve without a direction to take.
-  const last = trail[trail.length - 1];
-  if (point.position.every((value, axis) => value === last[axis])) return;
-  trail.push([...point.position]);
-  if (trail.length > TRAIL_LIMIT)
-    trail.splice(0, trail.length - Math.round(TRAIL_LIMIT * TRAIL_KEEP));
+  if (trail) extend(trail, point.position);
+  else track.trails.set(point.id, [[...point.position]]);
 }
 
 /** Whether a body's heading has turned far enough to be worth a point. */
@@ -410,7 +412,10 @@ function collide(track: Track, run: SandboxRun | null) {
   track.acceleration = zeroVectors(track.points.length);
   accelerations(track.points, track.acceleration);
   for (const collision of collisions) {
-    track.trails.delete(collision.absorbed);
+    // The absorbed body's trail stays, run on to where the two touched: the
+    // path that led into the merge is the only record of how it happened.
+    const trail = track.trails.get(collision.absorbed);
+    if (trail) extend(trail, collision.position);
     track.headings.delete(collision.absorbed);
     // A merge moves the survivor to the pair's centre of mass and changes its
     // course, so its trail takes a point there.

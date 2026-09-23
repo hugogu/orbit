@@ -38,11 +38,13 @@ import {
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
 import { scenePosition } from '../lib/sandbox/display.ts';
 import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
+import { createSandboxSystem } from '../components/sandbox-system.ts';
+import { isOrbitLine } from '../components/orbit-line.ts';
 import SandboxPanel from '../components/sandbox-panel.tsx';
 import { I18nProvider } from '../lib/i18n/provider.tsx';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Vector3 } from 'three';
+import { Group, Scene, Vector3 } from 'three';
 import {
   catalogueDefaults,
   centralBody,
@@ -213,7 +215,9 @@ void test('touching bodies merge, conserving mass and momentum', () => {
   ];
   const before = barycenter(points);
   const collisions = mergeContacts(points);
-  assert.deepEqual(collisions, [{ absorbed: 'b', into: 'a' }]);
+  assert.deepEqual(collisions, [
+    { absorbed: 'b', into: 'a', position: [radius * 1.5, 0, 0] },
+  ]);
   assert.equal(points.length, 1);
   assert.ok(Math.abs(points[0].mass - 4e-6) < 1e-18);
   const after = barycenter(points);
@@ -927,6 +931,40 @@ void test('a merge adds the absorbed body’s mass and keeps the momentum', () =
   // The panel reads mass from the run, so the gain is what the editor shows.
   assert.ok(run.liveSpec('sun')!.mass > 1.9e30);
   assert.equal(run.liveSpec('earth'), null);
+  // Earth's trail outlives it, running on to where it touched the Sun, so
+  // the run still shows how the merge came about.
+  const trail = run.trails.get('earth')!;
+  const contact = Math.hypot(
+    ...trail.at(-1)!.map((value, axis) => value - sun.position[axis]),
+  );
+  assert.ok(contact <= sun.radius * 1.01, `${contact} AU from the Sun`);
+
+  // And the scene draws it, though there is no body left to draw it on to.
+  const scene = new Scene();
+  const system = createSandboxSystem(
+    scene,
+    new Map(run.facts.map((body) => [body.id, new Group()])),
+    new Map(),
+    { appendChild: () => {} } as unknown as HTMLElement,
+    () => {},
+  );
+  system.setVisible(true);
+  system.update(run, {
+    baseline: false,
+    trails: true,
+    realSizes: false,
+    selected: null,
+    labels: false,
+    lineWidth: 1,
+    seconds: 0,
+    daysPerSecond: 20,
+    translate: (key) => key,
+  });
+  const drawn: unknown[] = [];
+  scene.traverse((object) => {
+    if (isOrbitLine(object) && object.visible) drawn.push(object);
+  });
+  assert.equal(drawn.length, run.trails.size);
 });
 
 void test('smoothing a coarse trail follows the arc rather than inventing one', () => {

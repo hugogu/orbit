@@ -198,7 +198,12 @@ export function barycenter(points: readonly PointMass[]): Barycenter {
   return { position, velocity, mass };
 }
 
-export type Collision = { absorbed: string; into: string };
+export type Collision = {
+  absorbed: string;
+  into: string;
+  /** Where the absorbed body was when the two touched. */
+  position: Vec3;
+};
 
 /**
  * Merges every touching pair, conserving mass and momentum and combining
@@ -221,6 +226,7 @@ export function mergeContacts(points: PointMass[]): Collision[] {
       // The heavier body keeps its identity so the scene can carry on
       // following whatever the viewer had selected in the usual case.
       const [keep, lost] = a.mass >= b.mass ? [a, b] : [b, a];
+      const contact: Vec3 = [...lost.position];
       const mass = keep.mass + lost.mass;
       for (let axis = 0; axis < 3; axis++) {
         keep.position[axis] =
@@ -232,7 +238,7 @@ export function mergeContacts(points: PointMass[]): Collision[] {
       }
       keep.radius = Math.cbrt(keep.radius ** 3 + lost.radius ** 3);
       keep.mass = mass;
-      collisions.push({ absorbed: lost.id, into: keep.id });
+      collisions.push({ absorbed: lost.id, into: keep.id, position: contact });
       points.splice(points.indexOf(lost), 1);
       return [...collisions, ...mergeContacts(points)];
     }
