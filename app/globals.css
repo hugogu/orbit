@@ -1845,6 +1845,24 @@ button:disabled {
 .sandbox-actions .ghost-action {
   white-space: nowrap;
 }
+/* The form's two actions are one choice, so they share one size, and every
+   control in the form shares one height. The panel's call-to-action style
+   made 添加 a full-width banner beside a small 取消. */
+.sandbox-add .sandbox-actions {
+  margin-top: 2px;
+}
+.sandbox-add .sandbox-actions > * {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 7px 10px;
+}
+.sandbox-add .primary-action {
+  justify-content: center;
+  width: auto;
+  border: 1px solid transparent;
+  font-size: 13px;
+  white-space: nowrap;
+}
 .ghost-action {
   flex: 1;
   display: flex;
@@ -1948,12 +1966,25 @@ button:disabled {
   border: 1px solid #ffffff14;
   border-radius: 8px;
 }
-.sandbox-add label {
+.sandbox-add label,
+.sandbox-add-field {
   display: flex;
   flex-direction: column;
   gap: 5px;
   font-size: 12px;
   color: #8b94a4;
+}
+.sandbox-add-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+/* Floated so it lays out as the group's first row, like a label's text,
+   instead of sitting on the fieldset's border. */
+.sandbox-add-field legend {
+  float: left;
+  padding: 0;
 }
 .sandbox-add input {
   border: 1px solid #343c49;
@@ -1969,12 +2000,39 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
 }
+/* The unit sits inside its field, the way the editor's readings carry theirs. */
+.sandbox-unit {
+  position: relative;
+  display: block;
+}
+.sandbox-unit input {
+  padding-right: 34px;
+}
+.sandbox-unit em {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  transform: translateY(-50%);
+  font-style: normal;
+  font-size: 12px;
+  color: #6c7787;
+  pointer-events: none;
+}
+/* Typed, not stepped: the browser's spinner would sit on top of the unit. */
+.sandbox-add input[type='number'] {
+  appearance: textfield;
+}
+.sandbox-add input[type='number']::-webkit-inner-spin-button,
+.sandbox-add input[type='number']::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
 .sandbox-templates button {
   border: 1px solid #ffffff1a;
   border-radius: 6px;
   background: transparent;
   color: #8b94a4;
-  padding: 6px 4px;
+  padding: 8px 4px;
   font-size: 12px;
 }
 .sandbox-templates button.active {

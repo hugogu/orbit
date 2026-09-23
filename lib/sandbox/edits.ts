@@ -310,6 +310,18 @@ export type NewBody = {
   color: string;
 };
 
+/**
+ * A distance typed into the add form, held to the range the distance field
+ * allows. Anything that is not a positive number falls back to `fallback`.
+ */
+export function typedDistance(text: string, fallback = 3) {
+  const value = Number(text);
+  const { min, max } = fieldSpec('distance');
+  return Number.isFinite(value) && value > 0
+    ? Math.min(max, Math.max(min, value))
+    : fallback;
+}
+
 /** Angle, in radians, that keeps an added body clear of the last one added. */
 const ADDED_SPACING = 2.399963;
 

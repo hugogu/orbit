@@ -59,6 +59,7 @@ import {
   fieldValue,
   readField,
   sandboxFields,
+  typedDistance,
   writeField,
   type Centre,
   type SandboxField,
@@ -468,6 +469,18 @@ void test('the central body offers no distance or speed of its own', () => {
   const earth = editor('earth');
   assert.match(earth, /Orbital speed/);
   assert.match(earth, /Distance from the Sun/);
+});
+
+void test('a typed distance is held to the range the field allows', () => {
+  assert.equal(typedDistance('3'), 3);
+  assert.equal(typedDistance('0.5'), 0.5);
+  // Out of range is brought back into it, not passed on to the physics.
+  assert.equal(typedDistance('500'), fieldSpec('distance').max);
+  assert.equal(typedDistance('0.001'), fieldSpec('distance').min);
+  // Blank, zero, negative or not a number at all is no distance: a negative
+  // one used to place the body on the far side with a runaway speed.
+  for (const text of ['', '0', '-5', 'abc'])
+    assert.equal(typedDistance(text), 3);
 });
 
 void test('scaling a body’s speed keeps its heading', () => {

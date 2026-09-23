@@ -4,7 +4,7 @@ import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
 import type { SandboxEvent, SandboxRun } from '../lib/sandbox/run';
-import { fieldSpec, type NewBody } from '../lib/sandbox/edits';
+import { fieldSpec, typedDistance, type NewBody } from '../lib/sandbox/edits';
 import { elapsedLabel, formatReading } from '../lib/sandbox/view';
 
 /** Starting points for a body the viewer creates, in kilograms and kilometres. */
@@ -246,7 +246,29 @@ export default function SandboxPanel({
           ))}
         </ul>
         {adding ? (
-          <div className="sandbox-add">
+          // A real form, so Enter adds the body. The panel keeps its own
+          // limits, so the browser's validation bubbles stay out of it.
+          <form
+            className="sandbox-add"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault();
+              const chosen = templates[template];
+              onAdd({
+                name: name.trim() || t('新天体'),
+                mass: chosen.mass,
+                radius: chosen.radius,
+                distance: typedDistance(distance),
+                color:
+                  palette[
+                    run.facts.filter((body) => !body.sourceId).length %
+                      palette.length
+                  ],
+              });
+              setAdding(false);
+              setName('');
+            }}
+          >
             <label>
               {t('名称')}
               <input
@@ -255,55 +277,50 @@ export default function SandboxPanel({
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
-            <div className="sandbox-templates">
-              {templates.map((item, index) => (
-                <button
-                  key={item.label}
-                  className={index === template ? 'active' : ''}
-                  onClick={() => setTemplate(index)}
-                >
-                  {t(item.label)}
-                </button>
-              ))}
-            </div>
+            <fieldset className="sandbox-add-field">
+              <legend>{t('类型')}</legend>
+              <div className="sandbox-templates">
+                {templates.map((item, index) => (
+                  <button
+                    type="button"
+                    key={item.label}
+                    className={index === template ? 'active' : ''}
+                    aria-pressed={index === template}
+                    onClick={() => setTemplate(index)}
+                  >
+                    {t(item.label)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             <label>
               {t('日心距离')}
-              <input
-                type="number"
-                min="0.02"
-                max="120"
-                step="0.1"
-                value={distance}
-                onChange={(event) => setDistance(event.target.value)}
-              />
+              <span className="sandbox-unit">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={fieldSpec('distance').min}
+                  max={fieldSpec('distance').max}
+                  step="0.1"
+                  value={distance}
+                  onChange={(event) => setDistance(event.target.value)}
+                />
+                <em>{t('AU')}</em>
+              </span>
             </label>
             <div className="sandbox-actions">
-              <button
-                className="primary-action"
-                onClick={() => {
-                  const chosen = templates[template];
-                  onAdd({
-                    name: name.trim() || t('新天体'),
-                    mass: chosen.mass,
-                    radius: chosen.radius,
-                    distance: Number(distance) || 3,
-                    color:
-                      palette[
-                        run.facts.filter((body) => !body.sourceId).length %
-                          palette.length
-                      ],
-                  });
-                  setAdding(false);
-                  setName('');
-                }}
-              >
+              <button type="submit" className="primary-action">
                 {t('添加')}
               </button>
-              <button className="ghost-action" onClick={() => setAdding(false)}>
+              <button
+                type="button"
+                className="ghost-action"
+                onClick={() => setAdding(false)}
+              >
                 {t('取消')}
               </button>
             </div>
-          </div>
+          </form>
         ) : (
           <button className="ghost-action" onClick={() => setAdding(true)}>
             <Plus size={15} />
