@@ -19,6 +19,7 @@ export function createGroundSky(
   layer: HTMLElement,
   canvas: HTMLCanvasElement,
   sources: Map<string, THREE.Mesh>,
+  onChange: () => void = () => {},
 ) {
   const root = new THREE.Group();
   root.visible = false;
@@ -153,6 +154,7 @@ export function createGroundSky(
         15,
         100,
       );
+    onChange();
   };
   const up = (event: PointerEvent) => {
     pointers.delete(event.pointerId);
@@ -165,6 +167,7 @@ export function createGroundSky(
       15,
       100,
     );
+    onChange();
   };
   const key = (event: KeyboardEvent) => {
     if (!active || controlled || event.target !== canvas) return;
@@ -174,6 +177,7 @@ export function createGroundSky(
     else if (event.key === 'ArrowDown') altitude = Math.max(-89, altitude - 5);
     else return;
     event.preventDefault();
+    onChange();
   };
   canvas.addEventListener('pointerdown', down);
   canvas.addEventListener('pointermove', move);

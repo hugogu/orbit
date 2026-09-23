@@ -241,11 +241,13 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
       new THREE.SphereGeometry(),
       new THREE.MeshStandardMaterial({ map: texture }),
     );
+    let wakes = 0;
     const sky = createGroundSky(
       scene,
       element() as unknown as HTMLElement,
       canvas,
       new Map([['moon-moon', moon]]),
+      () => wakes++,
     );
     assert.equal(scene.children[0].visible, false);
     sky.setActive(true);
@@ -384,7 +386,33 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
     update(null);
     assert.equal(scene.children[0].visible, true);
     assert.ok(drawnIds().includes('moon-moon'));
+    const beforeInput = sky.camera.quaternion.clone();
+    canvas.dispatchEvent(
+      Object.assign(new Event('keydown'), { key: 'ArrowRight' }),
+    );
+    assert.equal(wakes, 1);
+    update(null);
+    assert.ok(beforeInput.angleTo(sky.camera.quaternion) > 0.01);
+    canvas.dispatchEvent(Object.assign(new Event('wheel'), { deltaY: 100 }));
+    assert.equal(wakes, 2);
+    canvas.dispatchEvent(
+      Object.assign(new Event('pointerdown'), {
+        pointerId: 1,
+        clientX: 0,
+        clientY: 0,
+      }),
+    );
+    canvas.dispatchEvent(
+      Object.assign(new Event('pointermove'), {
+        pointerId: 1,
+        clientX: 20,
+        clientY: 0,
+      }),
+    );
+    assert.equal(wakes, 3);
     sky.setActive(false);
+    canvas.dispatchEvent(Object.assign(new Event('wheel'), { deltaY: 100 }));
+    assert.equal(wakes, 3);
     assert.equal(scene.children[0].visible, false);
     sky.dispose();
     assert.equal(scene.children.length, 0);

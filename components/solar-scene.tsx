@@ -494,6 +494,7 @@ export default function SolarScene({
       skyLabelLayer,
       renderer.domElement,
       meshes,
+      () => wakeScene.current(),
     );
     const raycaster = new THREE.Raycaster(),
       pointer = new THREE.Vector2();
@@ -539,6 +540,13 @@ export default function SolarScene({
       frame = requestAnimationFrame(animate);
     };
     wakeScene.current = wake;
+    // Attitude arrives through a ref, without a React render to wake the scene.
+    const wakeGround = () => {
+      const s = latest.current.state;
+      if (s.ground && s.attitude.current) wake();
+    };
+    window.addEventListener('deviceorientation', wakeGround);
+    window.addEventListener('deviceorientationabsolute', wakeGround);
     const onKey = (e: KeyboardEvent) => {
       if (latest.current.state.ground) return;
       if (
@@ -1218,6 +1226,8 @@ export default function SolarScene({
       else window.clearTimeout(texturePreload.handle);
       observer.disconnect();
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('deviceorientation', wakeGround);
+      window.removeEventListener('deviceorientationabsolute', wakeGround);
       controls.dispose();
       sandboxSystem.dispose();
       eclipseSystem.dispose();
