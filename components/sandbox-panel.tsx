@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
@@ -21,6 +21,10 @@ const palette = ['#7fd4ff', '#ffb37f', '#b6ff9c', '#ff9cc7', '#d4b6ff'];
  * handle working from a keyboard as well as a finger.
  */
 const SWIPE_PX = 24;
+/** The most entries the event log holds; a wild run can produce far more. */
+const MAX_LOGGED_EVENTS = 100;
+/** How near the foot of the log still counts as following it. */
+const FOLLOW_SLACK_PX = 8;
 
 function eventLabel(
   event: SandboxEvent,
@@ -72,6 +76,24 @@ export default function SandboxPanel({
   // it; a wide screen has room for the whole panel and ignores it.
   const [collapsed, setCollapsed] = useState(false);
   const swipe = useRef({ from: 0, handled: false });
+  // The event list reads like any log: oldest first, each new entry at the
+  // foot. Listing newest first slid every row down by one whenever something
+  // happened, so nothing stayed still long enough to read. Now a row never
+  // moves once written, and the view follows the newest entry only while the
+  // viewer is already at the bottom — scrolling back to read an older one is
+  // not undone by the next event.
+  const log = useRef<HTMLUListElement>(null);
+  const following = useRef(true);
+  const eventCount = run?.events.length ?? 0;
+  // A new run starts a new log, followed from its first entry however far
+  // back the viewer had scrolled in the last one.
+  useEffect(() => {
+    following.current = true;
+  }, [run]);
+  useEffect(() => {
+    const list = log.current;
+    if (list && following.current) list.scrollTop = list.scrollHeight;
+  }, [eventCount]);
 
   const handle = (
     <button
@@ -122,7 +144,7 @@ export default function SandboxPanel({
     const spec = run.facts.find((body) => body.id === id);
     return spec ? t(spec.name) : id;
   };
-  const recent = run.events.slice(-4).reverse();
+  const history = run.events.slice(-MAX_LOGGED_EVENTS);
   // A body the run has absorbed is gone from the simulation but still listed
   // in the scenario it started from, so the list marks it rather than
   // silently dropping a row the viewer put there.
@@ -262,11 +284,19 @@ export default function SandboxPanel({
 
       <div className="sandbox-events">
         <h3>{t('最近事件')}</h3>
-        {recent.length === 0 ? (
+        {history.length === 0 ? (
           <p className="sandbox-quiet">{t('暂未发生变化')}</p>
         ) : (
-          <ul>
-            {recent.map((event) => (
+          <ul
+            ref={log}
+            onScroll={(event) => {
+              const list = event.currentTarget;
+              following.current =
+                list.scrollHeight - list.scrollTop - list.clientHeight <
+                FOLLOW_SLACK_PX;
+            }}
+          >
+            {history.map((event) => (
               <li
                 key={`${event.kind}-${event.day}-${
                   event.kind === 'escape' ? event.id : event.absorbed

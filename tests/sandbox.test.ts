@@ -37,6 +37,10 @@ import {
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
 import { smoothed } from '../components/sandbox-system.ts';
+import SandboxPanel from '../components/sandbox-panel.tsx';
+import { I18nProvider } from '../lib/i18n/provider.tsx';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { Vector3 } from 'three';
 import {
   catalogueDefaults,
@@ -810,4 +814,53 @@ void test('smoothing a coarse trail follows the arc rather than inventing one', 
   assert.ok(curve.at(-1)!.distanceTo(samples.at(-1)!) < 1e-9);
   // Too few points to interpolate are passed through untouched.
   assert.deepEqual(smoothed(samples.slice(0, 2)), samples.slice(0, 2));
+});
+
+void test('the event log lists every event oldest first, so rows never shift', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  const leaving = ['saturn', 'pluto', 'neptune', 'mars', 'uranus', 'venus'];
+  leaving.forEach((id, index) =>
+    run.events.push({ kind: 'escape', id, day: 400 + index * 90 }),
+  );
+  const noop = () => {};
+  const html = renderToStaticMarkup(
+    createElement(
+      I18nProvider,
+      { initialLocale: 'en' },
+      createElement(SandboxPanel, {
+        run,
+        selected: null,
+        baseline: true,
+        trails: true,
+        onEnter: noop,
+        onLeave: noop,
+        onRestart: noop,
+        onSelect: noop,
+        onRemove: noop,
+        onAdd: noop,
+        onBaselineChange: noop,
+        onTrailsChange: noop,
+      }),
+    ),
+  );
+  // All six are kept, not just the latest four, and in the order they
+  // happened: a new event is appended at the foot rather than pushing every
+  // earlier row down by one.
+  const log = html.slice(html.indexOf('sandbox-events'));
+  const positions = [
+    'Saturn',
+    'Pluto',
+    'Neptune',
+    'Mars',
+    'Uranus',
+    'Venus',
+  ].map((name) => log.indexOf(`${name} has left the system`));
+  assert.ok(
+    positions.every((at) => at >= 0),
+    positions.join(','),
+  );
+  assert.deepEqual(
+    [...positions].sort((a, b) => a - b),
+    positions,
+  );
 });

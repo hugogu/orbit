@@ -1790,12 +1790,19 @@ button:disabled {
 .sandbox-events ul {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 4px 0 0;
   display: flex;
   flex-direction: column;
   gap: 7px;
+  /* Four 18px rows and a sliver of a fifth, so the log shows it holds more
+     than it has room for. */
+  max-height: 106px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #394250 transparent;
 }
 .sandbox-events li {
+  flex: none;
   display: flex;
   justify-content: space-between;
   gap: 10px;
