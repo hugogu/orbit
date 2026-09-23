@@ -102,7 +102,11 @@ import {
   type NewBody,
   type SandboxField,
 } from '@/lib/sandbox/edits';
-import { forkScenario, type SandboxScenario } from '@/lib/sandbox/scenario';
+import {
+  forkScenario,
+  rewoundScenario,
+  type SandboxScenario,
+} from '@/lib/sandbox/scenario';
 import { decodeSandbox, encodeSandbox } from '@/lib/sandbox/share';
 import {
   elapsedLabel,
@@ -429,7 +433,10 @@ export default function Home() {
   }, [sandboxRun]);
   // The editor appears in the information column on a wide screen and in the
   // details sheet on a phone; both ask the same question.
-  const sandboxEditing = !!sandboxRun && !!selected;
+  // Only a body the run still carries: after starting over, a body the viewer
+  // added is gone, and one absorbed in a merge has nothing left to edit.
+  const sandboxEditing =
+    !!sandboxRun && !!selected && !!sandboxRun.liveSpec(selected);
   const enterSandbox = useCallback(() => {
     setSandboxScenario(forkScenario(time ?? Date.now()));
     setSandboxPaused(false);
@@ -452,17 +459,32 @@ export default function Home() {
     setReset((v) => v + 1);
     track('sandbox_leave', {});
   }, []);
-  // Replays the same recipe from the fork: a fresh object for the same epoch
-  // and changes, so the memo rebuilds the run and it retraces its own path.
-  const restartSandbox = useCallback(
+  // The timeline's reset only turns the clock back: the same recipe replays
+  // from the fork, so the run retraces its own path, changes and all.
+  const rewindSandbox = useCallback(
     () =>
       setSandboxScenario((current) =>
-        current
-          ? { epoch: current.epoch, changes: [...current.changes] }
-          : current,
+        current ? rewoundScenario(current) : current,
       ),
     [],
   );
+  // The panel's reset starts over from the same fork with nothing changed.
+  // Changes a shared link brought are part of the recipe, so replaying could
+  // never shed them. Once they are gone the link in the address bar no longer
+  // describes the run, so it is dropped like any consumed observation, or a
+  // reload would bring them straight back.
+  const startSandboxOver = useCallback(() => {
+    setSandboxScenario((current) =>
+      current ? forkScenario(current.epoch) : current,
+    );
+    const { pathname, search, hash } = window.location;
+    if (hasShareView(new URLSearchParams(search)))
+      window.history.replaceState(
+        null,
+        '',
+        pathname + withoutShareView(search) + hash,
+      );
+  }, []);
   const editSandboxBody = useCallback(
     (id: string, field: SandboxField, value: number) =>
       sandboxRun?.apply({ kind: 'set', id, field, value }),
@@ -1141,7 +1163,7 @@ export default function Home() {
               trails={sandboxTrails}
               onEnter={enterSandbox}
               onLeave={leaveSandbox}
-              onRestart={restartSandbox}
+              onRestart={startSandboxOver}
               onSelect={select}
               onRemove={removeSandboxBody}
               onAdd={addSandboxBody}
@@ -1394,9 +1416,9 @@ export default function Home() {
               </div>
               <button
                 className="now-button"
-                aria-label={t('重新开始')}
-                title={t('重新开始')}
-                onClick={restartSandbox}
+                aria-label={t('回到分叉时刻，保留所有改动')}
+                title={t('回到分叉时刻，保留所有改动')}
+                onClick={rewindSandbox}
               >
                 <RotateCcw size={16} />
                 <span>{t('重置')}</span>

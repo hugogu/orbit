@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { HelioVector } from 'astronomy-engine';
 import { sceneVector } from '../lib/ephemeris.ts';
@@ -23,6 +24,7 @@ import {
   kmToAu,
   sandboxSources,
   daysFromEpoch,
+  rewoundScenario,
   type SandboxBodySpec,
 } from '../lib/sandbox/scenario.ts';
 import {
@@ -1283,4 +1285,43 @@ void test('the folded sheet names what matters, not the time it repeats', () => 
   assert.equal(foldedLabel(run, null, t), 'Pluto was removed');
   // While a body is being edited, the fold names it instead.
   assert.equal(foldedLabel(run, 'mars', t), 'Mars');
+});
+
+void test('the panel starts a shared run over clean; the timeline only rewinds it', () => {
+  // A link that made Jupiter four hundred times heavier at the fork.
+  const epoch = Date.parse('2026-09-22T00:00:00Z');
+  const shared = decodeSandbox('s,0,jupiter,mass,8e29', epoch)!;
+  assert.equal(shared.changes.length, 1);
+  // Rewinding replays the recipe, the link's change included.
+  const rewound = rewoundScenario(shared);
+  assert.deepEqual(rewound, shared);
+  assert.notEqual(rewound, shared);
+  const replay = createRun(rewound);
+  replay.advance(1);
+  assert.ok(
+    replay.events.some(
+      (event) => event.kind === 'set' && event.id === 'jupiter',
+    ),
+  );
+  // What the replay goes on to change stays with the replay.
+  replay.apply({ kind: 'set', id: 'earth', field: 'mass', value: 9e25 });
+  assert.equal(shared.changes.length, 1);
+  // Starting over keeps only the moment: no change, no event, the real Jupiter.
+  const fresh = createRun(forkScenario(shared.epoch));
+  fresh.advance(1);
+  assert.deepEqual(fresh.scenario.changes, []);
+  assert.deepEqual(fresh.events, []);
+  assert.ok(fresh.liveSpec('jupiter')!.mass < 2e27);
+
+  // Each reset is wired to its own job, so they cannot quietly converge on
+  // the replay again, and starting over drops the link that brought the
+  // changes, or a reload would bring them back.
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(page, /onRestart=\{startSandboxOver\}/);
+  assert.match(page, /onClick=\{rewindSandbox\}/);
+  assert.match(page, /forkScenario\(current\.epoch\)/);
+  assert.match(page, /pathname \+ withoutShareView\(search\) \+ hash/);
 });
