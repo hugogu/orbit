@@ -1378,6 +1378,15 @@ void test('a paused run leaves the page at rest', () => {
   assert.doesNotMatch(page, /sandboxRun\?\.apply\(\{/);
 });
 
+void test('a run shared before any change still reopens as a run', () => {
+  const unchanged = forkScenario(J2000_MS);
+  const encoded = encodeSandbox(unchanged);
+  // An empty value would drop out of the link and leave the recipient in
+  // the explorer.
+  assert.ok(encoded.length > 0);
+  assert.deepEqual(decodeSandbox(encoded, J2000_MS), unchanged);
+});
+
 void test('a shared run opens playing, framed as it was shared', () => {
   const page = readFileSync(
     new URL('../app/_pages/home-page.tsx', import.meta.url),
