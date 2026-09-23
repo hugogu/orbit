@@ -1734,8 +1734,10 @@ button:disabled {
   margin: 0;
 }
 /* The fold handle belongs to the phone sheet; a wide screen shows the whole
-   panel and has no use for it. */
-.sandbox-handle {
+   panel and has no use for it. The same goes for the body editor the panel
+   carries for a phone: a wide screen edits in the column beside the scene. */
+.sandbox-handle,
+.sandbox-panel-editor {
   display: none;
 }
 .sandbox-readout {
@@ -2063,6 +2065,39 @@ button:disabled {
   flex: none;
   font-size: 12px;
   padding: 6px 9px;
+}
+.sandbox-icon-button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ffffff1f;
+  border-radius: 6px;
+  background: transparent;
+  color: #c4ccd9;
+}
+.sandbox-icon-button:hover {
+  border-color: #ffffff33;
+  color: #eef1f7;
+}
+/* One line of header — back, the body, restore, everything else — so the
+   sliders that change its path start as high on the sheet as they can. */
+.sandbox-editor[data-compact='true'] {
+  gap: 10px;
+  overflow: visible;
+}
+.sandbox-editor[data-compact='true'] .sandbox-editor-head {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+.sandbox-editor[data-compact='true'] .sandbox-editor-head h3 {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sandbox-group {
   margin: 6px 0 0;
@@ -4383,8 +4418,8 @@ button:disabled {
   }
   /* A sheet this tall hides the sky it is describing, so it folds away to a
      grab bar. Swiping it down leaves the scene clear; swiping up or tapping
-     brings the controls back. Folded, it still names the latest event; the
-     elapsed time is already on the timeline below. */
+     brings the controls back. Folded, it still names the body being edited or
+     the latest event; the elapsed time is already on the timeline below. */
   .sandbox-handle {
     display: flex;
     align-items: center;
@@ -4414,6 +4449,23 @@ button:disabled {
     color: #c4ccd9;
   }
   .sandbox-panel[data-collapsed='true'] > :not(.sandbox-handle) {
+    display: none;
+  }
+  /* Picking a body turns the sheet into its editor, the way a phone opens an
+     item from a list, and the back arrow returns to the panel. */
+  .sandbox-panel-editor {
+    display: block;
+  }
+  .sandbox-panel[data-editing='true']
+    > :not(.sandbox-handle, .sandbox-panel-editor) {
+    display: none;
+  }
+  .observatory[data-sandbox='true']
+    .catalog:has(.sandbox-panel[data-editing='true'])
+    .catalog-title,
+  .observatory[data-sandbox='true']
+    .catalog:has(.sandbox-panel[data-editing='true'])
+    .catalog-footer {
     display: none;
   }
   .observatory[data-sandbox='true']

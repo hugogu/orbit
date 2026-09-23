@@ -111,16 +111,20 @@ void test('Earth night texture follows solar direction even with eclipse shadows
   system.dispose();
 });
 
-void test('the sandbox fold handle belongs to the phone layout alone', () => {
+void test('the sandbox fold handle and body editor belong to the phone layout alone', () => {
   const compactStyles = readFileSync(
     new URL('../app/globals.css', import.meta.url),
     'utf8',
   ).replace(/\s+/g, ' ');
-  // The handle is hidden by default and only shown inside a narrow or short
-  // query, and collapsing hides the panel's contents only there. A wide
-  // screen therefore ignores a collapse a phone left behind, rather than
-  // presenting an empty panel with no way to reopen it.
-  assert.match(compactStyles, /\.sandbox-handle \{ display: none; \}/);
+  // The handle and the panel's own body editor are hidden by default and only
+  // shown inside a narrow or short query, and folding or editing hides the
+  // panel's contents only there. A wide screen therefore ignores a fold a
+  // phone left behind, rather than presenting an empty panel with no way to
+  // reopen it, and keeps its body list while a body is being edited beside it.
+  assert.match(
+    compactStyles,
+    /\.sandbox-handle, \.sandbox-panel-editor \{ display: none; \}/,
+  );
   const mobile = compactStyles.slice(
     compactStyles.indexOf(
       '@media (max-width: 600px), (orientation: landscape)',
@@ -131,11 +135,16 @@ void test('the sandbox fold handle belongs to the phone layout alone', () => {
     mobile,
     /\.sandbox-panel\[data-collapsed='true'\] > :not\(\.sandbox-handle\) \{ display: none; \}/,
   );
+  assert.match(mobile, /\.sandbox-panel-editor \{ display: block; \}/);
+  assert.match(
+    mobile,
+    /\.sandbox-panel\[data-editing='true'\] > :not\(\.sandbox-handle, \.sandbox-panel-editor\) \{ display: none; \}/,
+  );
   const beforeAnyQuery = compactStyles.slice(
     0,
     compactStyles.indexOf('@media'),
   );
-  assert.doesNotMatch(beforeAnyQuery, /data-collapsed/);
+  assert.doesNotMatch(beforeAnyQuery, /data-collapsed|data-editing/);
 });
 
 void test('outer structures stand at their published distances once distances are to scale', () => {

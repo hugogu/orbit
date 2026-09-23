@@ -534,6 +534,17 @@ export default function Home() {
     setSelected(id);
     setReset((v) => v + 1);
   }, []);
+  // Lets go of the picked body without leaving the tab or moving the camera,
+  // which is all a back step out of the phone's body editor should do.
+  const deselect = useCallback(() => {
+    if (window.location.hash)
+      window.history.pushState(
+        null,
+        '',
+        window.location.pathname + withoutShareView(window.location.search),
+      );
+    setSelected(null);
+  }, []);
   const home = useCallback(() => {
     if (window.location.hash)
       window.history.pushState(
@@ -1136,6 +1147,24 @@ export default function Home() {
               onAdd={addSandboxBody}
               onBaselineChange={setSandboxBaseline}
               onTrailsChange={setSandboxTrails}
+              editor={
+                sandboxEditing ? (
+                  <SandboxBodyEditor
+                    compact
+                    run={sandboxRun}
+                    selected={selected}
+                    daysPerSecond={
+                      sandboxPaused ? 0 : sandboxSpeeds[sandboxSpeed]
+                    }
+                    onChange={(field, value) =>
+                      editSandboxBody(selected, field, value)
+                    }
+                    onReset={() => resetSandboxBody(selected)}
+                    onBack={deselect}
+                    onMore={() => setDetails(true)}
+                  />
+                ) : undefined
+              }
             />
           ) : tab === 'explore' ? (
             <BodyNavigation

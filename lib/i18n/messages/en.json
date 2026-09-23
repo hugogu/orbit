@@ -1679,6 +1679,8 @@
   "半径": "Radius",
   "轴倾角": "Axial tilt",
   "恢复真实数值": "Restore the real values",
+  "返回沙盘": "Back to the sandbox",
+  "全部参数": "All parameters",
   "参与引力计算": "Enters the force law",
   "其他天体的距离与速度都从中心天体量起，所以它自身没有这两项。": "Every other body’s distance and speed are measured from the central body, so it has neither of its own.",
   "在此距离上，逃逸速度约为 {{value}} km/s。": "Escape speed at this distance is about {{value}} km/s.",

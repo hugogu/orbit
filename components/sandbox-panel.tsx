@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
@@ -59,11 +59,16 @@ function eventLabel(
 }
 
 /**
- * What the folded sheet still says: the latest thing that happened. The
- * elapsed time is not repeated here, since the timeline right below the sheet
- * already shows it.
+ * What the folded sheet still says: the body being edited, or else the latest
+ * thing that happened. The elapsed time is not repeated here, since the
+ * timeline right below the sheet already shows it.
  */
-export function foldedLabel(run: SandboxRun, t: Translate) {
+export function foldedLabel(
+  run: SandboxRun,
+  editing: string | null,
+  t: Translate,
+) {
+  if (editing) return bodyName(run, editing, t);
   const latest = run.events.at(-1);
   return latest
     ? eventLabel(latest, (id) => bodyName(run, id, t), t)
@@ -96,6 +101,7 @@ export default function SandboxPanel({
   onAdd,
   onBaselineChange,
   onTrailsChange,
+  editor,
 }: {
   run: SandboxRun | null;
   selected: string | null;
@@ -109,6 +115,12 @@ export default function SandboxPanel({
   onAdd: (body: NewBody) => void;
   onBaselineChange: (value: boolean) => void;
   onTrailsChange: (value: boolean) => void;
+  /**
+   * The selected body's editor. A phone has no column for it, so it takes the
+   * sheet over while a body is picked; a wide screen shows it beside the
+   * scene instead and leaves this hidden.
+   */
+  editor?: ReactNode;
 }) {
   const { t, locale } = useI18n();
   const [adding, setAdding] = useState(false);
@@ -164,7 +176,9 @@ export default function SandboxPanel({
       }}
     >
       <span className="sandbox-grip" aria-hidden="true" />
-      {collapsed && run && <em>{foldedLabel(run, t)}</em>}
+      {collapsed && run && (
+        <em>{foldedLabel(run, editor ? selected : null, t)}</em>
+      )}
     </button>
   );
 
@@ -195,8 +209,13 @@ export default function SandboxPanel({
   const alive = new Set(run.variant.map((body) => body.id));
 
   return (
-    <div className="sandbox-panel" data-collapsed={collapsed}>
+    <div
+      className="sandbox-panel"
+      data-collapsed={collapsed}
+      data-editing={!!editor}
+    >
       {handle}
+      {editor && <div className="sandbox-panel-editor">{editor}</div>}
       <dl className="sandbox-readout">
         <div>
           <dt>{t('已运行')}</dt>

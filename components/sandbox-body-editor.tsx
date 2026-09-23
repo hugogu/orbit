@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { ChevronLeft, RotateCcw } from 'lucide-react';
 import { useI18n } from '../lib/i18n/provider';
 import { Slider } from '@/components/ui/slider';
 import {
@@ -35,6 +35,9 @@ export default function SandboxBodyEditor({
   daysPerSecond,
   onChange,
   onReset,
+  compact = false,
+  onBack,
+  onMore,
 }: {
   run: SandboxRun;
   selected: string;
@@ -42,6 +45,15 @@ export default function SandboxBodyEditor({
   daysPerSecond: number;
   onChange: (field: SandboxField, value: number) => void;
   onReset: () => void;
+  /**
+   * Only the fields that enter the force law, under a one-line header: the
+   * form a phone keeps in reach while the sky stays in view.
+   */
+  compact?: boolean;
+  /** Leaves the editor for the panel it replaced, in the compact form. */
+  onBack?: () => void;
+  /** Opens every field and reading, in the compact form. */
+  onMore?: () => void;
 }) {
   const { t, locale } = useI18n();
   // While a thumb is held the reading follows the drag; the run only restarts
@@ -119,6 +131,43 @@ export default function SandboxBodyEditor({
     read('distance'),
     (centre?.mass ?? 1) * SOLAR_MASS_KG,
   );
+  const centreNote = isCentre ? (
+    <p className="sandbox-note">
+      {t('其他天体的距离与速度都从中心天体量起，所以它自身没有这两项。')}
+    </p>
+  ) : null;
+
+  if (compact)
+    return (
+      <div className="sandbox-editor" data-compact="true">
+        <div className="sandbox-editor-head">
+          <button
+            className="sandbox-icon-button"
+            aria-label={t('返回沙盘')}
+            title={t('返回沙盘')}
+            onClick={onBack}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <h3>{t(spec.name)}</h3>
+          {spec.sourceId && (
+            <button
+              className="sandbox-icon-button"
+              aria-label={t('恢复真实数值')}
+              title={t('恢复真实数值')}
+              onClick={onReset}
+            >
+              <RotateCcw size={14} />
+            </button>
+          )}
+          <button className="ghost-action" onClick={onMore}>
+            {t('全部参数')}
+          </button>
+        </div>
+        {centreNote}
+        {dynamical.map(control)}
+      </div>
+    );
 
   return (
     <div className="sandbox-editor">
@@ -136,11 +185,7 @@ export default function SandboxBodyEditor({
       </p>
 
       <h4 className="sandbox-group">{t('参与引力计算')}</h4>
-      {isCentre ? (
-        <p className="sandbox-note">
-          {t('其他天体的距离与速度都从中心天体量起，所以它自身没有这两项。')}
-        </p>
-      ) : null}
+      {centreNote}
       {dynamical.map(control)}
       {!isCentre && (
         <p className="sandbox-note">

@@ -1212,10 +1212,75 @@ void test('the viewer’s own changes join the event log, before and after', () 
   assert.match(log, /Nova joined the system/);
 });
 
+void test('a phone edits the forces in reach and keeps the rest one tap away', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  const compact = (selected: string) =>
+    renderToStaticMarkup(
+      createElement(
+        I18nProvider,
+        { initialLocale: 'en' },
+        createElement(SandboxBodyEditor, {
+          run,
+          selected,
+          daysPerSecond: 20,
+          onChange: () => {},
+          onReset: () => {},
+          compact: true,
+          onBack: () => {},
+          onMore: () => {},
+        }),
+      ),
+    );
+  const earth = compact('earth');
+  for (const shown of [
+    'Mass',
+    'Orbital speed',
+    'Distance from the Sun',
+    'Back to the sandbox',
+    'Restore the real values',
+    'All parameters',
+  ])
+    assert.ok(earth.includes(shown), shown);
+  // What does not enter the force law waits behind 'All parameters'.
+  for (const hidden of ['Radius', 'Axial tilt', 'Live readings'])
+    assert.ok(!earth.includes(hidden), hidden);
+  const sun = compact('sun');
+  assert.ok(sun.includes('Mass'));
+  assert.ok(!sun.includes('Orbital speed'));
+
+  // The panel hands its sheet over to the editor while a body is picked.
+  const noop = () => {};
+  const panel = renderToStaticMarkup(
+    createElement(
+      I18nProvider,
+      { initialLocale: 'en' },
+      createElement(SandboxPanel, {
+        run,
+        selected: 'earth',
+        baseline: true,
+        trails: true,
+        onEnter: noop,
+        onLeave: noop,
+        onRestart: noop,
+        onSelect: noop,
+        onRemove: noop,
+        onAdd: noop,
+        onBaselineChange: noop,
+        onTrailsChange: noop,
+        editor: createElement('p', null, 'editor'),
+      }),
+    ),
+  );
+  assert.match(panel, /data-editing="true"/);
+  assert.match(panel, /class="sandbox-panel-editor"><p>editor<\/p>/);
+});
+
 void test('the folded sheet names what matters, not the time it repeats', () => {
   const t = translator('en');
   const run = createRun(forkScenario(J2000_MS));
-  assert.equal(foldedLabel(run, t), 'Nothing has changed yet');
+  assert.equal(foldedLabel(run, null, t), 'Nothing has changed yet');
   run.apply({ kind: 'remove', id: 'pluto' });
-  assert.equal(foldedLabel(run, t), 'Pluto was removed');
+  assert.equal(foldedLabel(run, null, t), 'Pluto was removed');
+  // While a body is being edited, the fold names it instead.
+  assert.equal(foldedLabel(run, 'mars', t), 'Mars');
 });
