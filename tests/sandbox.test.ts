@@ -1338,3 +1338,42 @@ void test('a still scene sleeps between frames', () => {
   assert.match(scene, /wakeScene\.current\(\);/);
   assert.match(scene, /const resize = \(\) => \{\s*wake\(\);/);
 });
+
+void test('a trail that has not moved is not uploaded again', () => {
+  const trail = createSandboxTrail(0xffffff, 1);
+  const history: Vec3[] = [
+    [1, 0, 0],
+    [0.9, 0, -0.4],
+    [0.7, 0, -0.7],
+    [0.4, 0, -0.9],
+  ];
+  const head: Vec3 = [0.2, 0, -0.98];
+  trail.draw(history, head);
+  const buffer = (
+    trail.line.geometry.getAttribute('instanceStart') as unknown as {
+      data: { version: number };
+    }
+  ).data;
+  const uploaded = buffer.version;
+  // A paused run hands over the same history and head frame after frame.
+  trail.draw(history, [...head]);
+  assert.equal(buffer.version, uploaded);
+  // Hidden meanwhile by the trails switch, it comes back as it was.
+  trail.line.visible = false;
+  trail.draw(history, [...head]);
+  assert.equal(trail.line.visible, true);
+  // Once the body moves on, it is drawn again.
+  trail.draw(history, [0.1, 0, -0.99]);
+  assert.ok(buffer.version > uploaded);
+});
+
+void test('a paused run leaves the page at rest', () => {
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  // The readouts are refreshed while the run moves, and after a change.
+  assert.match(page, /if \(!sandboxRun \|\| sandboxPaused\) return;/);
+  assert.match(page, /sandboxRun\?\.apply\(edit\);\s*setSandboxTick/);
+  assert.doesNotMatch(page, /sandboxRun\?\.apply\(\{/);
+});
