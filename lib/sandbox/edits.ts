@@ -8,7 +8,7 @@
  */
 import { bodies } from '../solar';
 import type { SandboxField } from './field-names';
-import { GRAVITY, SOLAR_MASS_KG, type Vec3 } from './physics';
+import { GRAVITY, SOLAR_MASS_KG, type PointMass, type Vec3 } from './physics';
 import {
   catalogueMass,
   circularSpeed,
@@ -42,6 +42,11 @@ export type FieldSpec = {
   logarithmic: boolean;
   /** Decimal places for the readout. */
   precision: number;
+  /**
+   * Measured from the central body rather than being the body's own, so the
+   * central body has no value of its own for it.
+   */
+  fromCentre: boolean;
 };
 
 export const sandboxFields: FieldSpec[] = [
@@ -54,6 +59,7 @@ export const sandboxFields: FieldSpec[] = [
     max: 1e31,
     logarithmic: true,
     precision: 3,
+    fromCentre: false,
   },
   {
     id: 'speed',
@@ -64,6 +70,7 @@ export const sandboxFields: FieldSpec[] = [
     max: 120,
     logarithmic: false,
     precision: 3,
+    fromCentre: true,
   },
   {
     id: 'distance',
@@ -74,6 +81,7 @@ export const sandboxFields: FieldSpec[] = [
     max: 120,
     logarithmic: true,
     precision: 3,
+    fromCentre: true,
   },
   {
     id: 'radius',
@@ -84,6 +92,7 @@ export const sandboxFields: FieldSpec[] = [
     max: 2e6,
     logarithmic: true,
     precision: 0,
+    fromCentre: false,
   },
   {
     id: 'spinDays',
@@ -94,6 +103,7 @@ export const sandboxFields: FieldSpec[] = [
     max: 500,
     logarithmic: false,
     precision: 3,
+    fromCentre: false,
   },
   {
     id: 'tilt',
@@ -104,6 +114,7 @@ export const sandboxFields: FieldSpec[] = [
     max: 180,
     logarithmic: false,
     precision: 1,
+    fromCentre: false,
   },
 ];
 
@@ -139,6 +150,14 @@ function scaled(vector: Vec3, factor: number): Vec3 {
   return [vector[0] * factor, vector[1] * factor, vector[2] * factor];
 }
 
+function plus(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function minus(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
 function cross(a: Vec3, b: Vec3): Vec3 {
   return [
     a[1] * b[2] - a[2] * b[1],
@@ -158,14 +177,44 @@ export function centralBody<T extends { mass: number }>(
   );
 }
 
-export function readField(spec: SandboxBodySpec, field: SandboxField): number {
+/**
+ * What a body's distance and speed are measured from: the central body where
+ * it is and as it moves now.
+ *
+ * A run starts in the frame of its fork, with the Sun at rest at the origin,
+ * but the Sun does not stay there. It circles the system's centre of mass,
+ * and a heavy companion sets it drifting. Measured from where it started,
+ * Earth read 0.79 AU from the Sun a century on, and with Jupiter made four
+ * hundred times heavier a body added 3 AU out landed 6 AU from the Sun and
+ * flew off. Measured from the Sun as it is, each means what its label says.
+ */
+export type Centre = { position: Vec3; velocity: Vec3; massKg: number };
+
+/** The centre a point mass sets, or the fork's own origin without one. */
+export function centreOf(point: PointMass | undefined): Centre {
+  return point
+    ? {
+        position: point.position,
+        velocity: point.velocity,
+        massKg: point.mass * SOLAR_MASS_KG,
+      }
+    : { position: [0, 0, 0], velocity: [0, 0, 0], massKg: SOLAR_MASS_KG };
+}
+
+export function readField(
+  spec: SandboxBodySpec,
+  field: SandboxField,
+  centre: Centre,
+): number {
   switch (field) {
     case 'mass':
       return spec.mass;
     case 'speed':
-      return auPerDayToKmPerSecond(length(spec.velocity));
+      return auPerDayToKmPerSecond(
+        length(minus(spec.velocity, centre.velocity)),
+      );
     case 'distance':
-      return length(spec.position);
+      return length(minus(spec.position, centre.position));
     case 'radius':
       return spec.radius;
     case 'spinDays':
@@ -178,17 +227,18 @@ export function readField(spec: SandboxBodySpec, field: SandboxField): number {
 /**
  * A copy of `spec` with one field changed.
  *
- * Speed rescales the velocity vector, which keeps the direction the body is
- * already travelling. Distance moves it along its current radius and re-places
- * it on a circular orbit there: carrying the old speed to a new radius would
- * make every move either an escape or a plunge, which hides the change the
- * viewer actually asked for behind an accident.
+ * Speed rescales the velocity relative to the centre, which keeps the
+ * direction the body is already travelling. Distance moves it along its
+ * current radius from the centre and re-places it on a circular orbit there:
+ * carrying the old speed to a new radius would make every move either an
+ * escape or a plunge, which hides the change the viewer actually asked for
+ * behind an accident. Either way the body keeps moving with the centre.
  */
 export function writeField(
   spec: SandboxBodySpec,
   field: SandboxField,
   value: number,
-  centralMassKg: number,
+  centre: Centre,
 ): SandboxBodySpec {
   const limits = fieldSpec(field);
   const safe = Math.min(limits.max, Math.max(limits.min, value));
@@ -202,26 +252,35 @@ export function writeField(
     case 'tilt':
       return { ...spec, tilt: safe };
     case 'speed': {
-      const current = length(spec.velocity);
+      const relative = minus(spec.velocity, centre.velocity);
+      const current = length(relative);
       const wanted = kmPerSecondToAuPerDay(safe);
-      if (current === 0) return { ...spec, velocity: [0, 0, wanted] };
-      return { ...spec, velocity: scaled(spec.velocity, wanted / current) };
+      const motion: Vec3 =
+        current === 0 ? [0, 0, wanted] : scaled(relative, wanted / current);
+      return { ...spec, velocity: plus(centre.velocity, motion) };
     }
     case 'distance': {
-      const radius = length(spec.position);
-      if (radius === 0)
-        return { ...spec, ...circularState(safe, 0, centralMassKg) };
-      const unit = scaled(spec.position, 1 / radius);
-      const momentum = cross(spec.position, spec.velocity);
+      const offset = minus(spec.position, centre.position);
+      const radius = length(offset);
+      if (radius === 0) {
+        const state = circularState(safe, 0, centre.massKg);
+        return {
+          ...spec,
+          position: plus(centre.position, state.position),
+          velocity: plus(centre.velocity, state.velocity),
+        };
+      }
+      const unit = scaled(offset, 1 / radius);
+      const momentum = cross(offset, minus(spec.velocity, centre.velocity));
       const spin = length(momentum);
       // With no angular momentum to preserve, fall back to the ecliptic.
       const normal: Vec3 = spin > 0 ? scaled(momentum, 1 / spin) : [0, 1, 0];
       const along = cross(normal, unit);
-      const speed = circularSpeed(safe, centralMassKg);
+      const speed = circularSpeed(safe, centre.massKg);
       return {
         ...spec,
-        position: scaled(unit, safe),
-        velocity: scaled(along, speed),
+        position: plus(centre.position, scaled(unit, safe)),
+        velocity: plus(centre.velocity, scaled(along, speed)),
       };
     }
   }
@@ -246,7 +305,7 @@ export type NewBody = {
   mass: number;
   /** Kilometres. */
   radius: number;
-  /** Heliocentric distance in AU; the body is placed on a circular orbit. */
+  /** Distance from the central body in AU, on a circular orbit around it. */
   distance: number;
   color: string;
 };
@@ -262,9 +321,16 @@ const ADDED_SPACING = 2.399963;
 export function createdBody(
   body: NewBody,
   index: number,
-  centralMassKg: number,
+  centre: Centre,
   id: string,
 ): SandboxBodySpec {
+  // The circular speed follows the two-body mu, so a heavy addition starts
+  // on a circle too rather than on a quietly eccentric orbit.
+  const orbit = circularState(
+    body.distance,
+    index * ADDED_SPACING,
+    centre.massKg + body.mass,
+  );
   return {
     id,
     sourceId: null,
@@ -274,13 +340,8 @@ export function createdBody(
     radius: body.radius,
     spinDays: 1,
     tilt: 0,
-    // The circular speed follows the two-body mu, so a heavy addition starts
-    // on a circle too rather than on a quietly eccentric orbit.
-    ...circularState(
-      body.distance,
-      index * ADDED_SPACING,
-      centralMassKg + body.mass,
-    ),
+    position: plus(centre.position, orbit.position),
+    velocity: plus(centre.velocity, orbit.velocity),
   };
 }
 

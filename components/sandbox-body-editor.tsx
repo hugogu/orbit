@@ -5,6 +5,7 @@ import { useI18n } from '../lib/i18n/provider';
 import { Slider } from '@/components/ui/slider';
 import {
   centralBody,
+  centreOf,
   escapeSpeedAt,
   fieldPosition,
   fieldValue,
@@ -65,8 +66,12 @@ export default function SandboxBodyEditor({
           ...point.position.map((value, axis) => value - shadow.position[axis]),
         )
       : null;
+  // Distance and speed are read from the central body as it is now, which is
+  // what the orbit figures below are measured against too.
+  const frame = centreOf(centre);
+  const isCentre = spec.id === centre?.id;
   const read = (field: SandboxField) =>
-    draft?.field === field ? draft.value : readField(spec, field);
+    draft?.field === field ? draft.value : readField(spec, field, frame);
 
   const control = (field: FieldSpec) => {
     const value = read(field.id);
@@ -106,7 +111,9 @@ export default function SandboxBodyEditor({
     );
   };
 
-  const dynamical = sandboxFields.filter((f) => f.kind === 'dynamical');
+  const dynamical = sandboxFields.filter(
+    (f) => f.kind === 'dynamical' && !(isCentre && f.fromCentre),
+  );
   const appearance = sandboxFields.filter((f) => f.kind === 'appearance');
   const escape = escapeSpeedAt(
     read('distance'),
@@ -129,13 +136,13 @@ export default function SandboxBodyEditor({
       </p>
 
       <h4 className="sandbox-group">{t('参与引力计算')}</h4>
-      {spec.id === centre?.id ? (
+      {isCentre ? (
         <p className="sandbox-note">
-          {t('中心天体的位置与速度定义了整个系统。')}
+          {t('其他天体的距离与速度都从中心天体量起，所以它自身没有这两项。')}
         </p>
       ) : null}
       {dynamical.map(control)}
-      {spec.id !== centre?.id && (
+      {!isCentre && (
         <p className="sandbox-note">
           {t('在此距离上，逃逸速度约为 {{value}} km/s。', {
             value: format(escape, 1, locale),

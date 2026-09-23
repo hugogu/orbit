@@ -97,13 +97,13 @@ import { createRun } from '@/lib/sandbox/run';
 import {
   catalogueDefaults,
   centralBody,
+  centreOf,
   createdBody,
   type NewBody,
   type SandboxField,
 } from '@/lib/sandbox/edits';
 import { forkScenario, type SandboxScenario } from '@/lib/sandbox/scenario';
 import { decodeSandbox, encodeSandbox } from '@/lib/sandbox/share';
-import { SOLAR_MASS_KG } from '@/lib/sandbox/physics';
 import {
   elapsedLabel,
   sandboxSpeeds,
@@ -484,7 +484,7 @@ export default function Home() {
         body: createdBody(
           body,
           created,
-          (centralBody(sandboxRun.variant)?.mass ?? 1) * SOLAR_MASS_KG,
+          centreOf(centralBody(sandboxRun.variant)),
           `added-${created + 1}`,
         ),
       });

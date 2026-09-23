@@ -23,8 +23,10 @@ import {
   kmToAu,
   sandboxSources,
   daysFromEpoch,
+  type SandboxBodySpec,
 } from '../lib/sandbox/scenario.ts';
 import {
+  auPerDayToKmPerSecond,
   density,
   escapeVelocity,
   orbitState,
@@ -41,6 +43,7 @@ import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import { createSandboxSystem } from '../components/sandbox-system.ts';
 import { isOrbitLine } from '../components/orbit-line.ts';
 import SandboxPanel from '../components/sandbox-panel.tsx';
+import SandboxBodyEditor from '../components/sandbox-body-editor.tsx';
 import { I18nProvider } from '../lib/i18n/provider.tsx';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -48,6 +51,7 @@ import { Group, Scene, Vector3 } from 'three';
 import {
   catalogueDefaults,
   centralBody,
+  centreOf,
   createdBody,
   escapeSpeedAt,
   fieldPosition,
@@ -56,6 +60,7 @@ import {
   readField,
   sandboxFields,
   writeField,
+  type Centre,
   type SandboxField,
 } from '../lib/sandbox/edits.ts';
 
@@ -79,6 +84,13 @@ const driveTo = (run: SandboxRun, target: number, chunk: number) => {
     if (run.elapsedDays === before) return;
   }
 };
+
+/** The centre a body sets, for reading and writing fields against it. */
+const around = (body: SandboxBodySpec): Centre => ({
+  position: body.position,
+  velocity: body.velocity,
+  massKg: body.mass,
+});
 
 void test('a circular orbit keeps Kepler’s third law and closes on itself', () => {
   const period = 2 * Math.PI * Math.sqrt(1 / GRAVITY);
@@ -242,7 +254,7 @@ void test('the step follows the tightest pair and the advance honours its ceilin
         color: '#fff',
       },
       0,
-      centralBody(tight.variant)!.mass * SOLAR_MASS_KG,
+      centreOf(centralBody(tight.variant)),
       'inner',
     ),
   });
@@ -345,10 +357,10 @@ void test('every field reads back exactly what was written', () => {
     ['tilt', 97.7],
   ];
   for (const [field, value] of cases) {
-    const written = writeField(earth, field, value, sun.mass);
+    const written = writeField(earth, field, value, around(sun));
     assert.ok(
-      Math.abs(readField(written, field) - value) < 1e-6,
-      `${field}: ${readField(written, field)}`,
+      Math.abs(readField(written, field, around(sun)) - value) < 1e-6,
+      `${field}: ${readField(written, field, around(sun))}`,
     );
   }
 });
@@ -358,11 +370,11 @@ void test('a field is clamped to its own range rather than accepting nonsense', 
   const sun = centralBody(start)!;
   const earth = start.find((body) => body.id === 'earth')!;
   assert.equal(
-    writeField(earth, 'mass', 1e40, sun.mass).mass,
+    writeField(earth, 'mass', 1e40, around(sun)).mass,
     fieldSpec('mass').max,
   );
   assert.equal(
-    writeField(earth, 'radius', -50, sun.mass).radius,
+    writeField(earth, 'radius', -50, around(sun)).radius,
     fieldSpec('radius').min,
   );
 });
@@ -376,7 +388,7 @@ void test('moving a body re-places it on a circular orbit in its own plane', () 
     point('p', 0, pluto.position, pluto.velocity),
     centre,
   );
-  const moved = writeField(pluto, 'distance', 5, sun.mass);
+  const moved = writeField(pluto, 'distance', 5, around(sun));
   const after = orbitState(
     point('p', 0, moved.position, moved.velocity),
     centre,
@@ -387,11 +399,82 @@ void test('moving a body re-places it on a circular orbit in its own plane', () 
   assert.ok(Math.abs(after.inclination - before.inclination) < 1e-6);
 });
 
+void test('distance and speed are measured from the central body as it moves', () => {
+  // Jupiter four hundred times heavier sets the Sun drifting at several
+  // km/s, so the frame the run started in is soon far from the Sun.
+  const run = createRun(forkScenario(Date.parse('2026-09-22T00:00:00Z')));
+  run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 8e29 });
+  while (run.elapsedDays < 365.25 * 3) run.advance(40);
+  const find = (id: string) => run.variant.find((body) => body.id === id)!;
+  assert.ok(Math.hypot(...find('sun').position) > 1, 'the Sun should drift');
+  const centre = centreOf(find('sun'));
+  // Read from the Sun as it is now.
+  assert.ok(
+    Math.abs(
+      readField(run.liveSpec('earth')!, 'distance', centre) -
+        orbitState(find('earth'), find('sun')).distance,
+    ) < 1e-12,
+  );
+  // Written from it too: 1 AU out is 1 AU from the Sun, on a circle about it.
+  run.apply({ kind: 'set', id: 'earth', field: 'distance', value: 1 });
+  const moved = orbitState(find('earth'), find('sun'));
+  assert.ok(Math.abs(moved.distance - 1) < 1e-9, String(moved.distance));
+  assert.ok(moved.eccentricity < 1e-5, String(moved.eccentricity));
+  run.apply({ kind: 'set', id: 'earth', field: 'speed', value: 35 });
+  const faster = orbitState(find('earth'), find('sun'));
+  assert.ok(Math.abs(auPerDayToKmPerSecond(faster.speed) - 35) < 1e-9);
+  // A body added 3 AU out starts on a circle about the Sun, not about the
+  // point the run happened to begin from.
+  run.apply({
+    kind: 'add',
+    body: createdBody(
+      { name: 'Nova', mass: 6e24, radius: 6400, distance: 3, color: '#fff' },
+      0,
+      centreOf(find('sun')),
+      'added-1',
+    ),
+  });
+  const added = orbitState(find('added-1'), find('sun'));
+  assert.ok(Math.abs(added.distance - 3) < 1e-9, String(added.distance));
+  assert.ok(added.eccentricity < 1e-6, String(added.eccentricity));
+  // The central body is what the others are measured from, so it has no
+  // distance or speed of its own to set.
+  const sun = structuredClone(find('sun'));
+  run.apply({ kind: 'set', id: 'sun', field: 'speed', value: 30 });
+  run.apply({ kind: 'set', id: 'sun', field: 'distance', value: 2 });
+  assert.deepEqual(find('sun'), sun);
+});
+
+void test('the central body offers no distance or speed of its own', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  const editor = (selected: string) =>
+    renderToStaticMarkup(
+      createElement(
+        I18nProvider,
+        { initialLocale: 'en' },
+        createElement(SandboxBodyEditor, {
+          run,
+          selected,
+          daysPerSecond: 20,
+          onChange: () => {},
+          onReset: () => {},
+        }),
+      ),
+    );
+  const sun = editor('sun');
+  assert.match(sun, /Mass/);
+  assert.doesNotMatch(sun, /Orbital speed|Distance from the Sun/);
+  assert.match(sun, /measured from the central body/);
+  const earth = editor('earth');
+  assert.match(earth, /Orbital speed/);
+  assert.match(earth, /Distance from the Sun/);
+});
+
 void test('scaling a body’s speed keeps its heading', () => {
   const start = forkBodies(J2000_MS);
   const sun = centralBody(start)!;
   const mars = start.find((body) => body.id === 'mars')!;
-  const faster = writeField(mars, 'speed', 40, sun.mass);
+  const faster = writeField(mars, 'speed', 40, around(sun));
   const was = Math.hypot(...mars.velocity);
   const now = Math.hypot(...faster.velocity);
   for (let axis = 0; axis < 3; axis++)
@@ -405,7 +488,7 @@ void test('bodies can be added, removed and restored to their catalogue values',
   const before = run.facts.length;
   run.apply({ kind: 'remove', id: 'jupiter' });
   assert.ok(!run.variant.some((body) => body.id === 'jupiter'));
-  const centre = centralBody(run.variant)!.mass * SOLAR_MASS_KG;
+  const centre = centreOf(centralBody(run.variant));
   run.apply({
     kind: 'add',
     body: createdBody(
@@ -569,7 +652,7 @@ void test('a link carries the recipe, and the recipient reaches the same path', 
         color: '#7fd4ff',
       },
       0,
-      centralBody(authored.variant)!.mass * SOLAR_MASS_KG,
+      centreOf(centralBody(authored.variant)),
       'wanderer',
     ),
   });
@@ -679,7 +762,7 @@ void test('a body a run created carries a readable label as soon as it appears',
         color: '#7fd4ff',
       },
       0,
-      centralBody(run.variant)!.mass * SOLAR_MASS_KG,
+      centreOf(centralBody(run.variant)),
       'drifter',
     ),
   });
@@ -1057,7 +1140,7 @@ void test('the viewer’s own changes join the event log, before and after', () 
     body: createdBody(
       { name: 'Nova', mass: 6e24, radius: 6400, distance: 3, color: '#7fd4ff' },
       0,
-      SOLAR_MASS_KG,
+      centreOf(centralBody(run.variant)),
       'added-1',
     ),
   });

@@ -27,7 +27,7 @@ import {
   type Vec3,
 } from './physics';
 import { orbitState } from './derived';
-import { readField, writeField } from './edits';
+import { centreOf, fieldSpec, readField, writeField } from './edits';
 import type { SandboxField } from './field-names';
 import {
   forkBodies,
@@ -357,20 +357,16 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       const live = run.liveSpec(change.id);
       const point = variant.points.find((item) => item.id === change.id);
       if (!live || !point || !fact) return;
-      // The same writer the editor uses, so a recorded change and a live one
-      // can never mean different things.
-      const centre = variant.points.reduce(
-        (heaviest, item) => (item.mass > heaviest.mass ? item : heaviest),
-        variant.points[0],
-      );
-      const next = writeField(
-        live,
-        change.field,
-        change.value,
-        centre.mass * SOLAR_MASS_KG,
-      );
-      const from = readField(live, change.field);
-      const to = readField(next, change.field);
+      const centre = dominant(variant.points);
+      // Distance and speed are measured from the central body, so it has
+      // neither of its own to set; a link that asks for one changes nothing.
+      if (point === centre && fieldSpec(change.field).fromCentre) return;
+      // The same writer the editor uses, measured from the same centre, so a
+      // recorded change and a live one can never mean different things.
+      const frame = centreOf(centre);
+      const next = writeField(live, change.field, change.value, frame);
+      const from = readField(live, change.field, frame);
+      const to = readField(next, change.field, frame);
       // Restoring a body's real values writes every field at once, most of
       // them usually already there; only an actual change is worth a line.
       if (Math.abs(to - from) > 1e-9 * Math.max(Math.abs(from), Math.abs(to)))
