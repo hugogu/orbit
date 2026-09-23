@@ -97,6 +97,10 @@ export function createSandboxTrail(
   // The recorded point the sealed part starts from. A trail that has lost its
   // oldest part, or belongs to a new run, starts from another one.
   let origin: Vec3 | undefined;
+  // What the last draw was drawn from, and whether it drew anything.
+  let recordedAt = -1;
+  const headAt: Vec3 = [NaN, NaN, NaN];
+  let drewAny = false;
 
   const toScene = (point: Vec3) => new THREE.Vector3(...scenePosition(point));
 
@@ -145,6 +149,22 @@ export function createSandboxTrail(
   return {
     line,
     draw(history, head) {
+      // Nothing has moved since the last draw — a paused run, or a body that
+      // has merged away — so the same curve would only be uploaded again.
+      if (
+        history[0] === origin &&
+        history.length === recordedAt &&
+        head[0] === headAt[0] &&
+        head[1] === headAt[1] &&
+        head[2] === headAt[2]
+      ) {
+        line.visible = drewAny;
+        return;
+      }
+      recordedAt = history.length;
+      headAt[0] = head[0];
+      headAt[1] = head[1];
+      headAt[2] = head[2];
       if (history[0] !== origin) {
         origin = history[0];
         sealed = 0;
@@ -174,7 +194,8 @@ export function createSandboxTrail(
         path.length < 3 ? path : spans(path, spansDone - from, path.length - 1);
       const drawn = sealed + write(tail, sealed);
       // A body that has not left its only point has no trail yet.
-      line.visible = drawn > 0;
+      drewAny = drawn > 0;
+      line.visible = drewAny;
       if (!buffer || drawn === 0) return;
       (line.geometry as LineGeometry).instanceCount = drawn;
       buffer.addUpdateRange(dirty * 6, (drawn - dirty) * 6);

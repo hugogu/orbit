@@ -28,6 +28,12 @@ export const MAX_SHARED_BODIES = 12;
 
 const SEPARATOR = ';';
 const FIELD = ',';
+/**
+ * A run with nothing changed yet. It still has to reopen as a run, and an
+ * empty value would drop out of the link and leave the recipient in the
+ * explorer instead. It reads back as no changes at all.
+ */
+const UNCHANGED = '-';
 
 function number(value: number) {
   // `String` round-trips a double exactly, so a replay starts from the very
@@ -60,7 +66,7 @@ function knownIds(changes: SandboxChange[]) {
 }
 
 export function encodeSandbox(scenario: SandboxScenario) {
-  return scenario.changes
+  const encoded = scenario.changes
     .slice(0, MAX_SHARED_CHANGES)
     .map((change) => {
       const at = number(change.at);
@@ -85,6 +91,7 @@ export function encodeSandbox(scenario: SandboxScenario) {
       ].join(FIELD);
     })
     .join(SEPARATOR);
+  return encoded || UNCHANGED;
 }
 
 /**

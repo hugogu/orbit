@@ -105,6 +105,7 @@ import {
 import {
   forkScenario,
   rewoundScenario,
+  type SandboxEdit,
   type SandboxScenario,
 } from '@/lib/sandbox/scenario';
 import { decodeSandbox, encodeSandbox } from '@/lib/sandbox/share';
@@ -426,11 +427,22 @@ export default function Home() {
   // elapsed clock sample it a few times a second instead of re-rendering the
   // page on every frame.
   const [, setSandboxTick] = useState(0);
+  // The panel reads a running simulation, so it is refreshed while the run is
+  // moving and only then: paused, the same readings every quarter second
+  // re-rendered the whole page, and the scene with it, for nothing. A change
+  // made while paused refreshes it itself.
   useEffect(() => {
-    if (!sandboxRun) return;
+    if (!sandboxRun || sandboxPaused) return;
     const timer = setInterval(() => setSandboxTick((v) => v + 1), 250);
     return () => clearInterval(timer);
-  }, [sandboxRun]);
+  }, [sandboxRun, sandboxPaused]);
+  const applyToRun = useCallback(
+    (edit: SandboxEdit) => {
+      sandboxRun?.apply(edit);
+      setSandboxTick((v) => v + 1);
+    },
+    [sandboxRun],
+  );
   // The editor appears in the information column on a wide screen and in the
   // details sheet on a phone; both ask the same question.
   // Only a body the run still carries: after starting over, a body the viewer
@@ -487,21 +499,21 @@ export default function Home() {
   }, []);
   const editSandboxBody = useCallback(
     (id: string, field: SandboxField, value: number) =>
-      sandboxRun?.apply({ kind: 'set', id, field, value }),
-    [sandboxRun],
+      applyToRun({ kind: 'set', id, field, value }),
+    [applyToRun],
   );
   const removeSandboxBody = useCallback(
     (id: string) => {
-      sandboxRun?.apply({ kind: 'remove', id });
+      applyToRun({ kind: 'remove', id });
       setSelected((current) => (current === id ? null : current));
     },
-    [sandboxRun],
+    [applyToRun],
   );
   const addSandboxBody = useCallback(
     (body: NewBody) => {
       if (!sandboxRun) return;
       const created = sandboxRun.facts.filter((item) => !item.sourceId).length;
-      sandboxRun.apply({
+      applyToRun({
         kind: 'add',
         body: createdBody(
           body,
@@ -512,7 +524,7 @@ export default function Home() {
       });
       track('sandbox_add_body', {});
     },
-    [sandboxRun],
+    [sandboxRun, applyToRun],
   );
   const resetSandboxBody = useCallback(
     (id: string) => {
@@ -521,14 +533,14 @@ export default function Home() {
       );
       if (!defaults || !sandboxRun) return;
       for (const [field, value] of Object.entries(defaults))
-        sandboxRun.apply({
+        applyToRun({
           kind: 'set',
           id,
           field: field as SandboxField,
           value,
         });
     },
-    [sandboxRun],
+    [sandboxRun, applyToRun],
   );
   const select = useCallback((id: string) => {
     if (window.location.hash !== `#${id}`)
@@ -607,14 +619,17 @@ export default function Home() {
     }
     setCameraPose(shared.camera);
     // A shared run reopens the sandbox on the fork it was shared from and
-    // replays the recipe, so the recipient watches the same path form.
+    // replays the recipe, so the recipient watches the same path form. It
+    // plays as soon as it opens: the link's pause belongs to the sharer's
+    // explorer clock, and a run that sat still gave no hint of what to press.
+    // The body the sharer followed and the camera around it are kept as the
+    // link gives them; clearing them here threw the shared view away, since
+    // the camera's distance is measured from the framing of that body.
     const recipe = decodeSandbox(shared.sandbox, shared.time);
     if (recipe) {
       setSandboxScenario(recipe);
-      setSandboxPaused(shared.paused);
+      setSandboxPaused(false);
       setTab('sandbox');
-      setSelected(null);
-      setView(205);
     }
     setReset((value) => value + 1);
   }, []);

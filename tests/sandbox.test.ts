@@ -1325,3 +1325,78 @@ void test('the panel starts a shared run over clean; the timeline only rewinds i
   assert.match(page, /forkScenario\(current\.epoch\)/);
   assert.match(page, /pathname \+ withoutShareView\(search\) \+ hash/);
 });
+
+void test('a still scene sleeps between frames', () => {
+  const scene = readFileSync(
+    new URL('../components/solar-scene.tsx', import.meta.url),
+    'utf8',
+  );
+  // Still, the scene waits for a slow beat instead of every display frame,
+  // and anything that moves the picture wakes it at once.
+  assert.match(scene, /sleeping = setTimeout\(/);
+  assert.match(scene, /controls\.addEventListener\('change', wake\)/);
+  assert.match(scene, /wakeScene\.current\(\);/);
+  assert.match(scene, /const resize = \(\) => \{\s*wake\(\);/);
+});
+
+void test('a trail that has not moved is not uploaded again', () => {
+  const trail = createSandboxTrail(0xffffff, 1);
+  const history: Vec3[] = [
+    [1, 0, 0],
+    [0.9, 0, -0.4],
+    [0.7, 0, -0.7],
+    [0.4, 0, -0.9],
+  ];
+  const head: Vec3 = [0.2, 0, -0.98];
+  trail.draw(history, head);
+  const buffer = (
+    trail.line.geometry.getAttribute('instanceStart') as unknown as {
+      data: { version: number };
+    }
+  ).data;
+  const uploaded = buffer.version;
+  // A paused run hands over the same history and head frame after frame.
+  trail.draw(history, [...head]);
+  assert.equal(buffer.version, uploaded);
+  // Hidden meanwhile by the trails switch, it comes back as it was.
+  trail.line.visible = false;
+  trail.draw(history, [...head]);
+  assert.equal(trail.line.visible, true);
+  // Once the body moves on, it is drawn again.
+  trail.draw(history, [0.1, 0, -0.99]);
+  assert.ok(buffer.version > uploaded);
+});
+
+void test('a paused run leaves the page at rest', () => {
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  // The readouts are refreshed while the run moves, and after a change.
+  assert.match(page, /if \(!sandboxRun \|\| sandboxPaused\) return;/);
+  assert.match(page, /sandboxRun\?\.apply\(edit\);\s*setSandboxTick/);
+  assert.doesNotMatch(page, /sandboxRun\?\.apply\(\{/);
+});
+
+void test('a run shared before any change still reopens as a run', () => {
+  const unchanged = forkScenario(J2000_MS);
+  const encoded = encodeSandbox(unchanged);
+  // An empty value would drop out of the link and leave the recipient in
+  // the explorer.
+  assert.ok(encoded.length > 0);
+  assert.deepEqual(decodeSandbox(encoded, J2000_MS), unchanged);
+});
+
+void test('a shared run opens playing, framed as it was shared', () => {
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  const start = page.indexOf('const recipe = decodeSandbox(');
+  const opening = page.slice(start, page.indexOf('}', start));
+  // It plays whatever the sharer's explorer clock was doing.
+  assert.match(opening, /setSandboxPaused\(false\)/);
+  // The followed body and the camera around it come from the link; the
+  // camera's distance is measured from that body's framing.
+  assert.doesNotMatch(opening, /setSelected\(|setView\(|setCameraPose\(/);
+});
