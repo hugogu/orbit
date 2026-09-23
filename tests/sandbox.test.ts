@@ -33,6 +33,7 @@ import {
   density,
   escapeVelocity,
   orbitState,
+  osculatingOrbit,
   surfaceGravity,
 } from '../lib/sandbox/derived.ts';
 import {
@@ -41,7 +42,11 @@ import {
   type SandboxRun,
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
-import { scenePosition } from '../lib/sandbox/display.ts';
+import { moonDisplayDistance, scenePosition } from '../lib/sandbox/display.ts';
+import { displayRadius, kmToScene } from '../lib/display-scale.ts';
+import { orbitingMoons } from '../lib/moon-orbits.ts';
+import { moonSemimajorKm } from '../lib/satellite-elements.ts';
+import { bodies } from '../lib/solar.ts';
 import { moonState, sandboxMoons } from '../lib/sandbox/moons.ts';
 import {
   MOON_SPEED_LIMIT,
@@ -61,7 +66,14 @@ import SandboxBodyEditor from '../components/sandbox-body-editor.tsx';
 import { I18nProvider } from '../lib/i18n/provider.tsx';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Group, Scene, Vector3 } from 'three';
+import {
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  Scene,
+  SphereGeometry,
+  Vector3,
+} from 'three';
 import {
   catalogueDefaults,
   centralBody,
@@ -1573,7 +1585,7 @@ void test('the scene draws a run at the moment on screen', () => {
   assert.deepEqual(roots.get('mercury')!.position.toArray(), drawn);
   assert.notDeepEqual(drawn, stepped);
   // The camera follows the body where it is drawn, not where it last stepped.
-  assert.deepEqual(system.positionOf(run, 'mercury')!.toArray(), drawn);
+  assert.deepEqual(system.positionOf(run, 'mercury', false)!.toArray(), drawn);
 });
 
 void test('the clock reads the moment on screen', () => {
@@ -1901,3 +1913,184 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
   assert.match(editor, /Periapsis \/ apoapsis/);
   assert.doesNotMatch(editor, /Distance from the Sun/);
 });
+
+void test('a moon is drawn where the explorer draws it, along a map that only grows', () => {
+  for (const planet of new Set(sandboxMoons.map((moon) => moon.parentId))) {
+    const body = bodies.find((item) => item.id === planet)!;
+    const surface = body.radius * kmToScene('distance');
+    // The planet's surface lands on its drawn surface, so a moon that touches
+    // it is drawn touching it.
+    assert.ok(
+      Math.abs(
+        moonDisplayDistance(planet, surface, false) -
+          displayRadius(planet, 'distance', false),
+      ) < 1e-12,
+      planet,
+    );
+    // Each catalogued moon's orbit lands where the explorer draws it.
+    for (const moon of orbitingMoons.filter((item) => item.parentId === planet))
+      assert.ok(
+        Math.abs(
+          moonDisplayDistance(
+            planet,
+            moonSemimajorKm(moon) * kmToScene('distance'),
+            false,
+          ) -
+            moon.distance * 0.32,
+        ) < 1e-12,
+        moon.id,
+      );
+    // Out to far past the moons it only ever grows, and a moon flung loose
+    // ends up drawn near its true distance.
+    let last = 0;
+    for (let distance = surface / 10; distance < 200; distance *= 1.05) {
+      const shown = moonDisplayDistance(planet, distance, false);
+      assert.ok(shown > last, `${planet} at ${distance}`);
+      last = shown;
+    }
+    assert.ok(Math.abs(moonDisplayDistance(planet, 100, false) - 100) < 1);
+    // At true sizes nothing needs mapping.
+    assert.equal(moonDisplayDistance(planet, 0.01, true), 0.01);
+  }
+});
+
+void test('a moon’s ring is the orbit it is on right now', () => {
+  const start = forkBodies(SHARED_EPOCH, true);
+  const earth = start.find((body) => body.id === 'earth')!;
+  const moon = start.find((body) => body.id === 'moon-moon')!;
+  const asPoint = (body: SandboxBodySpec) => ({
+    id: body.id,
+    mass: body.mass / SOLAR_MASS_KG,
+    radius: kmToAu(body.radius),
+    position: body.position,
+    velocity: body.velocity,
+  });
+  const ring = osculatingOrbit(asPoint(moon), asPoint(earth))!;
+  const state = orbitState(asPoint(moon), asPoint(earth));
+  const here = moon.position.map((value, axis) => value - earth.position[axis]);
+  // The Moon sits on its own ring, which spans its periapsis to apoapsis.
+  const nearest = Math.min(
+    ...ring.map((point) =>
+      Math.hypot(...point.map((value, axis) => value - here[axis])),
+    ),
+  );
+  assert.ok(nearest < state.distance * 0.03, String(nearest));
+  const radii = ring.map((point) => Math.hypot(...point));
+  assert.ok(Math.abs(Math.min(...radii) - state.perihelion) < 1e-9);
+  assert.ok(Math.abs(Math.max(...radii) - state.aphelion!) < 1e-9);
+  // An orbit that has opened into an escape has no ring.
+  const fast = {
+    ...asPoint(moon),
+    velocity: moon.velocity.map(
+      (value, axis) =>
+        earth.velocity[axis] + (value - earth.velocity[axis]) * 3,
+    ) as Vec3,
+  };
+  assert.equal(osculatingOrbit(fast, asPoint(earth)), null);
+});
+
+/** Just enough of a DOM button for the scene's labels, outside a browser. */
+function withLabels(run: () => void) {
+  const global = globalThis as { document?: unknown };
+  const before = global.document;
+  global.document = {
+    createElement: () => ({
+      style: {},
+      classList: { toggle: () => {} },
+      setAttribute: () => {},
+      remove: () => {},
+    }),
+  };
+  try {
+    run();
+  } finally {
+    global.document = before;
+  }
+}
+
+void test('the scene draws moons around their planets with borrowed meshes', () =>
+  withLabels(() => {
+    const run = createRun(forkScenario(SHARED_EPOCH, true));
+    run.advance(1);
+    const scene = new Scene();
+    const roots = new Map(bodies.map((body) => [body.id, new Group()]));
+    // The explorer keeps its moon roots in the same map, in a container of
+    // its own that a run hides.
+    const explorerIo = new Group();
+    roots.set('moon-io', explorerIo);
+    let disposed = 0;
+    const meshes = new Map(
+      orbitingMoons.map((moon) => {
+        const mesh = new Mesh(
+          new SphereGeometry(moon.size),
+          new MeshBasicMaterial(),
+        );
+        mesh.geometry.addEventListener('dispose', () => (disposed += 1));
+        return [moon.id, mesh];
+      }),
+    );
+    const system = createSandboxSystem(
+      scene,
+      roots,
+      meshes,
+      { appendChild: () => {} } as unknown as HTMLElement,
+      () => {},
+    );
+    system.setVisible(true);
+    system.update(run, {
+      baseline: true,
+      trails: true,
+      realSizes: false,
+      selected: 'jupiter',
+      labels: true,
+      lineWidth: 1,
+      seconds: 0.016,
+      daysPerSecond: 20,
+      translate: (key) => key,
+    });
+    // Io is drawn out where the explorer draws it, not buried inside a planet
+    // drawn a hundred times further across than Io's real distance. Measured
+    // at the moment on screen, the same place `positionOf` reads it from,
+    // rather than at the last whole step.
+    const drawnIo = run.drawn.get('moon-io')!;
+    const drawnJupiter = run.drawn.get('jupiter')!;
+    const trueDistance =
+      Math.hypot(...drawnIo.map((value, axis) => value - drawnJupiter[axis])) *
+      AU_KM *
+      kmToScene('distance');
+    const drawn = system
+      .positionOf(run, 'moon-io', false)!
+      .distanceTo(system.positionOf(run, 'jupiter', false)!);
+    assert.ok(
+      Math.abs(drawn - moonDisplayDistance('jupiter', trueDistance, false)) <
+        1e-9,
+    );
+    assert.ok(drawn > 1.4 && drawn < 1.9, String(drawn));
+    const real = system
+      .positionOf(run, 'moon-io', true)!
+      .distanceTo(system.positionOf(run, 'jupiter', true)!);
+    assert.ok(Math.abs(real - trueDistance) < 1e-9);
+    // The explorer's own root is left where it was.
+    assert.equal(explorerIo.position.length(), 0);
+    // Every moon wears the explorer's mesh, shared rather than copied, and has
+    // a ring in both systems.
+    const worn: Mesh[] = [];
+    scene.traverse((object) => {
+      if (object instanceof Mesh && object.userData.borrowed) worn.push(object);
+    });
+    assert.equal(worn.length, sandboxMoons.length);
+    assert.ok(
+      worn.every(
+        (mesh) => meshes.get(mesh.userData.id)!.geometry === mesh.geometry,
+      ),
+    );
+    const rings: unknown[] = [];
+    scene.traverse((object) => {
+      if (isOrbitLine(object) && object.visible && object.position.length() > 0)
+        rings.push(object);
+    });
+    assert.equal(rings.length, sandboxMoons.length * 2);
+    // Leaving the sandbox leaves the explorer's meshes intact.
+    system.dispose();
+    assert.equal(disposed, 0);
+  }));
