@@ -27,7 +27,8 @@ import {
   type Vec3,
 } from './physics';
 import { orbitState } from './derived';
-import { writeField } from './edits';
+import { readField, writeField } from './edits';
+import type { SandboxField } from './field-names';
 import {
   forkBodies,
   kmToAu,
@@ -62,9 +63,23 @@ const TRAIL_KEEP = 0.75;
  */
 const STEPS_PER_REVIEW = 32;
 
+/**
+ * Something that happened in a run: what the physics did, and the changes the
+ * viewer made, on one timeline so each outcome reads against its cause.
+ */
 export type SandboxEvent =
   | { kind: 'collision'; absorbed: string; into: string; day: number }
-  | { kind: 'escape'; id: string; day: number };
+  | { kind: 'escape'; id: string; day: number }
+  | { kind: 'add' | 'remove'; id: string; day: number }
+  | {
+      kind: 'set';
+      id: string;
+      field: SandboxField;
+      /** The field's value just before and just after, in the editor's units. */
+      from: number;
+      to: number;
+      day: number;
+    };
 
 /** Presentation a body carries that the integrator has no use for. */
 export type BodyFacts = Pick<
@@ -322,9 +337,14 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
 
   /** Applies one change to the edited system; the baseline never sees these. */
   function perform(change: SandboxChange) {
+    // Logged here rather than where the viewer acts, so a replay lists each
+    // change again at its own moment, alongside whatever it went on to cause.
     if (change.kind === 'remove') {
       const index = variant.points.findIndex((p) => p.id === change.id);
-      if (index >= 0) variant.points.splice(index, 1);
+      if (index >= 0) {
+        variant.points.splice(index, 1);
+        run.events.push({ kind: 'remove', id: change.id, day: change.at });
+      }
       variant.trails.delete(change.id);
     } else if (change.kind === 'add') {
       if (!facts.some((item) => item.id === change.body.id))
@@ -332,6 +352,7 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       if (!variant.points.some((p) => p.id === change.body.id)) {
         variant.points.push(toPointMass(change.body));
         variant.trails.set(change.body.id, [[...change.body.position]]);
+        run.events.push({ kind: 'add', id: change.body.id, day: change.at });
       }
     } else {
       const fact = facts.find((item) => item.id === change.id);
@@ -350,6 +371,19 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
         change.value,
         centre.mass * SOLAR_MASS_KG,
       );
+      const from = readField(live, change.field);
+      const to = readField(next, change.field);
+      // Restoring a body's real values writes every field at once, most of
+      // them usually already there; only an actual change is worth a line.
+      if (Math.abs(to - from) > 1e-9 * Math.max(Math.abs(from), Math.abs(to)))
+        run.events.push({
+          kind: 'set',
+          id: change.id,
+          field: change.field,
+          from,
+          to,
+          day: change.at,
+        });
       fact.spinDays = next.spinDays;
       fact.tilt = next.tilt;
       point.mass = next.mass / SOLAR_MASS_KG;

@@ -4,8 +4,8 @@ import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
 import type { SandboxEvent, SandboxRun } from '../lib/sandbox/run';
-import type { NewBody } from '../lib/sandbox/edits';
-import { elapsedLabel } from '../lib/sandbox/view';
+import { fieldSpec, type NewBody } from '../lib/sandbox/edits';
+import { elapsedLabel, formatReading } from '../lib/sandbox/view';
 
 /** Starting points for a body the viewer creates, in kilograms and kilometres. */
 const templates: { label: string; mass: number; radius: number }[] = [
@@ -31,12 +31,37 @@ function eventLabel(
   name: (id: string) => string,
   t: Translate,
 ) {
-  return event.kind === 'escape'
-    ? t('{{name}} 已脱离系统', { name: name(event.id) })
-    : t('{{absorbed}} 并入 {{into}}', {
+  switch (event.kind) {
+    case 'escape':
+      return t('{{name}} 已脱离系统', { name: name(event.id) });
+    case 'collision':
+      return t('{{absorbed}} 并入 {{into}}', {
         absorbed: name(event.absorbed),
         into: name(event.into),
       });
+    case 'add':
+      return t('{{name}} 加入系统', { name: name(event.id) });
+    case 'remove':
+      return t('{{name}} 已移除', { name: name(event.id) });
+    case 'set':
+      return t('{{name}} {{field}}已调整', {
+        name: name(event.id),
+        field: t(fieldSpec(event.field).label),
+      });
+  }
+}
+
+/** The before and after of a changed value, read the way the editor shows it. */
+function changeDetail(
+  event: Extract<SandboxEvent, { kind: 'set' }>,
+  t: Translate,
+  locale: string,
+) {
+  const spec = fieldSpec(event.field);
+  const reading = (value: number) =>
+    formatReading(value, spec.precision, locale);
+  // Held to its number, so a narrow panel never strands the unit on its own.
+  return `${reading(event.from)} → ${reading(event.to)}\u00a0${t(spec.unit)}`;
 }
 
 export default function SandboxPanel({
@@ -66,7 +91,7 @@ export default function SandboxPanel({
   onBaselineChange: (value: boolean) => void;
   onTrailsChange: (value: boolean) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [adding, setAdding] = useState(false);
   const [template, setTemplate] = useState(1);
   const [distance, setDistance] = useState('3');
@@ -145,6 +170,9 @@ export default function SandboxPanel({
     return spec ? t(spec.name) : id;
   };
   const history = run.events.slice(-MAX_LOGGED_EVENTS);
+  // Where the shown part of the log starts within the whole: the log only
+  // ever grows, so an entry's place in it is a key that never changes hands.
+  const firstShown = run.events.length - history.length;
   // A body the run has absorbed is gone from the simulation but still listed
   // in the scenario it started from, so the list marks it rather than
   // silently dropping a row the viewer put there.
@@ -296,14 +324,13 @@ export default function SandboxPanel({
                 FOLLOW_SLACK_PX;
             }}
           >
-            {history.map((event) => (
-              <li
-                key={`${event.kind}-${event.day}-${
-                  event.kind === 'escape' ? event.id : event.absorbed
-                }`}
-              >
+            {history.map((event, index) => (
+              <li key={firstShown + index} data-kind={event.kind}>
                 <span>{eventLabel(event, label, t)}</span>
                 <small>{elapsedLabel(event.day, t)}</small>
+                {event.kind === 'set' && (
+                  <em>{changeDetail(event, t, locale)}</em>
+                )}
               </li>
             ))}
           </ul>

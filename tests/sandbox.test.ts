@@ -864,3 +864,75 @@ void test('the event log lists every event oldest first, so rows never shift', (
     positions,
   );
 });
+
+void test('the viewer’s own changes join the event log, before and after', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  run.advance(30);
+  const at = run.elapsedDays;
+  const jupiter = run.liveSpec('jupiter')!.mass;
+  run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 9.5e28 });
+  // Writing a value a body already has changes nothing, so it says nothing.
+  run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 9.5e28 });
+  run.apply({ kind: 'remove', id: 'pluto' });
+  run.apply({
+    kind: 'add',
+    body: createdBody(
+      { name: 'Nova', mass: 6e24, radius: 6400, distance: 3, color: '#7fd4ff' },
+      0,
+      SOLAR_MASS_KG,
+      'added-1',
+    ),
+  });
+  assert.deepEqual(run.events, [
+    {
+      kind: 'set',
+      id: 'jupiter',
+      field: 'mass',
+      from: jupiter,
+      to: 9.5e28,
+      day: at,
+    },
+    { kind: 'remove', id: 'pluto', day: at },
+    { kind: 'add', id: 'added-1', day: at },
+  ]);
+  // A replay of the recipe lists them again, each at the moment it was made.
+  const replay = createRun({
+    epoch: run.scenario.epoch,
+    changes: [...run.scenario.changes],
+  });
+  while (replay.elapsedDays <= at) replay.advance(10);
+  assert.deepEqual(
+    replay.events.filter((event) => event.day === at),
+    run.events,
+  );
+
+  const html = renderToStaticMarkup(
+    createElement(
+      I18nProvider,
+      { initialLocale: 'en' },
+      createElement(SandboxPanel, {
+        run,
+        selected: null,
+        baseline: true,
+        trails: true,
+        onEnter: () => {},
+        onLeave: () => {},
+        onRestart: () => {},
+        onSelect: () => {},
+        onRemove: () => {},
+        onAdd: () => {},
+        onBaselineChange: () => {},
+        onTrailsChange: () => {},
+      }),
+    ),
+  );
+  const log = html.slice(html.indexOf('sandbox-events'));
+  // Read the way the editor reads them, units included.
+  assert.ok(
+    log.includes(`<em>${jupiter.toExponential(3)} → 9.500e+28\u00a0kg</em>`),
+    log,
+  );
+  assert.match(log, /Jupiter: Mass changed/);
+  assert.match(log, /Pluto was removed/);
+  assert.match(log, /Nova joined the system/);
+});
