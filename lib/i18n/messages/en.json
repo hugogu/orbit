@@ -1667,6 +1667,7 @@
   "{{years}} 年 {{days}} 天": "{{years}} yr {{days}} d",
   "自 {{date}} 分叉": "forked {{date}}",
   "{{name}} 已脱离系统": "{{name}} has left the system",
+  "{{name}} 重新被系统俘获": "{{name}} was captured again",
   "{{absorbed}} 并入 {{into}}": "{{absorbed}} merged into {{into}}",
   "{{name}} 加入系统": "{{name}} joined the system",
   "{{name}} 已移除": "{{name}} was removed",

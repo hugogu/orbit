@@ -34,6 +34,8 @@ function eventLabel(
   switch (event.kind) {
     case 'escape':
       return t('{{name}} 已脱离系统', { name: name(event.id) });
+    case 'capture':
+      return t('{{name}} 重新被系统俘获', { name: name(event.id) });
     case 'collision':
       return t('{{absorbed}} 并入 {{into}}', {
         absorbed: name(event.absorbed),

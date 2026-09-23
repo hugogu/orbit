@@ -65,6 +65,19 @@ const point = (
   radius = 0,
 ): PointMass => ({ id, mass, radius, position, velocity });
 
+/**
+ * Advances a run in helpings of `chunk` days until it stops on the last whole
+ * step at or before `target`, so two runs driven differently can be compared
+ * at one moment rather than two.
+ */
+const driveTo = (run: SandboxRun, target: number, chunk: number) => {
+  for (let guard = 0; guard < 4000; guard += 1) {
+    const before = run.elapsedDays;
+    run.advance(Math.min(chunk, target - before));
+    if (run.elapsedDays === before) return;
+  }
+};
+
 void test('a circular orbit keeps Kepler’s third law and closes on itself', () => {
   const period = 2 * Math.PI * Math.sqrt(1 / GRAVITY);
   // One astronomical unit around one solar mass is one sidereal year.
@@ -691,15 +704,6 @@ void test('a faster rate takes more steps, never longer ones', () => {
   // Same span, wildly different helpings, same state to the last bit.
   const dribbled = createRun(forkScenario(J2000_MS));
   const gulped = createRun(forkScenario(J2000_MS));
-  // Both stop on the last whole step at or before the same instant, so the
-  // comparison is between two runs at one moment rather than two moments.
-  const driveTo = (run: SandboxRun, target: number, chunk: number) => {
-    for (let guard = 0; guard < 4000; guard += 1) {
-      const before = run.elapsedDays;
-      run.advance(Math.min(chunk, target - before));
-      if (run.elapsedDays === before) return;
-    }
-  };
   driveTo(dribbled, 400, 0.7);
   driveTo(gulped, 400, 80);
   assert.equal(gulped.elapsedDays, dribbled.elapsedDays);
@@ -822,15 +826,50 @@ void test('a trail drawn a piece at a time is the whole curve, seams and all', (
   expect(history, null);
 });
 
-void test('each body coming loose is announced once, at its own moment', () => {
-  const run = createRun(forkScenario(J2000_MS));
+void test('leaving is judged against the whole system, not the Sun alone', () => {
+  // Jupiter four hundred times heavier makes a binary of it and the Sun,
+  // which swings the Sun about by several km/s. Judged against the Sun alone,
+  // Neptune left and came back on that swing every few years, and Mars read
+  // as leaving ten days before it hit Jupiter.
+  const run = createRun(forkScenario(Date.parse('2026-09-22T00:00:00Z')));
   run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 8e29 });
   while (run.elapsedDays < 365.25 * 12) run.advance(40);
-  const escapes = run.events.filter((event) => event.kind === 'escape');
-  assert.ok(escapes.length > 2, 'expected a disturbed system to shed bodies');
-  // They used to be looked for only between frames, so a burst of them all
-  // carried the instant the frame ended and the list read as one moment.
-  assert.equal(new Set(escapes.map((event) => event.day)).size, escapes.length);
+  const left = run.events.flatMap((event) =>
+    event.kind === 'escape' ? [event] : [],
+  );
+  assert.ok(
+    run.events.some(
+      (event) => event.kind === 'collision' && event.absorbed === 'mars',
+    ),
+  );
+  assert.ok(!left.some((event) => event.id === 'mars'));
+  assert.ok(!left.some((event) => event.id === 'neptune'));
+  // Nothing is announced twice without a capture in between.
+  assert.ok(!run.events.some((event) => event.kind === 'capture'));
+  assert.equal(new Set(left.map((event) => event.id)).size, left.length);
+  // Pluto is too slow to follow the pair's new drift and does leave, within
+  // days — looked for on the step review, not only when a frame ends.
+  const pluto = left.find((event) => event.id === 'pluto');
+  assert.ok(pluto && pluto.day < 20, JSON.stringify(pluto));
+});
+
+void test('events land at the same moments however the frames fall', () => {
+  const disturbed = () => {
+    const run = createRun(forkScenario(Date.parse('2026-09-22T00:00:00Z')));
+    run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 8e29 });
+    return run;
+  };
+  const dribbled = disturbed();
+  const gulped = disturbed();
+  driveTo(dribbled, 60, 0.3);
+  driveTo(gulped, 60, 40);
+  // Each frame used to end in a look of its own, so a reset or a shared link
+  // listed the same escape at a different time from the run it replayed.
+  assert.ok(dribbled.events.some((event) => event.kind === 'escape'));
+  assert.deepEqual(gulped.events, dribbled.events);
+});
+
+void test('each body coming loose is announced once', () => {
   // A body that simply leaves is announced once, not on every later look.
   const leaving = createRun(forkScenario(J2000_MS));
   leaving.apply({ kind: 'set', id: 'earth', field: 'speed', value: 60 });
@@ -841,6 +880,23 @@ void test('each body coming loose is announced once, at its own moment', () => {
     ).length,
     1,
   );
+});
+
+void test('a body brought back after leaving is announced as captured', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  run.apply({ kind: 'set', id: 'earth', field: 'speed', value: 48 });
+  for (let guard = 0; guard < 50 && !run.escaped.has('earth'); guard++)
+    run.advance(10);
+  // Put back on a circular orbit, it belongs to the system again.
+  run.apply({ kind: 'set', id: 'earth', field: 'distance', value: 1.5 });
+  run.advance(10);
+  assert.deepEqual(
+    run.events.flatMap((event) =>
+      event.kind === 'escape' || event.kind === 'capture' ? [event.kind] : [],
+    ),
+    ['escape', 'capture'],
+  );
+  assert.ok(!run.escaped.has('earth'));
 });
 
 void test('a merge adds the absorbed body’s mass and keeps the momentum', () => {

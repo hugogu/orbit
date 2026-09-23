@@ -183,7 +183,10 @@ export default function SandboxBodyEditor({
             <div>
               <dt>{t('偏心率')}</dt>
               <dd>
-                {orbit.escaping
+                {/* Whether a body has left is the run's verdict, measured
+                    against the whole system; this orbit is against the
+                    central body alone and can open up without that. */}
+                {run.escaped.has(selected)
                   ? t('已脱离')
                   : format(orbit.eccentricity, 3, locale)}
               </dd>

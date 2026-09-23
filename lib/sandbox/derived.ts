@@ -72,10 +72,11 @@ function cross(a: Vec3, b: Vec3): Vec3 {
 }
 
 /**
- * Osculating two-body elements against the dominant mass — the orbit the body
- * would keep if every other body vanished right now. That is the standard way
- * to read an instantaneous state, and it is what makes "eccentricity passed
- * 1" a meaningful escape announcement rather than a guess.
+ * Osculating two-body elements against a reference mass — the orbit the body
+ * would keep if everything else vanished right now. That is the standard way
+ * to read an instantaneous state. Which reference makes sense is the
+ * caller's call: the editor reads a body against the heaviest one, while
+ * leaving the system is judged against all the rest taken together.
  */
 export function orbitState(point: PointMass, central: PointMass): OrbitState {
   const relative = subtract(point.position, central.position);

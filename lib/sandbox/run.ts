@@ -73,7 +73,7 @@ const STEPS_PER_REVIEW = 32;
  */
 export type SandboxEvent =
   | { kind: 'collision'; absorbed: string; into: string; day: number }
-  | { kind: 'escape'; id: string; day: number }
+  | { kind: 'escape' | 'capture'; id: string; day: number }
   | { kind: 'add' | 'remove'; id: string; day: number }
   | {
       kind: 'set';
@@ -104,6 +104,8 @@ export type SandboxRun = {
   trails: Map<string, Vec3[]>;
   baselineTrails: Map<string, Vec3[]>;
   events: SandboxEvent[];
+  /** Bodies announced as having left the system and not captured since. */
+  readonly escaped: ReadonlySet<string>;
   /** Integration step in days. */
   step: number;
   /** Steps taken in the last advance. */
@@ -238,6 +240,7 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     trails: variant.trails,
     baselineTrails: baseline.trails,
     events: [],
+    escaped: variant.escaped,
     step,
     steps: 0,
     throttled: false,
@@ -273,8 +276,9 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       while (taken < MAX_STEPS_PER_ADVANCE) {
         if (sinceReview >= STEPS_PER_REVIEW) {
           review();
-          // Looked for on the review rather than between frames: a burst of
-          // them would otherwise all carry the moment the frame ended.
+          // Looked for on the review and only there: a burst of them would
+          // otherwise all carry the moment a frame ended, and a replay at
+          // another frame rate would list them at other moments.
           watchEscapes(variant, run);
         }
         // A change lands at its own elapsed time, not at whichever step
@@ -312,7 +316,6 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
         record(variant);
         record(baseline);
       }
-      watchEscapes(variant, run);
       run.step = step;
       run.steps = taken;
       // Time left over because a whole step did not fit yet is banked for the
@@ -423,29 +426,73 @@ function collide(track: Track, run: SandboxRun | null) {
 }
 
 /**
- * Announces a body coming loose, once.
+ * Leaving the system is judged against everything still in it, taken as one
+ * mass at its centre — never against the heaviest body alone.
  *
- * A body thrown onto a wide, heavily perturbed orbit crosses the escape
- * threshold repeatedly, and reporting each crossing filled the list with the
- * same few names at ever-newer times — which read as though every event had
- * taken the newest one's timestamp. The announcement is armed again only once
- * the body is comfortably bound, so a genuine recapture still reports while
- * chatter around the threshold does not.
+ * Against the Sun alone, any companion heavy enough to swing the Sun about
+ * made outer bodies cross the threshold and back every few years, and a body
+ * slung past that companion read as leaving days before it hit it. So a body
+ * has left only when it is unbound from all the rest, moving away from it, and
+ * well outside every body that holds a real share of the mass, where the rest
+ * really does act as one point and the verdict stops changing.
  */
-const REARM_ECCENTRICITY = 0.9;
+/** Share of the system's mass that makes a body part of its core. */
+const CORE_SHARE = 0.01;
+/** How far past the core, as a multiple of its reach, leaving is judged. */
+const CORE_CLEARANCE = 2;
+/**
+ * A body that has left is announced as captured again only once it is
+ * comfortably bound, so chatter near the threshold cannot fill the log.
+ */
+const RECAPTURE_ECCENTRICITY = 0.9;
 
 function watchEscapes(track: Track, run: SandboxRun) {
-  if (track.points.length < 2) return;
-  const central = dominant(track.points);
+  const anchor = dominant(track.points);
   for (const point of track.points) {
-    if (point === central) continue;
-    const orbit = orbitState(point, central);
-    if (orbit.escaping) {
-      if (track.escaped.has(point.id)) continue;
-      track.escaped.add(point.id);
-      run.events.push({ kind: 'escape', id: point.id, day: run.elapsedDays });
-    } else if (orbit.eccentricity < REARM_ECCENTRICITY)
-      track.escaped.delete(point.id);
+    // The heaviest body is what the system is; it cannot leave itself.
+    if (point === anchor) continue;
+    const rest = track.points.filter(
+      (other) => other !== point && !track.escaped.has(other.id),
+    );
+    const centre = barycenter(rest);
+    if (centre.mass === 0) continue;
+    const orbit = orbitState(point, { id: '', radius: 0, ...centre });
+    if (track.escaped.has(point.id)) {
+      if (orbit.eccentricity < RECAPTURE_ECCENTRICITY) {
+        track.escaped.delete(point.id);
+        run.events.push({
+          kind: 'capture',
+          id: point.id,
+          day: run.elapsedDays,
+        });
+      }
+      continue;
+    }
+    if (!orbit.escaping) continue;
+    const offset = point.position.map(
+      (value, axis) => value - centre.position[axis],
+    );
+    const receding =
+      offset.reduce(
+        (sum, value, axis) =>
+          sum + value * (point.velocity[axis] - centre.velocity[axis]),
+        0,
+      ) > 0;
+    const reach = Math.max(
+      0,
+      ...rest
+        .filter((other) => other.mass >= CORE_SHARE * centre.mass)
+        .map((other) =>
+          Math.hypot(
+            ...other.position.map(
+              (value, axis) => value - centre.position[axis],
+            ),
+          ),
+        ),
+    );
+    if (!receding || orbit.distance <= CORE_CLEARANCE * reach) continue;
+    track.escaped.add(point.id);
+    run.events.push({ kind: 'escape', id: point.id, day: run.elapsedDays });
   }
 }
 
