@@ -619,14 +619,17 @@ export default function Home() {
     }
     setCameraPose(shared.camera);
     // A shared run reopens the sandbox on the fork it was shared from and
-    // replays the recipe, so the recipient watches the same path form.
+    // replays the recipe, so the recipient watches the same path form. It
+    // plays as soon as it opens: the link's pause belongs to the sharer's
+    // explorer clock, and a run that sat still gave no hint of what to press.
+    // The body the sharer followed and the camera around it are kept as the
+    // link gives them; clearing them here threw the shared view away, since
+    // the camera's distance is measured from the framing of that body.
     const recipe = decodeSandbox(shared.sandbox, shared.time);
     if (recipe) {
       setSandboxScenario(recipe);
-      setSandboxPaused(shared.paused);
+      setSandboxPaused(false);
       setTab('sandbox');
-      setSelected(null);
-      setView(205);
     }
     setReset((value) => value + 1);
   }, []);

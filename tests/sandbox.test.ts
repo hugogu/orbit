@@ -1377,3 +1377,17 @@ void test('a paused run leaves the page at rest', () => {
   assert.match(page, /sandboxRun\?\.apply\(edit\);\s*setSandboxTick/);
   assert.doesNotMatch(page, /sandboxRun\?\.apply\(\{/);
 });
+
+void test('a shared run opens playing, framed as it was shared', () => {
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  const start = page.indexOf('const recipe = decodeSandbox(');
+  const opening = page.slice(start, page.indexOf('}', start));
+  // It plays whatever the sharer's explorer clock was doing.
+  assert.match(opening, /setSandboxPaused\(false\)/);
+  // The followed body and the camera around it come from the link; the
+  // camera's distance is measured from that body's framing.
+  assert.doesNotMatch(opening, /setSelected\(|setView\(|setCameraPose\(/);
+});
