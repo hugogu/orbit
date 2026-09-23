@@ -42,6 +42,8 @@ import {
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
 import { scenePosition } from '../lib/sandbox/display.ts';
+import { moonState, sandboxMoons } from '../lib/sandbox/moons.ts';
+import { AU_KM } from '../lib/eclipse-shadows.ts';
 import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import { createSandboxSystem } from '../components/sandbox-system.ts';
 import { isOrbitLine } from '../components/orbit-line.ts';
@@ -59,6 +61,7 @@ import {
   catalogueDefaults,
   centralBody,
   centreOf,
+  referenceBody,
   createdBody,
   escapeSpeedAt,
   fieldPosition,
@@ -1652,4 +1655,158 @@ void test('bodies added across a rewind and a shared link get different colours'
   );
   assert.match(panel, /color: nextColor\(run\)/);
   assert.doesNotMatch(panel, /!body\.sourceId\)\.length/);
+});
+
+const SHARED_EPOCH = Date.parse('2026-09-22T00:00:00Z');
+
+void test('moons split a planetary system without moving anything else', () => {
+  const plain = forkBodies(SHARED_EPOCH);
+  const split = forkBodies(SHARED_EPOCH, true);
+  // Every moon carried is a large one: over 500 km, the ones worth their step.
+  assert.deepEqual(
+    split.filter((body) => body.parentId).map((body) => body.id),
+    sandboxMoons.map((moon) => moon.id),
+  );
+  assert.ok(sandboxMoons.every((moon) => moon.radiusKm > 500));
+  for (const system of plain) {
+    const members = split.filter(
+      (body) => body.id === system.id || body.parentId === system.id,
+    );
+    const mass = members.reduce((sum, body) => sum + body.mass, 0);
+    assert.ok(Math.abs(mass - system.mass) <= 1e-12 * system.mass, system.id);
+    // The same centre of mass and momentum, so the rest of the system cannot
+    // tell a run with moons from one without.
+    for (const key of ['position', 'velocity'] as const) {
+      const centre = [0, 1, 2].map(
+        (axis) =>
+          members.reduce((sum, body) => sum + body.mass * body[key][axis], 0) /
+          mass,
+      );
+      const gap = Math.hypot(
+        ...centre.map((value, axis) => value - system[key][axis]),
+      );
+      assert.ok(gap < 1e-12, `${system.id} ${key}: ${gap}`);
+    }
+  }
+  // Each moon starts where the explorer draws it around its planet.
+  const days = daysFromEpoch(SHARED_EPOCH);
+  for (const moon of sandboxMoons) {
+    const body = split.find((item) => item.id === moon.id)!;
+    const planet = split.find((item) => item.id === moon.parentId)!;
+    const drawn = moonState(moon, days).position;
+    const offset = body.position.map(
+      (value, axis) => value - planet.position[axis],
+    );
+    // To within the rounding of a position tens of AU from the Sun.
+    assert.ok(
+      Math.hypot(...offset.map((value, axis) => value - drawn[axis])) < 1e-12,
+      moon.id,
+    );
+  }
+});
+
+void test('a run with moons resolves its fastest one and keeps to the sky', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  const find = (id: string) => run.variant.find((body) => body.id === id)!;
+  run.advance(1);
+  // Io sets the step, and gets about six hundred of them an orbit.
+  assert.ok(1.769 / run.step > 600, String(run.step));
+  // Moons keep no trail of their own; they are drawn around their planets.
+  assert.ok(![...run.trails.keys()].some((id) => id.startsWith('moon-')));
+  const off = (id: string, parent: string) => {
+    const moon = sandboxMoons.find((item) => item.id === id)!;
+    const truth = moonState(
+      moon,
+      daysFromEpoch(SHARED_EPOCH) + run.elapsedDays,
+    ).position;
+    const here = find(id).position.map(
+      (value, axis) => value - find(parent).position[axis],
+    );
+    const gap = Math.hypot(...here.map((value, axis) => value - truth[axis]));
+    return (gap / Math.hypot(...truth)) * (180 / Math.PI);
+  };
+  while (run.elapsedDays < 27.32) run.advance(2);
+  // A lunar month on, the Moon is within a twentieth of a degree of Astronomy
+  // Engine's. Halving the step does not close the gaps below: they are the
+  // model's distance from the sky, not the integrator's. Io's is Jupiter's
+  // oblateness, which quickens its real orbit and which point masses leave
+  // out; it is the largest of the moons', about half a degree an orbit.
+  assert.ok(off('moon-moon', 'earth') < 0.1, String(off('moon-moon', 'earth')));
+  assert.ok(off('moon-titan', 'saturn') < 0.5);
+  assert.ok(off('moon-io', 'jupiter') < 15, String(off('moon-io', 'jupiter')));
+  assert.ok(run.energyDrift < 1e-9, String(run.energyDrift));
+});
+
+void test('a moon is edited from its planet and reported leaving it', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  run.advance(1);
+  const find = (id: string) => run.variant.find((body) => body.id === id)!;
+  const io = run.liveSpec('moon-io')!;
+  const jupiter = referenceBody(run.variant, io.parentId)!;
+  assert.equal(jupiter.id, 'jupiter');
+  // Its speed is its own around Jupiter, not mostly Jupiter's around the Sun.
+  const speed = readField(io, 'speed', centreOf(jupiter));
+  assert.ok(speed > 16 && speed < 19, String(speed));
+  // Past Jupiter's escape speed at Io's distance, about 24.5 km/s, it leaves.
+  run.apply({ kind: 'set', id: 'moon-io', field: 'speed', value: 32 });
+  for (
+    let guard = 0;
+    guard < 60 && !run.events.some((e) => e.kind === 'escape');
+    guard++
+  )
+    run.advance(5);
+  // Leaving Jupiter comes first, though at this speed it leaves the Sun too.
+  const departures = run.events.flatMap((event) =>
+    event.kind === 'escape' ? [{ id: event.id, parent: event.parent }] : [],
+  );
+  assert.deepEqual(departures[0], { id: 'moon-io', parent: 'jupiter' });
+  // Put back 421,800 km out on a circle, it is Jupiter's again.
+  run.apply({
+    kind: 'set',
+    id: 'moon-io',
+    field: 'distance',
+    value: 421_800 / AU_KM,
+  });
+  const back = orbitState(find('moon-io'), find('jupiter'));
+  assert.ok(
+    Math.abs(back.distance * AU_KM - 421_800) < 1,
+    String(back.distance),
+  );
+  assert.ok(back.eccentricity < 1e-3, String(back.eccentricity));
+  run.advance(5);
+  assert.ok(
+    run.events.some(
+      (event) =>
+        event.kind === 'capture' &&
+        event.id === 'moon-io' &&
+        event.parent === 'jupiter',
+    ),
+  );
+  // Restoring a moon's real values finds them in the moon catalogue.
+  assert.ok(Math.abs(catalogueDefaults('moon-io')!.mass - 8.93e22) < 1e20);
+});
+
+void test('the moons switch belongs to the recipe and travels with a link', () => {
+  const withMoons = forkScenario(SHARED_EPOCH, true);
+  withMoons.changes.push({
+    at: 3,
+    kind: 'set',
+    id: 'moon-titan',
+    field: 'mass',
+    value: 1e24,
+  });
+  const encoded = encodeSandbox(withMoons);
+  assert.ok(encoded.startsWith('m;'), encoded);
+  assert.deepEqual(decodeSandbox(encoded, SHARED_EPOCH), withMoons);
+  // Rewinding keeps it; a link from before it existed opens without moons.
+  assert.equal(rewoundScenario(withMoons).moons, true);
+  assert.equal(
+    decodeSandbox('s,0,jupiter,mass,8e29', SHARED_EPOCH)!.moons,
+    undefined,
+  );
+  // A link with moons and nothing else still opens a run.
+  assert.deepEqual(
+    decodeSandbox('m', SHARED_EPOCH),
+    forkScenario(SHARED_EPOCH, true),
+  );
 });

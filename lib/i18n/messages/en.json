@@ -1677,6 +1677,7 @@
   "质量": "Mass",
   "轨道速度": "Orbital speed",
   "日心距离": "Distance from the Sun",
+  "距行星距离": "Distance from its planet",
   "半径": "Radius",
   "轴倾角": "Axial tilt",
   "恢复真实数值": "Restore the real values",

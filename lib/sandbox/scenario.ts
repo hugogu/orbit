@@ -19,6 +19,7 @@ import { bodies } from '../solar';
 import { sceneVector } from '../ephemeris';
 import { GRAVITY, SOLAR_MASS_KG, type Vec3 } from './physics';
 import type { SandboxField } from './field-names';
+import { moonState, sandboxMoons } from './moons';
 
 export type SandboxBodySpec = {
   id: string;
@@ -40,6 +41,11 @@ export type SandboxBodySpec = {
   position: Vec3;
   /** Heliocentric velocity in AU/day, scene axes. */
   velocity: Vec3;
+  /**
+   * The planet a moon orbits. Its distance and speed are read from that
+   * planet, and it is drawn around it.
+   */
+  parentId?: string;
 };
 
 /**
@@ -64,15 +70,20 @@ export type SandboxScenario = {
   epoch: number;
   /** Ordered by `at`; everything the viewer did to the untouched fork. */
   changes: SandboxChange[];
+  /**
+   * Whether the planets carry their moons. It changes the physics of the
+   * whole run, not just what is drawn, so it belongs to the recipe.
+   */
+  moons?: boolean;
 };
 
 /**
  * Catalogue bodies the sandbox carries, in orbital order.
  *
- * Earth is the Earth–Moon barycenter: Astronomy Engine publishes its state and
- * mass as one body, which is both more accurate for heliocentric motion and
- * the reason moons can stay out of v1 without hand-waving. At scene scale the
- * barycenter sits about 3 × 10⁻⁵ AU from Earth itself — far below a pixel.
+ * Each is its planetary system's centre of mass with the system's whole mass,
+ * which is what Astronomy Engine publishes — for Earth that is the Earth–Moon
+ * barycenter. A run without moons integrates exactly that; a run with them
+ * splits each system into the planet and its moons around the same centre.
  */
 export const sandboxSources: { id: string; astro: AstroBody }[] = [
   { id: 'sun', astro: AstroBody.Sun },
@@ -108,8 +119,8 @@ export function auToKm(au: number) {
 }
 
 /** An empty recipe: the real system at an epoch, with nothing changed. */
-export function forkScenario(epoch: number): SandboxScenario {
-  return { epoch, changes: [] };
+export function forkScenario(epoch: number, moons = false): SandboxScenario {
+  return moons ? { epoch, changes: [], moons } : { epoch, changes: [] };
 }
 
 /**
@@ -118,13 +129,13 @@ export function forkScenario(epoch: number): SandboxScenario {
  * copy of the changes, so the new run's edits cannot reach back into the old.
  */
 export function rewoundScenario(scenario: SandboxScenario): SandboxScenario {
-  return { epoch: scenario.epoch, changes: [...scenario.changes] };
+  return { ...scenario, changes: [...scenario.changes] };
 }
 
 /** The unedited system at an epoch: the baseline every comparison runs against. */
-export function forkBodies(epoch: number): SandboxBodySpec[] {
+export function forkBodies(epoch: number, moons = false): SandboxBodySpec[] {
   const days = daysFromEpoch(epoch);
-  return sandboxSources.map(({ id, astro }) => {
+  const planets = sandboxSources.map(({ id, astro }) => {
     const state = HelioState(astro, days);
     const body = bodies.find((item) => item.id === id)!;
     return {
@@ -141,6 +152,65 @@ export function forkBodies(epoch: number): SandboxBodySpec[] {
       velocity: sceneVector(new Vector(state.vx, state.vy, state.vz, state.t)),
     };
   });
+  return moons ? planets.flatMap((planet) => withMoons(planet, days)) : planets;
+}
+
+/**
+ * Splits a planetary system into the planet and its moons.
+ *
+ * The published state is the system's centre of mass and the published mass
+ * the system's whole mass, so the planet keeps what its moons do not carry
+ * and sits where their centre of mass comes out right. The split changes
+ * nothing the rest of the system can feel: the same mass and momentum, at the
+ * same place, as a run without moons.
+ */
+function withMoons(system: SandboxBodySpec, days: number): SandboxBodySpec[] {
+  const moons = sandboxMoons
+    .filter((moon) => moon.parentId === system.id)
+    .map((moon) => ({ moon, ...moonState(moon, days) }));
+  if (moons.length === 0) return [system];
+  const offset = (key: 'position' | 'velocity'): Vec3 => {
+    const sum: Vec3 = [0, 0, 0];
+    for (const entry of moons)
+      for (let axis = 0; axis < 3; axis++)
+        sum[axis] += (entry.moon.massKg * entry[key][axis]) / system.mass;
+    return sum;
+  };
+  const shift = offset('position');
+  const drift = offset('velocity');
+  const planet: SandboxBodySpec = {
+    ...system,
+    mass:
+      system.mass - moons.reduce((sum, entry) => sum + entry.moon.massKg, 0),
+    position: [0, 1, 2].map(
+      (axis) => system.position[axis] - shift[axis],
+    ) as Vec3,
+    velocity: [0, 1, 2].map(
+      (axis) => system.velocity[axis] - drift[axis],
+    ) as Vec3,
+  };
+  return [
+    planet,
+    ...moons.map(({ moon, position, velocity }) => ({
+      id: moon.id,
+      sourceId: moon.id,
+      parentId: system.id,
+      name: moon.name,
+      color: moon.color,
+      texture: moon.texture,
+      mass: moon.massKg,
+      radius: moon.radiusKm,
+      // Every moon here turns once per orbit, keeping one face to its planet.
+      spinDays: moon.period,
+      tilt: 0,
+      position: [0, 1, 2].map(
+        (axis) => planet.position[axis] + position[axis],
+      ) as Vec3,
+      velocity: [0, 1, 2].map(
+        (axis) => planet.velocity[axis] + velocity[axis],
+      ) as Vec3,
+    })),
+  ];
 }
 
 /** Orbital speed of a circular orbit at `au` around `centralMassKg`, in AU/day. */
