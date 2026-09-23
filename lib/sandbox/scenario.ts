@@ -112,6 +112,15 @@ export function forkScenario(epoch: number): SandboxScenario {
   return { epoch, changes: [] };
 }
 
+/**
+ * The same recipe from its fork again, every change kept: turning the clock
+ * back, not starting over. A new object, so a run built on it rebuilds, and a
+ * copy of the changes, so the new run's edits cannot reach back into the old.
+ */
+export function rewoundScenario(scenario: SandboxScenario): SandboxScenario {
+  return { epoch: scenario.epoch, changes: [...scenario.changes] };
+}
+
 /** The unedited system at an epoch: the baseline every comparison runs against. */
 export function forkBodies(epoch: number): SandboxBodySpec[] {
   const days = daysFromEpoch(epoch);

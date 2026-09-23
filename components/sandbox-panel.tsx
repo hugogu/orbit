@@ -109,6 +109,7 @@ export default function SandboxPanel({
   trails: boolean;
   onEnter: () => void;
   onLeave: () => void;
+  /** Starts a new run from the same fork, with none of the changes. */
   onRestart: () => void;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
@@ -392,8 +393,8 @@ export default function SandboxPanel({
       <div className="sandbox-actions">
         <button
           className="ghost-action"
-          aria-label={t('重新开始')}
-          title={t('重新开始')}
+          aria-label={t('清除所有改动，重新开始模拟')}
+          title={t('清除所有改动，重新开始模拟')}
           onClick={onRestart}
         >
           <RotateCcw size={15} />
