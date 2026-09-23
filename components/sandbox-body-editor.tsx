@@ -4,12 +4,13 @@ import { ChevronLeft, RotateCcw } from 'lucide-react';
 import { useI18n } from '../lib/i18n/provider';
 import { Slider } from '@/components/ui/slider';
 import {
-  centralBody,
   centreOf,
   escapeSpeedAt,
   fieldPosition,
+  fieldSpec,
   fieldValue,
   readField,
+  referenceBody,
   sandboxFields,
   type FieldSpec,
   type SandboxField,
@@ -23,6 +24,7 @@ import {
 import { spinIsSlowed } from '@/lib/sandbox/display';
 import { auToKm, kmToAu } from '@/lib/sandbox/scenario';
 import { SOLAR_MASS_KG } from '@/lib/sandbox/physics';
+import { AU_KM } from '@/lib/eclipse-shadows';
 import type { SandboxRun } from '@/lib/sandbox/run';
 import { formatReading as format } from '@/lib/sandbox/view';
 
@@ -66,20 +68,21 @@ export default function SandboxBodyEditor({
   // edited, so the panel has to show where the body is now, not where it set out.
   const spec = run.liveSpec(selected);
   if (!spec) return null;
-  const centre = centralBody(run.variant);
+  // A moon is read from its own planet, everything else from the heaviest
+  // body; the orbit figures below are measured against the same one.
+  const moon = !!spec.parentId;
+  const centre = referenceBody(run.variant, spec.parentId);
   const point = run.variant.find((body) => body.id === selected);
   const shadow = run.baseline.find((body) => body.id === selected);
-  const central = centre;
   const orbit =
-    point && central && point !== central ? orbitState(point, central) : null;
+    point && centre && point !== centre ? orbitState(point, centre) : null;
   const divergence =
     point && shadow
       ? Math.hypot(
           ...point.position.map((value, axis) => value - shadow.position[axis]),
         )
       : null;
-  // Distance and speed are read from the central body as it is now, which is
-  // what the orbit figures below are measured against too.
+  // Distance and speed are read from that body as it is now.
   const frame = centreOf(centre);
   const isCentre = spec.id === centre?.id;
   const read = (field: SandboxField) =>
@@ -92,7 +95,7 @@ export default function SandboxBodyEditor({
         <label>
           <span>{t(field.label)}</span>
           <strong>
-            {format(value, field.precision, locale)}
+            {format(value * (field.scale ?? 1), field.precision, locale)}
             <small>{t(field.unit)}</small>
           </strong>
         </label>
@@ -123,9 +126,9 @@ export default function SandboxBodyEditor({
     );
   };
 
-  const dynamical = sandboxFields.filter(
-    (f) => f.kind === 'dynamical' && !(isCentre && f.fromCentre),
-  );
+  const dynamical = sandboxFields
+    .filter((f) => f.kind === 'dynamical' && !(isCentre && f.fromCentre))
+    .map((f) => fieldSpec(f.id, moon));
   const appearance = sandboxFields.filter((f) => f.kind === 'appearance');
   const escape = escapeSpeedAt(
     read('distance'),
@@ -248,19 +251,34 @@ export default function SandboxBodyEditor({
               <dd>
                 {orbit.period === null
                   ? '—'
-                  : t('{{value}} 年', {
-                      value: format(orbit.period / 365.25, 2, locale),
-                    })}
+                  : moon
+                    ? t('{{value}} 天', {
+                        value: format(orbit.period, 2, locale),
+                      })
+                    : t('{{value}} 年', {
+                        value: format(orbit.period / 365.25, 2, locale),
+                      })}
               </dd>
             </div>
             <div>
-              <dt>{t('近日点 / 远日点')}</dt>
+              <dt>{t(moon ? '近点 / 远点' : '近日点 / 远日点')}</dt>
+              {/* A moon's orbit is thousands of kilometres across, which two
+                  decimals of an AU would round away to nothing. */}
               <dd>
-                {format(orbit.perihelion, 2, locale)} /{' '}
+                {format(
+                  orbit.perihelion * (moon ? AU_KM : 1),
+                  moon ? 0 : 2,
+                  locale,
+                )}{' '}
+                /{' '}
                 {orbit.aphelion === null
                   ? '∞'
-                  : format(orbit.aphelion, 2, locale)}{' '}
-                {t('AU')}
+                  : format(
+                      orbit.aphelion * (moon ? AU_KM : 1),
+                      moon ? 0 : 2,
+                      locale,
+                    )}{' '}
+                {t(moon ? 'km' : 'AU')}
               </dd>
             </div>
           </>

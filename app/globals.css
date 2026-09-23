@@ -2027,6 +2027,11 @@ button:disabled {
   opacity: 0.4;
   text-decoration: line-through;
 }
+/* A moon follows its planet in the list, set in under it. */
+.sandbox-bodies li[data-moon='true'] {
+  padding-left: 14px;
+  font-size: 12px;
+}
 .sandbox-body {
   flex: 1;
   display: flex;

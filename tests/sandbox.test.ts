@@ -43,6 +43,11 @@ import {
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
 import { scenePosition } from '../lib/sandbox/display.ts';
 import { moonState, sandboxMoons } from '../lib/sandbox/moons.ts';
+import {
+  MOON_SPEED_LIMIT,
+  moonSpeeds,
+  sandboxSpeeds,
+} from '../lib/sandbox/view.ts';
 import { AU_KM } from '../lib/eclipse-shadows.ts';
 import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import { createSandboxSystem } from '../components/sandbox-system.ts';
@@ -1144,6 +1149,8 @@ void test('the event log lists every event oldest first, so rows never shift', (
         onAdd: noop,
         onBaselineChange: noop,
         onTrailsChange: noop,
+        moons: false,
+        onMoonsChange: noop,
       }),
     ),
   );
@@ -1227,6 +1234,8 @@ void test('the viewer’s own changes join the event log, before and after', () 
         onAdd: () => {},
         onBaselineChange: () => {},
         onTrailsChange: () => {},
+        moons: false,
+        onMoonsChange: () => {},
       }),
     ),
   );
@@ -1296,6 +1305,8 @@ void test('a phone edits the forces in reach and keeps the rest one tap away', (
         onAdd: noop,
         onBaselineChange: noop,
         onTrailsChange: noop,
+        moons: false,
+        onMoonsChange: noop,
         editor: createElement('p', null, 'editor'),
       }),
     ),
@@ -1349,7 +1360,8 @@ void test('the panel starts a shared run over clean; the timeline only rewinds i
   );
   assert.match(page, /onRestart=\{startSandboxOver\}/);
   assert.match(page, /onClick=\{rewindSandbox\}/);
-  assert.match(page, /forkScenario\(current\.epoch\)/);
+  // Starting over keeps the moment and whether moons are on, and nothing else.
+  assert.match(page, /forkScenario\(current\.epoch, current\.moons\)/);
   assert.match(page, /pathname \+ withoutShareView\(search\) \+ hash/);
 });
 
@@ -1809,4 +1821,83 @@ void test('the moons switch belongs to the recipe and travels with a link', () =
     decodeSandbox('m', SHARED_EPOCH),
     forkScenario(SHARED_EPOCH, true),
   );
+});
+
+void test('a run with moons offers only the rates its step can keep up with', () => {
+  assert.equal(moonSpeeds.at(-1), MOON_SPEED_LIMIT);
+  // A prefix of the full list, so a rate chosen without moons comes back
+  // unchanged when they are switched off again.
+  assert.deepEqual(moonSpeeds, sandboxSpeeds.slice(0, moonSpeeds.length));
+  // At the limit, a second of play is still a few thousand of Io's steps.
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  run.advance(1);
+  assert.ok(MOON_SPEED_LIMIT / run.step < 8000, String(run.step));
+  // The switch replays the recipe, and starting over keeps it.
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(page, /\{ \.\.\.rewoundScenario\(current\), moons: on \}/);
+  assert.match(page, /forkScenario\(current\.epoch, current\.moons\)/);
+});
+
+void test('the panel and editor speak of a moon in its planet’s terms', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  run.advance(1);
+  run.apply({
+    kind: 'set',
+    id: 'moon-io',
+    field: 'distance',
+    value: 600_000 / AU_KM,
+  });
+  run.events.push({ kind: 'escape', id: 'moon-io', parent: 'jupiter', day: 9 });
+  const render = (element: ReturnType<typeof createElement>) =>
+    renderToStaticMarkup(
+      createElement(I18nProvider, { initialLocale: 'en' }, element),
+    );
+  const noop = () => {};
+  const panel = render(
+    createElement(SandboxPanel, {
+      run,
+      selected: null,
+      baseline: true,
+      trails: true,
+      onEnter: noop,
+      onLeave: noop,
+      onRestart: noop,
+      onSelect: noop,
+      onRemove: noop,
+      onAdd: noop,
+      onBaselineChange: noop,
+      onTrailsChange: noop,
+      moons: true,
+      onMoonsChange: noop,
+    }),
+  );
+  assert.match(panel, /Moons/);
+  assert.match(panel, /13 large moons join the run/);
+  // Moons follow their planet in the list, set in under it.
+  assert.match(
+    panel,
+    /data-moon="true"[^>]*><button[^>]*><i[^>]*><\/i><span>Io</,
+  );
+  // A moon's distance change reads in kilometres, and its departure names
+  // the planet it left.
+  assert.ok(
+    panel.includes('600,000\u00a0km'),
+    panel.slice(panel.indexOf('sandbox-events')),
+  );
+  assert.match(panel, /Io left Jupiter/);
+  const editor = render(
+    createElement(SandboxBodyEditor, {
+      run,
+      selected: 'moon-io',
+      daysPerSecond: 20,
+      onChange: noop,
+      onReset: noop,
+    }),
+  );
+  assert.match(editor, /Distance from its planet/);
+  assert.match(editor, /Periapsis \/ apoapsis/);
+  assert.doesNotMatch(editor, /Distance from the Sun/);
 });

@@ -10,7 +10,13 @@ import {
   typedDistance,
   type NewBody,
 } from '../lib/sandbox/edits';
-import { elapsedLabel, formatReading } from '../lib/sandbox/view';
+import {
+  elapsedLabel,
+  formatReading,
+  MOON_SPEED_LIMIT,
+} from '../lib/sandbox/view';
+import { sandboxMoons } from '../lib/sandbox/moons';
+import { speedLabel } from '../lib/solar';
 
 /** Starting points for a body the viewer creates, in kilograms and kilometres. */
 const templates: { label: string; mass: number; radius: number }[] = [
@@ -53,9 +59,19 @@ function eventLabel(
 ) {
   switch (event.kind) {
     case 'escape':
-      return t('{{name}} 已脱离系统', { name: name(event.id) });
+      return event.parent
+        ? t('{{name}} 脱离{{parent}}', {
+            name: name(event.id),
+            parent: name(event.parent),
+          })
+        : t('{{name}} 已脱离系统', { name: name(event.id) });
     case 'capture':
-      return t('{{name}} 重新被系统俘获', { name: name(event.id) });
+      return event.parent
+        ? t('{{name}} 重新被{{parent}}俘获', {
+            name: name(event.id),
+            parent: name(event.parent),
+          })
+        : t('{{name}} 重新被系统俘获', { name: name(event.id) });
     case 'collision':
       return t('{{absorbed}} 并入 {{into}}', {
         absorbed: name(event.absorbed),
@@ -93,12 +109,13 @@ export function foldedLabel(
 /** The before and after of a changed value, read the way the editor shows it. */
 function changeDetail(
   event: Extract<SandboxEvent, { kind: 'set' }>,
+  moon: boolean,
   t: Translate,
   locale: string,
 ) {
-  const spec = fieldSpec(event.field);
+  const spec = fieldSpec(event.field, moon);
   const reading = (value: number) =>
-    formatReading(value, spec.precision, locale);
+    formatReading(value * (spec.scale ?? 1), spec.precision, locale);
   // Held to its number, so a narrow panel never strands the unit on its own.
   return `${reading(event.from)} → ${reading(event.to)}\u00a0${t(spec.unit)}`;
 }
@@ -116,6 +133,8 @@ export default function SandboxPanel({
   onAdd,
   onBaselineChange,
   onTrailsChange,
+  moons,
+  onMoonsChange,
   editor,
 }: {
   run: SandboxRun | null;
@@ -131,6 +150,9 @@ export default function SandboxPanel({
   onAdd: (body: NewBody) => void;
   onBaselineChange: (value: boolean) => void;
   onTrailsChange: (value: boolean) => void;
+  /** Whether the planets carry their moons. */
+  moons: boolean;
+  onMoonsChange: (value: boolean) => void;
   /**
    * The selected body's editor. A phone has no column for it, so it takes the
    * sheet over while a body is picked; a wide screen shows it beside the
@@ -269,13 +291,36 @@ export default function SandboxPanel({
           />
           {t('显示轨迹')}
         </label>
+        <label title={t('切换后从分叉时刻重新演算，已做的改动保留')}>
+          <input
+            type="checkbox"
+            checked={moons}
+            onChange={(event) => onMoonsChange(event.target.checked)}
+          />
+          {t('卫星体系')}
+        </label>
       </div>
+      {moons && (
+        <p className="sandbox-note">
+          {t(
+            '已加入 {{count}} 颗大卫星。为让设备跟上更精细的步长，时间流速最高 {{rate}}。',
+            {
+              count: sandboxMoons.length,
+              rate: speedLabel(MOON_SPEED_LIMIT, t),
+            },
+          )}
+        </p>
+      )}
 
       <div className="sandbox-bodies">
         <h3>{t('天体列表')}</h3>
         <ul>
           {run.facts.map((body) => (
-            <li key={body.id} data-gone={!alive.has(body.id)}>
+            <li
+              key={body.id}
+              data-gone={!alive.has(body.id)}
+              data-moon={!!body.parentId}
+            >
               <button
                 className={`sandbox-body${body.id === selected ? ' active' : ''}`}
                 onClick={() => onSelect(body.id)}
@@ -393,7 +438,15 @@ export default function SandboxPanel({
                 <span>{eventLabel(event, label, t)}</span>
                 <small>{elapsedLabel(event.day, t)}</small>
                 {event.kind === 'set' && (
-                  <em>{changeDetail(event, t, locale)}</em>
+                  <em>
+                    {changeDetail(
+                      event,
+                      !!run.facts.find((body) => body.id === event.id)
+                        ?.parentId,
+                      t,
+                      locale,
+                    )}
+                  </em>
                 )}
               </li>
             ))}
