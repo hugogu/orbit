@@ -160,6 +160,9 @@ void test('production worker bundles offline dependencies and changes revision w
     ['assets/eclipse-worker.js', 'self.onmessage = () => {}'],
     ['assets/app.css', 'body { color: white }'],
     ['assets/app.js.map', '{}'],
+    ['textures/2k_sun.jpg', 'sun map'],
+    ['textures/2k_earth_daymap.jpg', 'earth map'],
+    ['textures/2k_stars_milky_way.jpg', 'galaxy map'],
     ['textures/2k_mars.jpg', 'base map'],
     ['textures/8k_mars.jpg', 'optional large map'],
     ['textures/satellites/2k_asteroid.jpg', 'pluto map'],
@@ -175,19 +178,33 @@ void test('production worker bundles offline dependencies and changes revision w
     '/assets/app.js',
     '/assets/eclipse-worker.js',
     '/assets/app.css',
-    '/textures/2k_mars.jpg',
     '/sky/bright-stars.bin',
     '/sky/constellations.json',
     '/offline/en.html',
   ])
     assert.ok(urls.includes(url), url);
+  for (const name of [
+    '2k_sun.jpg',
+    '2k_earth_daymap.jpg',
+    '2k_stars_milky_way.jpg',
+  ]) {
+    const entry = urls.find((url) => url.startsWith(`/textures/${name}?v=`));
+    assert.ok(entry, `${name} is in the install cache`);
+    assert.match(entry!, /\?v=[a-f0-9]{16}$/);
+  }
   for (const url of [
     '/sw.js',
     '/assets/app.js.map',
     '/textures/8k_mars.jpg',
+    '/textures/2k_mars.jpg',
+    '/textures/satellites/2k_asteroid.jpg',
     '/models/optional.bin',
   ])
-    assert.equal(urls.includes(url), false, url);
+    assert.equal(
+      urls.some((entry) => entry.startsWith(url)),
+      false,
+      url,
+    );
   const worker = await readFile(join(client, 'sw.js'), 'utf8');
   assert.doesNotMatch(
     worker,

@@ -269,6 +269,7 @@ void test('independent planet surface toggles restore meshes, reject late loads,
   };
   const update = (active: string[]) =>
     textures.update('standard', venus.texture!, false, false, true, active);
+  update([]);
   const clouds = await finish(venus.texture!);
   assert.equal(material.map, clouds);
   update([venus.heightTexture!]);

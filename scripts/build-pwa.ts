@@ -13,9 +13,10 @@ export async function buildPwa(clientDir = resolve('dist/client')) {
       'offline/*.html',
       'manifest.webmanifest',
       'favicon.svg',
-      'textures/2k_*.{jpg,png}',
+      'textures/2k_sun.jpg',
+      'textures/2k_earth_daymap.jpg',
+      'textures/2k_stars_milky_way.jpg',
       'sky/*.{bin,json}',
-      'textures/satellites/2k_asteroid.jpg',
     ],
     maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
     modifyURLPrefix: { '': '/' },
@@ -23,6 +24,16 @@ export async function buildPwa(clientDir = resolve('dist/client')) {
   if (warnings.length) throw new Error(warnings.join('\n'));
   if (!manifestEntries.some(({ url }) => url.endsWith('.js')))
     throw new Error('PWA build requires the compiled client application.');
+
+  for (const entry of manifestEntries) {
+    if (!entry.url.startsWith('/textures/')) continue;
+    const bytes = await readFile(resolve(clientDir, entry.url.slice(1)));
+    const revision = createHash('sha256')
+      .update(bytes)
+      .digest('hex')
+      .slice(0, 16);
+    entry.url += `?v=${revision}`;
+  }
 
   // Include server-only document changes in the Worker target's revision too.
   const hash = createHash('sha256').update(JSON.stringify(manifestEntries));

@@ -5,3 +5,6 @@
 /manifest.webmanifest
   Cache-Control: no-cache
   Content-Type: application/manifest+json; charset=utf-8
+
+/textures/*
+  Cache-Control: public, max-age=31536000, immutable

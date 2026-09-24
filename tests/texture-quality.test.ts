@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import * as THREE from 'three';
 import sharp from 'sharp/lib/index.js';
 import { readFileSync, existsSync } from 'node:fs';
@@ -9,9 +10,14 @@ import { orbitingMoons, moonTextureNames } from '../lib/moon-orbits';
 import { asteroids } from '../lib/asteroids';
 import {
   highResolutionTextures,
+  textureLoadingOptions,
   texturePath,
   shouldLoadHighResolution,
 } from '../lib/texture-quality';
+import { textureFileRevisions } from '../lib/texture-revisions';
+
+const textureUrl = (name: string, high = false) =>
+  texturePath(name, high, 8192);
 
 void test('quality respects device preferences, GPU limits and actual source resolutions', () => {
   assert.equal(shouldLoadHighResolution('auto', true, false), false);
@@ -21,10 +27,16 @@ void test('quality respects device preferences, GPU limits and actual source res
   assert.equal(shouldLoadHighResolution('standard', false, false), false);
   assert.equal(
     texturePath('earth_daymap', true, 4096),
-    '/textures/2k_earth_daymap.jpg',
+    `/textures/2k_earth_daymap.jpg?v=${textureFileRevisions['2k_earth_daymap.jpg']}`,
   );
-  assert.equal(texturePath('jupiter', true, 4096), '/textures/8k_jupiter.jpg');
-  assert.equal(texturePath('uranus', true, 8192), '/textures/2k_uranus.jpg');
+  assert.equal(
+    texturePath('jupiter', true, 4096),
+    `/textures/8k_jupiter.jpg?v=${textureFileRevisions['8k_jupiter.jpg']}`,
+  );
+  assert.equal(
+    texturePath('uranus', true, 8192),
+    `/textures/2k_uranus.jpg?v=${textureFileRevisions['2k_uranus.jpg']}`,
+  );
   const manifest = JSON.parse(
     readFileSync(
       new URL('../public/textures/source-manifest.json', import.meta.url),
@@ -47,6 +59,105 @@ void test('quality respects device preferences, GPU limits and actual source res
       ),
     );
   }
+});
+
+void test('texture loading prioritizes the first view and leaves other bodies on demand', () => {
+  for (const name of ['earth_daymap', 'sun', 'stars_milky_way'])
+    assert.deepEqual(textureLoadingOptions(name), {
+      lazy: false,
+      preload: false,
+    });
+  for (const name of ['moon', 'mars'])
+    assert.deepEqual(textureLoadingOptions(name), {
+      lazy: true,
+      preload: true,
+    });
+  for (const name of ['mercury', 'jupiter', 'phobos', 'pluto'])
+    assert.deepEqual(textureLoadingOptions(name), {
+      lazy: true,
+      preload: false,
+    });
+});
+
+void test('every local texture URL carries the source file content revision', () => {
+  for (const [file, revision] of Object.entries(textureFileRevisions)) {
+    assert.match(revision, /^[a-f0-9]{16}$/);
+    const source = new URL(`../public/textures/${file}`, import.meta.url);
+    assert.ok(existsSync(source), `${file} exists for its content revision`);
+    assert.equal(
+      createHash('sha256')
+        .update(readFileSync(source))
+        .digest('hex')
+        .slice(0, 16),
+      revision,
+      `${file} revision matches its content`,
+    );
+  }
+});
+
+void test('the startup and idle queues exclude unrelated body textures', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const manager = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  for (const name of [
+    'earth_daymap',
+    'sun',
+    'stars_milky_way',
+    'moon',
+    'mars',
+    'mercury',
+  ])
+    manager.register(name, () => {}, textureLoadingOptions(name));
+  manager.preload();
+  assert.deepEqual(
+    [...pending.keys()].sort(),
+    [
+      textureUrl('earth_daymap'),
+      textureUrl('sun'),
+      textureUrl('stars_milky_way'),
+      textureUrl('moon'),
+      textureUrl('mars'),
+    ].sort(),
+  );
+  for (const finish of pending.values()) finish(new THREE.Texture());
+  await new Promise((resolve) => setImmediate(resolve));
+  manager.dispose();
+});
+
+void test('lazy Earth night lighting still loads when Earth is focused', async (t) => {
+  const pending = new Map<string, (texture: THREE.Texture) => void>();
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) =>
+      new Promise<THREE.Texture>((resolve) => pending.set(path, resolve)),
+  );
+  const manager = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  manager.register(
+    'earth_nightmap',
+    () => {},
+    textureLoadingOptions('earth_nightmap'),
+  );
+  manager.update('standard', 'earth_daymap', false, false);
+  assert.deepEqual([...pending.keys()], [textureUrl('earth_nightmap')]);
+  pending.get(textureUrl('earth_nightmap'))!(new THREE.Texture());
+  await new Promise((resolve) => setImmediate(resolve));
+  manager.dispose();
 });
 
 void test('every body texture is registered and has a local fallback', () => {
@@ -112,18 +223,18 @@ void test('surface colour maps are opaque and keep their colour at both qualitie
   }
 });
 
-void test('asteroid maps load without waiting for a focused selection', () => {
+void test('asteroid maps load on focus and keep visited surfaces attached', () => {
   const scene = readFileSync(
     new URL('../components/solar-scene.tsx', import.meta.url),
     'utf8',
   );
   assert.match(
     scene,
-    /asteroidSystem\.setTexture\(asteroid\.id, texture\)[\s\S]*?lazy: false/,
+    /asteroidSystem\.setTexture\(asteroid\.id, texture\)[\s\S]*?lazy: true,[\s\S]*?preload: false/,
   );
   assert.match(
     scene,
-    /asteroidSystem\.setNormalTexture\(asteroid\.id, texture\)[\s\S]*?lazy: false/,
+    /asteroidSystem\.setNormalTexture\(asteroid\.id, texture\)[\s\S]*?lazy: true,[\s\S]*?preload: false/,
   );
 });
 
@@ -138,7 +249,7 @@ void test('terrestrial surface maps are body-specific and locally available', ()
     assert.ok(highResolutionTextures[name], `${body.id} surface catalog entry`);
     assert.equal(
       texturePath(name, false, 8192),
-      `/textures/planets/2k_${body.id}-normal.png?v=terrain-v2`,
+      `/textures/planets/2k_${body.id}-normal.png?v=${textureFileRevisions[`planets/2k_${body.id}-normal.png`]}-terrain-v2`,
     );
     assert.ok(
       existsSync(
@@ -169,7 +280,7 @@ void test('terrestrial height maps have physical ranges and local fallbacks', ()
     assert.ok(body.flattening !== undefined, `${body.id} physical flattening`);
     assert.equal(
       texturePath(name, false, 8192),
-      `/textures/planets/2k_${body.id}-height.png?v=terrain-v2`,
+      `/textures/planets/2k_${body.id}-height.png?v=${textureFileRevisions[`planets/2k_${body.id}-height.png`]}-terrain-v2`,
     );
     assert.ok(
       existsSync(
@@ -189,7 +300,7 @@ void test('the Moon has an on-demand LOLA terrain map with physical bounds', () 
   assert.ok(moon.terrainMaxKm! > 0);
   assert.equal(
     texturePath(moon.heightTexture!, false, 8192),
-    '/textures/planets/2k_moon-height.png?v=terrain-v1',
+    `/textures/planets/2k_moon-height.png?v=${textureFileRevisions['planets/2k_moon-height.png']}-terrain-v1`,
   );
   assert.ok(
     existsSync(
@@ -201,7 +312,7 @@ void test('the Moon has an on-demand LOLA terrain map with physical bounds', () 
   );
   assert.equal(
     texturePath(moon.surfaceTexture!, false, 8192),
-    '/textures/planets/2k_moon-normal.png?v=terrain-v1',
+    `/textures/planets/2k_moon-normal.png?v=${textureFileRevisions['planets/2k_moon-normal.png']}-terrain-v1`,
   );
   const scene = readFileSync(
     new URL('../components/solar-scene.tsx', import.meta.url),
@@ -227,12 +338,12 @@ void test('gapped moon maps use a cache-busted continuous revision', () => {
     assert.equal(map.revision, 'filled-v1', `${name} revision marker`);
     assert.match(
       texturePath(name, false, 8192),
-      /\?v=filled-v1$/,
+      /\?v=[a-f0-9]{16}-filled-v1$/,
       `${name} standard map cache key`,
     );
     assert.match(
       texturePath(name, true, 8192),
-      /\?v=filled-v1$/,
+      /\?v=[a-f0-9]{16}-filled-v1$/,
       `${name} high map cache key`,
     );
   }
@@ -263,12 +374,9 @@ void test('opt-in surface maps skip preload and keep data color space', async (t
   manager.update('standard', 'earth_daymap', false, false, true, [
     'surface_earth_normal',
   ]);
-  assert.deepEqual(
-    [...pending.keys()],
-    ['/textures/planets/2k_earth-normal.png?v=terrain-v2'],
-  );
+  assert.deepEqual([...pending.keys()], [textureUrl('surface_earth_normal')]);
   const texture = new THREE.Texture();
-  pending.get('/textures/planets/2k_earth-normal.png?v=terrain-v2')!(texture);
+  pending.get(textureUrl('surface_earth_normal'))!(texture);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(visible, texture);
@@ -301,12 +409,9 @@ void test('opt-in height maps skip preload and keep data color space', async (t)
   manager.update('standard', 'earth_daymap', false, false, true, [
     'terrain_earth',
   ]);
-  assert.deepEqual(
-    [...pending.keys()],
-    ['/textures/planets/2k_earth-height.png?v=terrain-v2'],
-  );
+  assert.deepEqual([...pending.keys()], [textureUrl('terrain_earth')]);
   const texture = new THREE.Texture();
-  pending.get('/textures/planets/2k_earth-height.png?v=terrain-v2')!(texture);
+  pending.get(textureUrl('terrain_earth'))!(texture);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(visible, texture);
@@ -363,8 +468,8 @@ void test('Ceres retains visited color and normal maps after selecting Mars, wit
     normal = new THREE.Texture();
   const colorDispose = t.mock.method(color, 'dispose');
   const normalDispose = t.mock.method(normal, 'dispose');
-  pending.get('/textures/asteroids/2k_ceres.jpg')!(color);
-  pending.get('/textures/asteroids/2k_ceres-normal.png')!(normal);
+  pending.get(textureUrl('asteroid_ceres'))!(color);
+  pending.get(textureUrl('asteroid_ceres_normal'))!(normal);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   manager.update('standard', 'mars', false, false);
@@ -380,8 +485,8 @@ void test('Ceres retains visited color and normal maps after selecting Mars, wit
   const highColor = new THREE.Texture(),
     highNormal = new THREE.Texture();
   const highDispose = t.mock.method(highColor, 'dispose');
-  pending.get('/textures/asteroids/4k_ceres.jpg')!(highColor);
-  pending.get('/textures/asteroids/4k_ceres-normal.png')!(highNormal);
+  pending.get(textureUrl('asteroid_ceres', true))!(highColor);
+  pending.get(textureUrl('asteroid_ceres_normal', true))!(highNormal);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   manager.update('ultra', 'mars', false, false);
@@ -394,8 +499,8 @@ void test('Ceres retains visited color and normal maps after selecting Mars, wit
   const fallbackColor = new THREE.Texture(),
     fallbackNormal = new THREE.Texture();
   const fallbackDispose = t.mock.method(fallbackColor, 'dispose');
-  pending.get('/textures/asteroids/2k_ceres.jpg')!(fallbackColor);
-  pending.get('/textures/asteroids/2k_ceres-normal.png')!(fallbackNormal);
+  pending.get(textureUrl('asteroid_ceres'))!(fallbackColor);
+  pending.get(textureUrl('asteroid_ceres_normal'))!(fallbackNormal);
   pending.clear();
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(material.map, fallbackColor);
@@ -505,20 +610,20 @@ void test('async texture swaps retain visible maps, discard stale loads and reco
   manager.register('earth_daymap', (texture) => {
     visible = texture;
   });
-  const standard = await finish('/textures/2k_earth_daymap.jpg');
+  const standard = await finish(textureUrl('earth_daymap'));
   manager.update('ultra', 'earth_daymap', false, false);
   assert.equal(visible, standard.texture);
   manager.update('standard', 'earth_daymap', false, false);
-  const stale = await finish('/textures/8k_earth_daymap.jpg');
+  const stale = await finish(textureUrl('earth_daymap', true));
   assert.equal(stale.dispose.mock.callCount(), 1);
-  const replacement = await finish('/textures/2k_earth_daymap.jpg');
+  const replacement = await finish(textureUrl('earth_daymap'));
   assert.equal(visible, replacement.texture);
   assert.equal(standard.dispose.mock.callCount(), 1);
   manager.update('ultra', 'earth_daymap', false, false);
-  pending.get('/textures/8k_earth_daymap.jpg')!.reject();
-  pending.delete('/textures/8k_earth_daymap.jpg');
+  pending.get(textureUrl('earth_daymap', true))!.reject();
+  pending.delete(textureUrl('earth_daymap', true));
   await Promise.resolve();
-  const fallback = await finish('/textures/2k_earth_daymap.jpg');
+  const fallback = await finish(textureUrl('earth_daymap'));
   manager.update('ultra', 'earth_daymap', false, false);
   assert.equal(pending.size, 0);
   assert.equal(notices.length, 1);
@@ -540,30 +645,30 @@ void test('navigation defers focused high-resolution upgrades until the transiti
   } as THREE.WebGLRenderer;
   const manager = createTextureManager(renderer, () => {});
   manager.register('earth_daymap', () => {});
-  pending.get('/textures/2k_earth_daymap.jpg')!(new THREE.Texture());
+  pending.get(textureUrl('earth_daymap'))!(new THREE.Texture());
   pending.clear();
   await Promise.resolve();
   manager.update('ultra', 'earth_daymap', false, false, true, [], true);
-  assert.equal(pending.has('/textures/8k_earth_daymap.jpg'), false);
+  assert.equal(pending.has(textureUrl('earth_daymap', true)), false);
   manager.update('ultra', 'earth_daymap', false, false);
-  assert.equal(pending.has('/textures/8k_earth_daymap.jpg'), true);
-  pending.get('/textures/8k_earth_daymap.jpg')!(new THREE.Texture());
+  assert.equal(pending.has(textureUrl('earth_daymap', true)), true);
+  pending.get(textureUrl('earth_daymap', true))!(new THREE.Texture());
   pending.clear();
   await Promise.resolve();
   manager.update('ultra', null, false, false, true, [], true);
   manager.update('ultra', null, false, false);
   assert.equal(
-    pending.has('/textures/2k_earth_daymap.jpg'),
+    pending.has(textureUrl('earth_daymap')),
     false,
     'keep the previous high-resolution map during navigation',
   );
   manager.update('standard', null, false, false, true, [], true);
   assert.equal(
-    pending.has('/textures/2k_earth_daymap.jpg'),
+    pending.has(textureUrl('earth_daymap')),
     true,
     'an explicit standard-quality choice still applies during navigation',
   );
-  pending.get('/textures/2k_earth_daymap.jpg')!(new THREE.Texture());
+  pending.get(textureUrl('earth_daymap'))!(new THREE.Texture());
   manager.dispose();
 });
 
@@ -591,18 +696,18 @@ void test('only the focused body and background upgrade; unmount disposes late a
   await Promise.resolve();
   manager.update('ultra', 'mars', false, false);
   assert.deepEqual([...pending.keys()].sort(), [
-    '/textures/8k_mars.jpg',
-    '/textures/8k_stars_milky_way.jpg',
+    textureUrl('mars', true),
+    textureUrl('stars_milky_way', true),
   ]);
   for (const resolve of pending.values()) resolve(new THREE.Texture());
   pending.clear();
   await Promise.resolve();
   manager.update('ultra', 'earth_daymap', false, false, false);
   assert.deepEqual([...pending.keys()].sort(), [
-    '/textures/2k_mars.jpg',
-    '/textures/2k_stars_milky_way.jpg',
-    '/textures/8k_earth_daymap.jpg',
-    '/textures/8k_earth_nightmap.jpg',
+    textureUrl('mars'),
+    textureUrl('stars_milky_way'),
+    textureUrl('earth_daymap', true),
+    textureUrl('earth_nightmap', true),
   ]);
   manager.dispose();
   for (const resolve of pending.values()) {
@@ -642,7 +747,7 @@ void test('idle preloading warms lazy maps and keeps them attached after navigat
   );
   manager.preload();
   const texture = new THREE.Texture();
-  pending.get('/textures/satellites/2k_phobos.jpg')!(texture);
+  pending.get(textureUrl('phobos'))!(texture);
   pending.clear();
   await Promise.resolve();
   manager.update('standard', null, false, false);
@@ -676,19 +781,19 @@ void test('lazy satellite maps load for the selected surface and release on navi
   manager.update('standard', null, false, false, true, []);
   assert.equal(pending.size, 0);
   manager.update('standard', 'phobos', false, false, true, ['phobos']);
-  assert.deepEqual([...pending.keys()], ['/textures/satellites/2k_phobos.jpg']);
+  assert.deepEqual([...pending.keys()], [textureUrl('phobos')]);
   const standard = new THREE.Texture();
-  pending.get('/textures/satellites/2k_phobos.jpg')!(standard);
+  pending.get(textureUrl('phobos'))!(standard);
   pending.clear();
   await Promise.resolve();
   manager.update('ultra', 'phobos', false, false, true, ['phobos']);
-  assert.deepEqual([...pending.keys()], ['/textures/satellites/4k_phobos.jpg']);
+  assert.deepEqual([...pending.keys()], [textureUrl('phobos', true)]);
   manager.update('standard', 'deimos', false, false, true, ['deimos']);
   assert.equal(cleared, 1);
   const stale = new THREE.Texture();
   const dispose = t.mock.method(stale, 'dispose');
-  pending.get('/textures/satellites/4k_phobos.jpg')!(stale);
-  pending.delete('/textures/satellites/4k_phobos.jpg');
+  pending.get(textureUrl('phobos', true))!(stale);
+  pending.delete(textureUrl('phobos', true));
   await Promise.resolve();
   assert.equal(dispose.mock.callCount(), 1);
   manager.dispose();

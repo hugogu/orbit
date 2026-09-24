@@ -102,15 +102,21 @@ void test('every asteroid is addressable from navigation, profiles, textures, an
     assert.equal(selected, asteroid.id);
     if (asteroid.texture) {
       assert.ok(
-        existsSync(`public${texturePath(asteroid.texture, false, 2048)}`),
+        existsSync(
+          `public${texturePath(asteroid.texture, false, 2048).split('?')[0]}`,
+        ),
       );
       assert.ok(
-        existsSync(`public${texturePath(asteroid.texture, true, 8192)}`),
+        existsSync(
+          `public${texturePath(asteroid.texture, true, 8192).split('?')[0]}`,
+        ),
       );
     }
     if (asteroid.normalTexture)
       assert.ok(
-        existsSync(`public${texturePath(asteroid.normalTexture, false, 2048)}`),
+        existsSync(
+          `public${texturePath(asteroid.normalTexture, false, 2048).split('?')[0]}`,
+        ),
       );
     assert.equal(
       asteroid.shapeModel === null ? asteroid.id === 'ceres' : true,

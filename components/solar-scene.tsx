@@ -42,7 +42,10 @@ import { createObserverMarker } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
 import { createStarField } from './star-field';
 import { createGroundSky } from './ground-sky';
-import type { TextureQuality } from '@/lib/texture-quality';
+import {
+  textureLoadingOptions,
+  type TextureQuality,
+} from '@/lib/texture-quality';
 import type { SkyLocation } from '@/lib/sky-events';
 import type { CameraPose } from '@/lib/share-view';
 import type { EclipseProgressEvent } from '@/lib/eclipse-progress';
@@ -209,8 +212,10 @@ export default function SolarScene({
     const starField = createStarField(scene, skyLabelLayer, (message) =>
       latest.current.onAssetStatus(message),
     );
-    textureManager.register('stars_milky_way', (texture) =>
-      starField.setPanorama(texture),
+    textureManager.register(
+      'stars_milky_way',
+      (texture) => starField.setPanorama(texture),
+      textureLoadingOptions('stars_milky_way'),
     );
     // The moons, comets and asteroids all ride on real ephemerides, so a
     // sandbox run has nothing true to say about them. One container makes
@@ -253,7 +258,8 @@ export default function SolarScene({
             textureManager,
           ),
         );
-      else if (body.texture) applyMap(material, body.texture);
+      else if (body.texture)
+        applyMap(material, body.texture, textureLoadingOptions(body.texture));
       mesh.userData.id = body.id;
       pivot.add(mesh);
       meshes.set(body.id, mesh);
@@ -283,7 +289,11 @@ export default function SolarScene({
             emissiveIntensity: 0.2,
           }),
         );
-        applyMap(ring.material, 'saturn_ring_alpha');
+        applyMap(
+          ring.material,
+          'saturn_ring_alpha',
+          textureLoadingOptions('saturn_ring_alpha'),
+        );
         ring.rotation.x = -Math.PI / 2;
         pivot.add(ring);
       }
@@ -329,7 +339,7 @@ export default function SolarScene({
         .material as THREE.MeshStandardMaterial;
       const fallbackColor = material.color.getHex();
       applyMap(material, moonTextureNames[moon.en], {
-        lazy: moon.en !== 'Moon',
+        ...textureLoadingOptions(moonTextureNames[moon.en]),
         mapColor: 0xffffff,
         clear: () => {
           material.map = null;
@@ -354,10 +364,10 @@ export default function SolarScene({
           asteroid.texture,
           (texture) => asteroidSystem.setTexture(asteroid.id, texture),
           {
-            // These are ordinary body materials, not opt-in terrain data.
-            // Attach the local standard map even before an asteroid is focused;
-            // the selected body can still upgrade to the high-resolution map.
-            lazy: false,
+            // Fetch body-specific maps only when the asteroid is selected,
+            // then retain visited maps alongside neighboring bodies.
+            lazy: true,
+            preload: false,
             retainOnNavigation: true,
             clear: () => asteroidSystem.clearTexture(asteroid.id),
           },
@@ -368,7 +378,8 @@ export default function SolarScene({
           (texture) => asteroidSystem.setNormalTexture(asteroid.id, texture),
           {
             // Keep normal maps aligned with their body-specific color maps.
-            lazy: false,
+            lazy: true,
+            preload: false,
             retainOnNavigation: true,
             colorSpace: THREE.NoColorSpace,
             clear: () => asteroidSystem.clearNormalTexture(asteroid.id),
@@ -385,8 +396,10 @@ export default function SolarScene({
     const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
     const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
-    textureManager.register('earth_nightmap', (texture) =>
-      eclipseSystem.setEarthNightMap(texture),
+    textureManager.register(
+      'earth_nightmap',
+      (texture) => eclipseSystem.setEarthNightMap(texture),
+      textureLoadingOptions('earth_nightmap'),
     );
     const idleWindow = window as Window & {
       requestIdleCallback?: (

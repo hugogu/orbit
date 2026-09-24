@@ -1,3 +1,5 @@
+import { textureFileRevisions } from './texture-revisions';
+
 export type TextureQuality = 'auto' | 'standard' | 'ultra';
 export const textureQualityLabels: Record<TextureQuality, string> = {
   auto: '自动 · 按设备选择',
@@ -284,7 +286,10 @@ export function texturePath(name: string, high: boolean, maxSize: number) {
       ? map.file
       : (map?.standardFile ??
         `2k_${name}.${name === 'saturn_ring_alpha' ? 'png' : 'jpg'}`);
-  return `/textures/${file}${map?.revision ? `?v=${map.revision}` : ''}`;
+  const revision = [textureFileRevisions[file], map?.revision]
+    .filter(Boolean)
+    .join('-');
+  return `/textures/${file}${revision ? `?v=${revision}` : ''}`;
 }
 export function shouldLoadHighResolution(
   quality: TextureQuality,
@@ -292,4 +297,14 @@ export function shouldLoadHighResolution(
   saveData: boolean,
 ) {
   return quality === 'ultra' || (quality === 'auto' && !compact && !saveData);
+}
+
+const eagerTextureNames = new Set(['earth_daymap', 'sun', 'stars_milky_way']);
+const idleTextureNames = new Set(['moon', 'mars']);
+
+/** Keep the startup scene small and load other body maps as they become useful. */
+export function textureLoadingOptions(name: string) {
+  if (eagerTextureNames.has(name))
+    return { lazy: false, preload: false } as const;
+  return { lazy: true, preload: idleTextureNames.has(name) } as const;
 }
