@@ -149,7 +149,7 @@ npm run build:vercel
 
 ORBIT deploys as a static export to Vercel, with a separate Cloudflare Worker build for the Sites platform, and optional Google Analytics configured through one environment variable. See the [deployment guide](docs/deployment.md) for Vercel project setup, build settings, and analytics configuration.
 
-The Vercel build also emits crawlable body profiles under `/:locale/bodies/:id` and the sky-event guide under `/:locale/events` and `/:locale/events/:id`, plus `robots.txt` and `sitemap.xml`. Set `NEXT_PUBLIC_SITE_URL` to the permanent HTTPS hostname in the Vercel project before deploying; the build uses it for canonical, Open Graph, alternate-language, and sitemap URLs. The demo hostname is used when the variable is absent.
+The Vercel build also emits crawlable body profiles under `/:locale/bodies/:id`, listed together at `/:locale/bodies`, and the sky-event guide under `/:locale/events` and `/:locale/events/:id`, plus `robots.txt` and `sitemap.xml`. Set `NEXT_PUBLIC_SITE_URL` to the permanent HTTPS hostname in the Vercel project before deploying; the build uses it for canonical, Open Graph, alternate-language, and sitemap URLs. The demo hostname is used when the variable is absent.
 
 ### Install and use offline
 

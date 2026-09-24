@@ -1,10 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
+import sharp from 'sharp/lib/index.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { createTextureManager } from '../components/texture-manager';
 import { bodies } from '../lib/solar';
-import { orbitingMoons } from '../lib/moon-orbits';
+import { orbitingMoons, moonTextureNames } from '../lib/moon-orbits';
+import { asteroids } from '../lib/asteroids';
 import {
   highResolutionTextures,
   texturePath,
@@ -66,6 +68,47 @@ void test('every body texture is registered and has a local fallback', () => {
         `${body.id} high-resolution map`,
       );
     }
+  }
+});
+
+void test('surface colour maps are opaque and keep their colour at both qualities', async () => {
+  // An alpha channel is read as opacity by browsers and premultiplied by
+  // resizers, which is how a 2K derivative once lost all of Io's colour.
+  const names = new Set([
+    ...bodies.flatMap((body) => (body.texture ? [body.texture] : [])),
+    ...Object.values(moonTextureNames),
+    ...asteroids.flatMap((asteroid) =>
+      asteroid.texture ? [asteroid.texture] : [],
+    ),
+  ]);
+  const meanColour = async (name: string, high: boolean) => {
+    const file = `public${texturePath(name, high, 8192).split('?')[0]}`;
+    const { hasAlpha } = await sharp(file).metadata();
+    assert.equal(hasAlpha, false, `${file} has an alpha channel`);
+    // Reduce first so large JPEGs decode at a fraction of their size.
+    const { data, info } = await sharp(file)
+      .resize(256, 128, { fit: 'fill' })
+      .toColourspace('srgb')
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const { width, height, channels } = info;
+    const stats = await sharp(data, {
+      raw: { width, height, channels },
+    }).stats();
+    return stats.channels.map((channel) => channel.mean);
+  };
+  // One body at a time, so only its two maps are ever being decoded.
+  for (const name of names) {
+    const [standard, high] = await Promise.all([
+      meanColour(name, false),
+      meanColour(name, true),
+    ]);
+    standard.forEach((mean, channel) =>
+      assert.ok(
+        Math.abs(mean - high[channel]) < 4,
+        `${name} standard map channel ${channel}: ${mean} vs ${high[channel]}`,
+      ),
+    );
   }
 });
 

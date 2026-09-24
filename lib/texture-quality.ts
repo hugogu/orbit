@@ -45,7 +45,9 @@ export const highResolutionTextures: Record<
   // Europa, Callisto, Enceladus, Mimas, Iapetus, and Charon use the CC BY 4.0
   // asteroid surface as an explicitly illustrative fallback because the
   // former bundled sources did not provide clear commercial redistribution
-  // terms. The same fallback is used for Pluto below.
+  // terms. The same fallback is used for Pluto below. Io and Titan are
+  // published as RGBA PNGs whose alpha is Celestia's specular mask, not
+  // opacity; their local JPEGs keep only the colour.
   phobos: {
     file: 'satellites/4k_phobos.jpg',
     width: 4096,
@@ -57,9 +59,9 @@ export const highResolutionTextures: Record<
     standardFile: 'satellites/2k_deimos.jpg',
   },
   io: {
-    file: 'satellites/4k_io.png',
+    file: 'satellites/4k_io.jpg',
     width: 4096,
-    standardFile: 'satellites/2k_io.png',
+    standardFile: 'satellites/2k_io.jpg',
   },
   europa: {
     file: 'satellites/4k_europa.jpg',
@@ -77,9 +79,9 @@ export const highResolutionTextures: Record<
     standardFile: 'satellites/2k_callisto.jpg',
   },
   titan: {
-    file: 'satellites/4k_titan.png',
+    file: 'satellites/4k_titan.jpg',
     width: 4096,
-    standardFile: 'satellites/2k_titan.png',
+    standardFile: 'satellites/2k_titan.jpg',
   },
   enceladus: {
     file: 'satellites/4k_enceladus.jpg',

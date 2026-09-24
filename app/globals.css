@@ -169,8 +169,9 @@ body {
 }
 .seo-breadcrumb {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
   color: #8c99ad;
   font-size: 14px;
 }
@@ -733,6 +734,71 @@ body {
   border-color: #d9c49a5c;
   color: #e6cfa2;
 }
+
+/* The body index: every profile as a card, moons grouped under their planets. */
+.body-index-toc {
+  margin-top: 36px;
+}
+.body-index-group > h3 {
+  color: #c7b591;
+  font-size: 15px;
+  font-weight: 500;
+  margin: 36px 0 0;
+}
+.body-index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+}
+.body-index-grid a {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  height: 100%;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  background: #ffffff05;
+  padding: 18px;
+}
+.body-index-grid a:hover {
+  border-color: #d9c49a5c;
+  background: #d9c49a0a;
+}
+.body-index-grid img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+.body-index-grid :is(h3, h4) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  color: #e6d9bf;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+.body-index-grid :is(h3, h4) span {
+  color: #6f8099;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.body-index-type {
+  color: #a3906c;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+.body-index-summary {
+  color: #a7b3c5;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 10px 0 0;
+}
 .seo-page-footer {
   border-top: 1px solid #ffffff16;
   color: #788ba7;
@@ -884,8 +950,18 @@ body {
     margin-bottom: 30px;
   }
   .event-grid,
-  .event-related ul {
+  .event-related ul,
+  .body-index-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .body-index-grid a {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+  .body-index-grid img {
+    width: 64px;
+    height: 64px;
   }
   .event-observing li {
     font-size: 15px;

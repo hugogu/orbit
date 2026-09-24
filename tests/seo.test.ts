@@ -3,8 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   absoluteSiteUrl,
+  bodiesIndexDescription,
+  bodiesIndexJsonLd,
+  bodiesIndexPath,
+  bodiesIndexSections,
+  bodiesIndexTitle,
   bodyDetailsPath,
   catalogEntries,
+  catalogEntry,
   entryImagePath,
   eventDetailsPath,
   eventJsonLd,
@@ -16,16 +22,26 @@ import {
   homeJsonLd,
   normalizeSiteOrigin,
   ogImagePath,
+  profileAncestors,
   profileJsonLd,
   profileTitle,
   serializeJsonLd,
   siteOrigin,
   seoSiteName,
   seoLocales,
+  type CatalogEntry,
 } from '../lib/seo';
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
 import { portraitCredit } from '../lib/profile-images';
-import { localePath, translator } from '../lib/i18n';
+import { physicalParameters } from '../lib/physical-facts';
+import { profileProperties, propertyUnits } from '../lib/profile-properties';
+import {
+  solarSystemItem,
+  wikidataClasses,
+  wikidataEntities,
+  wikidataUrl,
+} from '../lib/wikidata';
+import { languages, localePath, translator, type Locale } from '../lib/i18n';
 import { renderSitemap, sitemapEntries } from '../lib/sitemap';
 import { htmlTagAttributes } from '../scripts/lib/html-tags';
 
@@ -75,6 +91,14 @@ const eventsPage = readFileSync(
 );
 const eventPage = readFileSync(
   new URL('../app/_pages/event-page.tsx', import.meta.url),
+  'utf8',
+);
+const bodiesPage = readFileSync(
+  new URL('../app/_pages/bodies-page.tsx', import.meta.url),
+  'utf8',
+);
+const bodiesRoute = readFileSync(
+  new URL('../app/(localized)/[locale]/bodies/page.tsx', import.meta.url),
   'utf8',
 );
 const globalStyles = readFileSync(
@@ -138,14 +162,15 @@ void test('profile JSON-LD describes the learning resource and breadcrumb graph'
     [
       'Organization',
       'WebSite',
-      'AstronomicalBody',
+      'Place',
+      'Place',
       'BreadcrumbList',
       'LearningResource',
       'WebPage',
     ],
   );
   const breadcrumb = nodes.find((node) => node['@type'] === 'BreadcrumbList')!;
-  assert.equal((breadcrumb.itemListElement as Array<unknown>).length, 2);
+  assert.equal((breadcrumb.itemListElement as Array<unknown>).length, 3);
   assert.equal((nodes[0] as Record<string, unknown>).name, seoSiteName);
   assert.equal((nodes[1] as Record<string, unknown>).name, seoSiteName);
   const resource = nodes.find((node) => node['@type'] === 'LearningResource')!;
@@ -174,10 +199,332 @@ void test('profile JSON-LD describes the learning resource and breadcrumb graph'
   );
 });
 
+type Node = Record<string, unknown>;
+
+function profileGraph(entry: CatalogEntry, locale: Locale) {
+  const canonical = absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id));
+  const nodes = profileJsonLd({
+    entry,
+    locale,
+    title: profileTitle(entry, locale),
+    description: translator(locale)(entry.data.description),
+    canonical,
+  })['@graph'] as Node[];
+  return { canonical, nodes };
+}
+
+/** Every JSON-LD graph the site publishes, keyed by the page carrying it. */
+function publishedGraphs() {
+  const graphs: { page: string; nodes: Node[] }[] = [
+    { page: absoluteSiteUrl('/'), nodes: homeJsonLd()['@graph'] as Node[] },
+  ];
+  for (const locale of seoLocales) {
+    const bodies = absoluteSiteUrl(bodiesIndexPath(locale));
+    graphs.push({
+      page: bodies,
+      nodes: bodiesIndexJsonLd({
+        locale,
+        title: bodiesIndexTitle(locale),
+        description: bodiesIndexDescription(locale),
+        canonical: bodies,
+      })['@graph'] as Node[],
+    });
+    for (const entry of catalogEntries()) {
+      const { canonical, nodes } = profileGraph(entry, locale);
+      graphs.push({ page: canonical, nodes });
+    }
+    const events = absoluteSiteUrl(eventsIndexPath(locale));
+    graphs.push({
+      page: events,
+      nodes: eventsIndexJsonLd({
+        locale,
+        title: eventsIndexTitle(locale),
+        description: 'Sky events.',
+        canonical: events,
+      })['@graph'] as Node[],
+    });
+    for (const topic of eventTopics) {
+      const canonical = absoluteSiteUrl(eventDetailsPath(locale, topic.id));
+      graphs.push({
+        page: canonical,
+        nodes: eventJsonLd({
+          topic,
+          locale,
+          title: eventTitle(topic, locale),
+          description: 'A sky event.',
+          canonical,
+        })['@graph'] as Node[],
+      });
+    }
+  }
+  return graphs;
+}
+
+/** Visit every object in a graph, nested ones included. */
+function eachObject(value: unknown, visit: (node: Node) => void) {
+  if (Array.isArray(value)) value.forEach((item) => eachObject(item, visit));
+  else if (value && typeof value === 'object') {
+    visit(value as Node);
+    Object.values(value).forEach((item) => eachObject(item, visit));
+  }
+}
+
+void test('structured data uses only types that schema.org defines', () => {
+  // schema.org has no celestial-body type. A validator rejects an unknown
+  // @type such as AstronomicalBody, and with it every `about` naming it.
+  const vocabulary = new Set([
+    'BreadcrumbList',
+    'CollectionPage',
+    'DefinedTerm',
+    'DefinedTermSet',
+    'ImageObject',
+    'ItemList',
+    'LearningResource',
+    'ListItem',
+    'Organization',
+    'Place',
+    'PropertyValue',
+    'WebPage',
+    'WebSite',
+  ]);
+  for (const { page, nodes } of publishedGraphs())
+    eachObject(nodes, (node) => {
+      if (!('@type' in node)) return;
+      const type = String(node['@type']);
+      assert.ok(vocabulary.has(type), `${page}: ${type}`);
+    });
+});
+
+void test('a graph defines every node its own page refers to', () => {
+  for (const { page, nodes } of publishedGraphs()) {
+    const defined = new Set<unknown>();
+    eachObject(nodes, (node) => {
+      if ('@type' in node && '@id' in node) defined.add(node['@id']);
+    });
+    eachObject(nodes, (node) => {
+      const keys = Object.keys(node);
+      if (keys.length !== 1 || keys[0] !== '@id') return;
+      const id = String(node['@id']);
+      // A topic may point at the term set its index page defines.
+      if (id.startsWith(`${page}#`) || id.startsWith(`${siteOrigin}#`))
+        assert.ok(defined.has(id), `${page}: ${id}`);
+    });
+  }
+});
+
+void test('each profile identifies its body as a Place named by Wikidata', () => {
+  assert.deepEqual(
+    Object.keys(wikidataEntities).sort(),
+    catalogEntries()
+      .map((entry) => entry.data.id)
+      .sort(),
+  );
+  const items = Object.values(wikidataEntities).map((entity) => entity.item);
+  assert.equal(new Set(items).size, items.length);
+  for (const id of [
+    ...items,
+    solarSystemItem,
+    ...Object.values(wikidataClasses),
+  ])
+    assert.match(id, /^Q[1-9]\d*$/);
+
+  for (const locale of seoLocales) {
+    for (const entry of catalogEntries()) {
+      const { canonical, nodes } = profileGraph(entry, locale);
+      const identity = wikidataEntities[entry.data.id];
+      const body = nodes.find(
+        (node) => node['@id'] === `${canonical}#astronomical-body`,
+      )!;
+      const page = nodes.find((node) => node['@type'] === 'WebPage')!;
+      assert.equal(body['@type'], 'Place');
+      assert.equal(body.sameAs, wikidataUrl(identity.item));
+      assert.equal(
+        body.additionalType,
+        wikidataUrl(wikidataClasses[identity.class]),
+      );
+      assert.deepEqual(body.mainEntityOfPage, { '@id': page['@id'] });
+      assert.deepEqual(page.mainEntity, { '@id': body['@id'] });
+      assert.deepEqual(body.containedInPlace, {
+        '@id': `${siteOrigin}#solar-system`,
+      });
+
+      // Aliases are the body's names in the other catalogues; the explorer's
+      // capitalised labels ("EARTH", "1P / HALLEY") are typography.
+      const aliases = body.alternateName as string[];
+      const names = seoLocales.map((item) => translator(item)(entry.data.name));
+      assert.deepEqual(
+        aliases,
+        [...new Set(names)].filter((name) => name !== body.name),
+      );
+      for (const alias of aliases)
+        assert.doesNotMatch(alias, /^[^a-z]*[A-Z]{2}[^a-z]*$|\s\/\s/, alias);
+    }
+  }
+  // Moons are identified by their article: "Nereid" alone is the sea nymphs.
+  assert.equal(wikidataEntities['moon-nereid'].item, 'Q16076');
+  assert.equal(wikidataEntities.pluto.class, 'dwarfPlanet');
+  assert.equal(wikidataEntities.ceres.class, 'dwarfPlanet');
+});
+
+void test('structured body properties restate the figures a profile prints', () => {
+  const properties = (id: string) =>
+    new Map(
+      profileProperties(catalogEntry(id)!).map((property) => [
+        property.id,
+        property,
+      ]),
+    );
+  const earth = properties('earth');
+  assert.equal(earth.get('mass')?.value, physicalParameters.earth.mass);
+  assert.equal(propertyUnits[earth.get('mass')!.unit!].code, 'KGM');
+  assert.equal(earth.get('meanRadius')?.value, 6371);
+  assert.equal(propertyUnits[earth.get('meanSunDistance')!.unit!].code, 'A12');
+  // Venus turns backwards; the page prints the period, not the sign.
+  assert.equal(properties('venus').get('rotationPeriod')?.value, 243.025);
+  // The Sun prints no distance, period or mass, so it states none.
+  assert.deepEqual(
+    [...properties('sun').keys()],
+    ['meanRadius', 'rotationPeriod'],
+  );
+  // A derived distance carries no floating-point noise.
+  assert.equal(properties('halley').get('perihelionDistance')?.value, 0.5728);
+
+  const io = profileGraph(catalogEntry('moon-io')!, 'en').nodes.find(
+    (node) => node['@type'] === 'Place' && node.name === 'Io',
+  )!;
+  const parent = (io.additionalProperty as Node[]).find(
+    (property) => property.propertyID === 'parentPlanet',
+  )!;
+  assert.equal(parent.name, 'Parent planet');
+  assert.equal(parent.value, 'Jupiter');
+  assert.equal(parent.unitCode, undefined);
+
+  const source: Record<string, string> = languages['zh-CN'].messages;
+  for (const entry of catalogEntries())
+    for (const property of profileProperties(entry)) {
+      assert.ok(Object.hasOwn(source, property.label), property.label);
+      if (typeof property.value === 'number')
+        assert.ok(Number.isFinite(property.value), property.id);
+      else assert.ok(Object.hasOwn(source, property.value), property.value);
+    }
+});
+
+void test('profile breadcrumbs climb through the body index, a moon through its planet', () => {
+  const trail = (id: string) =>
+    (
+      profileGraph(catalogEntry(id)!, 'en').nodes.find(
+        (node) => node['@type'] === 'BreadcrumbList',
+      )!.itemListElement as Node[]
+    ).map((step) => step.item);
+  const home = absoluteSiteUrl('/');
+  const index = absoluteSiteUrl(bodiesIndexPath('en'));
+  const profile = (id: string) => absoluteSiteUrl(bodyDetailsPath('en', id));
+  assert.deepEqual(trail('earth'), [home, index, profile('earth')]);
+  assert.deepEqual(trail('halley'), [home, index, profile('halley')]);
+  assert.deepEqual(trail('moon-io'), [
+    home,
+    index,
+    profile('jupiter'),
+    profile('moon-io'),
+  ]);
+  for (const locale of seoLocales)
+    for (const entry of catalogEntries()) {
+      const ancestors = profileAncestors(entry, locale);
+      assert.equal(ancestors[0].path, bodiesIndexPath(locale));
+      assert.equal(ancestors.length, entry.kind === 'moon' ? 2 : 1);
+      assert.ok(
+        ancestors.every(
+          (step) => step.path !== bodyDetailsPath(locale, entry.data.id),
+        ),
+      );
+    }
+  // The visible breadcrumb reads the same ancestors as the structured one.
+  assert.match(bodyPage, /profileAncestors\(entry, locale\)\.map/);
+});
+
+void test('the body index lists every profile once, in the order it prints them', () => {
+  assert.equal(bodiesIndexPath('zh-CN'), '/zh-CN/bodies');
+  assert.equal(bodiesIndexPath('en'), '/en-US/bodies');
+  const sections = bodiesIndexSections();
+  const listed = sections.flatMap((section) =>
+    section.groups.flatMap((group) =>
+      group.entries.map((entry) => entry.data.id),
+    ),
+  );
+  assert.equal(new Set(listed).size, listed.length);
+  assert.deepEqual(
+    [...listed].sort(),
+    catalogEntries()
+      .map((entry) => entry.data.id)
+      .sort(),
+  );
+  for (const group of sections.find((section) => section.id === 'moons')!
+    .groups)
+    assert.ok(
+      group.entries.every(
+        (entry) =>
+          entry.kind === 'moon' && entry.data.parentId === group.planet?.id,
+      ),
+    );
+
+  const canonical = absoluteSiteUrl(bodiesIndexPath('ja'));
+  const nodes = bodiesIndexJsonLd({
+    locale: 'ja',
+    title: bodiesIndexTitle('ja'),
+    description: bodiesIndexDescription('ja'),
+    canonical,
+  })['@graph'] as Node[];
+  assert.deepEqual(
+    nodes.map((node) => node['@type']),
+    ['Organization', 'WebSite', 'BreadcrumbList', 'ItemList', 'CollectionPage'],
+  );
+  const list = nodes.find((node) => node['@type'] === 'ItemList')!;
+  assert.equal(list.numberOfItems, listed.length);
+  assert.deepEqual(
+    (list.itemListElement as Node[]).map((item) => item.url),
+    listed.map((id) => absoluteSiteUrl(bodyDetailsPath('ja', id))),
+  );
+  const page = nodes.find((node) => node['@type'] === 'CollectionPage')!;
+  assert.deepEqual(page.mainEntity, { '@id': list['@id'] });
+
+  assert.match(bodiesRoute, /from '\.\.\/\.\.\/\.\.\/_pages\/bodies-page'/);
+  assert.match(bodiesPage, /generateStaticParams/);
+  assert.match(bodiesPage, /bodiesIndexJsonLd\(/);
+  assert.match(bodiesPage, /dynamicParams = false/);
+});
+
+void test('the body index reads as whole sentences in every language', () => {
+  for (const locale of seoLocales) {
+    const t = translator(locale);
+    const sentences = [
+      [bodiesIndexTitle(locale), bodiesIndexTitle('zh-CN')],
+      [bodiesIndexDescription(locale), bodiesIndexDescription('zh-CN')],
+      ...bodiesIndexSections().map((section) => [
+        t(section.summary),
+        section.summary,
+      ]),
+    ];
+    // Short names may coincide: Japanese writes 彗星 exactly as Chinese does.
+    const names = [
+      t('天体档案'),
+      ...bodiesIndexSections().map((section) => t(section.name)),
+    ];
+    assert.doesNotMatch(bodiesIndexTitle(locale), /[/·→]\s*$/);
+    for (const [text, source] of sentences) {
+      assert.ok(text.trim().length > 0);
+      if (locale !== 'zh-CN') assert.notEqual(text, source);
+    }
+    if (locale === 'en')
+      for (const text of [...sentences.map(([text]) => text), ...names])
+        assert.doesNotMatch(text, /\p{Script=Han}/u, text);
+  }
+});
+
 void test('sitemap repeats reciprocal hreflang links for every localized page', () => {
   const entries = sitemapEntries();
   const localized = entries.filter((entry) => entry.alternates);
-  const routes = catalogEntries().length + eventTopics.length + 1;
+  // Every profile and sky-event topic, plus the two indexes above them.
+  const routes = catalogEntries().length + eventTopics.length + 2;
   assert.equal(localized.length, routes * seoLocales.length);
   assert.equal(
     new Set(

@@ -20,6 +20,7 @@ import { bodies, regions, speedLabel } from '../lib/solar';
 import { comets, cometModelNote } from '../lib/comets';
 import {
   asteroids,
+  asteroidFacts,
   asteroidModelNote,
   asteroidSurfaceNote,
 } from '../lib/asteroids';
@@ -109,6 +110,8 @@ void test('all educational data and literal translation keys have catalog entrie
     regions,
     comets,
     asteroids,
+    // Fact labels are computed, so no data scan or literal `t()` reaches them.
+    asteroids.map(asteroidFacts),
     asteroidModelNote,
     asteroidSurfaceNote,
     moonSystems,

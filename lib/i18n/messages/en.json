@@ -1717,5 +1717,16 @@
   "沙盘中的自转周期与轴倾角只改变外观：点质量模型没有自转与轨道的耦合，它们不产生任何引力效应。天体相撞按完全非弹性合并处理，质量与动量守恒、体积相加。对照用的原始轨迹由同一积分器、同一步长从同一时刻推进，因此两条路径的差异只来自你所做的改动。改动带有发生时刻，会在运行中即时生效而不重来；分享链接携带的也正是这份「配方」——分叉时刻与全部改动，而不是算出来的轨迹，所以对方打开后会演算出同一条路径。": "Rotation period and axial tilt change only the appearance: a point-mass model has no spin–orbit coupling, so they produce no gravitational effect at all. A collision is treated as a perfectly inelastic merge, conserving mass and momentum and adding volumes. The original path shown for comparison is advanced by the same integrator, on the same step, from the same instant, so the difference between the two paths is your change and nothing else. A change carries the moment it was made and takes effect mid-run rather than restarting it, and a share link carries exactly that recipe — the fork and every change, never the computed trajectory — so whoever opens it works out the same path.",
   "打开链接的人会从同一时刻分叉，按同样的改动演算出同一条路径。": "Whoever opens the link forks from the same moment and works out the same path from the same changes.",
   "调整这颗天体的参数，观察它如何改变轨迹。": "Adjust this body’s parameters and watch how its path changes.",
-  "设备跟不上所选流速，演算正在放慢。步长不变，精度不受影响。": "This device cannot keep up with the chosen rate, so the run is advancing more slowly. The step is unchanged, so accuracy is not affected."
+  "设备跟不上所选流速，演算正在放慢。步长不变，精度不受影响。": "This device cannot keep up with the chosen rate, so the run is advancing more slowly. The step is unchanged, so accuracy is not affected.",
+  "天体档案": "Celestial bodies",
+  "天体档案：太阳、行星、卫星、小行星与彗星": "Celestial Bodies: the Sun, planets, moons, asteroids and comets",
+  "太阳、八颗行星与冥王星、有代表性的卫星，以及著名的小行星与彗星：每份档案都有核心参数、延伸阅读与可信来源。": "The Sun, the eight planets and Pluto, representative moons, and well-known asteroids and comets: every profile has core parameters, further reading and trusted sources.",
+  "从太阳到彗星，每个天体都有一份自己的档案。": "From the Sun to the comets, every body has a profile of its own.",
+  "太阳、行星与冥王星": "The Sun, planets and Pluto",
+  "一颗恒星、八颗行星，以及 2006 年起归入矮行星的冥王星，按与太阳的距离排列。": "One star, eight planets, and Pluto, classed as a dwarf planet since 2006, in order of distance from the Sun.",
+  "卫星": "Moons",
+  "天然卫星绕行星运行。这里按所属行星收录有代表性的卫星，并非完整名录：新的小卫星仍在不断被发现。": "Natural satellites orbit planets. The moons here are representative ones grouped by planet, not a complete list: new small moons are still being discovered.",
+  "绕太阳运行的岩质小天体：几颗主带中的大型小行星，以及探测器近距离造访过的近地小行星。谷神星是主带中唯一的矮行星。": "Small rocky bodies orbiting the Sun: several large main-belt asteroids, and near-Earth asteroids that spacecraft have visited up close. Ceres is the only dwarf planet in the main belt.",
+  "由冰与尘埃组成的小天体。靠近太阳时，受热的彗核释放气体和尘埃，形成彗发与彗尾。": "Small bodies of ice and dust. Near the Sun, the warmed nucleus releases gas and dust that form a coma and tails.",
+  "轨道偏心率": "Orbital eccentricity"
 }
