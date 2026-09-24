@@ -112,18 +112,18 @@ void test('surface colour maps are opaque and keep their colour at both qualitie
   }
 });
 
-void test('asteroid maps load without waiting for a focused selection', () => {
+void test('asteroid maps wait for focus and skip idle preload while retaining visited maps', () => {
   const scene = readFileSync(
     new URL('../components/solar-scene.tsx', import.meta.url),
     'utf8',
   );
   assert.match(
     scene,
-    /asteroidSystem\.setTexture\(asteroid\.id, texture\)[\s\S]*?lazy: false/,
+    /asteroidSystem\.setTexture\(asteroid\.id, texture\)[\s\S]*?lazy: true,\s*preload: false,\s*retainOnNavigation: true/,
   );
   assert.match(
     scene,
-    /asteroidSystem\.setNormalTexture\(asteroid\.id, texture\)[\s\S]*?lazy: false/,
+    /asteroidSystem\.setNormalTexture\(asteroid\.id, texture\)[\s\S]*?lazy: true,\s*preload: false,\s*retainOnNavigation: true/,
   );
 });
 

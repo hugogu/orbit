@@ -354,10 +354,10 @@ export default function SolarScene({
           asteroid.texture,
           (texture) => asteroidSystem.setTexture(asteroid.id, texture),
           {
-            // These are ordinary body materials, not opt-in terrain data.
-            // Attach the local standard map even before an asteroid is focused;
-            // the selected body can still upgrade to the high-resolution map.
-            lazy: false,
+            // Load asteroid maps on focus, then retain them during navigation
+            // so previously visited bodies stay textured in the scene.
+            lazy: true,
+            preload: false,
             retainOnNavigation: true,
             clear: () => asteroidSystem.clearTexture(asteroid.id),
           },
@@ -368,7 +368,8 @@ export default function SolarScene({
           (texture) => asteroidSystem.setNormalTexture(asteroid.id, texture),
           {
             // Keep normal maps aligned with their body-specific color maps.
-            lazy: false,
+            lazy: true,
+            preload: false,
             retainOnNavigation: true,
             colorSpace: THREE.NoColorSpace,
             clear: () => asteroidSystem.clearNormalTexture(asteroid.id),
