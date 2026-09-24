@@ -283,6 +283,17 @@ void test('the sky is re-centred on the camera as it is drawn, not a frame late'
   );
   const sky = scene.children.find((child) => child.type === 'Group')!;
   const panorama = sky.children[0] as THREE.Mesh;
+  const panoramaMaterial = panorama.material as THREE.MeshBasicMaterial;
+  const panoramaShader = {
+    vertexShader: THREE.ShaderLib.basic.vertexShader,
+    fragmentShader: THREE.ShaderLib.basic.fragmentShader,
+    uniforms: {} as Record<string, { value: unknown }>,
+  };
+  panoramaMaterial.onBeforeCompile(
+    panoramaShader as Parameters<typeof panoramaMaterial.onBeforeCompile>[0],
+    {} as THREE.WebGLRenderer,
+  );
+  assert.match(panoramaShader.vertexShader, /skyClipPosition\(mvPosition\)/);
   const camera = new THREE.PerspectiveCamera();
   // Orbit damping moves the camera after every other update, so a centre
   // taken earlier in the frame swings the whole sky as the view is dragged.
@@ -306,6 +317,16 @@ void test('the sky is re-centred on the camera as it is drawn, not a frame late'
     panorama.matrixWorld,
   );
   assert.ok(turned.angleTo(panoramaOrientation()) < 1e-6);
+  camera.userData.skyProjection = 'stereographic';
+  panorama.onBeforeRender(
+    null as never,
+    scene,
+    camera,
+    null as never,
+    null as never,
+    null as never,
+  );
+  assert.equal(panoramaShader.uniforms.skyStereographic.value, 1);
   field.dispose();
   assert.equal(scene.children.length, 0);
 });

@@ -18,6 +18,10 @@ import { astroBodies } from '../lib/ephemeris';
 import { createRun } from '../lib/sandbox/run';
 import { forkScenario } from '../lib/sandbox/scenario';
 import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
+import {
+  projectSkyPoint,
+  updateGroundSkyProjection,
+} from '../components/sky-projection';
 
 const radians = Math.PI / 180;
 const site = {
@@ -97,6 +101,60 @@ void test('size and distance toggles preserve topocentric directions; true size 
       assert.ok(diameter > 0.45 && diameter < 0.6, `${body.id}: ${diameter}`);
     }
   }
+});
+
+void test('stereographic ground projection keeps off-axis sky objects locally round', () => {
+  const width = 1280,
+    height = 720,
+    theta = Math.PI / 4,
+    radius = 1e-3;
+  const center = new Vector3(Math.sin(theta), 0, -Math.cos(theta));
+  const radial = new Vector3(Math.cos(theta), 0, Math.sin(theta));
+  const vertical = new Vector3(0, 1, 0);
+  const screenChord = (camera: THREE.PerspectiveCamera, tangent: Vector3) => {
+    const project = (sign: number) => {
+      const point = center
+        .clone()
+        .multiplyScalar(Math.cos(radius))
+        .addScaledVector(tangent, sign * Math.sin(radius))
+        .multiplyScalar(100);
+      projectSkyPoint(point, camera);
+      return new Vector3(
+        ((point.x + 1) * width) / 2,
+        ((1 - point.y) * height) / 2,
+        0,
+      );
+    };
+    return project(-1).distanceTo(project(1));
+  };
+  const perspective = new THREE.PerspectiveCamera(
+    70,
+    width / height,
+    0.1,
+    1000,
+  );
+  perspective.updateMatrixWorld(true);
+  const perspectiveRatio =
+    screenChord(perspective, radial) / screenChord(perspective, vertical);
+  assert.ok(perspectiveRatio > 1.3, `${perspectiveRatio}`);
+
+  const stereographic = new THREE.PerspectiveCamera(
+    70,
+    width / height,
+    0.1,
+    1000,
+  );
+  updateGroundSkyProjection(stereographic);
+  stereographic.updateMatrixWorld(true);
+  const halfFov = THREE.MathUtils.degToRad(stereographic.fov / 2);
+  const topEdge = projectSkyPoint(
+    new Vector3(0, Math.sin(halfFov), -Math.cos(halfFov)).multiplyScalar(100),
+    stereographic,
+  );
+  assert.ok(Math.abs(topEdge.y - 1) < 1e-10, `${topEdge.y}`);
+  const stereographicRatio =
+    screenChord(stereographic, radial) / screenChord(stereographic, vertical);
+  assert.ok(Math.abs(stereographicRatio - 1) < 1e-4, `${stereographicRatio}`);
 });
 
 void test('Moon includes the observer parallax instead of using a geocentric sky', () => {
@@ -315,6 +373,7 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
       shader.fragmentShader,
       /dot\(normalize\(groundNormal\), groundSunDirection\)/,
     );
+    assert.match(shader.vertexShader, /skyClipPosition\(mvPosition\)/);
     const before = sky.camera.getWorldDirection(new THREE.Vector3());
     update(null);
     close(

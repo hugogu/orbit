@@ -10,6 +10,11 @@ import type { ScaleMode } from '../lib/solar';
 import type { SkyLocation } from '../lib/sky-events';
 import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
+import {
+  projectSkyPoint,
+  STEREOGRAPHIC_SKY_PROJECTION,
+  updateGroundSkyProjection,
+} from './sky-projection';
 import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
 import type { SandboxRun } from '../lib/sandbox/run';
 
@@ -46,26 +51,36 @@ export function createGroundSky(
       color: body.id === 'sun' ? 0xffffff : body.color,
     });
     const sunDirection = { value: new THREE.Vector3() };
-    if (body.id !== 'sun') {
-      // Each planet has its own direction to the Sun. Camera light layers
-      // cannot isolate one directional light per mesh in a single draw pass.
-      material.onBeforeCompile = (shader) => {
-        shader.uniforms.groundSunDirection = sunDirection;
-        shader.vertexShader =
-          'varying vec3 groundNormal;\n' +
-          shader.vertexShader.replace(
-            '#include <begin_vertex>',
-            '#include <begin_vertex>\ngroundNormal = mat3(modelMatrix) * normal;',
-          );
-        shader.fragmentShader =
-          'varying vec3 groundNormal; uniform vec3 groundSunDirection;\n' +
-          shader.fragmentShader.replace(
-            '#include <opaque_fragment>',
-            'outgoingLight *= 0.015 + max(0.0, dot(normalize(groundNormal), groundSunDirection));\n#include <opaque_fragment>',
-          );
-      };
-      material.customProgramCacheKey = () => 'ground-sunlight';
-    }
+    const skyStereographic = { value: 1 };
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.skyStereographic = skyStereographic;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>\n${STEREOGRAPHIC_SKY_PROJECTION}`,
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\ngl_Position = skyClipPosition(mvPosition);',
+      );
+      if (body.id === 'sun') return;
+      shader.uniforms.groundSunDirection = sunDirection;
+      shader.vertexShader =
+        'varying vec3 groundNormal;\n' +
+        shader.vertexShader.replace(
+          '#include <begin_vertex>',
+          '#include <begin_vertex>\ngroundNormal = mat3(modelMatrix) * normal;',
+        );
+      shader.fragmentShader =
+        'varying vec3 groundNormal; uniform vec3 groundSunDirection;\n' +
+        shader.fragmentShader.replace(
+          '#include <opaque_fragment>',
+          'outgoingLight *= 0.015 + max(0.0, dot(normalize(groundNormal), groundSunDirection));\n#include <opaque_fragment>',
+        );
+    };
+    material.customProgramCacheKey = () =>
+      body.id === 'sun'
+        ? 'ground-sun-stereographic'
+        : 'ground-sunlight-stereographic';
     const mesh = new THREE.Mesh(sphere, material);
     mesh.userData.id = body.id;
     root.add(mesh);
@@ -84,8 +99,11 @@ export function createGroundSky(
     side: THREE.BackSide,
     depthTest: false,
     depthWrite: false,
-    uniforms: { up: { value: new THREE.Vector3(0, 1, 0) } },
-    vertexShader: `varying vec3 direction; void main() { direction = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    uniforms: {
+      up: { value: new THREE.Vector3(0, 1, 0) },
+      skyStereographic: { value: 1 },
+    },
+    vertexShader: `${STEREOGRAPHIC_SKY_PROJECTION}\nvarying vec3 direction; void main() { direction = position; vec4 viewPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = skyClipPosition(viewPosition); }`,
     fragmentShader: `uniform vec3 up; varying vec3 direction; void main() {
       float altitude = dot(normalize(direction), up);
       if (altitude > 0.0) discard;
@@ -320,13 +338,13 @@ export function createGroundSky(
       }
       camera.quaternion.copy(frame.rotation).multiply(localCamera);
       camera.aspect = width / height;
-      camera.updateProjectionMatrix();
+      updateGroundSkyProjection(camera);
       camera.updateMatrixWorld();
       for (const entry of entries) {
         projected
           .copy(entry.mesh.position)
-          .addScaledVector(frame.up, entry.mesh.scale.x * 1.3)
-          .project(camera);
+          .addScaledVector(frame.up, entry.mesh.scale.x * 1.3);
+        projectSkyPoint(projected, camera);
         entry.place(
           projected,
           width,
@@ -335,10 +353,8 @@ export function createGroundSky(
         );
       }
       for (const entry of cardinals) {
-        projected
-          .copy(entry.direction)
-          .applyQuaternion(frame.rotation)
-          .project(camera);
+        projected.copy(entry.direction).applyQuaternion(frame.rotation);
+        projectSkyPoint(projected, camera);
         entry.place(projected, width, height, true);
       }
     },
