@@ -11,6 +11,7 @@ import {
   advance,
   barycenter,
   mergeContacts,
+  positionAfter,
   systemEnergy,
   zeroVectors,
   type PointMass,
@@ -593,7 +594,7 @@ void test('the escape threshold matches the model', () => {
 void test('an edit lands mid-run, keeping the elapsed time and the path so far', () => {
   const run = createRun(forkScenario(J2000_MS));
   while (run.elapsedDays < 400) run.advance(40);
-  const beforeEdit = run.elapsedDays;
+  const beforeEdit = run.shownDays;
   const trailBefore = run.trails.get('jupiter')!.length;
   // Until now the edited system and the untouched one have been identical.
   const together = Math.hypot(
@@ -606,7 +607,9 @@ void test('an edit lands mid-run, keeping the elapsed time and the path so far',
   );
   assert.equal(together, 0);
   run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 9.5e28 });
-  // The clock does not rewind and the ribbon is not thrown away.
+  // It lands at the moment on screen. The clock does not rewind and the
+  // ribbon is not thrown away.
+  assert.equal(run.shownDays, beforeEdit);
   assert.equal(run.elapsedDays, beforeEdit);
   assert.ok(run.trails.get('jupiter')!.length >= trailBefore);
   assert.equal(run.scenario.changes.length, 1);
@@ -858,11 +861,12 @@ void test('a trail keeps the whole run, a point for each turn of the path', () =
 void test('a change pins the trail on both sides of it', () => {
   const run = createRun(forkScenario(J2000_MS));
   while (run.elapsedDays < 100) run.advance(20);
-  const before = [...run.variant.find((body) => body.id === 'mars')!.position];
+  const before = [...run.drawn.get('mars')!];
   run.apply({ kind: 'set', id: 'mars', field: 'distance', value: 3 });
   const after = [...run.variant.find((body) => body.id === 'mars')!.position];
-  // The jump is drawn from where the body was to where it was put, rather
-  // than smoothed across from wherever the last point happened to fall.
+  // The jump is drawn from where the body was on screen to where it was put,
+  // rather than smoothed across from wherever the last point happened to
+  // fall.
   assert.deepEqual(run.trails.get('mars')!.slice(-2), [before, after]);
 });
 
@@ -1145,7 +1149,7 @@ void test('the event log lists every event oldest first, so rows never shift', (
 void test('the viewer’s own changes join the event log, before and after', () => {
   const run = createRun(forkScenario(J2000_MS));
   run.advance(30);
-  const at = run.elapsedDays;
+  const at = run.shownDays;
   const jupiter = run.liveSpec('jupiter')!.mass;
   run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 9.5e28 });
   // Writing a value a body already has changes nothing, so it says nothing.
@@ -1399,4 +1403,154 @@ void test('a shared run opens playing, framed as it was shared', () => {
   // The followed body and the camera around it come from the link; the
   // camera's distance is measured from that body's framing.
   assert.doesNotMatch(opening, /setSelected\(|setView\(|setCameraPose\(/);
+});
+
+void test('a step lands exactly where its position half said it would', () => {
+  const points = [
+    point('sun', 1, [0, 0, 0], [0, 0, 0], kmToAu(696_000)),
+    point('earth', 3e-6, [1, 0, 0], [0, 0, -0.0172], kmToAu(6371)),
+    point('moonlet', 1e-9, [1.01, 0.001, 0], [0, 0.0005, -0.02]),
+  ];
+  const acceleration = accelerations(points, zeroVectors(points.length));
+  const dt = 0.1834;
+  const foreseen = points.map((body, index) =>
+    positionAfter(body, acceleration[index], dt),
+  );
+  advance(points, dt, acceleration);
+  // The same arithmetic rather than an estimate of it, so a picture drawn
+  // from it between steps meets each step exactly where it lands.
+  assert.deepEqual(
+    points.map((body) => body.position),
+    foreseen,
+  );
+});
+
+void test('the picture moves on every frame, whatever the step and the rate', () => {
+  // The step is the physics' own, about a sixth of a day while Mercury is in
+  // the system. Drawn only at whole steps, the bodies stood still for a
+  // couple of seconds at a time at the slowest rate, and at the default rate
+  // a 60 Hz frame carried anywhere from one step to four.
+  for (const rate of [0.1, 20]) {
+    const run = createRun(forkScenario(J2000_MS));
+    const frame = rate / 60;
+    let last = [...run.drawn.get('mercury')!];
+    let previous = 0;
+    for (let index = 1; index <= 120; index++) {
+      run.advance(frame);
+      // The clock shows the time asked for, ahead of the last whole step by
+      // less than a step.
+      assert.ok(Math.abs(run.shownDays - index * frame) < 1e-9);
+      assert.ok(run.shownDays - run.elapsedDays < run.step + 1e-12);
+      const now = run.drawn.get('mercury')!;
+      const moved = Math.hypot(...now.map((value, axis) => value - last[axis]));
+      assert.ok(moved > 0, `${rate} d/s: frame ${index} stood still`);
+      // Equal time, equal distance: no frame makes up for one that stalled.
+      if (previous > 0)
+        assert.ok(
+          Math.abs(moved / previous - 1) < 0.01,
+          `${rate} d/s: frame ${index} moved ${moved / previous} times the last`,
+        );
+      previous = moved;
+      last = [...now];
+    }
+  }
+});
+
+void test('an edit lands at the moment on screen, and a replay lands it there too', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  // Long enough for the Sun to be moving, then a part of a step on.
+  while (run.elapsedDays < 400) run.advance(40);
+  run.advance(run.step / 3);
+  const first = run.shownDays;
+  assert.ok(first > run.elapsedDays);
+  const shown = [...run.drawn];
+  run.apply({ kind: 'set', id: 'jupiter', field: 'mass', value: 9.5e28 });
+  assert.equal(run.scenario.changes[0].at, first);
+  assert.equal(run.elapsedDays, first);
+  // The run reaches the moment by the very arithmetic it was drawn with, so a
+  // mass change moves nothing on screen.
+  assert.deepEqual([...run.drawn], shown);
+
+  // A body placed about the central body is placed about it where it stands
+  // at that moment, which the run knows only once it has reached it.
+  run.advance(run.step / 3);
+  const second = run.shownDays;
+  run.apply((current) => ({
+    kind: 'add',
+    body: createdBody(
+      { name: 'Nova', mass: 6e24, radius: 6400, distance: 3, color: '#fff' },
+      0,
+      centreOf(centralBody(current.variant)),
+      'nova',
+    ),
+  }));
+  assert.equal(run.scenario.changes[1].at, second);
+  const find = (id: string) => run.variant.find((body) => body.id === id)!;
+  const nova = orbitState(find('nova'), find('sun'));
+  assert.ok(Math.abs(nova.distance - 3) < 1e-12, String(nova.distance));
+  assert.ok(nova.eccentricity < 1e-6, String(nova.eccentricity));
+
+  run.advance(11);
+  const replay = createRun({
+    epoch: run.scenario.epoch,
+    changes: [...run.scenario.changes],
+  });
+  for (let guard = 0; guard < 5000 && replay.shownDays < run.shownDays; guard++)
+    replay.advance(Math.min(0.37, run.shownDays - replay.shownDays));
+  assert.deepEqual(replay.events, run.events);
+  for (const [id, position] of run.drawn) {
+    const echo = replay.drawn.get(id)!;
+    const gap = Math.hypot(
+      ...position.map((value, axis) => value - echo[axis]),
+    );
+    assert.ok(gap < 1e-12, `${id} drifted by ${gap} AU on replay`);
+  }
+});
+
+void test('the scene draws a run at the moment on screen', () => {
+  const run = createRun(forkScenario(J2000_MS));
+  run.advance(run.step / 2);
+  assert.equal(run.elapsedDays, 0);
+  const roots = new Map(run.facts.map((body) => [body.id, new Group()]));
+  const system = createSandboxSystem(
+    new Scene(),
+    roots,
+    new Map(),
+    { appendChild: () => {} } as unknown as HTMLElement,
+    () => {},
+  );
+  system.setVisible(true);
+  system.update(run, {
+    baseline: true,
+    trails: true,
+    realSizes: false,
+    selected: 'mercury',
+    labels: false,
+    lineWidth: 1,
+    seconds: 1 / 60,
+    daysPerSecond: 0.1,
+    translate: (key) => key,
+  });
+  const drawn = scenePosition(run.drawn.get('mercury')!);
+  const stepped = scenePosition(
+    run.variant.find((body) => body.id === 'mercury')!.position,
+  );
+  assert.deepEqual(roots.get('mercury')!.position.toArray(), drawn);
+  assert.notDeepEqual(drawn, stepped);
+  // The camera follows the body where it is drawn, not where it last stepped.
+  assert.deepEqual(system.positionOf(run, 'mercury')!.toArray(), drawn);
+});
+
+void test('the clock reads the moment on screen', () => {
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  const panel = readFileSync(
+    new URL('../components/sandbox-panel.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(page, /elapsedLabel\(sandboxRun\.shownDays, t\)/);
+  assert.match(panel, /elapsedLabel\(run\.shownDays, t\)/);
+  assert.doesNotMatch(page + panel, /elapsedLabel\(\w+\.elapsedDays/);
 });

@@ -768,7 +768,7 @@ export default function SolarScene({
       if (sandbox && !sandbox.paused) sandbox.run.advance(dt * sandbox.speed);
       if (!sandbox) time = advanceTime(time, dt, s.speed, s.paused);
       const days = sandbox
-        ? daysFromEpoch(sandbox.run.scenario.epoch) + sandbox.run.elapsedDays
+        ? daysFromEpoch(sandbox.run.scenario.epoch) + sandbox.run.shownDays
         : (time - J2000_MS) / DAY_MS;
       if (sandboxActive !== !!sandbox) {
         sandboxActive = !!sandbox;

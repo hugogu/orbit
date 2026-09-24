@@ -12,12 +12,18 @@
  * reproduces the same path. Steps are a fixed size between review points and
  * are cut exactly at each change, which keeps the state at a given elapsed
  * time independent of how the frames happened to fall.
+ *
+ * The step is the physics' to choose and the time rate the viewer's, so how
+ * often a step completes says nothing about how often the picture should
+ * move. The picture is drawn at the moment on screen instead: the last whole
+ * step carried on through the time banked toward the next one.
  */
 import {
   advance,
   accelerations,
   barycenter,
   mergeContacts,
+  positionAfter,
   suggestedStep,
   systemEnergy,
   zeroVectors,
@@ -91,14 +97,32 @@ export type BodyFacts = Pick<
   'id' | 'sourceId' | 'name' | 'color' | 'texture' | 'spinDays' | 'tilt'
 >;
 
+/**
+ * An edit, or one that depends on where the bodies are when it lands — a body
+ * placed about the central body — given as a function of the run, which it
+ * reads once the run has reached that moment.
+ */
+export type RunEdit = SandboxEdit | ((run: SandboxRun) => SandboxEdit);
+
 export type SandboxRun = {
   readonly scenario: SandboxScenario;
-  /** Simulated days since the fork. */
+  /** Simulated days since the fork, as far as whole steps have taken it. */
   elapsedDays: number;
+  /**
+   * The moment on screen, in days since the fork: `elapsedDays` plus the time
+   * banked toward the next whole step, which is less than a step. The picture
+   * and the clock show this moment, so both move on every frame rather than
+   * once a step, and an edit lands here.
+   */
+  shownDays: number;
   /** The edited system. */
   variant: PointMass[];
   /** The same fork with no changes, for comparison. */
   baseline: PointMass[];
+  /** Where each body of the edited system stands at `shownDays`, by id. */
+  drawn: Map<string, Vec3>;
+  /** Where each body of the untouched system stands at `shownDays`, by id. */
+  baselineDrawn: Map<string, Vec3>;
   /** Every body the run has carried, in the order it gained them. */
   facts: BodyFacts[];
   trails: Map<string, Vec3[]>;
@@ -115,8 +139,8 @@ export type SandboxRun = {
   /** |E − E₀| / |E₀| for the edited system. */
   energyDrift: number;
   advance(days: number): void;
-  /** Applies an edit now, at the run's current elapsed time, and records it. */
-  apply(edit: SandboxEdit & { at?: number }): void;
+  /** Applies an edit at the moment on screen, and records it. */
+  apply(edit: RunEdit): void;
   /** A body's current parameters in the units the editor shows. */
   liveSpec(id: string): SandboxBodySpec | null;
 };
@@ -210,6 +234,16 @@ function record(track: Track) {
   }
 }
 
+/** Where each body of a track stands `days` after its last whole step. */
+function ahead(track: Track, days: number) {
+  return new Map<string, Vec3>(
+    track.points.map((point, index) => [
+      point.id,
+      positionAfter(point, track.acceleration[index], days),
+    ]),
+  );
+}
+
 export function createRun(scenario: SandboxScenario): SandboxRun {
   const start = forkBodies(scenario.epoch);
   const variant = createTrack(start);
@@ -223,7 +257,6 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
   const queue = [...scenario.changes].sort((a, b) => a.at - b.at);
   let step = suggestedStep(variant.points);
   let sinceReview = 0;
-  let pending = 0;
 
   const review = () => {
     step = Math.min(
@@ -236,8 +269,11 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
   const run: SandboxRun = {
     scenario,
     elapsedDays: 0,
+    shownDays: 0,
     variant: variant.points,
     baseline: baseline.points,
+    drawn: new Map(),
+    baselineDrawn: new Map(),
     facts,
     trails: variant.trails,
     baselineTrails: baseline.trails,
@@ -262,74 +298,114 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     },
 
     apply(edit) {
-      const timed: SandboxChange = { ...edit, at: edit.at ?? run.elapsedDays };
+      // The edit lands at the moment on screen, so the run first reaches it
+      // by the steps a replay takes to a change recorded there: whole ones,
+      // then one cut to it. Stamped at the last whole step instead, it would
+      // take effect up to a step before what the viewer was looking at, and
+      // the body would leap to wherever that head start had carried it.
+      integrate('settle');
+      const change: SandboxChange = {
+        ...(typeof edit === 'function' ? edit(run) : edit),
+        at: run.elapsedDays,
+      };
       // Recorded as well as performed: the recipe is what a reset replays and
       // what a link carries, so the two can never describe different runs.
-      scenario.changes.push(timed);
-      perform(timed);
+      scenario.changes.push(change);
+      perform(change);
+      redraw();
     },
 
     advance(days: number) {
       run.steps = 0;
       if (!(days > 0) || variant.points.length === 0) return;
-      pending += days;
-      let taken = 0;
-      let starved = false;
-      while (taken < MAX_STEPS_PER_ADVANCE) {
-        if (sinceReview >= STEPS_PER_REVIEW) {
-          review();
-          // Looked for on the review and only there: a burst of them would
-          // otherwise all carry the moment a frame ended, and a replay at
-          // another frame rate would list them at other moments.
-          watchEscapes(variant, run);
-        }
-        // A change lands at its own elapsed time, not at whichever step
-        // happens to straddle it, so a replay cannot drift away from the run
-        // it was recorded from.
-        const next = queue[0];
-        const toChange = next ? next.at - run.elapsedDays : Infinity;
-        if (toChange <= 0) {
-          perform(queue.shift()!);
-          continue;
-        }
-        // Whole steps only, with the remainder banked for the next frame. A
-        // step trimmed to whatever time a frame happened to bring would let
-        // the frame rate into the trajectory, and a replay could not then
-        // retrace the run it came from.
-        const size = Math.min(step, toChange);
-        if (pending < size) {
-          starved = true;
-          break;
-        }
-        advance(variant.points, size, variant.acceleration);
-        advance(baseline.points, size, baseline.acceleration);
-        // Landing on a change takes the recorded time itself rather than a
-        // sum that rounds near it, so the recipe stays the authority on when
-        // the change happened however many steps led up to it.
-        run.elapsedDays =
-          size === toChange && next ? next.at : run.elapsedDays + size;
-        pending -= size;
-        sinceReview += 1;
-        taken += 1;
-        // Checked every step, not once per frame: a fast body crossing a slow
-        // one would otherwise pass clean through it between contact tests.
-        collide(variant, run);
-        collide(baseline, null);
-        record(variant);
-        record(baseline);
-      }
+      run.shownDays += days;
+      const { taken, starved } = integrate('frame');
       run.step = step;
       run.steps = taken;
-      // Time left over because a whole step did not fit yet is banked for the
-      // next frame. Time the ceiling could not cover is dropped rather than
-      // owed, so a slow device runs behind the chosen rate instead of falling
-      // further behind every frame and never catching up.
-      run.throttled = !starved && pending > 0;
-      if (run.throttled) pending = 0;
+      // Time short of a whole step stays banked for the next frame, and the
+      // picture already shows it. Time the ceiling could not cover is dropped
+      // rather than owed, so a slow device runs behind the chosen rate instead
+      // of falling further behind every frame and never catching up.
+      run.throttled = !starved && run.shownDays > run.elapsedDays;
+      if (run.throttled) run.shownDays = run.elapsedDays;
       run.energyDrift =
         Math.abs(systemEnergy(variant.points) - referenceEnergy) / scale;
+      redraw();
     },
   };
+
+  /**
+   * Steps both systems toward the moment on screen, performing each change
+   * as the run reaches it. A frame takes the whole steps that fit, within the
+   * work ceiling, and leaves the rest banked; settling cuts the last step to
+   * land the run exactly on that moment, the way a step is cut to a change.
+   */
+  function integrate(mode: 'frame' | 'settle') {
+    const settle = mode === 'settle';
+    const ceiling = settle ? Infinity : MAX_STEPS_PER_ADVANCE;
+    let taken = 0;
+    let starved = false;
+    while (taken < ceiling) {
+      if (sinceReview >= STEPS_PER_REVIEW) {
+        review();
+        // Looked for on the review and only there: a burst of them would
+        // otherwise all carry the moment a frame ended, and a replay at
+        // another frame rate would list them at other moments.
+        watchEscapes(variant, run);
+      }
+      // A change lands at its own elapsed time, not at whichever step
+      // happens to straddle it, so a replay cannot drift away from the run
+      // it was recorded from.
+      const next = queue[0];
+      if (next && next.at <= run.elapsedDays) {
+        perform(queue.shift()!);
+        continue;
+      }
+      const target = Math.min(
+        next?.at ?? Infinity,
+        settle ? run.shownDays : Infinity,
+      );
+      const remaining = target - run.elapsedDays;
+      if (remaining <= 0) break;
+      const size = Math.min(step, remaining);
+      // Landing on a change takes the recorded time itself rather than a
+      // sum that rounds near it, so the recipe stays the authority on when
+      // the change happened however many steps led up to it.
+      const landing = size === remaining ? target : run.elapsedDays + size;
+      // Whole steps only, with the remainder banked for the next frame. A
+      // step trimmed to whatever time a frame happened to bring would let
+      // the frame rate into the trajectory, and a replay could not then
+      // retrace the run it came from.
+      if (!settle && landing > run.shownDays) {
+        starved = true;
+        break;
+      }
+      advance(variant.points, size, variant.acceleration);
+      advance(baseline.points, size, baseline.acceleration);
+      run.elapsedDays = landing;
+      sinceReview += 1;
+      taken += 1;
+      // Checked every step, not once per frame: a fast body crossing a slow
+      // one would otherwise pass clean through it between contact tests.
+      collide(variant, run);
+      collide(baseline, null);
+      record(variant);
+      record(baseline);
+    }
+    return { taken, starved };
+  }
+
+  /**
+   * Places both systems at the moment on screen. Drawn only at whole steps,
+   * the bodies moved when a step completed rather than when the screen
+   * refreshed: once every couple of seconds at the slowest rate, and at the
+   * fastest by a count of steps that differed from frame to frame.
+   */
+  function redraw() {
+    const banked = Math.max(0, run.shownDays - run.elapsedDays);
+    run.drawn = ahead(variant, banked);
+    run.baselineDrawn = ahead(baseline, banked);
+  }
 
   /** Applies one change to the edited system; the baseline never sees these. */
   function perform(change: SandboxChange) {
@@ -399,6 +475,7 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     review();
   }
 
+  redraw();
   return run;
 }
 

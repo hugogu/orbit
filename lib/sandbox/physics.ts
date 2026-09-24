@@ -154,6 +154,27 @@ export function advance(
   }
 }
 
+/**
+ * Where a body will be `dt` days on: the position half of one Verlet step,
+ * from the acceleration `advance` left for its current position. It is the
+ * very arithmetic `advance` performs, so at a whole step's size it lands
+ * exactly where that step does — a picture drawn from it between steps meets
+ * each one where it lands instead of jumping to it.
+ */
+export function positionAfter(
+  point: PointMass,
+  acceleration: Vec3,
+  dt: number,
+): Vec3 {
+  const half = dt / 2;
+  const { position, velocity } = point;
+  return [
+    position[0] + (velocity[0] + acceleration[0] * half) * dt,
+    position[1] + (velocity[1] + acceleration[1] * half) * dt,
+    position[2] + (velocity[2] + acceleration[2] * half) * dt,
+  ];
+}
+
 /** Total kinetic plus potential energy, in solar mass · au² / day². */
 export function systemEnergy(points: readonly PointMass[]) {
   let energy = 0;

@@ -158,20 +158,20 @@ export function createSandboxSystem(
   }
 
   /**
-   * Draws every trail a system has kept. A body absorbed in a merge is gone
-   * from the system but not from its trails, whose end is where it hit, so its
-   * trail is drawn on to that point rather than on to a body.
+   * Draws every trail a system has kept, each on to where its body is drawn.
+   * A body absorbed in a merge is gone from the system but not from its
+   * trails, whose end is where it hit, so its trail is drawn on to that point
+   * rather than on to a body.
    */
   function drawTrails(
     run: SandboxRun,
     store: Map<string, SandboxTrail>,
     histories: Map<string, Vec3[]>,
-    points: PointMass[],
+    heads: Map<string, Vec3>,
     brightness: number,
     show: boolean,
     width: number,
   ) {
-    const heads = new Map(points.map((point) => [point.id, point.position]));
     for (const [id, history] of histories) {
       const trail = trailFor(store, id, colorOf(run, id), brightness);
       if (!show || history.length === 0) {
@@ -188,10 +188,11 @@ export function createSandboxSystem(
   function place(
     object: THREE.Object3D,
     point: PointMass,
+    position: Vec3,
     run: SandboxRun,
     realSizes: boolean,
   ) {
-    object.position.set(...scenePosition(point.position));
+    object.position.set(...scenePosition(position));
     object.scale.setScalar(
       sandboxRadius(auToKm(point.radius), sourceOf(run, point.id), realSizes),
     );
@@ -244,13 +245,16 @@ export function createSandboxSystem(
           extra.label.style.display = 'none';
         }
       for (const point of run.variant) {
+        // Drawn at the moment on screen rather than at the last whole step,
+        // so a body moves on every frame whatever the step and the rate.
+        const position = run.drawn.get(point.id) ?? point.position;
         // A forked body keeps the observatory's own mesh; only its placement
         // comes from the simulation.
         const root = roots.get(point.id);
         if (root) {
           const pivot = meshes.get(point.id)?.parent;
           if (pivot) orient(pivot, point.id, run, options);
-          root.position.set(...scenePosition(point.position));
+          root.position.set(...scenePosition(position));
           root.scale.setScalar(
             sandboxRadius(
               auToKm(point.radius),
@@ -262,14 +266,14 @@ export function createSandboxSystem(
           const extra = extraFor(run, point, options.translate);
           extra.root.visible = true;
           orient(extra.mesh, point.id, run, options);
-          place(extra.root, point, run, options.realSizes);
+          place(extra.root, point, position, run, options.realSizes);
         }
       }
       drawTrails(
         run,
         trails,
         run.trails,
-        run.variant,
+        run.drawn,
         VARIANT_TRAIL_BRIGHTNESS,
         options.trails,
         options.lineWidth,
@@ -279,7 +283,13 @@ export function createSandboxSystem(
       for (const point of run.baseline) {
         const ghost = ghostFor(run, point);
         ghost.visible = options.baseline;
-        place(ghost, point, run, options.realSizes);
+        place(
+          ghost,
+          point,
+          run.baselineDrawn.get(point.id) ?? point.position,
+          run,
+          options.realSizes,
+        );
       }
       for (const [id, ghost] of ghosts)
         if (!shadowed.has(id)) ghost.visible = false;
@@ -287,30 +297,26 @@ export function createSandboxSystem(
         run,
         ghostTrails,
         run.baselineTrails,
-        run.baseline,
+        run.baselineDrawn,
         GHOST_TRAIL_BRIGHTNESS,
         options.baseline && options.trails,
         options.lineWidth,
       );
 
       const focus = options.selected;
-      const here = run.variant.find((point) => point.id === focus);
-      const there = run.baseline.find((point) => point.id === focus);
+      const here = focus ? run.drawn.get(focus) : undefined;
+      const there = focus ? run.baselineDrawn.get(focus) : undefined;
       const gap =
         here && there
-          ? Math.hypot(
-              ...here.position.map(
-                (value, axis) => value - there.position[axis],
-              ),
-            )
+          ? Math.hypot(...here.map((value, axis) => value - there[axis]))
           : 0;
       // Below a pixel the segment is noise; above it, it is the measurement.
       connector.visible =
         options.baseline && gap * AU_SCENE_UNITS > 0.05 && !!here && !!there;
       if (connector.visible && here && there)
         setOrbitLinePoints(connector, [
-          new THREE.Vector3(...scenePosition(here.position)),
-          new THREE.Vector3(...scenePosition(there.position)),
+          new THREE.Vector3(...scenePosition(here)),
+          new THREE.Vector3(...scenePosition(there)),
         ]);
     },
     localize(run: SandboxRun, t: Translate) {
@@ -352,8 +358,8 @@ export function createSandboxSystem(
     },
     /** Scene-unit position of a body in the edited system, for camera framing. */
     positionOf(run: SandboxRun, id: string) {
-      const point = run.variant.find((item) => item.id === id);
-      return point ? new THREE.Vector3(...scenePosition(point.position)) : null;
+      const position = run.drawn.get(id);
+      return position ? new THREE.Vector3(...scenePosition(position)) : null;
     },
     dispose() {
       for (const extra of extras.values()) extra.label.remove();

@@ -220,7 +220,7 @@ export default function SandboxPanel({
       <dl className="sandbox-readout">
         <div>
           <dt>{t('已运行')}</dt>
-          <dd>{elapsedLabel(run.elapsedDays, t)}</dd>
+          <dd>{elapsedLabel(run.shownDays, t)}</dd>
         </div>
         <div>
           <dt>{t('积分步长')}</dt>

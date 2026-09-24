@@ -93,7 +93,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandboxPanel from '@/components/sandbox-panel';
 import SandboxBodyEditor from '@/components/sandbox-body-editor';
-import { createRun } from '@/lib/sandbox/run';
+import { createRun, type RunEdit } from '@/lib/sandbox/run';
 import {
   catalogueDefaults,
   centralBody,
@@ -105,7 +105,6 @@ import {
 import {
   forkScenario,
   rewoundScenario,
-  type SandboxEdit,
   type SandboxScenario,
 } from '@/lib/sandbox/scenario';
 import { decodeSandbox, encodeSandbox } from '@/lib/sandbox/share';
@@ -437,7 +436,7 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [sandboxRun, sandboxPaused]);
   const applyToRun = useCallback(
-    (edit: SandboxEdit) => {
+    (edit: RunEdit) => {
       sandboxRun?.apply(edit);
       setSandboxTick((v) => v + 1);
     },
@@ -512,15 +511,19 @@ export default function Home() {
   const addSandboxBody = useCallback(
     (body: NewBody) => {
       if (!sandboxRun) return;
-      const created = sandboxRun.facts.filter((item) => !item.sourceId).length;
-      applyToRun({
-        kind: 'add',
-        body: createdBody(
-          body,
-          created,
-          centreOf(centralBody(sandboxRun.variant)),
-          `added-${created + 1}`,
-        ),
+      // Placed about the central body where it stands as the body arrives,
+      // which the run knows only once it has reached the moment on screen.
+      applyToRun((run) => {
+        const created = run.facts.filter((item) => !item.sourceId).length;
+        return {
+          kind: 'add',
+          body: createdBody(
+            body,
+            created,
+            centreOf(centralBody(run.variant)),
+            `added-${created + 1}`,
+          ),
+        };
       });
       track('sandbox_add_body', {});
     },
@@ -1422,7 +1425,7 @@ export default function Home() {
                 aria-label={t('沙盘已运行的模拟时间')}
               >
                 <span>{t('已运行')}</span>
-                <strong>{elapsedLabel(sandboxRun.elapsedDays, t)}</strong>
+                <strong>{elapsedLabel(sandboxRun.shownDays, t)}</strong>
                 <small>
                   {t('自 {{date}} 分叉', {
                     date: utcLabel(sandboxScenario!.epoch).slice(0, 10),
