@@ -18,10 +18,6 @@ import { astroBodies } from '../lib/ephemeris';
 import { createRun } from '../lib/sandbox/run';
 import { forkScenario } from '../lib/sandbox/scenario';
 import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
-import {
-  projectSkyPoint,
-  updateGroundSkyProjection,
-} from '../components/sky-projection';
 
 const radians = Math.PI / 180;
 const site = {
@@ -103,58 +99,79 @@ void test('size and distance toggles preserve topocentric directions; true size 
   }
 });
 
-void test('stereographic ground projection keeps off-axis sky objects locally round', () => {
+void test('ground view keeps the horizon straight and corrects off-axis body shape', () => {
   const width = 1280,
     height = 720,
     theta = Math.PI / 4,
-    radius = 1e-3;
-  const center = new Vector3(Math.sin(theta), 0, -Math.cos(theta));
-  const radial = new Vector3(Math.cos(theta), 0, Math.sin(theta));
-  const vertical = new Vector3(0, 1, 0);
-  const screenChord = (camera: THREE.PerspectiveCamera, tangent: Vector3) => {
-    const project = (sign: number) => {
-      const point = center
-        .clone()
-        .multiplyScalar(Math.cos(radius))
-        .addScaledVector(tangent, sign * Math.sin(radius))
-        .multiplyScalar(100);
-      projectSkyPoint(point, camera);
-      return new Vector3(
-        ((point.x + 1) * width) / 2,
-        ((1 - point.y) * height) / 2,
+    azimuth = Math.PI / 5,
+    radius = 2e-3;
+  const center = new Vector3(
+    Math.sin(theta) * Math.cos(azimuth),
+    Math.sin(theta) * Math.sin(azimuth),
+    -Math.cos(theta),
+  );
+  const radial = new Vector3(
+    Math.cos(theta) * Math.cos(azimuth),
+    Math.cos(theta) * Math.sin(azimuth),
+    Math.sin(theta),
+  );
+  const vertical = new Vector3(-Math.sin(azimuth), Math.cos(azimuth), 0);
+  const camera = new THREE.PerspectiveCamera(70, width / height, 0.1, 1000);
+  camera.updateMatrixWorld(true);
+  const centerNdc = center.clone().multiplyScalar(100).project(camera);
+  const projectionScale = new Vector3(
+    camera.projectionMatrix.elements[0],
+    camera.projectionMatrix.elements[5],
+    1,
+  );
+  const centerScreen = new Vector3(
+    centerNdc.x / projectionScale.x,
+    centerNdc.y / projectionScale.y,
+    0,
+  );
+  const radialAxis = centerScreen.clone().normalize();
+  const viewCosine = Math.cos(theta);
+  const screenPoint = (tangent: Vector3, sign: number, correct: boolean) => {
+    const point = center
+      .clone()
+      .multiplyScalar(Math.cos(radius))
+      .addScaledVector(tangent, sign * Math.sin(radius))
+      .multiplyScalar(100)
+      .project(camera);
+    if (correct) {
+      const pointScreen = new Vector3(
+        point.x / projectionScale.x,
+        point.y / projectionScale.y,
         0,
       );
-    };
-    return project(-1).distanceTo(project(1));
+      const offset = pointScreen.clone().sub(centerScreen);
+      const radialOffset = offset.dot(radialAxis);
+      pointScreen.addScaledVector(
+        radialAxis,
+        radialOffset * (viewCosine - 1),
+      );
+      point.x = pointScreen.x * projectionScale.x;
+      point.y = pointScreen.y * projectionScale.y;
+    }
+    return new Vector3((point.x * width) / 2, (point.y * height) / 2, 0);
   };
-  const perspective = new THREE.PerspectiveCamera(
-    70,
-    width / height,
-    0.1,
-    1000,
-  );
-  perspective.updateMatrixWorld(true);
+  const screenChord = (tangent: Vector3, correct: boolean) => {
+    const point = (sign: number) => screenPoint(tangent, sign, correct);
+    return point(-1).distanceTo(point(1));
+  };
   const perspectiveRatio =
-    screenChord(perspective, radial) / screenChord(perspective, vertical);
+    screenChord(radial, false) / screenChord(vertical, false);
+  const correctedRatio =
+    screenChord(radial, true) / screenChord(vertical, true);
   assert.ok(perspectiveRatio > 1.3, `${perspectiveRatio}`);
+  assert.ok(Math.abs(correctedRatio - 1) < 1e-4, `${correctedRatio}`);
 
-  const stereographic = new THREE.PerspectiveCamera(
-    70,
-    width / height,
-    0.1,
-    1000,
+  const horizonYs = [-70, -35, 0, 35, 70].map((azimuth) =>
+    new Vector3(Math.sin(azimuth * radians), 0, -Math.cos(azimuth * radians))
+      .multiplyScalar(100)
+      .project(camera).y,
   );
-  updateGroundSkyProjection(stereographic);
-  stereographic.updateMatrixWorld(true);
-  const halfFov = THREE.MathUtils.degToRad(stereographic.fov / 2);
-  const topEdge = projectSkyPoint(
-    new Vector3(0, Math.sin(halfFov), -Math.cos(halfFov)).multiplyScalar(100),
-    stereographic,
-  );
-  assert.ok(Math.abs(topEdge.y - 1) < 1e-10, `${topEdge.y}`);
-  const stereographicRatio =
-    screenChord(stereographic, radial) / screenChord(stereographic, vertical);
-  assert.ok(Math.abs(stereographicRatio - 1) < 1e-4, `${stereographicRatio}`);
+  assert.ok(Math.max(...horizonYs) - Math.min(...horizonYs) < 1e-10);
 });
 
 void test('Moon includes the observer parallax instead of using a geocentric sky', () => {
@@ -373,7 +390,16 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
       shader.fragmentShader,
       /dot\(normalize\(groundNormal\), groundSunDirection\)/,
     );
-    assert.match(shader.vertexShader, /skyClipPosition\(mvPosition\)/);
+    assert.match(
+      shader.vertexShader,
+      /groundBodyClipPosition\(mvPosition, gl_Position\)/,
+    );
+    assert.match(shader.vertexShader, /centerViewPosition/);
+    const horizon = meshes.find((object) => object.renderOrder === 10)!;
+    assert.match(
+      (horizon.material as THREE.ShaderMaterial).vertexShader,
+      /projectionMatrix \* modelViewMatrix/,
+    );
     const before = sky.camera.getWorldDirection(new THREE.Vector3());
     update(null);
     close(

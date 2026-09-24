@@ -10,13 +10,32 @@ import type { ScaleMode } from '../lib/solar';
 import type { SkyLocation } from '../lib/sky-events';
 import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
-import {
-  projectSkyPoint,
-  STEREOGRAPHIC_SKY_PROJECTION,
-  updateGroundSkyProjection,
-} from './sky-projection';
 import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
 import type { SandboxRun } from '../lib/sandbox/run';
+
+const GROUND_BODY_SHAPE_PROJECTION = /* glsl */ `
+vec4 groundBodyClipPosition(vec4 viewPosition, vec4 clipPosition) {
+  vec4 centerViewPosition = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+  vec4 centerClipPosition = projectionMatrix * centerViewPosition;
+  float centerDistance = length(centerViewPosition.xyz);
+  if (centerClipPosition.w > 0.0 && centerDistance > 1e-6) {
+    vec2 centerNdc = centerClipPosition.xy / centerClipPosition.w;
+    vec2 projectionScale = vec2(projectionMatrix[0][0], projectionMatrix[1][1]);
+    vec2 centerScreen = centerNdc / projectionScale;
+    float centerRadius = length(centerScreen);
+    if (centerRadius > 1e-6) {
+      vec2 radial = centerScreen / centerRadius;
+      vec2 pointScreen = (clipPosition.xy / clipPosition.w) / projectionScale;
+      vec2 offset = pointScreen - centerScreen;
+      float radialOffset = dot(offset, radial);
+      float viewCosine = clamp(-centerViewPosition.z / centerDistance, 0.0, 1.0);
+      pointScreen += radial * radialOffset * (viewCosine - 1.0);
+      clipPosition.xy = pointScreen * projectionScale * clipPosition.w;
+    }
+  }
+  return clipPosition;
+}
+`;
 
 /** Shares the star field and loaded textures, but never the illustrative orbit geometry. */
 export function createGroundSky(
@@ -51,18 +70,18 @@ export function createGroundSky(
       color: body.id === 'sun' ? 0xffffff : body.color,
     });
     const sunDirection = { value: new THREE.Vector3() };
-    const skyStereographic = { value: 1 };
     material.onBeforeCompile = (shader) => {
-      shader.uniforms.skyStereographic = skyStereographic;
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
-        `#include <common>\n${STEREOGRAPHIC_SKY_PROJECTION}`,
+        `#include <common>\n${GROUND_BODY_SHAPE_PROJECTION}`,
       );
       shader.vertexShader = shader.vertexShader.replace(
         '#include <project_vertex>',
-        '#include <project_vertex>\ngl_Position = skyClipPosition(mvPosition);',
+        '#include <project_vertex>\ngl_Position = groundBodyClipPosition(mvPosition, gl_Position);',
       );
       if (body.id === 'sun') return;
+      // Each planet has its own direction to the Sun. Camera light layers
+      // cannot isolate one directional light per mesh in a single draw pass.
       shader.uniforms.groundSunDirection = sunDirection;
       shader.vertexShader =
         'varying vec3 groundNormal;\n' +
@@ -78,9 +97,7 @@ export function createGroundSky(
         );
     };
     material.customProgramCacheKey = () =>
-      body.id === 'sun'
-        ? 'ground-sun-stereographic'
-        : 'ground-sunlight-stereographic';
+      body.id === 'sun' ? 'ground-body-shape-sun' : 'ground-body-shape-lit';
     const mesh = new THREE.Mesh(sphere, material);
     mesh.userData.id = body.id;
     root.add(mesh);
@@ -99,11 +116,8 @@ export function createGroundSky(
     side: THREE.BackSide,
     depthTest: false,
     depthWrite: false,
-    uniforms: {
-      up: { value: new THREE.Vector3(0, 1, 0) },
-      skyStereographic: { value: 1 },
-    },
-    vertexShader: `${STEREOGRAPHIC_SKY_PROJECTION}\nvarying vec3 direction; void main() { direction = position; vec4 viewPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = skyClipPosition(viewPosition); }`,
+    uniforms: { up: { value: new THREE.Vector3(0, 1, 0) } },
+    vertexShader: `varying vec3 direction; void main() { direction = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: `uniform vec3 up; varying vec3 direction; void main() {
       float altitude = dot(normalize(direction), up);
       if (altitude > 0.0) discard;
@@ -338,13 +352,13 @@ export function createGroundSky(
       }
       camera.quaternion.copy(frame.rotation).multiply(localCamera);
       camera.aspect = width / height;
-      updateGroundSkyProjection(camera);
+      camera.updateProjectionMatrix();
       camera.updateMatrixWorld();
       for (const entry of entries) {
         projected
           .copy(entry.mesh.position)
-          .addScaledVector(frame.up, entry.mesh.scale.x * 1.3);
-        projectSkyPoint(projected, camera);
+          .addScaledVector(frame.up, entry.mesh.scale.x * 1.3)
+          .project(camera);
         entry.place(
           projected,
           width,
@@ -353,8 +367,10 @@ export function createGroundSky(
         );
       }
       for (const entry of cardinals) {
-        projected.copy(entry.direction).applyQuaternion(frame.rotation);
-        projectSkyPoint(projected, camera);
+        projected
+          .copy(entry.direction)
+          .applyQuaternion(frame.rotation)
+          .project(camera);
         entry.place(projected, width, height, true);
       }
     },

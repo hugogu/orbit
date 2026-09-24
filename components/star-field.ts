@@ -14,10 +14,6 @@ import {
   type StarCatalog,
 } from '@/lib/star-catalog';
 import { createSceneLabel } from './scene-label';
-import {
-  projectSkyPoint,
-  STEREOGRAPHIC_SKY_PROJECTION,
-} from './sky-projection';
 
 /**
  * The sky is drawn on a sphere re-centred on the camera at draw time, so every
@@ -50,7 +46,6 @@ vec4 skyPosition() {
 
 const starVertexShader = /* glsl */ `
 ${properMotionVertexChunk}
-${STEREOGRAPHIC_SKY_PROJECTION}
 attribute float size;
 attribute float brightness;
 attribute vec3 tint;
@@ -58,7 +53,7 @@ uniform float pixelRatio;
 varying vec3 starTint;
 varying float starBrightness;
 void main() {
-  gl_Position = skyClipPosition(skyPosition());
+  gl_Position = projectionMatrix * skyPosition();
   gl_PointSize = size * pixelRatio;
   starTint = tint;
   starBrightness = brightness;
@@ -86,9 +81,8 @@ void main() {
 
 const figureVertexShader = /* glsl */ `
 ${properMotionVertexChunk}
-${STEREOGRAPHIC_SKY_PROJECTION}
 void main() {
-  gl_Position = skyClipPosition(skyPosition());
+  gl_Position = projectionMatrix * skyPosition();
 }
 `;
 
@@ -125,13 +119,9 @@ type Figure = {
  * however late the camera moves — orbit damping updates it after everything
  * else, and a lagging centre swings the whole sky as the view is dragged.
  */
-function followCamera(
-  object: THREE.Object3D,
-  onBeforeDraw?: (camera: THREE.Camera) => void,
-) {
+function followCamera(object: THREE.Object3D) {
   object.onBeforeRender = (_renderer, _scene, camera) => {
     object.matrixWorld.copyPosition(camera.matrixWorld);
-    onBeforeDraw?.(camera);
   };
 }
 
@@ -187,20 +177,6 @@ export function createStarField(
     depthWrite: false,
     toneMapped: false,
   });
-  const panoramaProjection = { value: 0 };
-  panoramaMaterial.onBeforeCompile = (shader) => {
-    shader.uniforms.skyStereographic = panoramaProjection;
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <common>',
-      `#include <common>\n${STEREOGRAPHIC_SKY_PROJECTION}`,
-    );
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <project_vertex>',
-      '#include <project_vertex>\ngl_Position = skyClipPosition(mvPosition);',
-    );
-  };
-  panoramaMaterial.customProgramCacheKey = () =>
-    'panorama-stereographic-ground-sky';
   const panorama = new THREE.Mesh(
     // Dense enough that interpolating the sphere's own equirectangular
     // coordinates stays well inside one pixel of the 8K map.
@@ -210,10 +186,7 @@ export function createStarField(
   panorama.quaternion.copy(panoramaOrientation());
   panorama.renderOrder = PANORAMA_ORDER;
   panorama.frustumCulled = false;
-  followCamera(panorama, (camera) => {
-    panoramaProjection.value =
-      camera.userData.skyProjection === 'stereographic' ? 1 : 0;
-  });
+  followCamera(panorama);
   panorama.visible = false;
   group.add(panorama);
 
@@ -266,7 +239,6 @@ export function createStarField(
       uniforms: {
         years: { value: 0 },
         radius: { value: SKY_RADIUS },
-        skyStereographic: { value: 0 },
         pixelRatio: { value: 1 },
         opacity: { value: 1 },
       },
@@ -283,10 +255,7 @@ export function createStarField(
     stars = new THREE.Points(geometry, starMaterial);
     stars.renderOrder = STAR_ORDER;
     stars.frustumCulled = false;
-    followCamera(stars, (camera) => {
-      starMaterial!.uniforms.skyStereographic.value =
-        camera.userData.skyProjection === 'stereographic' ? 1 : 0;
-    });
+    followCamera(stars);
     stars.visible = false;
     group.add(stars);
 
@@ -313,7 +282,6 @@ export function createStarField(
       uniforms: {
         years: { value: 0 },
         radius: { value: SKY_RADIUS },
-        skyStereographic: { value: 0 },
         // Clear enough to read as a figure, and still lighter than the
         // orbit guides, which are wider and carry their own colour.
         tint: { value: new THREE.Color(0x6a89bd) },
@@ -330,10 +298,7 @@ export function createStarField(
     figureLines = new THREE.LineSegments(figureGeometry, figureMaterial);
     figureLines.renderOrder = STAR_ORDER;
     figureLines.frustumCulled = false;
-    followCamera(figureLines, (camera) => {
-      figureMaterial!.uniforms.skyStereographic.value =
-        camera.userData.skyProjection === 'stereographic' ? 1 : 0;
-    });
+    followCamera(figureLines);
     figureLines.visible = false;
     group.add(figureLines);
   }
@@ -378,8 +343,11 @@ export function createStarField(
       if (figures.length === 0) return;
       camera.getWorldPosition(viewpoint);
       for (const figure of figures) {
-        projected.copy(figure.anchor).multiplyScalar(SKY_RADIUS).add(viewpoint);
-        projectSkyPoint(projected, camera);
+        projected
+          .copy(figure.anchor)
+          .multiplyScalar(SKY_RADIUS)
+          .add(viewpoint)
+          .project(camera);
         figure.place(
           projected,
           width,
