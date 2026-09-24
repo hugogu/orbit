@@ -1577,7 +1577,7 @@ void test('the clock reads the moment on screen', () => {
 
 void test('a body added after a rewind never takes the id of one still to come', () => {
   const first = createRun(forkScenario(J2000_MS));
-  while (first.shownDays < 100) first.advance(20);
+  while (first.elapsedDays < 100) first.advance(20);
   const earlier = addBody(first, 'First');
   // The timeline's reset replays the recipe from the fork, so First is still
   // queued when the next body is added.
@@ -1588,7 +1588,7 @@ void test('a body added after a rewind never takes the id of one still to come',
   // on the ray First will appear on.
   assert.deepEqual(nextAddition(rewound), { id: 'added-2', index: 1 });
   const later = addBody(rewound, 'Second');
-  while (rewound.shownDays < 150) rewound.advance(20);
+  while (rewound.elapsedDays < 150) rewound.advance(20);
   assert.equal(rewound.liveSpec(earlier)?.name, 'First');
   assert.equal(rewound.liveSpec(later)?.name, 'Second');
 
