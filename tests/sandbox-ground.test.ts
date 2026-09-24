@@ -25,6 +25,39 @@ const close = (actual: number, expected: number, tolerance = 1e-9) =>
     `${actual} != ${expected}`,
   );
 
+void test('ground sky rotates and places bodies on every display frame across physics steps', () => {
+  for (const rate of [0.1, 20]) {
+    const run = createRun(forkScenario(epoch));
+    const spin = run.facts.find((body) => body.id === 'earth')!.spinDays;
+    let previous = sandboxGroundSnapshot(run, site)!;
+    const frameDays = rate / 60;
+    for (let frame = 1; frame <= 240; frame++) {
+      run.advance(frameDays);
+      const sky = sandboxGroundSnapshot(run, site)!;
+      const turned = previous.frame.rotation.angleTo(sky.frame.rotation);
+      assert.ok(turned > 0, `${rate} d/s: sky stood still on frame ${frame}`);
+      close(turned, (frameDays / spin) * 2 * Math.PI, 1e-7);
+      close(
+        sky.observer
+          .clone()
+          .sub(new Vector3(...run.drawn.get('earth')!))
+          .length(),
+        run.variant.find((body) => body.id === 'earth')!.radius + kmToAu(0.1),
+      );
+      for (const body of sky.bodies)
+        close(
+          body.vector
+            .clone()
+            .add(sky.observer)
+            .distanceTo(new Vector3(...run.drawn.get(body.id)!)),
+          0,
+        );
+      previous = sky;
+    }
+    assert.ok(run.elapsedDays > 0, 'the run crossed physics-step boundaries');
+  }
+});
+
 void test('sandbox horizon starts at the fork and follows its physical Earth, independent of world translation', () => {
   const run = createRun(forkScenario(epoch));
   const sky = sandboxGroundSnapshot(run, site)!;
@@ -39,13 +72,19 @@ void test('sandbox horizon starts at the fork and follows its physical Earth, in
     sky.observer.distanceTo(new Vector3(...earth.position)),
     earth.radius + kmToAu(0.1),
   );
-  for (const point of run.variant)
-    point.position = [
-      point.position[0] + 3,
-      point.position[1] - 2,
-      point.position[2] + 4,
-    ];
+  for (const position of run.drawn.values()) {
+    position[0] += 3;
+    position[1] -= 2;
+    position[2] += 4;
+  }
   const translated = sandboxGroundSnapshot(run, site)!;
+  close(
+    translated.observer
+      .clone()
+      .sub(sky.observer)
+      .distanceTo(new Vector3(3, -2, 4)),
+    0,
+  );
   for (let i = 0; i < sky.bodies.length; i++)
     close(sky.bodies[i].vector.distanceTo(translated.bodies[i].vector), 0);
   assert.ok(
@@ -95,14 +134,14 @@ void test('ground sky reads the advanced and edited system including paused edit
 void test('ground spin integrates edits continuously, supports stopped/retrograde rotation and replays by simulated time', () => {
   const run = createRun(forkScenario(epoch));
   const fact = run.facts.find((body) => body.id === 'earth')!;
-  run.elapsedDays = 0.25;
+  run.advance(0.25);
   const before = sandboxGroundOrientation(run, fact);
   run.apply({ kind: 'set', id: 'earth', field: 'spinDays', value: 0 });
   close(before.angleTo(sandboxGroundOrientation(run, fact)), 0, 1e-7);
-  run.elapsedDays += 12;
+  run.advance(12);
   close(before.angleTo(sandboxGroundOrientation(run, fact)), 0, 1e-7);
   run.apply({ kind: 'set', id: 'earth', field: 'spinDays', value: -1 });
-  run.elapsedDays += 0.25;
+  run.advance(0.25);
   const rotated = sandboxGroundOrientation(run, fact);
   const expected = before
     .clone()
@@ -124,8 +163,8 @@ void test('ground spin integrates edits continuously, supports stopped/retrograd
     Math.PI / 4,
   );
   const recorded = createRun(run.scenario);
-  recorded.advance(run.elapsedDays + 1e-8);
-  close(recorded.elapsedDays, run.elapsedDays);
+  recorded.advance(run.shownDays);
+  close(recorded.shownDays, run.shownDays);
   close(
     sandboxGroundOrientation(
       recorded,
@@ -145,7 +184,7 @@ void test('ground spin integrates edits continuously, supports stopped/retrograd
         replay.facts.find((body) => body.id === 'earth')!,
       ),
     ),
-    replay.elapsedDays * 2 * Math.PI,
+    replay.shownDays * 2 * Math.PI,
     1e-7,
   );
 });

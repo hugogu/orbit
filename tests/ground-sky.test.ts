@@ -341,6 +341,18 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
         .map((object) => object.userData.id)
         .filter(Boolean);
     assert.ok(!drawnIds().includes('moon-moon'));
+    for (let frame = 0; frame < 120; frame++) {
+      const previous = sky.camera.quaternion.clone();
+      run.advance(0.1 / 60);
+      sandboxUpdate();
+      assert.ok(
+        previous.angleTo(sky.camera.quaternion) > 1e-6,
+        `sandbox sky camera froze on frame ${frame}`,
+      );
+    }
+    const paused = sky.camera.quaternion.clone();
+    sandboxUpdate();
+    close(paused.angleTo(sky.camera.quaternion), 0, 1e-7);
     const sunMesh = () =>
       scene.children[0].children.find(
         (object) => object.userData.id === 'sun',

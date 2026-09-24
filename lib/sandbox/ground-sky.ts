@@ -41,7 +41,9 @@ export function sandboxGroundOrientation(run: SandboxRun, fact: BodyFacts) {
     period = edit.to;
     previous = edit.day;
   }
-  if (period) turns += (run.elapsedDays - previous) / period;
+  // The horizon turns at the displayed moment, including time banked toward
+  // the next physics step, just as the drawn body positions do.
+  if (period) turns += (run.shownDays - previous) / period;
   return rotation.multiply(
     new Quaternion().setFromAxisAngle(north, (turns % 1) * 2 * Math.PI),
   );
@@ -74,7 +76,9 @@ export function sandboxGroundSnapshot(run: SandboxRun, location: SkyLocation) {
       new Matrix4().makeBasis(east, up, south),
     ),
   };
-  const observer = new Vector3(...earth.position).addScaledVector(
+  const observer = new Vector3(
+    ...(run.drawn.get(earth.id) ?? earth.position),
+  ).addScaledVector(
     up,
     Math.max(earth.radius + kmToAu(location.height / 1000), 0),
   );
@@ -92,7 +96,9 @@ export function sandboxGroundSnapshot(run: SandboxRun, location: SkyLocation) {
           color: fact.color,
           sourceId: fact.sourceId,
           radius: auToKm(point.radius),
-          vector: new Vector3(...point.position).sub(observer),
+          vector: new Vector3(
+            ...(run.drawn.get(point.id) ?? point.position),
+          ).sub(observer),
           orientation: sandboxGroundOrientation(run, fact),
         };
       }),

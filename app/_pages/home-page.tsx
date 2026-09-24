@@ -671,8 +671,7 @@ export default function Home() {
               utcOffset:
                 zoneOffsetHours(
                   sandboxRun
-                    ? sandboxRun.scenario.epoch +
-                        sandboxRun.elapsedDays * DAY_MS
+                    ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
                     : Date.now(),
                   zone,
                 ) ?? observerLocation.utcOffset,
@@ -1134,7 +1133,7 @@ export default function Home() {
         <GroundControls
           time={
             sandboxRun
-              ? sandboxRun.scenario.epoch + sandboxRun.elapsedDays * DAY_MS
+              ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
               : (time ?? epoch ?? J2000_MS)
           }
           location={observerLocation}
