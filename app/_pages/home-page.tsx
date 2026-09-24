@@ -99,6 +99,7 @@ import {
   centralBody,
   centreOf,
   createdBody,
+  nextAddition,
   type NewBody,
   type SandboxField,
 } from '@/lib/sandbox/edits';
@@ -514,14 +515,14 @@ export default function Home() {
       // Placed about the central body where it stands as the body arrives,
       // which the run knows only once it has reached the moment on screen.
       applyToRun((run) => {
-        const created = run.facts.filter((item) => !item.sourceId).length;
+        const { id, index } = nextAddition(run);
         return {
           kind: 'add',
           body: createdBody(
             body,
-            created,
+            index,
             centreOf(centralBody(run.variant)),
-            `added-${created + 1}`,
+            id,
           ),
         };
       });
