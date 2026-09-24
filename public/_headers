@@ -6,5 +6,14 @@
   Cache-Control: no-cache
   Content-Type: application/manifest+json; charset=utf-8
 
-/textures/*
+/textures/*.jpg
+  Cache-Control: public, max-age=31536000, immutable
+
+/textures/*.jpeg
+  Cache-Control: public, max-age=31536000, immutable
+
+/textures/*.png
+  Cache-Control: public, max-age=31536000, immutable
+
+/textures/*.webp
   Cache-Control: public, max-age=31536000, immutable
