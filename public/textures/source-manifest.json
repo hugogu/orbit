@@ -140,13 +140,25 @@
     "path": "satellites/4k_deimos.jpg"
   },
   {
-    "filename": "satellites/4k_io.png",
+    "filename": "satellites/4k_io.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 11589437,
+    "bytes": 829983,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/io.png",
     "license": "CC BY 4.0",
-    "path": "satellites/4k_io.png"
+    "path": "satellites/4k_io.jpg",
+    "derived": "opaque-rgb-v1",
+    "note": "Upstream RGBA PNG; its alpha channel is a Celestia specular mask, not opacity, so it is dropped before any resampling"
+  },
+  {
+    "filename": "satellites/2k_io.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 254910,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/io.png",
+    "license": "CC BY 4.0",
+    "path": "satellites/2k_io.jpg",
+    "derived": "opaque-rgb-v1"
   },
   {
     "filename": "satellites/4k_europa.jpg",
@@ -178,13 +190,25 @@
     "derived": "illustrative-small-body-fallback-v1"
   },
   {
-    "filename": "satellites/4k_titan.png",
+    "filename": "satellites/4k_titan.jpg",
     "width": 4096,
     "height": 2048,
-    "bytes": 2478053,
+    "bytes": 188367,
     "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/titan.png",
     "license": "CC BY 3.0",
-    "path": "satellites/4k_titan.png"
+    "path": "satellites/4k_titan.jpg",
+    "derived": "opaque-rgb-v1",
+    "note": "Upstream RGBA PNG; its alpha channel is a Celestia specular mask, not opacity, so it is dropped before any resampling"
+  },
+  {
+    "filename": "satellites/2k_titan.jpg",
+    "width": 2048,
+    "height": 1024,
+    "bytes": 65246,
+    "url": "https://raw.githubusercontent.com/CelestiaProject/CelestiaContent/1993a082ee6307c0df7fdc0828eb117a0e8e9958/textures/hires/titan.png",
+    "license": "CC BY 3.0",
+    "path": "satellites/2k_titan.jpg",
+    "derived": "opaque-rgb-v1"
   },
   {
     "filename": "satellites/4k_enceladus.jpg",
