@@ -4,10 +4,14 @@ import { resolve } from 'node:path';
 import sharp from 'sharp/lib/index.js';
 import {
   absoluteSiteUrl,
+  bodiesIndexDescription,
+  bodiesIndexPath,
+  bodiesIndexTitle,
   bodyDetailsPath,
   catalogEntries,
   entryImagePath,
   ogImagePath,
+  profileAncestors,
   profileTitle,
   seoSiteName,
   seoLocales,
@@ -16,6 +20,7 @@ import {
 import { squareImagePath, portraitCredit } from '../lib/profile-images';
 import { profileContent } from '../lib/profile-content';
 import { languages, translator } from '../lib/i18n';
+import { wikidataEntity, wikidataUrl } from '../lib/wikidata';
 import { htmlTagAttributes } from './lib/html-tags';
 
 const output = (path: string) =>
@@ -205,6 +210,51 @@ for (const entry of entries) {
       absoluteSiteUrl(entryImagePath(entry)),
       path,
     );
+    // The page's subject is a schema.org Place that Wikidata names.
+    const body = graph.find(
+      (node: Record<string, unknown>) =>
+        node['@id'] === `${absoluteSiteUrl(path)}#astronomical-body`,
+    );
+    assert.equal(body['@type'], 'Place', path);
+    assert.equal(
+      body.sameAs,
+      wikidataUrl(wikidataEntity(entry.data.id).item),
+      path,
+    );
+    assert.deepEqual(webpage.mainEntity, { '@id': body['@id'] }, path);
+    // Every structured figure is printed beside the same label.
+    for (const property of body.additionalProperty as Array<
+      Record<string, unknown>
+    >) {
+      const name = escapeHtml(String(property.name));
+      assert.ok(html.includes(`<dt>${name}</dt>`), `${path}: ${name}`);
+      if (typeof property.value === 'string')
+        assert.ok(
+          html.includes(`<dd>${escapeHtml(property.value)}</dd>`),
+          `${path}: ${name}`,
+        );
+    }
+    // Both breadcrumbs climb through the index, and a moon through its planet.
+    const ancestors = profileAncestors(entry, locale);
+    const trail = graph.find(
+      (node: Record<string, unknown>) => node['@type'] === 'BreadcrumbList',
+    ).itemListElement as Array<Record<string, string>>;
+    assert.deepEqual(
+      trail.map((step) => step.item),
+      [
+        absoluteSiteUrl('/'),
+        ...ancestors.map((step) => absoluteSiteUrl(step.path)),
+        absoluteSiteUrl(path),
+      ],
+      path,
+    );
+    const crumbs =
+      html.match(/<nav class="seo-breadcrumb"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    for (const step of ancestors)
+      assert.ok(
+        crumbs.includes(`href="${step.path}"`),
+        `${path}: ${step.path}`,
+      );
     const image = await sharp(
       output(ogImagePath(locale, entry.data.id)),
     ).metadata();
@@ -213,6 +263,59 @@ for (const entry of entries) {
     assert.ok(image.xmp?.toString().includes(credit.license), path);
   }
 }
+
+// The collection page every profile's breadcrumb climbs to.
+for (const locale of seoLocales) {
+  const path = bodiesIndexPath(locale);
+  const html = readFileSync(output(`${path}.html`), 'utf8');
+  const head = html.match(/<head\b[^>]*>[\s\S]*?<\/head>/i)?.[0] ?? '';
+  const [htmlTag] = htmlTagAttributes(html, 'html');
+  const linkTags = htmlTagAttributes(head, 'link');
+  assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
+  assert.ok(
+    head.includes(
+      `<title>${escapeHtml(bodiesIndexTitle(locale))} | ORBIT</title>`,
+    ),
+    path,
+  );
+  assert.ok(html.includes(escapeHtml(bodiesIndexDescription(locale))), path);
+  assert.equal((html.match(/<h1\b/g) ?? []).length, 1, path);
+  assert.ok(
+    linkTags.some(
+      (attributes) =>
+        hasRel(attributes, 'canonical') &&
+        attributes.get('href') === absoluteSiteUrl(path),
+    ),
+    path,
+  );
+  for (const alternate of seoLocales)
+    assert.ok(
+      linkTags.some(
+        (attributes) =>
+          hasRel(attributes, 'alternate') &&
+          attributes.get('hreflang') === languages[alternate].intl &&
+          attributes.get('href') ===
+            absoluteSiteUrl(bodiesIndexPath(alternate)),
+      ),
+      `${path}: ${alternate}`,
+    );
+  const graph = JSON.parse(
+    html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1],
+  )['@graph'] as Array<Record<string, unknown>>;
+  const list = graph.find((node) => node['@type'] === 'ItemList')!;
+  const items = list.itemListElement as Array<Record<string, string>>;
+  assert.equal(list.numberOfItems, entries.length, path);
+  assert.equal(items.length, entries.length, path);
+  for (const entry of entries) {
+    // Every profile is one link away, in this locale's own URLs.
+    const profile = bodyDetailsPath(locale, entry.data.id);
+    assert.ok(html.includes(`href="${profile}"`), `${path}: ${entry.data.id}`);
+    assert.ok(
+      items.some((item) => item.url === absoluteSiteUrl(profile)),
+      `${path}: ${entry.data.id}`,
+    );
+  }
+}
 console.log(
-  `Verified ${entries.length * seoLocales.length} exported profiles: rendered images, localized copy, metadata, hreflang, canonical links and attribution.`,
+  `Verified ${entries.length * seoLocales.length} exported profiles and ${seoLocales.length} body indexes: rendered images, localized copy, metadata, hreflang, canonical links, attribution and structured data.`,
 );

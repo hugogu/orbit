@@ -1,5 +1,6 @@
 import {
   absoluteSiteUrl,
+  bodiesIndexPath,
   bodyDetailsPath,
   catalogEntries,
   eventDetailsPath,
@@ -38,6 +39,7 @@ function alternateLinks(route: LocalizedRoute): SitemapAlternate[] {
 
 function localizedRoutes(entries: CatalogEntry[]): LocalizedRoute[] {
   return [
+    bodiesIndexPath,
     ...entries.map(
       (entry): LocalizedRoute =>
         (locale) =>

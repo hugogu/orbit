@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { Fragment } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { moonRadii } from '../../lib/eclipse-shadows';
 import { moonSemimajorKm } from '../../lib/satellite-elements';
@@ -38,6 +39,7 @@ import {
   entryImagePath,
   explorerPath,
   ogImagePath,
+  profileAncestors,
   profileJsonLd,
   profileTitle,
   serializeJsonLd,
@@ -420,6 +422,12 @@ export default async function BodyPage({ params }: PageProps) {
       <article className="seo-article">
         <nav className="seo-breadcrumb" aria-label={t('面包屑')}>
           <a href={explorerPath(locale)}>{t('返回总览')}</a>
+          {profileAncestors(entry, locale).map((step) => (
+            <Fragment key={step.path}>
+              <span aria-hidden="true">/</span>
+              <a href={step.path}>{step.name}</a>
+            </Fragment>
+          ))}
           <span aria-hidden="true">/</span>
           <span>{name}</span>
         </nav>
