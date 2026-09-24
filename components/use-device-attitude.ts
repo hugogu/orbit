@@ -115,3 +115,5 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
   }
   return { attitude, status, enabled, correction, setCorrection, start, stop };
 }
+
+export type DeviceAttitudeController = ReturnType<typeof useDeviceAttitude>;

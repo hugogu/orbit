@@ -10,6 +10,7 @@ import {
 } from './ui/dialog';
 import ConceptHint from './concept-hint';
 import { currentLocation, zoneOffsetHours } from '../lib/geolocation';
+import { parseObserverLocationDraft } from '../lib/observer-location-draft';
 import type {
   ChosenLocationSource,
   ObserverLocationSource,
@@ -33,7 +34,13 @@ export default function ObserverLocation({
   const [open, setOpen] = useState(false),
     [locating, setLocating] = useState(false),
     [message, setMessage] = useState(''),
-    [values, setValues] = useState<Record<string, string | number>>({});
+    [values, setValues] = useState<Record<string, string | number>>({}),
+    [drafts, setDrafts] = useState<Record<keyof SkyLocation, string>>(() => ({
+      latitude: String(location.latitude),
+      longitude: String(location.longitude),
+      height: String(location.height),
+      utcOffset: String(location.utcOffset),
+    }));
   const request = useRef(0);
   useEffect(
     () => () => {
@@ -81,29 +88,31 @@ export default function ObserverLocation({
   const field = (
     label: string,
     key: keyof SkyLocation,
-    range: { min: number; max: number; step?: string },
+    range: { min: number; max: number },
   ) => (
     <label>
       {t(label)}
       <input
-        type="number"
-        min={range.min}
-        max={range.max}
-        step={range.step ?? 'any'}
-        value={location[key]}
+        type="text"
+        inputMode="decimal"
+        value={drafts[key]}
         onChange={(e) => {
-          const value = Number(e.target.value);
           setMessage('');
-          if (!e.target.value.trim()) return;
-          if (
-            !Number.isFinite(value) ||
-            value < range.min ||
-            value > range.max
-          ) {
+          setDrafts((current) => ({ ...current, [key]: e.target.value }));
+        }}
+        onBlur={() => {
+          const value = parseObserverLocationDraft(drafts[key], range);
+          if (value === undefined) {
             setMessage('请检查经纬度、海拔和 UTC 时差。');
+            setDrafts((current) => ({
+              ...current,
+              [key]: String(location[key]),
+            }));
             return;
           }
+          setMessage('');
           onChange({ ...location, [key]: value }, 'manual');
+          setDrafts((current) => ({ ...current, [key]: String(value) }));
         }}
       />
     </label>
@@ -140,7 +149,16 @@ export default function ObserverLocation({
             className="icon-button"
             aria-label={t('调整观测地点')}
             title={t('调整观测地点')}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setMessage('');
+              setDrafts({
+                latitude: String(location.latitude),
+                longitude: String(location.longitude),
+                height: String(location.height),
+                utcOffset: String(location.utcOffset),
+              });
+              setOpen(true);
+            }}
           >
             <SlidersHorizontal size={15} />
           </button>
@@ -164,15 +182,10 @@ export default function ObserverLocation({
             )}
             {field('纬度（北正南负）', 'latitude', { min: -90, max: 90 })}
             {field('经度（东正西负）', 'longitude', { min: -180, max: 180 })}
-            {field('海拔（米）', 'height', {
-              min: -500,
-              max: 10000,
-              step: '1',
-            })}
+            {field('海拔（米）', 'height', { min: -500, max: 10000 })}
             {field('UTC 时差（小时）', 'utcOffset', {
               min: -12,
               max: 14,
-              step: '0.25',
             })}
             <p className="wide little-note">
               {t(

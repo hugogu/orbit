@@ -7,7 +7,7 @@ import type {
   ObserverLocationSource,
   ChosenLocationSource,
 } from '../lib/sky-events';
-import type { useDeviceAttitude } from './use-device-attitude';
+import type { DeviceAttitudeController } from './use-device-attitude';
 
 export default function GroundControls({
   time,
@@ -22,7 +22,7 @@ export default function GroundControls({
   location: SkyLocation;
   source: ObserverLocationSource;
   onChange: (location: SkyLocation, source: ChosenLocationSource) => void;
-  sensor: ReturnType<typeof useDeviceAttitude>;
+  sensor: DeviceAttitudeController;
   live: boolean;
   sandbox?: boolean;
 }) {
