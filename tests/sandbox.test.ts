@@ -45,7 +45,10 @@ import { scenePosition } from '../lib/sandbox/display.ts';
 import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import { createSandboxSystem } from '../components/sandbox-system.ts';
 import { isOrbitLine } from '../components/orbit-line.ts';
-import SandboxPanel, { foldedLabel } from '../components/sandbox-panel.tsx';
+import SandboxPanel, {
+  foldedLabel,
+  nextColor,
+} from '../components/sandbox-panel.tsx';
 import { translator } from '../lib/i18n/index.ts';
 import SandboxBodyEditor from '../components/sandbox-body-editor.tsx';
 import { I18nProvider } from '../lib/i18n/provider.tsx';
@@ -61,6 +64,7 @@ import {
   fieldPosition,
   fieldSpec,
   fieldValue,
+  nextAddition,
   readField,
   sandboxFields,
   typedDistance,
@@ -96,6 +100,22 @@ const around = (body: SandboxBodySpec): Centre => ({
   velocity: body.velocity,
   massKg: body.mass,
 });
+
+/** Adds a body the way the page does, and returns the id it was given. */
+const addBody = (run: SandboxRun, name: string) => {
+  const { id, index } = nextAddition(run);
+  const color = nextColor(run);
+  run.apply((current) => ({
+    kind: 'add',
+    body: createdBody(
+      { name, mass: 6e24, radius: 6400, distance: 3, color },
+      index,
+      centreOf(centralBody(current.variant)),
+      id,
+    ),
+  }));
+  return id;
+};
 
 void test('a circular orbit keeps Kepler’s third law and closes on itself', () => {
   const period = 2 * Math.PI * Math.sqrt(1 / GRAVITY);
@@ -1553,4 +1573,83 @@ void test('the clock reads the moment on screen', () => {
   assert.match(page, /elapsedLabel\(sandboxRun\.shownDays, t\)/);
   assert.match(panel, /elapsedLabel\(run\.shownDays, t\)/);
   assert.doesNotMatch(page + panel, /elapsedLabel\(\w+\.elapsedDays/);
+});
+
+void test('a body added after a rewind never takes the id of one still to come', () => {
+  const first = createRun(forkScenario(J2000_MS));
+  while (first.elapsedDays < 100) first.advance(20);
+  const earlier = addBody(first, 'First');
+  // The timeline's reset replays the recipe from the fork, so First is still
+  // queued when the next body is added.
+  const rewound = createRun(rewoundScenario(first.scenario));
+  rewound.advance(5);
+  assert.equal(rewound.liveSpec(earlier), null);
+  // The placement index moves on with the id, so the new body does not start
+  // on the ray First will appear on.
+  assert.deepEqual(nextAddition(rewound), { id: 'added-2', index: 1 });
+  const later = addBody(rewound, 'Second');
+  while (rewound.elapsedDays < 150) rewound.advance(20);
+  assert.equal(rewound.liveSpec(earlier)?.name, 'First');
+  assert.equal(rewound.liveSpec(later)?.name, 'Second');
+
+  // The page names what the viewer adds by the same rule.
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(page, /= nextAddition\(run\)/);
+  assert.doesNotMatch(page, /added-\$\{/);
+});
+
+void test('a body added to a shared run never takes an id the link already uses', () => {
+  const authored = createRun(forkScenario(J2000_MS));
+  while (authored.shownDays < 100) authored.advance(20);
+  const theirs = addBody(authored, 'Theirs');
+  const link = encodeSandbox(authored.scenario);
+  // Opened from the link, the run starts at the fork with that body queued.
+  const received = createRun(decodeSandbox(link, J2000_MS)!);
+  received.advance(5);
+  assert.equal(received.liveSpec(theirs), null);
+  const mine = addBody(received, 'Mine');
+  while (received.shownDays < 150) received.advance(20);
+  assert.equal(received.liveSpec(theirs)?.name, 'Theirs');
+  assert.equal(received.liveSpec(mine)?.name, 'Mine');
+
+  // A link chooses its own ids. Past 2⁵³ adding one no longer changes a
+  // number, so counting on from the highest would give every later body the
+  // same id; each still gets its own.
+  const outsized = createRun(
+    decodeSandbox(link.replace(theirs, 'added-9007199254740993'), J2000_MS)!,
+  );
+  const one = addBody(outsized, 'One');
+  const two = addBody(outsized, 'Two');
+  assert.equal(outsized.liveSpec(one)?.name, 'One');
+  assert.equal(outsized.liveSpec(two)?.name, 'Two');
+});
+
+void test('bodies added across a rewind and a shared link get different colours', () => {
+  const first = createRun(forkScenario(J2000_MS));
+  while (first.elapsedDays < 100) first.advance(20);
+  const earlier = addBody(first, 'First');
+  const rewound = createRun(rewoundScenario(first.scenario));
+  rewound.advance(5);
+  const later = addBody(rewound, 'Second');
+  // Opened from a link, both of those are still to come when a third is added.
+  const received = createRun(
+    decodeSandbox(encodeSandbox(rewound.scenario), J2000_MS)!,
+  );
+  const mine = addBody(received, 'Mine');
+  while (received.elapsedDays < 150) received.advance(20);
+  const colours = [earlier, later, mine].map(
+    (id) => received.liveSpec(id)!.color,
+  );
+  assert.equal(new Set(colours).size, 3);
+
+  // The form colours what it adds by the same rule.
+  const panel = readFileSync(
+    new URL('../components/sandbox-panel.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(panel, /color: nextColor\(run\)/);
+  assert.doesNotMatch(panel, /!body\.sourceId\)\.length/);
 });

@@ -15,6 +15,7 @@ import {
   circularState,
   sandboxSources,
   type SandboxBodySpec,
+  type SandboxScenario,
 } from './scenario';
 import { auPerDayToKmPerSecond, kmPerSecondToAuPerDay } from './derived';
 
@@ -355,6 +356,36 @@ export function createdBody(
     position: plus(centre.position, orbit.position),
     velocity: plus(centre.velocity, orbit.velocity),
   };
+}
+
+/**
+ * The id and placement index for the next body the viewer adds: `added-N` for
+ * the first N no addition has taken, and N − 1.
+ *
+ * Every addition in the recipe counts, not only those the run has reached.
+ * After the timeline's rewind, and in a run opened from a link, the recipe
+ * still holds additions the run has yet to make. Counted from what the run
+ * carried, a new body took the id of one of those, the run dropped whichever
+ * of the two it reached second, and a link went on carrying both. The index
+ * follows the same number, so a new body does not set out on the ray a body
+ * still to come will appear on.
+ *
+ * The first number free rather than one past the highest: a link chooses its
+ * own ids, and past 2⁵³ adding one to a number no longer changes it.
+ */
+export function nextAddition(run: {
+  readonly scenario: SandboxScenario;
+  readonly facts: readonly { id: string }[];
+}) {
+  const taken = new Set([
+    ...run.facts.map((body) => body.id),
+    ...run.scenario.changes.flatMap((change) =>
+      change.kind === 'add' ? [change.body.id] : [],
+    ),
+  ]);
+  let ordinal = 1;
+  while (taken.has(`added-${ordinal}`)) ordinal += 1;
+  return { id: `added-${ordinal}`, index: ordinal - 1 };
 }
 
 /** Escape speed from the central body at a given distance, in km/s. */
