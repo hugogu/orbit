@@ -97,20 +97,19 @@ void test('surface colour maps are opaque and keep their colour at both qualitie
     }).stats();
     return stats.channels.map((channel) => channel.mean);
   };
-  await Promise.all(
-    [...names].map(async (name) => {
-      const [standard, high] = await Promise.all([
-        meanColour(name, false),
-        meanColour(name, true),
-      ]);
-      standard.forEach((mean, channel) =>
-        assert.ok(
-          Math.abs(mean - high[channel]) < 4,
-          `${name} standard map channel ${channel}: ${mean} vs ${high[channel]}`,
-        ),
-      );
-    }),
-  );
+  // One body at a time, so only its two maps are ever being decoded.
+  for (const name of names) {
+    const [standard, high] = await Promise.all([
+      meanColour(name, false),
+      meanColour(name, true),
+    ]);
+    standard.forEach((mean, channel) =>
+      assert.ok(
+        Math.abs(mean - high[channel]) < 4,
+        `${name} standard map channel ${channel}: ${mean} vs ${high[channel]}`,
+      ),
+    );
+  }
 });
 
 void test('asteroid maps load without waiting for a focused selection', () => {
