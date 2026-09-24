@@ -45,7 +45,10 @@ import { scenePosition } from '../lib/sandbox/display.ts';
 import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import { createSandboxSystem } from '../components/sandbox-system.ts';
 import { isOrbitLine } from '../components/orbit-line.ts';
-import SandboxPanel, { foldedLabel } from '../components/sandbox-panel.tsx';
+import SandboxPanel, {
+  foldedLabel,
+  nextColor,
+} from '../components/sandbox-panel.tsx';
 import { translator } from '../lib/i18n/index.ts';
 import SandboxBodyEditor from '../components/sandbox-body-editor.tsx';
 import { I18nProvider } from '../lib/i18n/provider.tsx';
@@ -101,10 +104,11 @@ const around = (body: SandboxBodySpec): Centre => ({
 /** Adds a body the way the page does, and returns the id it was given. */
 const addBody = (run: SandboxRun, name: string) => {
   const { id, index } = nextAddition(run);
+  const color = nextColor(run);
   run.apply((current) => ({
     kind: 'add',
     body: createdBody(
-      { name, mass: 6e24, radius: 6400, distance: 3, color: '#7fd4ff' },
+      { name, mass: 6e24, radius: 6400, distance: 3, color },
       index,
       centreOf(centralBody(current.variant)),
       id,
@@ -1621,4 +1625,31 @@ void test('a body added to a shared run never takes an id the link already uses'
   const two = addBody(outsized, 'Two');
   assert.equal(outsized.liveSpec(one)?.name, 'One');
   assert.equal(outsized.liveSpec(two)?.name, 'Two');
+});
+
+void test('bodies added across a rewind and a shared link get different colours', () => {
+  const first = createRun(forkScenario(J2000_MS));
+  while (first.elapsedDays < 100) first.advance(20);
+  const earlier = addBody(first, 'First');
+  const rewound = createRun(rewoundScenario(first.scenario));
+  rewound.advance(5);
+  const later = addBody(rewound, 'Second');
+  // Opened from a link, both of those are still to come when a third is added.
+  const received = createRun(
+    decodeSandbox(encodeSandbox(rewound.scenario), J2000_MS)!,
+  );
+  const mine = addBody(received, 'Mine');
+  while (received.elapsedDays < 150) received.advance(20);
+  const colours = [earlier, later, mine].map(
+    (id) => received.liveSpec(id)!.color,
+  );
+  assert.equal(new Set(colours).size, 3);
+
+  // The form colours what it adds by the same rule.
+  const panel = readFileSync(
+    new URL('../components/sandbox-panel.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(panel, /color: nextColor\(run\)/);
+  assert.doesNotMatch(panel, /!body\.sourceId\)\.length/);
 });

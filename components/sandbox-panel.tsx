@@ -4,7 +4,12 @@ import { FlaskConical, LogOut, Plus, RotateCcw, X } from 'lucide-react';
 import type { Translate } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
 import type { SandboxEvent, SandboxRun } from '../lib/sandbox/run';
-import { fieldSpec, typedDistance, type NewBody } from '../lib/sandbox/edits';
+import {
+  fieldSpec,
+  nextAddition,
+  typedDistance,
+  type NewBody,
+} from '../lib/sandbox/edits';
 import { elapsedLabel, formatReading } from '../lib/sandbox/view';
 
 /** Starting points for a body the viewer creates, in kilograms and kilometres. */
@@ -25,6 +30,16 @@ const SWIPE_PX = 24;
 const MAX_LOGGED_EVENTS = 100;
 /** How near the foot of the log still counts as following it. */
 const FOLLOW_SLACK_PX = 8;
+
+/**
+ * The colour for the next body the viewer adds: the palette entry at its
+ * placement index, so colour, id and position follow one number. Counting only
+ * the bodies the run had already added gave a body added after a rewind, or to
+ * a run opened from a link, the colour of one still queued.
+ */
+export function nextColor(run: SandboxRun) {
+  return palette[nextAddition(run).index % palette.length];
+}
 
 function bodyName(run: SandboxRun, id: string, t: Translate) {
   const spec = run.facts.find((body) => body.id === id);
@@ -293,11 +308,7 @@ export default function SandboxPanel({
                 mass: chosen.mass,
                 radius: chosen.radius,
                 distance: typedDistance(distance),
-                color:
-                  palette[
-                    run.facts.filter((body) => !body.sourceId).length %
-                      palette.length
-                  ],
+                color: nextColor(run),
               });
               setAdding(false);
               setName('');
