@@ -33,6 +33,17 @@ export type RegisterOptions = {
   /** Clear the material map when a lazy surface is released. */
   clear?: () => void;
 };
+export function textureLoadingOptions(name: string) {
+  const eager =
+    name === 'earth_daymap' ||
+    name === 'earth_nightmap' ||
+    name === 'sun' ||
+    name === 'stars_milky_way';
+  return {
+    lazy: !eager,
+    preload: name === 'moon' || name === 'mars',
+  };
+}
 export function createTextureManager(
   renderer: THREE.WebGLRenderer,
   onStatus: (message: string) => void,
@@ -267,12 +278,14 @@ export function createTextureManager(
             false,
             renderer.capabilities.maxTextureSize,
           );
+        const eligible =
+          slot.name === focus ||
+          activeTextures.includes(slot.name) ||
+          (slot.name === 'stars_milky_way' && galaxy) ||
+          (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
+          (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
         if (deferHighResolution) slot.navigationHold = true;
-        if (
-          slot.lazy &&
-          !activeTextures.includes(slot.name) &&
-          slot.name !== focus
-        ) {
+        if (slot.lazy && !eligible) {
           const visited =
             slot.retainOnNavigation && (slot.texture || slot.path);
           if (!visited && !textureCache.has(standardPath)) {
@@ -281,12 +294,6 @@ export function createTextureManager(
           }
         }
         if (!slot.texture && slot.path) continue;
-        const eligible =
-          slot.name === focus ||
-          activeTextures.includes(slot.name) ||
-          (slot.name === 'stars_milky_way' && galaxy) ||
-          (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
-          (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
         const alreadyHigh = slot.path === highPath && highPath !== standardPath;
         const upgrade = eligible && (alreadyHigh ? keepHigh : high);
         if (

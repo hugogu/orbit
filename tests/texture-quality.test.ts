@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import sharp from 'sharp/lib/index.js';
 import { readFileSync, existsSync } from 'node:fs';
-import { createTextureManager } from '../components/texture-manager';
+import {
+  createTextureManager,
+  textureLoadingOptions,
+} from '../components/texture-manager';
 import { bodies } from '../lib/solar';
 import { orbitingMoons, moonTextureNames } from '../lib/moon-orbits';
 import { asteroids } from '../lib/asteroids';
@@ -47,6 +50,58 @@ void test('quality respects device preferences, GPU limits and actual source res
       ),
     );
   }
+});
+
+void test('the first view requests only core maps, then idles and selects the rest', (t) => {
+  const requested: string[] = [];
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) => {
+      requested.push(path);
+      return new Promise<THREE.Texture>(() => {});
+    },
+  );
+  const manager = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  for (const name of [
+    'sun',
+    'mercury',
+    'earth_daymap',
+    'earth_nightmap',
+    'moon',
+    'mars',
+    'jupiter',
+    'saturn_ring_alpha',
+    'stars_milky_way',
+  ])
+    manager.register(name, () => {}, textureLoadingOptions(name));
+  manager.update('standard', null, false, false);
+  assert.deepEqual(requested.sort(), [
+    '/textures/2k_earth_daymap.jpg',
+    '/textures/2k_earth_nightmap.jpg',
+    '/textures/2k_stars_milky_way.jpg',
+    '/textures/2k_sun.jpg',
+  ]);
+  manager.preload();
+  assert.deepEqual(requested.sort(), [
+    '/textures/2k_earth_daymap.jpg',
+    '/textures/2k_earth_nightmap.jpg',
+    '/textures/2k_mars.jpg',
+    '/textures/2k_moon.jpg',
+    '/textures/2k_stars_milky_way.jpg',
+    '/textures/2k_sun.jpg',
+  ]);
+  manager.update('standard', 'mercury', false, false);
+  assert.ok(requested.includes('/textures/2k_mercury.jpg'));
+  assert.ok(!requested.includes('/textures/2k_jupiter.jpg'));
+  manager.update('standard', 'saturn', false, false);
+  assert.ok(requested.includes('/textures/2k_saturn_ring_alpha.png'));
+  manager.dispose();
 });
 
 void test('every body texture is registered and has a local fallback', () => {

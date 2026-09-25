@@ -31,7 +31,11 @@ import {
   outerStructures,
   outerStructureScale,
 } from '@/lib/display-scale';
-import { createTextureManager, type RegisterOptions } from './texture-manager';
+import {
+  createTextureManager,
+  textureLoadingOptions,
+  type RegisterOptions,
+} from './texture-manager';
 import { registerPlanetSurface } from './planet-surface';
 import { oblateScale } from '@/lib/planet-terrain';
 import { createEclipseSystem } from './eclipse-system';
@@ -209,8 +213,10 @@ export default function SolarScene({
     const starField = createStarField(scene, skyLabelLayer, (message) =>
       latest.current.onAssetStatus(message),
     );
-    textureManager.register('stars_milky_way', (texture) =>
-      starField.setPanorama(texture),
+    textureManager.register(
+      'stars_milky_way',
+      (texture) => starField.setPanorama(texture),
+      textureLoadingOptions('stars_milky_way'),
     );
     // The moons, comets and asteroids all ride on real ephemerides, so a
     // sandbox run has nothing true to say about them. One container makes
@@ -235,8 +241,7 @@ export default function SolarScene({
         body.id === 'sun'
           ? new THREE.MeshBasicMaterial({ color: 0xffe1ad })
           : new THREE.MeshStandardMaterial({
-              color:
-                body.texture && body.id !== 'uranus' ? 0xffffff : body.color,
+              color: body.color,
               roughness: 1,
             });
       const baseGeometry = new THREE.SphereGeometry(body.size, 96, 64);
@@ -253,7 +258,8 @@ export default function SolarScene({
             textureManager,
           ),
         );
-      else if (body.texture) applyMap(material, body.texture);
+      else if (body.texture)
+        applyMap(material, body.texture, textureLoadingOptions(body.texture));
       mesh.userData.id = body.id;
       pivot.add(mesh);
       meshes.set(body.id, mesh);
@@ -275,6 +281,7 @@ export default function SolarScene({
         const ring = new THREE.Mesh(
           geo,
           new THREE.MeshStandardMaterial({
+            color: 0x8b7960,
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.88,
@@ -283,7 +290,11 @@ export default function SolarScene({
             emissiveIntensity: 0.2,
           }),
         );
-        applyMap(ring.material, 'saturn_ring_alpha');
+        applyMap(ring.material, 'saturn_ring_alpha', {
+          ...textureLoadingOptions('saturn_ring_alpha'),
+          retainOnNavigation: true,
+          mapColor: 0xffffff,
+        });
         ring.rotation.x = -Math.PI / 2;
         pivot.add(ring);
       }
@@ -329,7 +340,7 @@ export default function SolarScene({
         .material as THREE.MeshStandardMaterial;
       const fallbackColor = material.color.getHex();
       applyMap(material, moonTextureNames[moon.en], {
-        lazy: moon.en !== 'Moon',
+        ...textureLoadingOptions(moonTextureNames[moon.en]),
         mapColor: 0xffffff,
         clear: () => {
           material.map = null;
@@ -386,8 +397,10 @@ export default function SolarScene({
     const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
     const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
-    textureManager.register('earth_nightmap', (texture) =>
-      eclipseSystem.setEarthNightMap(texture),
+    textureManager.register(
+      'earth_nightmap',
+      (texture) => eclipseSystem.setEarthNightMap(texture),
+      textureLoadingOptions('earth_nightmap'),
     );
     const idleWindow = window as Window & {
       requestIdleCallback?: (
