@@ -44,6 +44,7 @@ import type { SandboxView } from '@/lib/sandbox/view';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
+import { visibleTextureNames } from './texture-visibility';
 import { createStarField } from './star-field';
 import { createGroundSky } from './ground-sky';
 import type { TextureQuality } from '@/lib/texture-quality';
@@ -200,6 +201,7 @@ export default function SolarScene({
       projectLabels = new Map<string, ReturnType<typeof createSceneLabel>>();
     const planetSurfaces: ReturnType<typeof registerPlanetSurface>[] = [];
     let sunEffects: ReturnType<typeof createSunEffects> | null = null,
+      saturnRing: THREE.Mesh | null = null,
       observerMarker: ReturnType<typeof createObserverMarker> | null = null,
       earthPivot: THREE.Group | null = null;
     const labelLayer = document.createElement('div');
@@ -290,6 +292,7 @@ export default function SolarScene({
             emissiveIntensity: 0.2,
           }),
         );
+        saturnRing = ring;
         applyMap(ring.material, 'saturn_ring_alpha', {
           ...textureLoadingOptions('saturn_ring_alpha'),
           retainOnNavigation: true,
@@ -387,6 +390,20 @@ export default function SolarScene({
           },
         );
     }
+    const visibleTextureCandidates = [
+      ...bodies.flatMap((body) =>
+        body.texture
+          ? [{ name: body.texture, mesh: meshes.get(body.id)! }]
+          : [],
+      ),
+      ...orbitingMoons.map((moon) => ({
+        name: moonTextureNames[moon.en],
+        mesh: meshes.get(moon.id)!,
+      })),
+      ...(saturnRing
+        ? [{ name: 'saturn_ring_alpha', mesh: saturnRing }]
+        : []),
+    ];
     const sandboxSystem = createSandboxSystem(
       spaceScene,
       roots,
@@ -629,6 +646,8 @@ export default function SolarScene({
       lastComet = '',
       highResolutionReadyAt = 0,
       transition = 0;
+    let visibleTextures: string[] = [],
+      lastVisibilityCheck = -Infinity;
     const navigationTextureGraceMs = 5000;
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
@@ -797,6 +816,7 @@ export default function SolarScene({
         s.galaxy,
         activeBodyTextures,
         navigating,
+        s.ground || s.sandbox ? [] : visibleTextures,
       );
       const seek = s.epoch !== epoch;
       if (seek) {
@@ -1131,6 +1151,14 @@ export default function SolarScene({
       );
       belt.update(camera.position, days);
       renderer.render(scene, camera);
+      if (now - lastVisibilityCheck > 150) {
+        visibleTextures = visibleTextureNames(
+          camera,
+          height,
+          visibleTextureCandidates,
+        );
+        lastVisibilityCheck = now;
+      }
       starField.project(
         camera,
         width,

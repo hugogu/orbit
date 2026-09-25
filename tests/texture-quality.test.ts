@@ -52,7 +52,7 @@ void test('quality respects device preferences, GPU limits and actual source res
   }
 });
 
-void test('the first view requests only core maps, then idles and selects the rest', (t) => {
+void test('core maps load first, then idle and visible maps load before selection', (t) => {
   const requested: string[] = [];
   t.mock.method(
     THREE.TextureLoader.prototype,
@@ -75,6 +75,7 @@ void test('the first view requests only core maps, then idles and selects the re
     'earth_nightmap',
     'moon',
     'mars',
+    'io',
     'jupiter',
     'saturn_ring_alpha',
     'stars_milky_way',
@@ -96,9 +97,18 @@ void test('the first view requests only core maps, then idles and selects the re
     '/textures/2k_stars_milky_way.jpg',
     '/textures/2k_sun.jpg',
   ]);
+  manager.update('ultra', null, false, false, true, [], false, [
+    'jupiter',
+    'io',
+    'saturn_ring_alpha',
+  ]);
+  assert.ok(requested.includes('/textures/2k_jupiter.jpg'));
+  assert.ok(requested.includes('/textures/satellites/2k_io.jpg'));
+  assert.ok(requested.includes('/textures/2k_saturn_ring_alpha.png'));
+  assert.ok(!requested.includes('/textures/8k_jupiter.jpg'));
+  assert.ok(!requested.includes('/textures/2k_mercury.jpg'));
   manager.update('standard', 'mercury', false, false);
   assert.ok(requested.includes('/textures/2k_mercury.jpg'));
-  assert.ok(!requested.includes('/textures/2k_jupiter.jpg'));
   manager.update('standard', 'saturn', false, false);
   assert.ok(requested.includes('/textures/2k_saturn_ring_alpha.png'));
   manager.dispose();

@@ -260,6 +260,7 @@ export function createTextureManager(
       galaxy = true,
       activeTextures: readonly string[] = [],
       deferHighResolution = false,
+      visibleTextures: readonly string[] = [],
     ) {
       if (disposed) return;
       const high = shouldLoadHighResolution(quality, compact, saveData);
@@ -285,7 +286,7 @@ export function createTextureManager(
           (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
           (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
         if (deferHighResolution) slot.navigationHold = true;
-        if (slot.lazy && !eligible) {
+        if (slot.lazy && !eligible && !visibleTextures.includes(slot.name)) {
           const visited =
             slot.retainOnNavigation && (slot.texture || slot.path);
           if (!visited && !textureCache.has(standardPath)) {
