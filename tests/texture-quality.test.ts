@@ -114,6 +114,54 @@ void test('core maps load first, then idle and visible maps load before selectio
   manager.dispose();
 });
 
+void test('an unfinished visible map is released offscreen, but a loaded one is retained', async (t) => {
+  const pending: Array<(texture: THREE.Texture) => void> = [];
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    () => new Promise<THREE.Texture>((resolve) => pending.push(resolve)),
+  );
+  const manager = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  let applied: THREE.Texture | null = null;
+  manager.register(
+    'jupiter',
+    (texture) => {
+      applied = texture;
+    },
+    { lazy: true, preload: false, retainOnNavigation: true },
+  );
+  const update = (visible: string[]) =>
+    manager.update('standard', null, false, false, true, [], false, visible);
+
+  update(['jupiter']);
+  assert.equal(pending.length, 1);
+  update([]);
+  const abandoned = new THREE.Texture();
+  let disposed = false;
+  t.mock.method(abandoned, 'dispose', () => {
+    disposed = true;
+  });
+  pending[0](abandoned);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(applied, null);
+  assert.equal(disposed, true);
+
+  update(['jupiter']);
+  assert.equal(pending.length, 2);
+  const loaded = new THREE.Texture();
+  pending[1](loaded);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(applied, loaded);
+  update([]);
+  assert.equal(applied, loaded);
+  manager.dispose();
+});
+
 void test('every body texture is registered and has a local fallback', () => {
   assert.ok(highResolutionTextures.uranus, 'Uranus map catalog entry');
   assert.ok(highResolutionTextures.pluto, 'Pluto map catalog entry');

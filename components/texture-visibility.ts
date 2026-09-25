@@ -5,23 +5,27 @@ export type TextureVisibilityCandidate = {
   mesh: THREE.Mesh;
 };
 
-/** Request standard maps for bodies large enough to show on screen. */
+const frustum = new THREE.Frustum();
+const projection = new THREE.Matrix4();
+const sphere = new THREE.Sphere();
+
+/** Collect map names for bodies large enough to show on screen. */
 export function visibleTextureNames(
   camera: THREE.PerspectiveCamera,
   viewportHeight: number,
   candidates: readonly TextureVisibilityCandidate[],
+  visible: string[] = [],
 ) {
+  visible.length = 0;
   camera.updateMatrixWorld();
-  const frustum = new THREE.Frustum().setFromProjectionMatrix(
-    new THREE.Matrix4().multiplyMatrices(
+  frustum.setFromProjectionMatrix(
+    projection.multiplyMatrices(
       camera.projectionMatrix,
       camera.matrixWorldInverse,
     ),
   );
   const focalLength =
     viewportHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-  const sphere = new THREE.Sphere();
-  const visible: string[] = [];
 
   for (const { name, mesh } of candidates) {
     if (!mesh.visible) continue;

@@ -22,11 +22,11 @@ type Slot = {
 const navigationTextureHoldMs = 8000;
 const preloadConcurrency = 2;
 export type RegisterOptions = {
-  /** Defer loading until this map is the selected/focused surface. */
+  /** Defer loading until this map is focused or visible. */
   lazy?: boolean;
   /** Keep opt-in maps out of the idle preload queue. */
   preload?: boolean;
-  /** Keep a visited surface attached at standard quality after focus moves away. */
+  /** Keep a loaded surface attached at standard quality after focus moves away. */
   retainOnNavigation?: boolean;
   /** Use `NoColorSpace` for data maps such as normal maps. */
   colorSpace?: THREE.ColorSpace;
@@ -287,8 +287,7 @@ export function createTextureManager(
           (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
         if (deferHighResolution) slot.navigationHold = true;
         if (slot.lazy && !eligible && !visibleTextures.includes(slot.name)) {
-          const visited =
-            slot.retainOnNavigation && (slot.texture || slot.path);
+          const visited = slot.retainOnNavigation && !!slot.texture;
           if (!visited && !textureCache.has(standardPath)) {
             release(slot);
             continue;

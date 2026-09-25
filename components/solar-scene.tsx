@@ -646,8 +646,8 @@ export default function SolarScene({
       lastComet = '',
       highResolutionReadyAt = 0,
       transition = 0;
-    let visibleTextures: string[] = [],
-      lastVisibilityCheck = -Infinity;
+    const visibleTextures: string[] = [];
+    let lastVisibilityCheck = -Infinity;
     const navigationTextureGraceMs = 5000;
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
@@ -1152,10 +1152,11 @@ export default function SolarScene({
       belt.update(camera.position, days);
       renderer.render(scene, camera);
       if (now - lastVisibilityCheck > 150) {
-        visibleTextures = visibleTextureNames(
+        visibleTextureNames(
           camera,
           height,
           visibleTextureCandidates,
+          visibleTextures,
         );
         lastVisibilityCheck = now;
       }

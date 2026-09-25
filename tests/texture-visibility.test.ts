@@ -27,16 +27,19 @@ void test('visible bodies load without selection, while hidden and subpixel bodi
   const hiddenChild = body(0.5);
   hiddenParent.add(hiddenChild);
 
-  assert.deepEqual(
-    visibleTextureNames(camera, 800, [
-      { name: 'center', mesh: center },
-      { name: 'edge', mesh: edge },
-      { name: 'outside', mesh: outside },
-      { name: 'behind', mesh: behind },
-      { name: 'tiny', mesh: tiny },
-      { name: 'hidden', mesh: hidden },
-      { name: 'hiddenChild', mesh: hiddenChild },
-    ]),
-    ['center', 'edge'],
-  );
+  const candidates = [
+    { name: 'center', mesh: center },
+    { name: 'edge', mesh: edge },
+    { name: 'outside', mesh: outside },
+    { name: 'behind', mesh: behind },
+    { name: 'tiny', mesh: tiny },
+    { name: 'hidden', mesh: hidden },
+    { name: 'hiddenChild', mesh: hiddenChild },
+  ];
+  const visible = ['stale'];
+  assert.equal(visibleTextureNames(camera, 800, candidates, visible), visible);
+  assert.deepEqual(visible, ['center', 'edge']);
+  center.visible = false;
+  visibleTextureNames(camera, 800, candidates, visible);
+  assert.deepEqual(visible, ['edge']);
 });
