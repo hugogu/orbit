@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { model } from 'geomagnetism';
 import type { Quaternion } from 'three';
 import {
-  deviceAttitude,
+  DeviceAttitudeTracker,
   requestOrientationPermission,
   type AttitudeReading,
   type OrientationPermission,
@@ -44,7 +44,7 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
   async function start() {
     stop();
     const pending = ++ticket.current;
-    setStatus('等待朝向感应…');
+    setStatus('等待朝向感应，请稍微倾斜手机…');
     setEnabled(true);
     try {
       await requestOrientationPermission(
@@ -61,6 +61,7 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
       let lastLocation: SkyLocation | null = null,
         declination = 0,
         received = false;
+      const tracker = new DeviceAttitudeTracker();
       const read = (event: DeviceOrientationEvent) => {
         const { location: site, correction: adjustment } = settings.current;
         if (site !== lastLocation) {
@@ -70,7 +71,7 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
           lastLocation = site;
         }
         const reading = event as DeviceOrientationEvent & AttitudeReading;
-        const next = deviceAttitude(
+        const next = tracker.read(
           reading,
           window.screen.orientation?.angle ??
             Number(Reflect.get(window, 'orientation') ?? 0),

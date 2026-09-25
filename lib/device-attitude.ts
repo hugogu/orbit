@@ -9,54 +9,105 @@ export type AttitudeReading = {
   webkitCompassAccuracy?: number;
 };
 
-/** W3C Z-X'-Y'' device angles, mapped from ENU into local east/up/south. */
-export function deviceAttitude(
-  reading: AttitudeReading,
-  screenAngle: number,
-  declination = 0,
-  correction = 0,
+const radians = Math.PI / 180;
+const up = new Vector3(0, 1, 0);
+const enuToLocal = new Quaternion().setFromAxisAngle(
+  new Vector3(1, 0, 0),
+  -Math.PI / 2,
+);
+
+/** One reference frame per sensor session; Safari's Euler angles are relative. */
+export class DeviceAttitudeTracker {
+  private source: 'compass' | 'absolute' | null = null;
+  private northOffset: number | null = null;
+  private lastTime: number | null = null;
+
+  read(
+    reading: AttitudeReading,
+    screenAngle: number,
+    declination = 0,
+    correction = 0,
+    time = performance.now(),
+  ) {
+    const { alpha, beta, gamma, webkitCompassHeading: heading } = reading;
+    if (
+      ![alpha, beta, gamma, screenAngle, declination, correction, time].every(
+        (value) => typeof value === 'number' && Number.isFinite(value),
+      )
+    )
+      return null;
+    const source =
+      heading !== undefined ? 'compass' : reading.absolute ? 'absolute' : null;
+    if (!source || (this.source && this.source !== source)) return null;
+
+    // Preserve all three Z-X'-Y'' angles together, including their equivalent
+    // branches at the horizon/zenith. Replacing alpha alone breaks that identity.
+    const attitude = enuToLocal
+      .clone()
+      .multiply(
+        new Quaternion().setFromEuler(
+          new Euler(beta! * radians, gamma! * radians, alpha! * radians, 'ZXY'),
+        ),
+      );
+    const dt =
+      this.lastTime === null
+        ? 0
+        : Math.max(0, Math.min((time - this.lastTime) / 1000, 0.1));
+    this.lastTime = time;
+    if (source === 'compass') {
+      const accuracy = reading.webkitCompassAccuracy;
+      const reliable =
+        typeof heading === 'number' &&
+        Number.isFinite(heading) &&
+        heading >= 0 &&
+        heading < 360 &&
+        (accuracy === undefined ||
+          (Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 50));
+      // CoreLocation measures the portrait device's top edge, not Euler alpha
+      // or the camera's sightline. Its horizontal heading is undefined when
+      // that edge is vertical: keep the last alignment and follow the gyro.
+      // https://developer.apple.com/documentation/corelocation/clheading/magneticheading
+      const top = new Vector3(0, 1, 0).applyQuaternion(attitude);
+      if (reliable && Math.hypot(top.x, top.z) > 0.25) {
+        const offset = Math.atan2(top.x, -top.z) - heading * radians;
+        if (this.northOffset === null) this.northOffset = offset;
+        else {
+          const difference = Math.atan2(
+            Math.sin(offset - this.northOffset),
+            Math.cos(offset - this.northOffset),
+          );
+          // Compass and gyro samples arrive independently. Correct slow drift
+          // without injecting magnetic noise or stale headings into each turn.
+          const adjustment = difference * -Math.expm1(-dt / 2);
+          const limit = 3 * radians * dt;
+          this.northOffset += Math.max(-limit, Math.min(limit, adjustment));
+        }
+      }
+      if (this.northOffset === null) return null;
+    }
+    this.source = source;
+    const north =
+      source === 'compass' ? this.northOffset! - declination * radians : 0;
+    return attitude
+      .premultiply(
+        new Quaternion().setFromAxisAngle(up, north - correction * radians),
+      )
+      .multiply(
+        new Quaternion().setFromAxisAngle(
+          new Vector3(0, 0, 1),
+          -screenAngle * radians,
+        ),
+      );
+  }
+}
+
+/** Frame-rate independent damping on the full rotation, including its roll. */
+export function smoothDeviceAttitude(
+  current: Quaternion,
+  target: Quaternion,
+  seconds: number,
 ) {
-  const {
-    alpha,
-    beta,
-    gamma,
-    webkitCompassHeading: heading,
-    webkitCompassAccuracy: accuracy,
-  } = reading;
-  if (
-    ![alpha, beta, gamma, screenAngle, declination, correction].every(
-      (value) => typeof value === 'number' && Number.isFinite(value),
-    )
-  )
-    return null;
-  const compass =
-    typeof heading === 'number' &&
-    Number.isFinite(heading) &&
-    heading >= 0 &&
-    heading < 360;
-  if (
-    compass &&
-    accuracy !== undefined &&
-    (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 50)
-  )
-    return null;
-  if (!compass && !reading.absolute) return null;
-  const radians = Math.PI / 180;
-  // Safari reports magnetic heading; absolute W3C events use the Earth frame.
-  const yaw = (compass ? 360 - heading - declination : alpha!) - correction;
-  return new Quaternion()
-    .setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2)
-    .multiply(
-      new Quaternion().setFromEuler(
-        new Euler(beta! * radians, gamma! * radians, yaw * radians, 'ZXY'),
-      ),
-    )
-    .multiply(
-      new Quaternion().setFromAxisAngle(
-        new Vector3(0, 0, 1),
-        -screenAngle * radians,
-      ),
-    );
+  return current.slerp(target, -Math.expm1(-Math.max(0, seconds) / 0.04));
 }
 
 export type OrientationPermission = {

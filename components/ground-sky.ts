@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { bodyOrientation } from '../lib/ephemeris';
+import { smoothDeviceAttitude } from '../lib/device-attitude';
 import {
   groundBodies,
   groundBodyDisplay,
@@ -240,6 +241,7 @@ export function createGroundSky(
       showLabels: boolean,
       translate: Translate,
       sandbox: SandboxRun | null = null,
+      frameSeconds = 1 / 60,
     ) {
       // A 100 ms sky snapshot is far below sensor accuracy, including the Moon.
       const key = `${Math.floor(days * 864000)}:${location.latitude}:${location.longitude}:${location.height}:${scale}:${realSizes}`;
@@ -328,7 +330,9 @@ export function createGroundSky(
         lastLocale = translate;
       }
       if (attitude) {
-        localCamera.copy(attitude);
+        if (controlled)
+          smoothDeviceAttitude(localCamera, attitude, frameSeconds);
+        else localCamera.copy(attitude);
         controlled = true;
       } else {
         if (controlled) {
