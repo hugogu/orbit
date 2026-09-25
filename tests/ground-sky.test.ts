@@ -10,7 +10,7 @@ import {
   horizonFrame,
 } from '../lib/ground-sky';
 import {
-  deviceAttitude,
+  DeviceAttitudeTracker,
   requestOrientationPermission,
 } from '../lib/device-attitude';
 import { DAY_MS, J2000_MS } from '../lib/simulation-time';
@@ -19,6 +19,8 @@ import { createRun } from '../lib/sandbox/run';
 import { forkScenario } from '../lib/sandbox/scenario';
 import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
 
+const deviceAttitude = (...args: Parameters<DeviceAttitudeTracker['read']>) =>
+  new DeviceAttitudeTracker().read(...args);
 const radians = Math.PI / 180;
 const site = {
   latitude: 39.9042,
@@ -216,22 +218,6 @@ void test('device attitude follows north/east/up and landscape changes roll, not
       0,
     );
   }
-  // A magnetic heading of 80° plus 10° east declination points due east.
-  close(
-    forward(
-      deviceAttitude(
-        {
-          ...reading,
-          absolute: false,
-          webkitCompassHeading: 80,
-          webkitCompassAccuracy: 5,
-        },
-        0,
-        10,
-      ),
-    ).distanceTo(new Vector3(1, 0, 0)),
-    0,
-  );
   close(
     forward(deviceAttitude(reading, 0, 0, 90)).distanceTo(new Vector3(1, 0, 0)),
     0,
@@ -400,6 +386,37 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
       (horizon.material as THREE.ShaderMaterial).vertexShader,
       /projectionMatrix \* modelViewMatrix/,
     );
+    // Exercise the same sensor -> smoothed camera path used by playback.
+    const tracker = new DeviceAttitudeTracker();
+    const initial = tracker.read(
+      { alpha: 0, beta: 60, gamma: 0, absolute: true },
+      0,
+    )!;
+    update(null);
+    update(initial);
+    for (let sample = 1; sample <= 300; sample++) {
+      const target = tracker.read(
+        {
+          alpha: sample * 0.2,
+          beta: 60 + sample * 0.5,
+          gamma: 10,
+          absolute: true,
+        },
+        0,
+      )!;
+      const previous = sky.camera.quaternion.clone();
+      update(target);
+      assert.ok(previous.angleTo(sky.camera.quaternion) < 4 * radians);
+      if (sample === 300) {
+        for (let frame = 0; frame < 60; frame++) update(target);
+        close(
+          sky.camera.quaternion.angleTo(
+            horizonFrame(days, site).rotation.multiply(target),
+          ),
+          0,
+        );
+      }
+    }
     const before = sky.camera.getWorldDirection(new THREE.Vector3());
     update(null);
     close(

@@ -1745,7 +1745,7 @@
   "手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。": "Point the back of your phone at the sky. Fine-tune the heading against a known star; compass accuracy depends on the device and nearby magnetic fields. Drag to look around; pinch or scroll to zoom.",
   "地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。": "The horizon hides objects below it. Stars remain visible for learning; weather, light pollution and atmospheric refraction are not simulated.",
   "拖动查看天空": "Drag to explore the sky",
-  "等待朝向感应…": "Waiting for device orientation…",
+  "等待朝向感应，请稍微倾斜手机…": "Waiting for orientation. Tilt your phone slightly…",
   "朝向感应已开启": "Following device orientation",
   "地磁模型已过期，请手动校正方位。": "The magnetic model has expired; correct the heading manually.",
   "未收到可靠的指南针朝向，请远离磁性物体后重试，或拖动查看天空。": "No reliable compass reading. Move away from magnetic objects and retry, or drag to explore.",
