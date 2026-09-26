@@ -1,4 +1,5 @@
 import {
+  aboutPath,
   absoluteSiteUrl,
   bodiesIndexPath,
   bodyDetailsPath,
@@ -6,6 +7,7 @@ import {
   entryImagePath,
   eventDetailsPath,
   eventsIndexPath,
+  privacyPath,
   seoLocales,
   type CatalogEntry,
 } from './seo';
@@ -64,6 +66,8 @@ function routeSpecs(entries: CatalogEntry[]): RouteSpec[] {
         route: (locale) => eventDetailsPath(locale, topic.id),
       }),
     ),
+    { route: privacyPath },
+    { route: aboutPath },
   ];
 }
 

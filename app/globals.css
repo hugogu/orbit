@@ -395,6 +395,23 @@ body {
   color: #d3bd96;
   margin: 0 0 14px;
 }
+.legal-list {
+  color: #ced5de;
+  font-size: 17px;
+  line-height: 2;
+  margin: 0;
+  padding-left: 22px;
+  list-style: disc;
+}
+.legal-list li + li {
+  margin-top: 8px;
+}
+.profile-intro a,
+.profile-chapter p a,
+.legal-list a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .seo-facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

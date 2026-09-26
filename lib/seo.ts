@@ -103,6 +103,34 @@ export function eventDetailsPath(locale: Locale, id: string) {
   return `/${localePath(locale)}/events/${encodeURIComponent(id)}`;
 }
 
+export function privacyPath(locale: Locale) {
+  return `/${localePath(locale)}/privacy`;
+}
+
+export function privacyTitle(locale: Locale) {
+  return translator(locale)('隐私政策');
+}
+
+export function privacyDescription(locale: Locale) {
+  return translator(locale)(
+    '本页说明 ORBIT 如何处理数据：本地保存的显示设置、可选的定位与设备朝向，以及 Google AdSense、Google Analytics 与 Vercel Analytics 等第三方服务。',
+  );
+}
+
+export function aboutPath(locale: Locale) {
+  return `/${localePath(locale)}/about`;
+}
+
+export function aboutTitle(locale: Locale) {
+  return translator(locale)('关于与联系');
+}
+
+export function aboutDescription(locale: Locale) {
+  return translator(locale)(
+    'ORBIT 是什么、由谁维护，以及如何联系我们、报告问题或参与这个开源项目。',
+  );
+}
+
 export function profileTitle(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
   return t('{{name}}：结构、轨道与探索', { name: t(entry.data.name) });

@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  aboutPath,
+  aboutDescription,
+  aboutTitle,
   absoluteSiteUrl,
   bodiesIndexDescription,
   bodiesIndexJsonLd,
@@ -22,6 +25,9 @@ import {
   homeJsonLd,
   normalizeSiteOrigin,
   ogImagePath,
+  privacyPath,
+  privacyDescription,
+  privacyTitle,
   profileAncestors,
   profileJsonLd,
   profileTitle,
@@ -91,6 +97,14 @@ const eventsPage = readFileSync(
 );
 const eventPage = readFileSync(
   new URL('../app/_pages/event-page.tsx', import.meta.url),
+  'utf8',
+);
+const privacyPage = readFileSync(
+  new URL('../app/_pages/privacy-page.tsx', import.meta.url),
+  'utf8',
+);
+const aboutPage = readFileSync(
+  new URL('../app/_pages/about-page.tsx', import.meta.url),
   'utf8',
 );
 const bodiesPage = readFileSync(
@@ -523,8 +537,9 @@ void test('the body index reads as whole sentences in every language', () => {
 void test('sitemap repeats reciprocal hreflang links for every localized page', () => {
   const entries = sitemapEntries();
   const localized = entries.filter((entry) => entry.alternates);
-  // Every profile and sky-event topic, plus the two indexes above them.
-  const routes = catalogEntries().length + eventTopics.length + 2;
+  // Every profile and sky-event topic, plus the two indexes above them and
+  // the two standalone legal pages (privacy, about).
+  const routes = catalogEntries().length + eventTopics.length + 4;
   assert.equal(localized.length, routes * seoLocales.length);
   assert.equal(
     new Set(
@@ -685,6 +700,64 @@ void test('guide routes render their own static params, metadata and structured 
   // The explorer offers the guide beside the eclipse planner.
   assert.match(homePage, /className="astronomy-actions"/);
   assert.match(homePage, /href=\{eventsIndexPath\(locale\)\}/);
+});
+
+void test('the privacy and about pages have unique localized URLs', () => {
+  assert.equal(privacyPath('zh-CN'), '/zh-CN/privacy');
+  assert.equal(privacyPath('en'), '/en-US/privacy');
+  assert.equal(aboutPath('ja'), '/ja-JP/about');
+  const paths = seoLocales.flatMap((locale) => [
+    privacyPath(locale),
+    aboutPath(locale),
+  ]);
+  assert.equal(new Set(paths).size, paths.length);
+});
+
+void test('privacy and about read as translated, undecorated titles', () => {
+  const pages = [
+    { title: privacyTitle, description: privacyDescription },
+    { title: aboutTitle, description: aboutDescription },
+  ];
+  for (const { title: pageTitle, description: pageDescription } of pages) {
+    const zhTitle = pageTitle('zh-CN');
+    const zhDescription = pageDescription('zh-CN');
+    for (const locale of seoLocales) {
+      const title = pageTitle(locale);
+      const description = pageDescription(locale);
+      assert.ok(title.trim().length > 0);
+      assert.ok(description.trim().length > 0);
+      assert.doesNotMatch(title, /[/·→]\s*$/);
+      if (locale !== 'zh-CN') {
+        assert.notEqual(title, zhTitle);
+        assert.notEqual(description, zhDescription);
+      }
+      if (locale === 'en') {
+        assert.doesNotMatch(title, /\p{Script=Han}/u, title);
+        assert.doesNotMatch(description, /\p{Script=Han}/u, description);
+      }
+    }
+  }
+});
+
+void test('privacy and about routes render their own static params and metadata', () => {
+  for (const page of [privacyPage, aboutPage]) {
+    assert.match(page, /generateStaticParams/);
+    assert.match(page, /dynamicParams = false/);
+    assert.match(page, /robots: \{ index: true, follow: true/);
+  }
+  // Each links to the other rather than to itself.
+  assert.match(privacyPage, /href=\{aboutPath\(locale\)\}/);
+  assert.doesNotMatch(privacyPage, /href=\{privacyPath\(locale\)\}/);
+  assert.match(aboutPage, /href=\{privacyPath\(locale\)\}/);
+  assert.doesNotMatch(aboutPage, /href=\{aboutPath\(locale\)\}/);
+});
+
+void test('every crawlable page links to the privacy policy', () => {
+  for (const page of [bodyPage, eventsPage, eventPage, bodiesPage, aboutPage])
+    assert.match(page, /href=\{privacyPath\(locale\)\}/);
+  // The interactive explorer offers both from its help dialog.
+  assert.match(homePage, /href=\{privacyPath\(locale\)\}/);
+  assert.match(homePage, /href=\{aboutPath\(locale\)\}/);
 });
 
 void test('explorer links keep the language and optional body selection', () => {

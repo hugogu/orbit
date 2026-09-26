@@ -28,6 +28,7 @@ import {
   eventsIndexPath,
   eventTitle,
   explorerPath,
+  privacyPath,
   serializeJsonLd,
   seoSiteName,
   seoLocales,
@@ -329,6 +330,7 @@ export default async function EventPage({ params }: PageProps) {
         <a href={eventsIndexPath(locale)}>{t('返回天象事件列表')}</a>
         <span className="seo-page-byline">
           ORBIT / orbits.observer
+          <a href={privacyPath(locale)}>{t('隐私政策')}</a>
           <GitHubLink label={t('在 GitHub 查看源代码')} />
         </span>
       </footer>

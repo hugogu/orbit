@@ -148,7 +148,12 @@ import {
   savePreferences,
   type StoredPreferences,
 } from '@/lib/preferences';
-import { bodyDetailsPath, eventsIndexPath } from '@/lib/seo';
+import {
+  aboutPath,
+  bodyDetailsPath,
+  eventsIndexPath,
+  privacyPath,
+} from '@/lib/seo';
 import {
   DEFAULT_ORBIT_LINE_WIDTH,
   MAX_ORBIT_LINE_WIDTH,
@@ -2200,6 +2205,12 @@ export default function Home() {
                   </a>
                   。
                   {t('本地高程图仅在开启几何开关并跟随支持地形的天体时加载。')}
+                </p>
+                <h3>{t('法律信息：')}</h3>
+                <p>
+                  <a href={privacyPath(locale)}>{t('隐私政策')}</a>
+                  {' · '}
+                  <a href={aboutPath(locale)}>{t('关于与联系')}</a>
                 </p>
               </div>
             </TabsContent>

@@ -39,6 +39,7 @@ import {
   entryImagePath,
   explorerPath,
   ogImagePath,
+  privacyPath,
   profileAncestors,
   profileJsonLd,
   profileTitle,
@@ -664,6 +665,7 @@ export default async function BodyPage({ params }: PageProps) {
         <a href={explorerPath(locale)}>{t('返回太阳系观测台')}</a>
         <span className="seo-page-byline">
           ORBIT / orbits.observer
+          <a href={privacyPath(locale)}>{t('隐私政策')}</a>
           <GitHubLink label={t('在 GitHub 查看源代码')} />
         </span>
       </footer>
