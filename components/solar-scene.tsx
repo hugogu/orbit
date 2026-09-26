@@ -31,7 +31,11 @@ import {
   outerStructures,
   outerStructureScale,
 } from '@/lib/display-scale';
-import { createTextureManager, type RegisterOptions } from './texture-manager';
+import {
+  createTextureManager,
+  textureLoadingOptions,
+  type RegisterOptions,
+} from './texture-manager';
 import { registerPlanetSurface } from './planet-surface';
 import { oblateScale } from '@/lib/planet-terrain';
 import { createEclipseSystem } from './eclipse-system';
@@ -40,6 +44,7 @@ import type { SandboxView } from '@/lib/sandbox/view';
 import { createSunEffects } from './sun-effects';
 import { createObserverMarker } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
+import { visibleTextureNames } from './texture-visibility';
 import { createStarField } from './star-field';
 import { createGroundSky } from './ground-sky';
 import type { TextureQuality } from '@/lib/texture-quality';
@@ -196,6 +201,7 @@ export default function SolarScene({
       projectLabels = new Map<string, ReturnType<typeof createSceneLabel>>();
     const planetSurfaces: ReturnType<typeof registerPlanetSurface>[] = [];
     let sunEffects: ReturnType<typeof createSunEffects> | null = null,
+      saturnRing: THREE.Mesh | null = null,
       observerMarker: ReturnType<typeof createObserverMarker> | null = null,
       earthPivot: THREE.Group | null = null;
     const labelLayer = document.createElement('div');
@@ -209,8 +215,10 @@ export default function SolarScene({
     const starField = createStarField(scene, skyLabelLayer, (message) =>
       latest.current.onAssetStatus(message),
     );
-    textureManager.register('stars_milky_way', (texture) =>
-      starField.setPanorama(texture),
+    textureManager.register(
+      'stars_milky_way',
+      (texture) => starField.setPanorama(texture),
+      textureLoadingOptions('stars_milky_way'),
     );
     // The moons, comets and asteroids all ride on real ephemerides, so a
     // sandbox run has nothing true to say about them. One container makes
@@ -235,8 +243,7 @@ export default function SolarScene({
         body.id === 'sun'
           ? new THREE.MeshBasicMaterial({ color: 0xffe1ad })
           : new THREE.MeshStandardMaterial({
-              color:
-                body.texture && body.id !== 'uranus' ? 0xffffff : body.color,
+              color: body.color,
               roughness: 1,
             });
       const baseGeometry = new THREE.SphereGeometry(body.size, 96, 64);
@@ -253,7 +260,8 @@ export default function SolarScene({
             textureManager,
           ),
         );
-      else if (body.texture) applyMap(material, body.texture);
+      else if (body.texture)
+        applyMap(material, body.texture, textureLoadingOptions(body.texture));
       mesh.userData.id = body.id;
       pivot.add(mesh);
       meshes.set(body.id, mesh);
@@ -275,6 +283,7 @@ export default function SolarScene({
         const ring = new THREE.Mesh(
           geo,
           new THREE.MeshStandardMaterial({
+            color: 0x8b7960,
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.88,
@@ -283,7 +292,12 @@ export default function SolarScene({
             emissiveIntensity: 0.2,
           }),
         );
-        applyMap(ring.material, 'saturn_ring_alpha');
+        saturnRing = ring;
+        applyMap(ring.material, 'saturn_ring_alpha', {
+          ...textureLoadingOptions('saturn_ring_alpha'),
+          retainOnNavigation: true,
+          mapColor: 0xffffff,
+        });
         ring.rotation.x = -Math.PI / 2;
         pivot.add(ring);
       }
@@ -329,7 +343,7 @@ export default function SolarScene({
         .material as THREE.MeshStandardMaterial;
       const fallbackColor = material.color.getHex();
       applyMap(material, moonTextureNames[moon.en], {
-        lazy: moon.en !== 'Moon',
+        ...textureLoadingOptions(moonTextureNames[moon.en]),
         mapColor: 0xffffff,
         clear: () => {
           material.map = null;
@@ -376,6 +390,20 @@ export default function SolarScene({
           },
         );
     }
+    const visibleTextureCandidates = [
+      ...bodies.flatMap((body) =>
+        body.texture
+          ? [{ name: body.texture, mesh: meshes.get(body.id)! }]
+          : [],
+      ),
+      ...orbitingMoons.map((moon) => ({
+        name: moonTextureNames[moon.en],
+        mesh: meshes.get(moon.id)!,
+      })),
+      ...(saturnRing
+        ? [{ name: 'saturn_ring_alpha', mesh: saturnRing }]
+        : []),
+    ];
     const sandboxSystem = createSandboxSystem(
       spaceScene,
       roots,
@@ -386,8 +414,10 @@ export default function SolarScene({
     const labelOcclusion = createSceneLabelOcclusion(meshes);
     const eclipsePath = createEclipsePath(meshes.get('earth')!);
     const earthDisplayRadius = bodies.find((b) => b.id === 'earth')!.size;
-    textureManager.register('earth_nightmap', (texture) =>
-      eclipseSystem.setEarthNightMap(texture),
+    textureManager.register(
+      'earth_nightmap',
+      (texture) => eclipseSystem.setEarthNightMap(texture),
+      textureLoadingOptions('earth_nightmap'),
     );
     const idleWindow = window as Window & {
       requestIdleCallback?: (
@@ -616,6 +646,8 @@ export default function SolarScene({
       lastComet = '',
       highResolutionReadyAt = 0,
       transition = 0;
+    const visibleTextures: string[] = [];
+    let lastVisibilityCheck = -Infinity;
     const navigationTextureGraceMs = 5000;
     let targetDistance = 205;
     let following: THREE.Vector3 | null = null;
@@ -784,6 +816,7 @@ export default function SolarScene({
         s.galaxy,
         activeBodyTextures,
         navigating,
+        s.ground || s.sandbox ? [] : visibleTextures,
       );
       const seek = s.epoch !== epoch;
       if (seek) {
@@ -1119,6 +1152,15 @@ export default function SolarScene({
       );
       belt.update(camera.position, days);
       renderer.render(scene, camera);
+      if (now - lastVisibilityCheck > 150) {
+        visibleTextureNames(
+          camera,
+          height,
+          visibleTextureCandidates,
+          visibleTextures,
+        );
+        lastVisibilityCheck = now;
+      }
       starField.project(
         camera,
         width,

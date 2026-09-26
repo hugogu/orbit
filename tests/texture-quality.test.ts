@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import sharp from 'sharp/lib/index.js';
 import { readFileSync, existsSync } from 'node:fs';
-import { createTextureManager } from '../components/texture-manager';
+import {
+  createTextureManager,
+  textureLoadingOptions,
+} from '../components/texture-manager';
 import { bodies } from '../lib/solar';
 import { orbitingMoons, moonTextureNames } from '../lib/moon-orbits';
 import { asteroids } from '../lib/asteroids';
@@ -47,6 +50,116 @@ void test('quality respects device preferences, GPU limits and actual source res
       ),
     );
   }
+});
+
+void test('core maps load first, then idle and visible maps load before selection', (t) => {
+  const requested: string[] = [];
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    (path: string) => {
+      requested.push(path);
+      return new Promise<THREE.Texture>(() => {});
+    },
+  );
+  const manager = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  for (const name of [
+    'sun',
+    'mercury',
+    'earth_daymap',
+    'earth_nightmap',
+    'moon',
+    'mars',
+    'io',
+    'jupiter',
+    'saturn_ring_alpha',
+    'stars_milky_way',
+  ])
+    manager.register(name, () => {}, textureLoadingOptions(name));
+  manager.update('standard', null, false, false);
+  assert.deepEqual(requested.sort(), [
+    '/textures/2k_earth_daymap.jpg',
+    '/textures/2k_earth_nightmap.jpg',
+    '/textures/2k_stars_milky_way.jpg',
+    '/textures/2k_sun.jpg',
+  ]);
+  manager.preload();
+  assert.deepEqual(requested.sort(), [
+    '/textures/2k_earth_daymap.jpg',
+    '/textures/2k_earth_nightmap.jpg',
+    '/textures/2k_mars.jpg',
+    '/textures/2k_moon.jpg',
+    '/textures/2k_stars_milky_way.jpg',
+    '/textures/2k_sun.jpg',
+  ]);
+  manager.update('ultra', null, false, false, true, [], false, [
+    'jupiter',
+    'io',
+    'saturn_ring_alpha',
+  ]);
+  assert.ok(requested.includes('/textures/2k_jupiter.jpg'));
+  assert.ok(requested.includes('/textures/satellites/2k_io.jpg'));
+  assert.ok(requested.includes('/textures/2k_saturn_ring_alpha.png'));
+  assert.ok(!requested.includes('/textures/8k_jupiter.jpg'));
+  assert.ok(!requested.includes('/textures/2k_mercury.jpg'));
+  manager.update('standard', 'mercury', false, false);
+  assert.ok(requested.includes('/textures/2k_mercury.jpg'));
+  manager.update('standard', 'saturn', false, false);
+  assert.ok(requested.includes('/textures/2k_saturn_ring_alpha.png'));
+  manager.dispose();
+});
+
+void test('an unfinished visible map is released offscreen, but a loaded one is retained', async (t) => {
+  const pending: Array<(texture: THREE.Texture) => void> = [];
+  t.mock.method(
+    THREE.TextureLoader.prototype,
+    'loadAsync',
+    () => new Promise<THREE.Texture>((resolve) => pending.push(resolve)),
+  );
+  const manager = createTextureManager(
+    {
+      capabilities: { maxTextureSize: 8192, getMaxAnisotropy: () => 4 },
+    } as THREE.WebGLRenderer,
+    () => {},
+  );
+  let applied: THREE.Texture | null = null;
+  manager.register(
+    'jupiter',
+    (texture) => {
+      applied = texture;
+    },
+    { lazy: true, preload: false, retainOnNavigation: true },
+  );
+  const update = (visible: string[]) =>
+    manager.update('standard', null, false, false, true, [], false, visible);
+
+  update(['jupiter']);
+  assert.equal(pending.length, 1);
+  update([]);
+  const abandoned = new THREE.Texture();
+  let disposed = false;
+  t.mock.method(abandoned, 'dispose', () => {
+    disposed = true;
+  });
+  pending[0](abandoned);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(applied, null);
+  assert.equal(disposed, true);
+
+  update(['jupiter']);
+  assert.equal(pending.length, 2);
+  const loaded = new THREE.Texture();
+  pending[1](loaded);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(applied, loaded);
+  update([]);
+  assert.equal(applied, loaded);
+  manager.dispose();
 });
 
 void test('every body texture is registered and has a local fallback', () => {

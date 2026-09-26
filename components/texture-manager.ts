@@ -22,17 +22,28 @@ type Slot = {
 const navigationTextureHoldMs = 8000;
 const preloadConcurrency = 2;
 export type RegisterOptions = {
-  /** Defer loading until this map is the selected/focused surface. */
+  /** Defer loading until this map is focused or visible. */
   lazy?: boolean;
   /** Keep opt-in maps out of the idle preload queue. */
   preload?: boolean;
-  /** Keep a visited surface attached at standard quality after focus moves away. */
+  /** Keep a loaded surface attached at standard quality after focus moves away. */
   retainOnNavigation?: boolean;
   /** Use `NoColorSpace` for data maps such as normal maps. */
   colorSpace?: THREE.ColorSpace;
   /** Clear the material map when a lazy surface is released. */
   clear?: () => void;
 };
+export function textureLoadingOptions(name: string) {
+  const eager =
+    name === 'earth_daymap' ||
+    name === 'earth_nightmap' ||
+    name === 'sun' ||
+    name === 'stars_milky_way';
+  return {
+    lazy: !eager,
+    preload: name === 'moon' || name === 'mars',
+  };
+}
 export function createTextureManager(
   renderer: THREE.WebGLRenderer,
   onStatus: (message: string) => void,
@@ -249,6 +260,7 @@ export function createTextureManager(
       galaxy = true,
       activeTextures: readonly string[] = [],
       deferHighResolution = false,
+      visibleTextures: readonly string[] = [],
     ) {
       if (disposed) return;
       const high = shouldLoadHighResolution(quality, compact, saveData);
@@ -267,26 +279,21 @@ export function createTextureManager(
             false,
             renderer.capabilities.maxTextureSize,
           );
-        if (deferHighResolution) slot.navigationHold = true;
-        if (
-          slot.lazy &&
-          !activeTextures.includes(slot.name) &&
-          slot.name !== focus
-        ) {
-          const visited =
-            slot.retainOnNavigation && (slot.texture || slot.path);
-          if (!visited && !textureCache.has(standardPath)) {
-            release(slot);
-            continue;
-          }
-        }
-        if (!slot.texture && slot.path) continue;
         const eligible =
           slot.name === focus ||
           activeTextures.includes(slot.name) ||
           (slot.name === 'stars_milky_way' && galaxy) ||
           (slot.name === 'earth_nightmap' && focus === 'earth_daymap') ||
           (slot.name === 'saturn_ring_alpha' && focus === 'saturn');
+        if (deferHighResolution) slot.navigationHold = true;
+        if (slot.lazy && !eligible && !visibleTextures.includes(slot.name)) {
+          const visited = slot.retainOnNavigation && !!slot.texture;
+          if (!visited && !textureCache.has(standardPath)) {
+            release(slot);
+            continue;
+          }
+        }
+        if (!slot.texture && slot.path) continue;
         const alreadyHigh = slot.path === highPath && highPath !== standardPath;
         const upgrade = eligible && (alreadyHigh ? keepHigh : high);
         if (
