@@ -13,6 +13,10 @@
 
 > The banner is project artwork, not an application screenshot. ORBIT runs entirely in the browser.
 
+https://github.com/user-attachments/assets/1777344a-6458-4409-9ae2-0f1cfe1b9c75
+
+<p align="center"><sub>A 20-second tour, captured from the running observatory, with titles and music added.</sub></p>
+
 ORBIT combines an explorable 3D scene, a controllable simulation clock, and astronomy calculations with stated sources and assumptions. Follow a body through the Solar System, inspect selected moons and famous comets, and use an observer location to explore sunrise, sunset, and eclipses.
 
 ## Highlights
