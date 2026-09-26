@@ -1519,16 +1519,25 @@ button:disabled {
 }
 .view-tabs {
   height: 42px !important;
-  background: #ffffff05;
-  border: 1px solid #ffffff10;
-  border-radius: 8px;
-  padding: 4px !important;
-  gap: 4px;
+  padding: 0 !important;
 }
+/* Three segments of one control rather than three separate buttons: each
+   owns its right border as the divider, only the first adds a left one, and
+   only the outer corners round. */
 .view-tabs button {
   padding: 8px 17px;
   gap: 8px;
   font-size: 14px;
+  border-color: #ffffff10;
+  border-left-width: 0;
+  border-radius: 0;
+}
+.view-tabs button:first-child {
+  border-left-width: 1px;
+  border-radius: 8px 0 0 8px;
+}
+.view-tabs button:last-child {
+  border-radius: 0 8px 8px 0;
 }
 .view-tabs button[data-active] {
   background: #ffffff0c !important;
