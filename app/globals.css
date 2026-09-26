@@ -1480,6 +1480,31 @@ button:disabled {
   border-radius: 12px;
   box-shadow: 0 12px 40px #00000014;
 }
+/* Shared by the explorer, settings and help tab strips: the same glass tone
+   as .glass, and buttons that read as one control split into sections
+   rather than separate boxes. Each button owns its right border as the
+   divider; only the first adds a left one, and only the outer corners
+   round, so the strip's own shape carries the rounding instead of the
+   buttons duplicating it. */
+.segmented-tabs {
+  background: linear-gradient(125deg, #111722bf, #090e16b8);
+  backdrop-filter: blur(18px);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.segmented-tabs [data-slot='tabs-trigger'] {
+  border-left-width: 0;
+  border-radius: 0;
+}
+.segmented-tabs [data-slot='tabs-trigger']:first-child {
+  border-left-width: 1px;
+  border-top-left-radius: 9px;
+  border-bottom-left-radius: 9px;
+}
+.segmented-tabs [data-slot='tabs-trigger']:last-child {
+  border-top-right-radius: 9px;
+  border-bottom-right-radius: 9px;
+}
 .topbar {
   height: 86px;
   position: absolute;
@@ -1521,23 +1546,11 @@ button:disabled {
   height: 42px !important;
   padding: 0 !important;
 }
-/* Three segments of one control rather than three separate buttons: each
-   owns its right border as the divider, only the first adds a left one, and
-   only the outer corners round. */
 .view-tabs button {
   padding: 8px 17px;
   gap: 8px;
   font-size: 14px;
   border-color: #ffffff10;
-  border-left-width: 0;
-  border-radius: 0;
-}
-.view-tabs button:first-child {
-  border-left-width: 1px;
-  border-radius: 8px 0 0 8px;
-}
-.view-tabs button:last-child {
-  border-radius: 0 8px 8px 0;
 }
 .view-tabs button[data-active] {
   background: #ffffff0c !important;
@@ -3571,11 +3584,6 @@ button:disabled {
   scrollbar-width: none;
   height: auto !important;
   width: 100%;
-  gap: 4px;
-  padding: 4px;
-  background: #080d15;
-  border: 1px solid #ffffff0d;
-  border-radius: 9px;
 }
 .settings-tabs-list::-webkit-scrollbar,
 .settings-tab-panel::-webkit-scrollbar {
@@ -3588,6 +3596,7 @@ button:disabled {
   padding: 5px 10px;
   font-size: 13px;
   color: #8e9aac;
+  border-color: #ffffff0d;
 }
 .settings-tabs-list [data-slot='tabs-trigger'][data-active] {
   color: #f0d9a8;
@@ -3676,20 +3685,15 @@ button:disabled {
 .help-tabs-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
   height: auto !important;
-  padding: 4px;
-  border: 1px solid #ffffff12;
-  border-radius: 9px;
-  background: #080e17;
 }
 .help-tabs-list [data-slot='tabs-trigger'] {
   min-height: 34px;
-  border-radius: 6px;
   color: #8290a4;
   font-size: 12px;
+  border-color: #ffffff12;
 }
-.help-tabs-list [data-slot='tabs-trigger'][data-state='active'] {
+.help-tabs-list [data-slot='tabs-trigger'][data-active] {
   background: #d9c49a18;
   color: #e3cea1;
 }

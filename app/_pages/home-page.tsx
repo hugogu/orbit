@@ -1207,7 +1207,7 @@ export default function Home() {
             }
           }}
         >
-          <TabsList className="view-tabs">
+          <TabsList className="view-tabs segmented-tabs">
             <TabsTrigger value="explore">
               <Globe2 />
               {t('自由探索')}
@@ -1722,7 +1722,10 @@ export default function Home() {
             onValueChange={(value) => setSettingsTab(String(value))}
             className="settings-tabs"
           >
-            <TabsList className="settings-tabs-list" aria-label={t('设置分类')}>
+            <TabsList
+              className="settings-tabs-list segmented-tabs"
+              aria-label={t('设置分类')}
+            >
               <TabsTrigger value="layout">{t('布局')}</TabsTrigger>
               <TabsTrigger value="environment">{t('环境')}</TabsTrigger>
               <TabsTrigger value="phenomena">{t('天象')}</TabsTrigger>
@@ -1968,7 +1971,10 @@ export default function Home() {
             onValueChange={(value) => setHelpTab(String(value))}
             className="help-tabs"
           >
-            <TabsList className="help-tabs-list" aria-label={t('帮助分类')}>
+            <TabsList
+              className="help-tabs-list segmented-tabs"
+              aria-label={t('帮助分类')}
+            >
               <TabsTrigger value="operation">{t('操作')}</TabsTrigger>
               <TabsTrigger value="model">{t('模型')}</TabsTrigger>
               <TabsTrigger value="sources">{t('来源')}</TabsTrigger>
