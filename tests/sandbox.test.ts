@@ -2094,3 +2094,76 @@ void test('the scene draws moons around their planets with borrowed meshes', () 
     system.dispose();
     assert.equal(disposed, 0);
   }));
+
+void test('a moon’s ring reshapes on an edit even while the run is paused', () =>
+  withLabels(() => {
+    const run = createRun(forkScenario(SHARED_EPOCH, true));
+    run.advance(1);
+    const scene = new Scene();
+    const roots = new Map(bodies.map((body) => [body.id, new Group()]));
+    const meshes = new Map(
+      orbitingMoons.map((moon) => [
+        moon.id,
+        new Mesh(new SphereGeometry(moon.size), new MeshBasicMaterial()),
+      ]),
+    );
+    const system = createSandboxSystem(
+      scene,
+      roots,
+      meshes,
+      { appendChild: () => {} } as unknown as HTMLElement,
+      () => {},
+    );
+    system.setVisible(true);
+    const options = {
+      baseline: false,
+      trails: true,
+      realSizes: true,
+      selected: null,
+      labels: false,
+      lineWidth: 1,
+      daysPerSecond: 20,
+      translate: (key: string) => key,
+    };
+    // Triton is Neptune's only large moon here, so its ring is the only one
+    // drawn at Neptune's position.
+    const neptune = system.positionOf(run, 'neptune', true)!;
+    const ringStart = () => {
+      const starts: Vector3[] = [];
+      scene.traverse((object) => {
+        if (
+          isOrbitLine(object) &&
+          object.visible &&
+          object.position.distanceTo(neptune) < 1e-9
+        ) {
+          const points = object.geometry.getAttribute('instanceStart') as {
+            getX: (index: number) => number;
+            getY: (index: number) => number;
+            getZ: (index: number) => number;
+          };
+          starts.push(
+            new Vector3(points.getX(0), points.getY(0), points.getZ(0)),
+          );
+        }
+      });
+      return starts;
+    };
+    // Shaped once while the run is moving.
+    system.update(run, { ...options, seconds: 0.05 });
+    const moving = ringStart();
+    assert.equal(moving.length, 1);
+    // Paused, redrawing the same state leaves the ring exactly as it was.
+    system.update(run, { ...options, seconds: 0 });
+    assert.deepEqual(ringStart(), moving);
+    // An edit changes the orbit at once; the ring cannot wait for the reshape
+    // clock, which a paused run never advances.
+    run.apply({
+      kind: 'set',
+      id: 'moon-triton',
+      field: 'distance',
+      value: 200_000 / AU_KM,
+    });
+    system.update(run, { ...options, seconds: 0 });
+    const [edited] = ringStart();
+    assert.ok(edited.distanceTo(moving[0]) > 1e-6);
+  }));

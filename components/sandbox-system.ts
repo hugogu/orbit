@@ -59,7 +59,25 @@ type Extra = {
   project: ReturnType<typeof createSceneLabel>;
 };
 
-type Ring = { line: OrbitLine; shaped: number };
+type Ring = {
+  line: OrbitLine;
+  shaped: number;
+  /** What it was last shaped from, as `orbitInputs` lists it. */
+  from: number[];
+};
+
+/**
+ * What a moon's ring is drawn from: its place and motion about its planet,
+ * and the two masses that bend it.
+ */
+function orbitInputs(point: PointMass, planet: PointMass) {
+  return [
+    ...point.position.map((value, axis) => value - planet.position[axis]),
+    ...point.velocity.map((value, axis) => value - planet.velocity[axis]),
+    point.mass,
+    planet.mass,
+  ];
+}
 
 /**
  * Draws a sandbox run.
@@ -228,6 +246,7 @@ export function createSandboxSystem(
         ring = {
           line: createOrbitLine(colorOf(run, point.id), brightness),
           shaped: -Infinity,
+          from: [],
         };
         group.add(ring.line);
         store.set(point.id, ring);
@@ -239,8 +258,20 @@ export function createSandboxSystem(
       }
       ring.line.position.set(...scenePosition(planet.position));
       setOrbitLineWidth(ring.line, options.lineWidth);
-      if (!reshape && clock - ring.shaped < RING_RESHAPE_SECONDS) continue;
+      // Moving, a ring follows its orbit a few times a second. Paused, the
+      // clock that paces it stands still, so the ring is reshaped whenever
+      // what it is drawn from has changed: an edit, a rewind or a new run.
+      if (
+        !reshape &&
+        options.seconds > 0 &&
+        clock - ring.shaped < RING_RESHAPE_SECONDS
+      )
+        continue;
+      const from = orbitInputs(point, planet);
+      if (!reshape && from.every((value, index) => value === ring.from[index]))
+        continue;
       ring.shaped = clock;
+      ring.from = from;
       const orbit = osculatingOrbit(point, planet);
       ring.line.visible = !!orbit;
       if (!orbit) continue;
