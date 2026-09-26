@@ -1762,8 +1762,6 @@
   "用于地表星空、日出日落与日月食的当地可见性判断。": "Used for ground sky, sunrise and sunset, and local eclipse visibility.",
   "用于地表星空的方位、日出日落，以及日月食在此地的可见性。": "Used for ground-sky directions, sunrise and sunset, and whether an eclipse is visible here.",
   "等待朝向感应…": "Waiting for device orientation…",
-  "请将手机平放、屏幕朝上，以校准方位。": "Lay your phone flat, screen facing up, to align north.",
-  "重新校准方位": "Recalibrate north",
   "展开观星面板": "Expand sky controls",
   "收起观星面板": "Collapse sky controls",
   "观测地当地时间 · {{zone}}": "Observer local time · {{zone}}",

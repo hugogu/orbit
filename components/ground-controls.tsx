@@ -1,6 +1,6 @@
 'use client';
 import { useId, useState } from 'react';
-import { ChevronLeft, ChevronRight, Compass, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Compass } from 'lucide-react';
 import { useI18n } from '../lib/i18n/provider';
 import ObserverLocation from './observer-location';
 import type {
@@ -93,30 +93,21 @@ export default function GroundControls({
             </p>
           )}
           {sensor.enabled && (
-            <>
-              <button
-                className="ground-recalibrate"
-                onClick={sensor.recalibrate}
-              >
-                <RotateCcw size={14} />
-                {t('重新校准方位')}
-              </button>
-              <label className="ground-correction">
-                {t('方位校正（度）')}
-                <input
-                  type="number"
-                  min={-180}
-                  max={180}
-                  step={0.5}
-                  value={sensor.correction}
-                  onChange={(event) => {
-                    const n = Number(event.target.value);
-                    if (Number.isFinite(n) && Math.abs(n) <= 180)
-                      sensor.setCorrection(n);
-                  }}
-                />
-              </label>
-            </>
+            <label className="ground-correction">
+              {t('方位校正（度）')}
+              <input
+                type="number"
+                min={-180}
+                max={180}
+                step={0.5}
+                value={sensor.correction}
+                onChange={(event) => {
+                  const n = Number(event.target.value);
+                  if (Number.isFinite(n) && Math.abs(n) <= 180)
+                    sensor.setCorrection(n);
+                }}
+              />
+            </label>
           )}
           <p className="little-note">
             {t(

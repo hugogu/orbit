@@ -20,13 +20,6 @@ const enuToLocal = new Quaternion().setFromAxisAngle(
 export class DeviceAttitudeTracker {
   private source: 'compass' | 'absolute' | null = null;
   private northOffset: number | null = null;
-  needsLevel = false;
-
-  reset() {
-    this.source = null;
-    this.northOffset = null;
-    this.needsLevel = false;
-  }
 
   read(
     reading: AttitudeReading,
@@ -65,19 +58,14 @@ export class DeviceAttitudeTracker {
           (Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 50));
       if (this.northOffset === null) {
         if (!reliable) return null;
-        // A compass bearing and the relative gyro frame can be aligned without
-        // tilt ambiguity while the screen faces up. Never feed tilted compass
-        // readings back into the alignment: doing so can turn a stationary sky
-        // and, past vertical, reverse east and west.
-        const screenNormal = new Vector3(0, 0, 1).applyQuaternion(attitude);
-        this.needsLevel = screenNormal.y < Math.cos(15 * radians);
-        if (this.needsLevel) return null;
-        const top = new Vector3(0, 1, 0).applyQuaternion(attitude);
-        this.northOffset = Math.atan2(top.x, -top.z) - heading * radians;
+        // Safari's compass heading is the Earth-referenced counterpart of
+        // Euler alpha, not the horizontal projection of the phone's top edge.
+        // Their difference is a yaw offset at any tilt. Lock it once so later
+        // magnetic noise cannot turn a stationary sky.
+        this.northOffset = -(alpha! + heading) * radians;
       }
       if (this.northOffset === null) return null;
     }
-    this.needsLevel = false;
     this.source = source;
     const north =
       source === 'compass' ? this.northOffset! - declination * radians : 0;
