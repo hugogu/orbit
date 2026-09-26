@@ -4883,3 +4883,50 @@ html:lang(en) .moon-children button > span:last-child {
 .ground-controls-heading strong,
 .ground-controls-heading > span { white-space: nowrap; }
 .ground-sensor-status { display: block; }
+
+.ground-controls-toggle {
+  position: absolute;
+  top: 10px;
+  right: 6px;
+  width: 28px;
+  height: 32px;
+  min-width: 28px;
+  padding: 0;
+}
+.ground-controls-heading { padding-right: 26px; gap: 6px; }
+.ground-controls[data-collapsed='true'] {
+  right: 0;
+  width: 44px;
+  height: 48px;
+  padding: 0;
+  border-radius: 12px 0 0 12px;
+  overflow: hidden;
+}
+.ground-controls[data-collapsed='true'] .ground-controls-toggle {
+  position: static;
+  width: 44px;
+  height: 48px;
+  display: flex;
+  gap: 0;
+  border-radius: inherit;
+  color: #e6d2a6;
+}
+.ground-recalibrate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 10px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #dfc99c;
+  border: 1px solid #34424d;
+  border-radius: 6px;
+}
+@media (max-width: 600px), (max-height: 600px) {
+  .ground-controls[data-collapsed='true'] {
+    left: env(safe-area-inset-left, 0px);
+    right: auto;
+    border-radius: 0 12px 12px 0;
+  }
+  .ground-controls-toggle { top: 10px; }
+}

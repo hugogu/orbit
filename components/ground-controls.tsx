@@ -1,5 +1,6 @@
 'use client';
-import { Compass } from 'lucide-react';
+import { useId, useState } from 'react';
+import { ChevronLeft, ChevronRight, Compass, RotateCcw } from 'lucide-react';
 import { useI18n } from '../lib/i18n/provider';
 import ObserverLocation from './observer-location';
 import type {
@@ -27,76 +28,110 @@ export default function GroundControls({
   sandbox?: boolean;
 }) {
   const { t } = useI18n();
+  const [collapsed, setCollapsed] = useState(false);
+  const panelId = useId();
   return (
-    <section className="ground-controls glass" aria-label={t('地表观星')}>
-      <div className="ground-controls-heading">
-        <strong>{t('地表观星')}</strong>
-        <span>{t(sandbox ? '沙盘天空' : live ? '实时天空' : '模拟天空')}</span>
-        <button
-          className={`icon-button ${sensor.enabled ? 'active' : ''}`}
-          aria-label={t(sensor.enabled ? '关闭朝向感应' : '开启朝向感应')}
-          title={t(sensor.enabled ? '关闭朝向感应' : '开启朝向感应')}
-          aria-pressed={sensor.enabled}
-          onClick={() => (sensor.enabled ? sensor.stop() : void sensor.start())}
-        >
-          <Compass size={18} />
-        </button>
-      </div>
-      <output className="little-note ground-sensor-status">
-        {t(sensor.status)}
-      </output>
-      {sandbox && (
-        <p className="little-note">
-          {t('显示沙盘中的天体；返回总览可继续调整参数。')}
-        </p>
-      )}
-      <details>
-        <summary>
-          {t(
-            source === 'fallback' ? '参考位置 · 定位与朝向' : '观测位置与朝向',
-          )}
-        </summary>
-        <ObserverLocation
-          time={time}
-          location={location}
-          source={source}
-          onChange={onChange}
-        />
-        {source === 'fallback' && (
+    <section
+      className="ground-controls glass"
+      data-collapsed={collapsed}
+      aria-label={t('地表观星')}
+    >
+      <button
+        className="ground-controls-toggle icon-button"
+        aria-controls={panelId}
+        aria-expanded={!collapsed}
+        aria-label={t(collapsed ? '展开观星面板' : '收起观星面板')}
+        title={t(collapsed ? '展开观星面板' : '收起观星面板')}
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        {collapsed ? <Compass size={19} /> : <ChevronLeft size={17} />}
+        {collapsed && <ChevronRight size={12} />}
+      </button>
+      <div id={panelId} hidden={collapsed}>
+        <div className="ground-controls-heading">
+          <strong>{t('地表观星')}</strong>
+          <span>
+            {t(sandbox ? '沙盘天空' : live ? '实时天空' : '模拟天空')}
+          </span>
+          <button
+            className={`icon-button ${sensor.enabled ? 'active' : ''}`}
+            aria-label={t(sensor.enabled ? '关闭朝向感应' : '开启朝向感应')}
+            title={t(sensor.enabled ? '关闭朝向感应' : '开启朝向感应')}
+            aria-pressed={sensor.enabled}
+            onClick={() =>
+              sensor.enabled ? sensor.stop() : void sensor.start()
+            }
+          >
+            <Compass size={18} />
+          </button>
+        </div>
+        <output className="little-note ground-sensor-status">
+          {t(sensor.status)}
+        </output>
+        {sandbox && (
           <p className="little-note">
-            {t('当前为北京参考位置，请定位或设置实际观测地点。')}
+            {t('显示沙盘中的天体；返回总览可继续调整参数。')}
           </p>
         )}
-        {sensor.enabled && (
-          <label className="ground-correction">
-            {t('方位校正（度）')}
-            <input
-              type="number"
-              min={-180}
-              max={180}
-              step={0.5}
-              value={sensor.correction}
-              onChange={(event) => {
-                const n = Number(event.target.value);
-                if (Number.isFinite(n) && Math.abs(n) <= 180)
-                  sensor.setCorrection(n);
-              }}
-            />
-          </label>
-        )}
-        <p className="little-note">
-          {t(
-            sandbox
-              ? '天空随模拟地球的位置、自转和轴倾角变化，不对应真实星空。自转按模拟时间计算，高流速下可能快于屏幕刷新。'
-              : '手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。',
+        <details>
+          <summary>
+            {t(
+              source === 'fallback'
+                ? '参考位置 · 定位与朝向'
+                : '观测位置与朝向',
+            )}
+          </summary>
+          <ObserverLocation
+            time={time}
+            location={location}
+            source={source}
+            onChange={onChange}
+          />
+          {source === 'fallback' && (
+            <p className="little-note">
+              {t('当前为北京参考位置，请定位或设置实际观测地点。')}
+            </p>
           )}
-        </p>
-        <p className="little-note">
-          {t(
-            '地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。',
+          {sensor.enabled && (
+            <>
+              <button
+                className="ground-recalibrate"
+                onClick={sensor.recalibrate}
+              >
+                <RotateCcw size={14} />
+                {t('重新校准方位')}
+              </button>
+              <label className="ground-correction">
+                {t('方位校正（度）')}
+                <input
+                  type="number"
+                  min={-180}
+                  max={180}
+                  step={0.5}
+                  value={sensor.correction}
+                  onChange={(event) => {
+                    const n = Number(event.target.value);
+                    if (Number.isFinite(n) && Math.abs(n) <= 180)
+                      sensor.setCorrection(n);
+                  }}
+                />
+              </label>
+            </>
           )}
-        </p>
-      </details>
+          <p className="little-note">
+            {t(
+              sandbox
+                ? '天空随模拟地球的位置、自转和轴倾角变化，不对应真实星空。自转按模拟时间计算，高流速下可能快于屏幕刷新。'
+                : '手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。',
+            )}
+          </p>
+          <p className="little-note">
+            {t(
+              '地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。',
+            )}
+          </p>
+        </details>
+      </div>
     </section>
   );
 }
