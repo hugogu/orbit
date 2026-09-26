@@ -7,7 +7,7 @@
 
 **[English](README.md) · [简体中文](README.zh-CN.md)**
 
-[Live demo](https://orbit-henna-xi.vercel.app/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
+[Live demo](https://orbits.observer/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
