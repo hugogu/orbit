@@ -62,9 +62,10 @@ export function zoneOffsetHours(time: number, timeZone: string) {
     return undefined;
   }
   if (label === 'GMT') return 0;
-  const parsed = /^GMT([+-])(\d{2}):(\d{2})$/.exec(label ?? '');
+  const parsed = /^GMT([+-])(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(label ?? '');
   if (!parsed) return undefined;
-  const hours = Number(parsed[2]) + Number(parsed[3]) / 60;
+  const hours =
+    Number(parsed[2]) + Number(parsed[3]) / 60 + Number(parsed[4] ?? 0) / 3600;
   // The zero the "+0" sign test reads must be positive, not a negated zero.
   return parsed[1] === '-' ? -hours + 0 : hours;
 }

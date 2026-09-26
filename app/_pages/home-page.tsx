@@ -54,7 +54,7 @@ import { useEclipseProgress } from '@/components/use-eclipse-progress';
 import LayoutSettings from '@/components/layout-settings';
 import GroundControls from '@/components/ground-controls';
 import { useDeviceAttitude } from '@/components/use-device-attitude';
-import { currentLocation, zoneOffsetHours } from '@/lib/geolocation';
+import { currentLocation } from '@/lib/geolocation';
 import ShareDialog from '@/components/share-dialog';
 import GitHubLink from '@/components/github-link';
 import {
@@ -72,6 +72,12 @@ import {
 } from '@/lib/asteroids';
 import AsteroidDetails from '@/components/asteroid-details';
 import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
+import {
+  locateTimeZone,
+  observerOffset,
+  observerTimeLabel,
+  utcOffsetLabel,
+} from '@/lib/observer-time';
 import {
   fallbackSkyLocation,
   type ChosenLocationSource,
@@ -324,7 +330,12 @@ export default function Home() {
         setActionLabels(preferences.actionLabels);
       const savedLocation = preferences.observerLocation;
       const savedSource = preferences.observerLocationSource;
-      if (savedLocation && savedSource) setObserverLocation(savedLocation);
+      if (savedLocation && savedSource)
+        setObserverLocation(
+          savedSource === 'device' && !savedLocation.timeZone
+            ? locateTimeZone(savedLocation, Date.now())
+            : savedLocation,
+        );
       else setObserverLocation(fallbackSkyLocation);
       if (savedLocation && savedSource) {
         setObserverLocationSource(savedSource);
@@ -444,6 +455,17 @@ export default function Home() {
     () => (sandboxScenario ? createRun(sandboxScenario) : null),
     [sandboxScenario],
   );
+  const observationTime = sandboxRun
+    ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
+    : (time ?? epoch ?? J2000_MS);
+  const localOffset = observerOffset(observationTime, observerLocation);
+  const timedObserverLocation = useMemo(
+    () => ({ ...observerLocation, utcOffset: localOffset }),
+    [observerLocation, localOffset],
+  );
+  const clockLabel =
+    time === null ? null : observerTimeLabel(time, observerLocation);
+  const clockZone = utcOffsetLabel(localOffset);
   const sandboxEarthAvailable =
     !sandboxRun || sandboxRun.variant.some((point) => point.id === 'earth');
   useEffect(() => {
@@ -663,19 +685,13 @@ export default function Home() {
       void currentLocation(navigator.geolocation, window.isSecureContext)
         .then((fix) => {
           if (pending !== locationTicket.current) return;
-          const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
           updateObserverLocation(
-            {
-              ...observerLocation,
-              ...fix,
-              utcOffset:
-                zoneOffsetHours(
-                  sandboxRun
-                    ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
-                    : Date.now(),
-                  zone,
-                ) ?? observerLocation.utcOffset,
-            },
+            locateTimeZone(
+              { ...observerLocation, ...fix },
+              sandboxRun
+                ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
+                : Date.now(),
+            ),
             'device',
           );
         })
@@ -972,7 +988,7 @@ export default function Home() {
       {body.id === 'earth' && (
         <SunriseSunset
           time={time ?? J2000_MS}
-          location={observerLocation}
+          location={timedObserverLocation}
           locationSource={observerLocationSource}
           onLocationChange={updateObserverLocation}
         />
@@ -1136,7 +1152,7 @@ export default function Home() {
               ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
               : (time ?? epoch ?? J2000_MS)
           }
-          location={observerLocation}
+          location={timedObserverLocation}
           source={observerLocationSource}
           onChange={updateObserverLocation}
           sensor={sensor}
@@ -1383,7 +1399,7 @@ export default function Home() {
       {showMoonCard && (
         <MoonPhaseCard
           time={time!}
-          location={observerLocation}
+          location={timedObserverLocation}
           onOpen={() => setLunar(true)}
         />
       )}
@@ -1590,13 +1606,18 @@ export default function Home() {
             <>
               <div
                 className="simulation-clock"
-                aria-label={t('模拟日期，协调世界时 UTC')}
+                aria-label={t('观测地当地时间 · {{zone}}', { zone: clockZone })}
+                title={observerLocation.timeZone ?? clockZone}
               >
-                <span>{t('模拟日期 · UTC')}</span>
+                <span>
+                  {t('当地时间')} · {clockZone}
+                </span>
                 <strong>
-                  {time ? utcLabel(time).slice(0, 10) : t('正在同步')}
+                  {clockLabel ? clockLabel.slice(0, 10) : t('正在同步')}
                 </strong>
-                <small>{time ? utcLabel(time).slice(11) : '—'}</small>
+                <small data-zone={clockZone}>
+                  {clockLabel ? clockLabel.slice(11) : '—'}
+                </small>
               </div>
               <button
                 className="jump-button"
@@ -1660,13 +1681,14 @@ export default function Home() {
         open={timeJump}
         onOpenChange={setTimeJump}
         time={time ?? J2000_MS}
+        clock={timedObserverLocation}
         onSeek={seekTime}
       />
       <AstronomyPanel
         open={astronomy}
         onOpenChange={setAstronomy}
         time={time ?? J2000_MS}
-        location={observerLocation}
+        location={timedObserverLocation}
         onEclipse={(ms, kind) => {
           seekTime(ms);
           select(kind === 'solar' ? 'earth' : 'moon-moon');
@@ -1681,7 +1703,7 @@ export default function Home() {
         open={lunar}
         onOpenChange={setLunar}
         time={time ?? J2000_MS}
-        location={observerLocation}
+        location={timedObserverLocation}
       />
       <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent

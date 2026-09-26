@@ -7,12 +7,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog';
+import { MAX_TIME, MIN_TIME } from '../lib/simulation-time';
 import {
-  MAX_TIME,
-  MIN_TIME,
-  utcLabel,
-  validTime,
-} from '../lib/simulation-time';
+  observerTimeLabel,
+  observerOffset,
+  parseObserverTime,
+  utcOffsetLabel,
+  type ObserverClock,
+} from '../lib/observer-time';
 
 // Jumping to a moment belongs with the playback controls rather than in the
 // event planner: both move the one simulation clock the whole scene shares.
@@ -20,23 +22,27 @@ export default function TimeJump({
   open,
   onOpenChange,
   time,
+  clock,
   onSeek,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   time: number;
+  clock: ObserverClock;
   onSeek: (ms: number, live?: boolean) => void;
 }) {
   const { t } = useI18n();
   const [date, setDate] = useState(''),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [snapshot, setSnapshot] = useState({ time, clock });
   useEffect(() => {
     if (!open) return;
     let live = true;
     // Deferred so opening the dialog does not cascade a render in this effect.
     queueMicrotask(() => {
       if (!live) return;
-      setDate(utcLabel(time).replace(' ', 'T'));
+      setSnapshot({ time, clock });
+      setDate(observerTimeLabel(time, clock).replace(' ', 'T'));
       setError('');
     });
     return () => {
@@ -46,9 +52,9 @@ export default function TimeJump({
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   function seek() {
-    const ms = Date.parse(date + 'Z');
-    if (!validTime(ms)) {
-      setError('请选择 1700—2200 年内的有效时间。');
+    const ms = parseObserverTime(date, snapshot.clock, snapshot.time);
+    if (ms === null) {
+      setError('请选择 1700—2200 年内有效的当地时间；夏令时跳过的时刻不可用。');
       return;
     }
     onSeek(ms);
@@ -66,13 +72,27 @@ export default function TimeJump({
         </DialogDescription>
         <div className="astro-form">
           <label className="wide">
-            {t('模拟时间（UTC）')}
+            {t('观测地当地时间 · {{zone}}', {
+              zone:
+                snapshot.clock.timeZone ??
+                utcOffsetLabel(observerOffset(snapshot.time, snapshot.clock)),
+            })}
             <input
-              aria-label={t('模拟时间（UTC）')}
+              aria-label={t('观测地当地时间 · {{zone}}', {
+                zone:
+                  snapshot.clock.timeZone ??
+                  utcOffsetLabel(observerOffset(snapshot.time, snapshot.clock)),
+              })}
               type="datetime-local"
               step="1"
-              min={new Date(MIN_TIME).toISOString().slice(0, 19)}
-              max={new Date(MAX_TIME).toISOString().slice(0, 19)}
+              min={observerTimeLabel(MIN_TIME, snapshot.clock).replace(
+                ' ',
+                'T',
+              )}
+              max={observerTimeLabel(MAX_TIME, snapshot.clock).replace(
+                ' ',
+                'T',
+              )}
               value={date}
               onChange={(e) => {
                 setDate(e.target.value);

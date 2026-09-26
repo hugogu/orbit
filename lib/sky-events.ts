@@ -19,6 +19,8 @@ export type SkyLocation = {
   longitude: number;
   height: number;
   utcOffset: number;
+  /** Absent for an explicitly chosen fixed UTC offset. */
+  timeZone?: string;
 };
 // Where the observation point came from: only a chosen one is worth storing,
 // and only a resolved one is worth calculating against.

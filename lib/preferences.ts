@@ -69,6 +69,15 @@ export function sanitizePreferences(value: unknown): StoredPreferences {
   return result;
 }
 
+function validTimeZone(zone: string) {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function isObserverLocation(value: unknown): value is SkyLocation {
   if (!value || typeof value !== 'object') return false;
   const location = value as Record<string, unknown>;
@@ -88,7 +97,10 @@ function isObserverLocation(value: unknown): value is SkyLocation {
     typeof location.utcOffset === 'number' &&
     Number.isFinite(location.utcOffset) &&
     location.utcOffset >= -12 &&
-    location.utcOffset <= 14
+    location.utcOffset <= 14 &&
+    (location.timeZone === undefined ||
+      (typeof location.timeZone === 'string' &&
+        validTimeZone(location.timeZone)))
   );
 }
 

@@ -4432,7 +4432,7 @@ button:disabled {
     white-space: nowrap;
   }
   .simulation-clock small::after {
-    content: ' UTC';
+    content: ' ' attr(data-zone);
   }
   .timeline .now-button {
     grid-column: 4;
