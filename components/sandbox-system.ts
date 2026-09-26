@@ -231,6 +231,7 @@ export function createSandboxSystem(
     run: SandboxRun,
     store: Map<string, Ring>,
     points: readonly PointMass[],
+    drawn: Map<string, Vec3>,
     brightness: number,
     show: boolean,
     options: SandboxSceneOptions,
@@ -256,7 +257,11 @@ export function createSandboxSystem(
         ring.line.visible = false;
         continue;
       }
-      ring.line.position.set(...scenePosition(planet.position));
+      // Anchored at the planet's own moment on screen, or a ring drawn at its
+      // last whole step would lag a beat behind the planet drawn beside it.
+      ring.line.position.set(
+        ...scenePosition(drawn.get(parentId) ?? planet.position),
+      );
       setOrbitLineWidth(ring.line, options.lineWidth);
       // Moving, a ring follows its orbit a few times a second. Paused, the
       // clock that paces it stands still, so the ring is reshaped whenever
@@ -457,6 +462,7 @@ export function createSandboxSystem(
         run,
         rings,
         run.variant,
+        run.drawn,
         VARIANT_RING_BRIGHTNESS,
         options.trails,
         options,
@@ -481,6 +487,7 @@ export function createSandboxSystem(
         run,
         ghostRings,
         run.baseline,
+        run.baselineDrawn,
         GHOST_RING_BRIGHTNESS,
         options.baseline && options.trails,
         options,
