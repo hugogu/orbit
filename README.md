@@ -7,11 +7,15 @@
 
 **[English](README.md) · [简体中文](README.zh-CN.md)**
 
-[Live demo](https://orbit-henna-xi.vercel.app/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
+[Live demo](https://orbits.observer/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
 > The banner is project artwork, not an application screenshot. ORBIT runs entirely in the browser.
+
+https://github.com/user-attachments/assets/1777344a-6458-4409-9ae2-0f1cfe1b9c75
+
+<p align="center"><sub>A 20-second tour, captured from the running observatory, with titles and music added.</sub></p>
 
 ORBIT combines an explorable 3D scene, a controllable simulation clock, and astronomy calculations with stated sources and assumptions. Follow a body through the Solar System, inspect selected moons and famous comets, and use an observer location to explore sunrise, sunset, and eclipses.
 

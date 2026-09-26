@@ -7,11 +7,15 @@
 
 **[English](README.md) · [简体中文](README.zh-CN.md)**
 
-[在线体验](https://orbit-henna-xi.vercel.app/) · [提交问题](https://github.com/hugogu/orbit/issues) · [功能建议](https://github.com/hugogu/orbit/issues/new)
+[在线体验](https://orbits.observer/) · [提交问题](https://github.com/hugogu/orbit/issues) · [功能建议](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
 > 上图为项目视觉封面，不是应用界面截图。ORBIT 在浏览器中运行，无需安装客户端。
+
+https://github.com/user-attachments/assets/1777344a-6458-4409-9ae2-0f1cfe1b9c75
+
+<p align="center"><sub>20 秒速览：画面录自运行中的 ORBIT，标题与音乐为后期添加。</sub></p>
 
 ORBIT 将可交互的 3D 场景、可调时间轴和可说明来源的天文计算结合在一起。它适合用来观察太阳系中天体的相对运动、认识主要卫星和彗星，并从指定观测地点了解日出、日落与食象。
 
