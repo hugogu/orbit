@@ -545,6 +545,30 @@ void test('sitemap repeats reciprocal hreflang links for every localized page', 
   );
 });
 
+void test('sitemap lists each profile\'s hero image for direct image discovery', () => {
+  const entries = sitemapEntries();
+  const byLoc = new Map(entries.map((entry) => [entry.loc, entry]));
+  const catalog = catalogEntries();
+  for (const entry of catalog) {
+    for (const locale of seoLocales) {
+      const loc = absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id));
+      assert.deepEqual(byLoc.get(loc)?.images, [
+        absoluteSiteUrl(entryImagePath(entry)),
+      ]);
+    }
+  }
+  const withImages = entries.filter((entry) => entry.images);
+  assert.equal(withImages.length, catalog.length * seoLocales.length);
+  assert.match(
+    renderSitemap(),
+    /xmlns:image="http:\/\/www\.google\.com\/schemas\/sitemap-image\/1\.1"/,
+  );
+  assert.equal(
+    (renderSitemap().match(/<image:image>/g) ?? []).length,
+    withImages.length,
+  );
+});
+
 void test('sky-event pages have unique localized URLs under a shared index', () => {
   const ids = eventTopics.map((topic) => topic.id);
   assert.equal(new Set(ids).size, ids.length);
