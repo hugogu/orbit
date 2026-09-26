@@ -3668,6 +3668,7 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 5px;
+  height: auto !important;
   padding: 4px;
   border: 1px solid #ffffff12;
   border-radius: 9px;
