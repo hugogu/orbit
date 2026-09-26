@@ -123,6 +123,7 @@ import {
   elapsedLabel,
   sandboxSpeeds,
   defaultSandboxSpeed,
+  moonSpeeds,
 } from '@/lib/sandbox/view';
 import {
   Dialog,
@@ -287,9 +288,15 @@ export default function Home() {
       })
     : undefined;
   // Topic views choose a distance mode without overwriting the user's layout preference.
-  // One set of playback controls drives whichever clock is in charge.
-  const clockSpeeds = sandboxScenario ? sandboxSpeeds : speeds;
-  const clockSpeed = sandboxScenario ? sandboxSpeed : speed;
+  // One set of playback controls drives whichever clock is in charge. A run
+  // with moons offers only the rates its step can keep up with; the moon
+  // list is a prefix of the other, so a rate chosen without moons comes back
+  // when they are switched off again.
+  const runSpeeds = sandboxScenario?.moons ? moonSpeeds : sandboxSpeeds;
+  const runSpeed = Math.min(sandboxSpeed, runSpeeds.length - 1);
+  const sandboxRate = runSpeeds[runSpeed];
+  const clockSpeeds = sandboxScenario ? runSpeeds : speeds;
+  const clockSpeed = sandboxScenario ? runSpeed : speed;
   const running = sandboxScenario ? !sandboxPaused : !paused;
   const displayScale = ground
     ? scale
@@ -545,7 +552,7 @@ export default function Home() {
   // reload would bring them straight back.
   const startSandboxOver = useCallback(() => {
     setSandboxScenario((current) =>
-      current ? forkScenario(current.epoch) : current,
+      current ? forkScenario(current.epoch, current.moons) : current,
     );
     const { pathname, search, hash } = window.location;
     if (hasShareView(new URLSearchParams(search)))
@@ -554,6 +561,15 @@ export default function Home() {
         '',
         pathname + withoutShareView(search) + hash,
       );
+  }, []);
+  // Moons change the physics of the whole run rather than one body in it, so
+  // the switch replays the recipe from the fork with them on or off, keeping
+  // every change, as the timeline's reset does.
+  const setSandboxMoons = useCallback((on: boolean) => {
+    setSandboxScenario((current) =>
+      current ? { ...rewoundScenario(current), moons: on } : current,
+    );
+    track('sandbox_moons', { on });
   }, []);
   const editSandboxBody = useCallback(
     (id: string, field: SandboxField, value: number) =>
@@ -1113,7 +1129,7 @@ export default function Home() {
           sandbox: sandboxRun
             ? {
                 run: sandboxRun,
-                speed: sandboxSpeeds[sandboxSpeed],
+                speed: sandboxRate,
                 paused: sandboxPaused,
                 baseline: sandboxBaseline,
                 trails: sandboxTrails,
@@ -1326,15 +1342,15 @@ export default function Home() {
               onAdd={addSandboxBody}
               onBaselineChange={setSandboxBaseline}
               onTrailsChange={setSandboxTrails}
+              moons={!!sandboxScenario?.moons}
+              onMoonsChange={setSandboxMoons}
               editor={
                 sandboxEditing ? (
                   <SandboxBodyEditor
                     compact
                     run={sandboxRun}
                     selected={selected}
-                    daysPerSecond={
-                      sandboxPaused ? 0 : sandboxSpeeds[sandboxSpeed]
-                    }
+                    daysPerSecond={sandboxPaused ? 0 : sandboxRate}
                     onChange={(field, value) =>
                       editSandboxBody(selected, field, value)
                     }
@@ -1415,7 +1431,7 @@ export default function Home() {
           <SandboxBodyEditor
             run={sandboxRun}
             selected={selected}
-            daysPerSecond={sandboxPaused ? 0 : sandboxSpeeds[sandboxSpeed]}
+            daysPerSecond={sandboxPaused ? 0 : sandboxRate}
             onChange={(field, value) => editSandboxBody(selected, field, value)}
             onReset={() => resetSandboxBody(selected)}
           />
@@ -2254,7 +2270,7 @@ export default function Home() {
             <SandboxBodyEditor
               run={sandboxRun}
               selected={selected}
-              daysPerSecond={sandboxPaused ? 0 : sandboxSpeeds[sandboxSpeed]}
+              daysPerSecond={sandboxPaused ? 0 : sandboxRate}
               onChange={(field, value) =>
                 editSandboxBody(selected, field, value)
               }

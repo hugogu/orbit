@@ -13,6 +13,7 @@
  */
 import { bodies } from '../solar';
 import { sandboxFields } from './edits';
+import { sandboxMoons } from './moons';
 import type { SandboxField } from './field-names';
 import type {
   SandboxBodySpec,
@@ -34,6 +35,12 @@ const FIELD = ',';
  * explorer instead. It reads back as no changes at all.
  */
 const UNCHANGED = '-';
+/**
+ * Leads the list when the planets carry their moons. It is a setting of the
+ * whole run rather than a change at a moment, so it has no time of its own,
+ * and a link without it opens the run as every link before it did.
+ */
+const MOONS = 'm';
 
 function number(value: number) {
   // `String` round-trips a double exactly, so a replay starts from the very
@@ -59,6 +66,7 @@ function isField(value: string): value is SandboxField {
 function knownIds(changes: SandboxChange[]) {
   return new Set([
     ...bodies.map((body) => body.id),
+    ...sandboxMoons.map((moon) => moon.id),
     ...changes.flatMap((change) =>
       change.kind === 'add' ? [change.body.id] : [],
     ),
@@ -66,7 +74,7 @@ function knownIds(changes: SandboxChange[]) {
 }
 
 export function encodeSandbox(scenario: SandboxScenario) {
-  const encoded = scenario.changes
+  const changes = scenario.changes
     .slice(0, MAX_SHARED_CHANGES)
     .map((change) => {
       const at = number(change.at);
@@ -89,9 +97,11 @@ export function encodeSandbox(scenario: SandboxScenario) {
         ...body.position.map(number),
         ...body.velocity.map(number),
       ].join(FIELD);
-    })
-    .join(SEPARATOR);
-  return encoded || UNCHANGED;
+    });
+  return (
+    (scenario.moons ? [MOONS, ...changes] : changes).join(SEPARATOR) ||
+    UNCHANGED
+  );
 }
 
 /**
@@ -151,7 +161,12 @@ export function decodeSandbox(
   if (!value) return null;
   const changes: SandboxChange[] = [];
   let added = 0;
-  for (const entry of value.split(SEPARATOR).slice(0, MAX_SHARED_CHANGES)) {
+  const entries = value.split(SEPARATOR);
+  const moons = entries[0] === MOONS;
+  for (const entry of entries.slice(
+    moons ? 1 : 0,
+    (moons ? 1 : 0) + MAX_SHARED_CHANGES,
+  )) {
     const parts = entry.split(FIELD);
     const at = readNumber(parts[1], 4e6);
     if (at === null || at < 0) continue;
@@ -176,5 +191,5 @@ export function decodeSandbox(
   const kept = changes
     .filter((change) => change.kind === 'add' || ids.has(change.id))
     .sort((a, b) => a.at - b.at);
-  return { epoch, changes: kept };
+  return moons ? { epoch, changes: kept, moons } : { epoch, changes: kept };
 }

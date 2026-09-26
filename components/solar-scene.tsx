@@ -1051,8 +1051,16 @@ export default function SolarScene({
             ? cometSystem.position
             : cometSystem.center
           : s.selected
-            ? (roots.get(s.selected)?.position ??
-              (sandbox && sandboxSystem.positionOf(sandbox.run, s.selected)) ??
+            ? // During a run the sandbox says where a body is drawn. A moon's
+              // explorer root is still in the map, parked where the explorer
+              // last left it, so it cannot come first.
+              ((sandbox &&
+                sandboxSystem.positionOf(
+                  sandbox.run,
+                  s.selected,
+                  s.realSizes,
+                )) ??
+              roots.get(s.selected)?.position ??
               new THREE.Vector3())
             : new THREE.Vector3(),
       );

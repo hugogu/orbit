@@ -33,7 +33,13 @@ import {
   type Vec3,
 } from './physics';
 import { orbitState } from './derived';
-import { centreOf, fieldSpec, readField, writeField } from './edits';
+import {
+  centreOf,
+  fieldSpec,
+  readField,
+  referenceBody,
+  writeField,
+} from './edits';
 import type { SandboxField } from './field-names';
 import {
   forkBodies,
@@ -79,7 +85,13 @@ const STEPS_PER_REVIEW = 32;
  */
 export type SandboxEvent =
   | { kind: 'collision'; absorbed: string; into: string; day: number }
-  | { kind: 'escape' | 'capture'; id: string; day: number }
+  | {
+      kind: 'escape' | 'capture';
+      id: string;
+      day: number;
+      /** Set when a moon left or rejoined this planet, not the system. */
+      parent?: string;
+    }
   | { kind: 'add' | 'remove'; id: string; day: number }
   | {
       kind: 'set';
@@ -94,7 +106,14 @@ export type SandboxEvent =
 /** Presentation a body carries that the integrator has no use for. */
 export type BodyFacts = Pick<
   SandboxBodySpec,
-  'id' | 'sourceId' | 'name' | 'color' | 'texture' | 'spinDays' | 'tilt'
+  | 'id'
+  | 'sourceId'
+  | 'name'
+  | 'color'
+  | 'texture'
+  | 'spinDays'
+  | 'tilt'
+  | 'parentId'
 >;
 
 /**
@@ -164,6 +183,7 @@ function toFacts(spec: SandboxBodySpec): BodyFacts {
     texture: spec.texture,
     spinDays: spec.spinDays,
     tilt: spec.tilt,
+    parentId: spec.parentId,
   };
 }
 
@@ -181,6 +201,10 @@ type Track = {
   /** Each body's velocity when its trail last recorded a point. */
   headings: Map<string, Vec3>;
   escaped: Set<string>;
+  /** Each moon's planet. */
+  parents: Map<string, string>;
+  /** Moons announced as having left their planet and not recaptured since. */
+  loosened: Set<string>;
 };
 
 function createTrack(specs: SandboxBodySpec[]): Track {
@@ -193,6 +217,12 @@ function createTrack(specs: SandboxBodySpec[]): Track {
     trails: new Map(),
     headings: new Map(),
     escaped: new Set(),
+    parents: new Map(
+      specs.flatMap((spec) =>
+        spec.parentId ? [[spec.id, spec.parentId]] : [],
+      ),
+    ),
+    loosened: new Set(),
   };
   for (const point of points) mark(track, point);
   return track;
@@ -209,8 +239,16 @@ function extend(trail: Vec3[], position: Vec3) {
     trail.splice(0, trail.length - Math.round(TRAIL_LIMIT * TRAIL_KEEP));
 }
 
-/** Records where a body is now and measures its next turn from here. */
+/**
+ * Records where a body is now and measures its next turn from here.
+ *
+ * A moon keeps no trail of its own. Around the Sun its path is its planet's
+ * with a ripple a few planet widths across, far below anything the scene can
+ * show, and its turn every few days would cost a point each time; it is drawn
+ * around its planet instead.
+ */
 function mark(track: Track, point: PointMass) {
+  if (track.parents.has(point.id)) return;
   track.headings.set(point.id, [...point.velocity]);
   const trail = track.trails.get(point.id);
   if (trail) extend(trail, point.position);
@@ -229,6 +267,7 @@ function turned(from: Vec3, to: Vec3) {
 
 function record(track: Track) {
   for (const point of track.points) {
+    if (track.parents.has(point.id)) continue;
     const heading = track.headings.get(point.id);
     if (!heading || turned(heading, point.velocity)) mark(track, point);
   }
@@ -245,7 +284,7 @@ function ahead(track: Track, days: number) {
 }
 
 export function createRun(scenario: SandboxScenario): SandboxRun {
-  const start = forkBodies(scenario.epoch);
+  const start = forkBodies(scenario.epoch, scenario.moons);
   const variant = createTrack(start);
   const baseline = createTrack(start);
   const facts = start.map(toFacts);
@@ -433,7 +472,7 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       const live = run.liveSpec(change.id);
       const point = variant.points.find((item) => item.id === change.id);
       if (!live || !point || !fact) return;
-      const centre = dominant(variant.points);
+      const centre = referenceBody(variant.points, fact.parentId);
       // Distance and speed are measured from the central body, so it has
       // neither of its own to set; a link that asks for one changes nothing.
       if (point === centre && fieldSpec(change.field).fromCentre) return;
@@ -526,9 +565,19 @@ const RECAPTURE_ECCENTRICITY = 0.9;
 
 function watchEscapes(track: Track, run: SandboxRun) {
   const anchor = dominant(track.points);
+  // A moon leaves its planet first, so that is looked for first.
+  watchMoons(track, run, anchor);
   for (const point of track.points) {
     // The heaviest body is what the system is; it cannot leave itself.
     if (point === anchor) continue;
+    // Nor has a moon left anything while its planet still holds it.
+    const planet = track.parents.get(point.id);
+    if (
+      planet &&
+      !track.loosened.has(point.id) &&
+      track.points.some((item) => item.id === planet)
+    )
+      continue;
     const rest = track.points.filter(
       (other) => other !== point && !track.escaped.has(other.id),
     );
@@ -571,6 +620,60 @@ function watchEscapes(track: Track, run: SandboxRun) {
     if (!receding || orbit.distance <= CORE_CLEARANCE * reach) continue;
     track.escaped.add(point.id);
     run.events.push({ kind: 'escape', id: point.id, day: run.elapsedDays });
+  }
+}
+
+/**
+ * Announces a moon leaving its planet, and coming back.
+ *
+ * A moon can leave its planet long before it could leave the system, and
+ * that is the change worth reporting about it. It has left once it is
+ * unbound from the planet, moving away, and outside the planet's Hill sphere,
+ * where the Sun's pull rather than the planet's decides its path; it is back
+ * once comfortably bound inside that sphere again.
+ */
+function watchMoons(track: Track, run: SandboxRun, anchor: PointMass) {
+  for (const [id, parentId] of track.parents) {
+    const moon = track.points.find((item) => item.id === id);
+    const planet = track.points.find((item) => item.id === parentId);
+    // A planet heavier than everything else has no Hill sphere to leave.
+    if (!moon || !planet || planet === anchor) continue;
+    const orbit = orbitState(moon, planet);
+    const hill =
+      Math.hypot(
+        ...planet.position.map((value, axis) => value - anchor.position[axis]),
+      ) * Math.cbrt(planet.mass / (3 * anchor.mass));
+    if (track.loosened.has(id)) {
+      if (
+        orbit.eccentricity < RECAPTURE_ECCENTRICITY &&
+        orbit.distance < hill
+      ) {
+        track.loosened.delete(id);
+        run.events.push({
+          kind: 'capture',
+          id,
+          parent: parentId,
+          day: run.elapsedDays,
+        });
+      }
+      continue;
+    }
+    const receding =
+      moon.position.reduce(
+        (sum, value, axis) =>
+          sum +
+          (value - planet.position[axis]) *
+            (moon.velocity[axis] - planet.velocity[axis]),
+        0,
+      ) > 0;
+    if (!orbit.escaping || !receding || orbit.distance <= hill) continue;
+    track.loosened.add(id);
+    run.events.push({
+      kind: 'escape',
+      id,
+      parent: parentId,
+      day: run.elapsedDays,
+    });
   }
 }
 

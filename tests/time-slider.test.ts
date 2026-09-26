@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { speeds, speedLabel } from '../lib/solar';
-import { sandboxSpeeds } from '../lib/sandbox/view';
+import { moonSpeeds, sandboxSpeeds } from '../lib/sandbox/view';
 import { languages, translator, type Locale } from '../lib/i18n';
 
 const page = readFileSync(
@@ -23,7 +23,7 @@ const visibleAlways = (presets: readonly number[]) => [
 ];
 // The observatory clock and the sandbox clock share one control, so both
 // preset lists have to satisfy every rule below.
-const presetLists = [speeds, sandboxSpeeds];
+const presetLists = [speeds, sandboxSpeeds, moonSpeeds];
 
 void test('time speed markers are generated from every discrete slider value', () => {
   const positions = speeds.map(

@@ -6,7 +6,10 @@
  * through it would simply be wrong. Sizes keep the same choice the rest of the
  * observatory offers.
  */
-import { AU_SCENE_UNITS, kmToScene } from '../display-scale';
+import { AU_SCENE_UNITS, displayRadius, kmToScene } from '../display-scale';
+import { moonRadii } from '../eclipse-shadows';
+import { orbitingMoons } from '../moon-orbits';
+import { moonSemimajorKm } from '../satellite-elements';
 import { bodies } from '../solar';
 import type { Vec3 } from './physics';
 
@@ -40,10 +43,85 @@ export function sandboxRadius(
   const body = sourceId
     ? bodies.find((item) => item.id === sourceId)
     : undefined;
+  const moon = sourceId
+    ? orbitingMoons.find((item) => item.id === sourceId)
+    : undefined;
   const authored = body
     ? body.size * (body.id === 'sun' ? 0.09 : 0.32)
-    : DEFAULT_ILLUSTRATED_RADIUS;
-  return authored * Math.cbrt(radiusKm / (body?.radius ?? EARTH_RADIUS_KM));
+    : moon
+      ? displayRadius(moon.id, 'distance', false)
+      : DEFAULT_ILLUSTRATED_RADIUS;
+  const reference =
+    body?.radius ?? (moon ? moonRadii[moon.en] : EARTH_RADIUS_KM);
+  return authored * Math.cbrt(radiusKm / reference);
+}
+
+/** True and shown distance from a planet, in scene units, that a moon map runs through. */
+type Anchor = [distance: number, shown: number];
+const anchors = new Map<string, Anchor[]>();
+
+function moonAnchors(parentId: string): Anchor[] {
+  const cached = anchors.get(parentId);
+  if (cached) return cached;
+  const planet = bodies.find((item) => item.id === parentId);
+  const list: Anchor[] = planet
+    ? [
+        [
+          planet.radius * kmToScene('distance'),
+          displayRadius(parentId, 'distance', false),
+        ],
+        ...orbitingMoons
+          .filter((moon) => moon.parentId === parentId)
+          .map(
+            (moon): Anchor => [
+              moonSemimajorKm(moon) * kmToScene('distance'),
+              // Where the explorer draws this moon's orbit at true distances.
+              moon.distance * 0.32,
+            ],
+          )
+          .sort((a, b) => a[0] - b[0]),
+      ]
+    : [];
+  anchors.set(parentId, list);
+  return list;
+}
+
+/**
+ * How far from its planet a moon is drawn, given how far it really is, both
+ * in scene units.
+ *
+ * At true distances a planet is drawn thousands of times its size, which
+ * would bury every moon inside its planet's sphere. So a moon's distance is
+ * mapped the way the explorer lays moons out: the planet's surface lands on
+ * its drawn surface, each catalogued moon's orbit on the distance the
+ * explorer draws it at, and anything between follows a straight line from one
+ * to the next. The map only ever grows outward, so an orbit that shrinks or
+ * swells on screen did so in the run, and a moon that touches its planet is
+ * drawn touching it. Beyond the outermost moon the magnification bleeds away
+ * over a distance half again the extra it adds, so a moon flung loose drifts
+ * back toward its true place instead of swinging out at the magnified rate.
+ * At true sizes nothing needs mapping at all.
+ */
+export function moonDisplayDistance(
+  parentId: string,
+  distance: number,
+  realSizes: boolean,
+) {
+  const list = moonAnchors(parentId);
+  if (realSizes || list.length < 2) return distance;
+  const [surface, shown] = list[0];
+  if (distance <= surface) return (distance * shown) / surface;
+  for (let index = 1; index < list.length; index++) {
+    const [to, toShown] = list[index];
+    if (distance > to) continue;
+    const [from, fromShown] = list[index - 1];
+    return (
+      fromShown + ((toShown - fromShown) * (distance - from)) / (to - from)
+    );
+  }
+  const [last, lastShown] = list[list.length - 1];
+  const extra = lastShown - last;
+  return distance + extra * Math.exp(-(distance - last) / (1.5 * extra));
 }
 
 /**

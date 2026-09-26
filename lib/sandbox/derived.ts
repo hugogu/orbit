@@ -115,6 +115,51 @@ export function orbitState(point: PointMass, central: PointMass): OrbitState {
   };
 }
 
+/**
+ * The points of a body's current orbit around a central body, relative to it
+ * and in AU, or null when that orbit does not close. It is the path the body
+ * would keep if everything else vanished now: for a moon, the ring it is
+ * drawn on around its planet, which reshapes the moment an edit lands.
+ */
+export function osculatingOrbit(
+  point: PointMass,
+  central: PointMass,
+  segments = 128,
+): Vec3[] | null {
+  const relative = subtract(point.position, central.position);
+  const motion = subtract(point.velocity, central.velocity);
+  const distance = Math.hypot(...relative);
+  const momentum = cross(relative, motion);
+  const spin = Math.hypot(...momentum);
+  if (distance === 0 || spin === 0) return null;
+  const mu = GRAVITY * (central.mass + point.mass);
+  const pointing = cross(motion, momentum).map(
+    (component, axis) => component / mu - relative[axis] / distance,
+  ) as Vec3;
+  const eccentricity = Math.hypot(...pointing);
+  if (eccentricity >= 1) return null;
+  // Periapsis sets the first axis; a circle has none, so any radius will do.
+  const toward = (
+    eccentricity > 1e-9
+      ? pointing.map((component) => component / eccentricity)
+      : relative.map((component) => component / distance)
+  ) as Vec3;
+  const across = cross(
+    momentum.map((component) => component / spin) as Vec3,
+    toward,
+  );
+  const semiLatus = (spin * spin) / mu;
+  return Array.from({ length: segments + 1 }, (_, index) => {
+    const angle = (index / segments) * Math.PI * 2;
+    const radius = semiLatus / (1 + eccentricity * Math.cos(angle));
+    return [0, 1, 2].map(
+      (axis) =>
+        radius *
+        (Math.cos(angle) * toward[axis] + Math.sin(angle) * across[axis]),
+    ) as Vec3;
+  });
+}
+
 /** Mass in kilograms, for a point mass carried in solar masses. */
 export function massKg(point: PointMass) {
   return point.mass * SOLAR_MASS_KG;

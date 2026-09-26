@@ -18,6 +18,21 @@ import type { SandboxRun } from './run';
 export const sandboxSpeeds = [0.1, 0.5, 1, 5, 20, 60, 180];
 export const defaultSandboxSpeed = 20;
 
+/**
+ * The fastest rate while the planets carry their moons.
+ *
+ * Accuracy is the step's to keep, and Io holds the step near 0.0028 days
+ * whatever the rate; the rate only decides how many of those steps a second
+ * has to fit. Twenty days a second is about 7,000 of them, a few percent of a
+ * desktop core and within what a phone's frames can carry, where the full
+ * range would ask for nine times as many and leave the run falling behind
+ * the rate it shows.
+ */
+export const MOON_SPEED_LIMIT = 20;
+export const moonSpeeds = sandboxSpeeds.filter(
+  (speed) => speed <= MOON_SPEED_LIMIT,
+);
+
 export type SandboxView = {
   run: SandboxRun;
   /** Simulated days per real second. */

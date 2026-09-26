@@ -17,7 +17,9 @@ import {
   type SandboxBodySpec,
   type SandboxScenario,
 } from './scenario';
+import { AU_KM } from '../eclipse-shadows';
 import { auPerDayToKmPerSecond, kmPerSecondToAuPerDay } from './derived';
+import { sandboxMoons } from './moons';
 
 /**
  * Whether a field changes where a body goes.
@@ -48,6 +50,8 @@ export type FieldSpec = {
    * central body has no value of its own for it.
    */
   fromCentre: boolean;
+  /** Shown units per stored unit, where the readout uses another unit. */
+  scale?: number;
 };
 
 export const sandboxFields: FieldSpec[] = [
@@ -119,8 +123,30 @@ export const sandboxFields: FieldSpec[] = [
   },
 ];
 
-export function fieldSpec(id: SandboxField) {
-  return sandboxFields.find((field) => field.id === id)!;
+/**
+ * The distance field as a moon reads it: from its planet, in kilometres. A
+ * planet's range starts at 0.02 AU, beyond most moons' whole orbits, and three
+ * decimals of an AU cannot tell Io from Europa. The stored value stays in AU,
+ * so a recorded change means the same thing whichever body it names.
+ */
+const moonDistance: FieldSpec = {
+  id: 'distance',
+  kind: 'dynamical',
+  label: '距行星距离',
+  unit: 'km',
+  min: 1000 / AU_KM,
+  max: 0.5,
+  logarithmic: true,
+  precision: 0,
+  fromCentre: true,
+  scale: AU_KM,
+};
+
+/** A field as a body reads it; a moon measures its distance from its planet. */
+export function fieldSpec(id: SandboxField, moon = false) {
+  return moon && id === 'distance'
+    ? moonDistance
+    : sandboxFields.find((field) => field.id === id)!;
 }
 
 /** Slider position in [0, 1] for a value, spaced by ratio where that reads better. */
@@ -165,6 +191,22 @@ function cross(a: Vec3, b: Vec3): Vec3 {
     a[2] * b[0] - a[0] * b[2],
     a[0] * b[1] - a[1] * b[0],
   ];
+}
+
+/**
+ * What a body's distance and speed are measured from: its own planet for a
+ * moon, while that planet is still there, and the heaviest body otherwise.
+ * Io's speed around the Sun is mostly Jupiter's, so reading or setting it
+ * there would say nothing about Io's own orbit.
+ */
+export function referenceBody<T extends { id: string; mass: number }>(
+  list: readonly T[],
+  parentId: string | null | undefined,
+): T | undefined {
+  return (
+    (parentId ? list.find((body) => body.id === parentId) : undefined) ??
+    centralBody(list)
+  );
 }
 
 /** The body everything else is measured against: the heaviest present. */
@@ -241,7 +283,7 @@ export function writeField(
   value: number,
   centre: Centre,
 ): SandboxBodySpec {
-  const limits = fieldSpec(field);
+  const limits = fieldSpec(field, !!spec.parentId);
   const safe = Math.min(limits.max, Math.max(limits.min, value));
   switch (field) {
     case 'mass':
@@ -289,6 +331,14 @@ export function writeField(
 
 /** The catalogue values a forked body can be restored to. */
 export function catalogueDefaults(sourceId: string | null) {
+  const moon = sandboxMoons.find((item) => item.id === sourceId);
+  if (moon)
+    return {
+      mass: moon.massKg,
+      radius: moon.radiusKm,
+      spinDays: moon.period,
+      tilt: 0,
+    };
   const source = sandboxSources.find((item) => item.id === sourceId);
   const catalogue = bodies.find((item) => item.id === sourceId);
   if (!source || !catalogue) return null;
