@@ -20,18 +20,23 @@ const enuToLocal = new Quaternion().setFromAxisAngle(
 export class DeviceAttitudeTracker {
   private source: 'compass' | 'absolute' | null = null;
   private northOffset: number | null = null;
-  private lastTime: number | null = null;
+  needsLevel = false;
+
+  reset() {
+    this.source = null;
+    this.northOffset = null;
+    this.needsLevel = false;
+  }
 
   read(
     reading: AttitudeReading,
     screenAngle: number,
     declination = 0,
     correction = 0,
-    time = performance.now(),
   ) {
     const { alpha, beta, gamma, webkitCompassHeading: heading } = reading;
     if (
-      ![alpha, beta, gamma, screenAngle, declination, correction, time].every(
+      ![alpha, beta, gamma, screenAngle, declination, correction].every(
         (value) => typeof value === 'number' && Number.isFinite(value),
       )
     )
@@ -49,11 +54,6 @@ export class DeviceAttitudeTracker {
           new Euler(beta! * radians, gamma! * radians, alpha! * radians, 'ZXY'),
         ),
       );
-    const dt =
-      this.lastTime === null
-        ? 0
-        : Math.max(0, Math.min((time - this.lastTime) / 1000, 0.1));
-    this.lastTime = time;
     if (source === 'compass') {
       const accuracy = reading.webkitCompassAccuracy;
       const reliable =
@@ -63,28 +63,21 @@ export class DeviceAttitudeTracker {
         heading < 360 &&
         (accuracy === undefined ||
           (Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 50));
-      // CoreLocation measures the portrait device's top edge, not Euler alpha
-      // or the camera's sightline. Its horizontal heading is undefined when
-      // that edge is vertical: keep the last alignment and follow the gyro.
-      // https://developer.apple.com/documentation/corelocation/clheading/magneticheading
-      const top = new Vector3(0, 1, 0).applyQuaternion(attitude);
-      if (reliable && Math.hypot(top.x, top.z) > 0.25) {
-        const offset = Math.atan2(top.x, -top.z) - heading * radians;
-        if (this.northOffset === null) this.northOffset = offset;
-        else {
-          const difference = Math.atan2(
-            Math.sin(offset - this.northOffset),
-            Math.cos(offset - this.northOffset),
-          );
-          // Compass and gyro samples arrive independently. Correct slow drift
-          // without injecting magnetic noise or stale headings into each turn.
-          const adjustment = difference * -Math.expm1(-dt / 2);
-          const limit = 3 * radians * dt;
-          this.northOffset += Math.max(-limit, Math.min(limit, adjustment));
-        }
+      if (this.northOffset === null) {
+        if (!reliable) return null;
+        // A compass bearing and the relative gyro frame can be aligned without
+        // tilt ambiguity while the screen faces up. Never feed tilted compass
+        // readings back into the alignment: doing so can turn a stationary sky
+        // and, past vertical, reverse east and west.
+        const screenNormal = new Vector3(0, 0, 1).applyQuaternion(attitude);
+        this.needsLevel = screenNormal.y < Math.cos(15 * radians);
+        if (this.needsLevel) return null;
+        const top = new Vector3(0, 1, 0).applyQuaternion(attitude);
+        this.northOffset = Math.atan2(top.x, -top.z) - heading * radians;
       }
       if (this.northOffset === null) return null;
     }
+    this.needsLevel = false;
     this.source = source;
     const north =
       source === 'compass' ? this.northOffset! - declination * radians : 0;

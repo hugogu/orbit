@@ -18,6 +18,7 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
   const settings = useRef({ location, correction });
   const cleanup = useRef<(() => void) | null>(null);
   const ticket = useRef(0);
+  const resetCalibration = useRef<(() => void) | null>(null);
   useEffect(() => {
     settings.current = { location, correction };
   }, [location, correction]);
@@ -25,6 +26,7 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
     ticket.current++;
     cleanup.current?.();
     cleanup.current = null;
+    resetCalibration.current = null;
     attitude.current = null;
     setEnabled(false);
     setStatus('拖动查看天空');
@@ -44,7 +46,7 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
   async function start() {
     stop();
     const pending = ++ticket.current;
-    setStatus('等待朝向感应，请稍微倾斜手机…');
+    setStatus('等待朝向感应…');
     setEnabled(true);
     try {
       await requestOrientationPermission(
@@ -62,6 +64,13 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
         declination = 0,
         received = false;
       const tracker = new DeviceAttitudeTracker();
+      let prompted = false;
+      resetCalibration.current = () => {
+        tracker.reset();
+        received = false;
+        prompted = false;
+        setStatus('请将手机平放、屏幕朝上，以校准方位。');
+      };
       const read = (event: DeviceOrientationEvent) => {
         const { location: site, correction: adjustment } = settings.current;
         if (site !== lastLocation) {
@@ -78,7 +87,13 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
           declination,
           adjustment,
         );
-        if (!next) return;
+        if (!next) {
+          if (tracker.needsLevel && !prompted) {
+            prompted = true;
+            setStatus('请将手机平放、屏幕朝上，以校准方位。');
+          }
+          return;
+        }
         attitude.current = next;
         if (!received) {
           received = true;
@@ -92,7 +107,7 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
       window.addEventListener('deviceorientationabsolute', read);
       window.addEventListener('deviceorientation', read);
       const timeout = window.setTimeout(() => {
-        if (!received) {
+        if (!received && !tracker.needsLevel) {
           stop();
           setStatus(
             '未收到可靠的指南针朝向，请远离磁性物体后重试，或拖动查看天空。',
@@ -114,7 +129,17 @@ export function useDeviceAttitude(active: boolean, location: SkyLocation) {
       );
     }
   }
-  return { attitude, status, enabled, correction, setCorrection, start, stop };
+  const recalibrate = useCallback(() => resetCalibration.current?.(), []);
+  return {
+    attitude,
+    status,
+    enabled,
+    correction,
+    setCorrection,
+    start,
+    stop,
+    recalibrate,
+  };
 }
 
 export type DeviceAttitudeController = ReturnType<typeof useDeviceAttitude>;
