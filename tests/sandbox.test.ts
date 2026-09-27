@@ -1761,53 +1761,94 @@ void test('a run with moons resolves its fastest one and keeps to the sky', () =
   assert.ok(run.energyDrift < 1e-9, String(run.energyDrift));
 });
 
+/** Runs `run` on until `done`, a few days at a time, or fails the test. */
+function runUntil(run: SandboxRun, done: () => boolean) {
+  for (let guard = 0; !done(); guard++) {
+    assert.ok(guard < 500, `still waiting at day ${run.elapsedDays}`);
+    run.advance(5);
+  }
+}
+
 void test('a moon is edited from its planet and reported leaving it', () => {
   const run = createRun(forkScenario(SHARED_EPOCH, true));
   run.advance(1);
-  const find = (id: string) => run.variant.find((body) => body.id === id)!;
   const io = run.liveSpec('moon-io')!;
-  const jupiter = referenceBody(run.variant, io.parentId)!;
+  assert.equal(run.planetOf('moon-io'), 'jupiter');
+  const jupiter = referenceBody(run.variant, run.planetOf('moon-io'))!;
   assert.equal(jupiter.id, 'jupiter');
   // Its speed is its own around Jupiter, not mostly Jupiter's around the Sun.
   const speed = readField(io, 'speed', centreOf(jupiter));
   assert.ok(speed > 16 && speed < 19, String(speed));
   // Past Jupiter's escape speed at Io's distance, about 24.5 km/s, it leaves.
   run.apply({ kind: 'set', id: 'moon-io', field: 'speed', value: 32 });
-  for (
-    let guard = 0;
-    guard < 60 && !run.events.some((e) => e.kind === 'escape');
-    guard++
-  )
-    run.advance(5);
+  runUntil(run, () => !run.planetOf('moon-io'));
   // Leaving Jupiter comes first, though at this speed it leaves the Sun too.
   const departures = run.events.flatMap((event) =>
     event.kind === 'escape' ? [{ id: event.id, parent: event.parent }] : [],
   );
   assert.deepEqual(departures[0], { id: 'moon-io', parent: 'jupiter' });
-  // Put back 421,800 km out on a circle, it is Jupiter's again.
-  run.apply({
-    kind: 'set',
-    id: 'moon-io',
-    field: 'distance',
-    value: 421_800 / AU_KM,
-  });
-  const back = orbitState(find('moon-io'), find('jupiter'));
-  assert.ok(
-    Math.abs(back.distance * AU_KM - 421_800) < 1,
-    String(back.distance),
-  );
-  assert.ok(back.eccentricity < 1e-3, String(back.eccentricity));
-  run.advance(5);
-  assert.ok(
-    run.events.some(
-      (event) =>
-        event.kind === 'capture' &&
-        event.id === 'moon-io' &&
-        event.parent === 'jupiter',
-    ),
+  // From then on it is measured from the Sun, as any planet is: a distance
+  // set now is its distance from the Sun, not from the planet it left.
+  const sun = centralBody(run.variant)!;
+  assert.equal(referenceBody(run.variant, run.planetOf('moon-io')), sun);
+  run.apply({ kind: 'set', id: 'moon-io', field: 'distance', value: 5 });
+  const placed = readField(run.liveSpec('moon-io')!, 'distance', centreOf(sun));
+  assert.ok(Math.abs(placed - 5) < 1e-9, String(placed));
+  // Each change is logged in the frame it was made in.
+  assert.deepEqual(
+    run.events.flatMap((event) => (event.kind === 'set' ? [event.parent] : [])),
+    ['jupiter', undefined],
   );
   // Restoring a moon's real values finds them in the moon catalogue.
   assert.ok(Math.abs(catalogueDefaults('moon-io')!.mass - 8.93e22) < 1e20);
+});
+
+void test('a moon that has left its planet is read from the Sun, and can leave it too', () => {
+  // A little past Earth's escape speed at the Moon's distance, about 1.4 km/s.
+  const drifting = createRun(forkScenario(SHARED_EPOCH, true));
+  drifting.advance(1);
+  drifting.apply({ kind: 'set', id: 'moon-moon', field: 'speed', value: 2.5 });
+  runUntil(drifting, () => !drifting.planetOf('moon-moon'));
+  const earth = drifting.variant.find((body) => body.id === 'earth')!;
+  const readings: { own: number; fromEarth: number }[] = [];
+  const left = drifting.elapsedDays;
+  runUntil(drifting, () => {
+    const spec = drifting.liveSpec('moon-moon')!;
+    const frame = referenceBody(
+      drifting.variant,
+      drifting.planetOf('moon-moon'),
+    );
+    readings.push({
+      own: readField(spec, 'speed', centreOf(frame)),
+      fromEarth: readField(spec, 'speed', centreOf(earth)),
+    });
+    return drifting.elapsedDays > left + 90;
+  });
+  // Read from Earth its speed only climbs as the two drift apart around the
+  // Sun; read from the Sun it is the Moon's own orbit, and barely changes.
+  const first = readings[0];
+  const last = readings.at(-1)!;
+  assert.ok(first.own > 29 && first.own < 33, String(first.own));
+  assert.ok(Math.abs(last.own - first.own) / first.own < 0.15);
+  assert.ok(last.fromEarth > 2 * first.fromEarth, JSON.stringify(last));
+  // Still the Sun's: bound, it has not left the system.
+  assert.ok(!drifting.escaped.has('moon-moon'));
+
+  // Fast enough to leave the Sun as well, it is reported leaving both, the
+  // planet first.
+  const flung = createRun(forkScenario(SHARED_EPOCH, true));
+  flung.advance(1);
+  flung.apply({ kind: 'set', id: 'moon-moon', field: 'speed', value: 80 });
+  runUntil(flung, () => flung.escaped.has('moon-moon'));
+  assert.deepEqual(
+    flung.events.flatMap((event) =>
+      event.kind === 'escape' ? [{ id: event.id, parent: event.parent }] : [],
+    ),
+    [
+      { id: 'moon-moon', parent: 'earth' },
+      { id: 'moon-moon', parent: undefined },
+    ],
+  );
 });
 
 void test('the moons switch belongs to the recipe and travels with a link', () => {
@@ -1912,6 +1953,63 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
   assert.match(editor, /Distance from its planet/);
   assert.match(editor, /Periapsis \/ apoapsis/);
   assert.doesNotMatch(editor, /Distance from the Sun/);
+});
+
+void test('a moon that has left is shown in the Sun’s terms, with each change in its own', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  run.advance(1);
+  run.apply({
+    kind: 'set',
+    id: 'moon-io',
+    field: 'distance',
+    value: 600_000 / AU_KM,
+  });
+  run.apply({ kind: 'set', id: 'moon-io', field: 'speed', value: 40 });
+  runUntil(run, () => !run.planetOf('moon-io'));
+  run.apply({ kind: 'set', id: 'moon-io', field: 'distance', value: 7 });
+  const render = (element: ReturnType<typeof createElement>) =>
+    renderToStaticMarkup(
+      createElement(I18nProvider, { initialLocale: 'en' }, element),
+    );
+  const noop = () => {};
+  const editor = render(
+    createElement(SandboxBodyEditor, {
+      run,
+      selected: 'moon-io',
+      daysPerSecond: 20,
+      onChange: noop,
+      onReset: noop,
+    }),
+  );
+  assert.match(editor, /Distance from the Sun/);
+  assert.match(editor, /Perihelion \/ aphelion/);
+  assert.match(editor, /It no longer orbits Jupiter/);
+  assert.doesNotMatch(editor, /Distance from its planet/);
+  const log = render(
+    createElement(SandboxPanel, {
+      run,
+      selected: null,
+      baseline: true,
+      trails: true,
+      onEnter: noop,
+      onLeave: noop,
+      onRestart: noop,
+      onSelect: noop,
+      onRemove: noop,
+      onAdd: noop,
+      onBaselineChange: noop,
+      onTrailsChange: noop,
+      moons: true,
+      onMoonsChange: noop,
+    }),
+  );
+  const events = log.slice(log.indexOf('sandbox-events'));
+  // Made while Jupiter held it, in kilometres from Jupiter; made after, in
+  // AU from the Sun.
+  assert.match(events, /Io: Distance from its planet changed/);
+  assert.ok(events.includes('600,000 km'), events);
+  assert.match(events, /Io: Distance from the Sun changed/);
+  assert.ok(events.includes('→ 7 AU'), events);
 });
 
 void test('a moon is drawn where the explorer draws it, along a map that only grows', () => {

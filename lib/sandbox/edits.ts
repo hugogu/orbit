@@ -194,10 +194,10 @@ function cross(a: Vec3, b: Vec3): Vec3 {
 }
 
 /**
- * What a body's distance and speed are measured from: its own planet for a
- * moon, while that planet is still there, and the heaviest body otherwise.
- * Io's speed around the Sun is mostly Jupiter's, so reading or setting it
- * there would say nothing about Io's own orbit.
+ * What a body's distance and speed are measured from: the planet holding a
+ * moon (`SandboxRun.planetOf`), while it is still there, and the heaviest
+ * body otherwise. Io's speed around the Sun is mostly Jupiter's, so reading
+ * or setting it there would say nothing about Io's own orbit.
  */
 export function referenceBody<T extends { id: string; mass: number }>(
   list: readonly T[],
@@ -276,14 +276,17 @@ export function readField(
  * carrying the old speed to a new radius would make every move either an
  * escape or a plunge, which hides the change the viewer actually asked for
  * behind an accident. Either way the body keeps moving with the centre.
+ * `moon` says the centre is a planet holding the body, so the value is held
+ * to a moon's distances rather than the Sun's.
  */
 export function writeField(
   spec: SandboxBodySpec,
   field: SandboxField,
   value: number,
   centre: Centre,
+  moon = false,
 ): SandboxBodySpec {
-  const limits = fieldSpec(field, !!spec.parentId);
+  const limits = fieldSpec(field, moon);
   const safe = Math.min(limits.max, Math.max(limits.min, value));
   switch (field) {
     case 'mass':

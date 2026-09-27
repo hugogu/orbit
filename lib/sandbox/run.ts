@@ -101,6 +101,8 @@ export type SandboxEvent =
       from: number;
       to: number;
       day: number;
+      /** Set when both were read from this planet rather than the central body. */
+      parent?: string;
     };
 
 /** Presentation a body carries that the integrator has no use for. */
@@ -162,6 +164,14 @@ export type SandboxRun = {
   apply(edit: RunEdit): void;
   /** A body's current parameters in the units the editor shows. */
   liveSpec(id: string): SandboxBodySpec | null;
+  /**
+   * The planet a body's distance and speed are read and set from: a moon's
+   * own, while that planet is still in the run and still holds it. A moon
+   * that has left its planet orbits the Sun, and measured from the planet it
+   * left its speed would only swing with that planet's own orbit, so it is
+   * measured from the central body like everything else.
+   */
+  planetOf(id: string): string | undefined;
 };
 
 function toPointMass(spec: SandboxBodySpec): PointMass {
@@ -336,6 +346,8 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       };
     },
 
+    planetOf: (id) => holder(variant, id),
+
     apply(edit) {
       // The edit lands at the moment on screen, so the run first reaches it
       // by the steps a replay takes to a change recorded there: whole ones,
@@ -472,14 +484,23 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       const live = run.liveSpec(change.id);
       const point = variant.points.find((item) => item.id === change.id);
       if (!live || !point || !fact) return;
-      const centre = referenceBody(variant.points, fact.parentId);
+      // Whether a moon is still its planet's is settled on the step review, so
+      // a replay reaches the change with the same answer the edit was made on.
+      const planet = run.planetOf(change.id);
+      const centre = referenceBody(variant.points, planet);
       // Distance and speed are measured from the central body, so it has
       // neither of its own to set; a link that asks for one changes nothing.
       if (point === centre && fieldSpec(change.field).fromCentre) return;
       // The same writer the editor uses, measured from the same centre, so a
       // recorded change and a live one can never mean different things.
       const frame = centreOf(centre);
-      const next = writeField(live, change.field, change.value, frame);
+      const next = writeField(
+        live,
+        change.field,
+        change.value,
+        frame,
+        !!planet,
+      );
       const from = readField(live, change.field, frame);
       const to = readField(next, change.field, frame);
       // Restoring a body's real values writes every field at once, most of
@@ -492,6 +513,7 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
           from,
           to,
           day: change.at,
+          ...(planet && { parent: planet }),
         });
       // The trail is pinned on both sides of the change, so a path that bends
       // or a body that jumps does so at the moment it did, not somewhere on a

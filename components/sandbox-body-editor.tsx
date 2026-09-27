@@ -68,10 +68,12 @@ export default function SandboxBodyEditor({
   // edited, so the panel has to show where the body is now, not where it set out.
   const spec = run.liveSpec(selected);
   if (!spec) return null;
-  // A moon is read from its own planet, everything else from the heaviest
-  // body; the orbit figures below are measured against the same one.
-  const moon = !!spec.parentId;
-  const centre = referenceBody(run.variant, spec.parentId);
+  // A moon is read from its planet while the planet holds it, and everything
+  // else, a moon that has left included, from the heaviest body; the orbit
+  // figures below are measured against the same one.
+  const planet = run.planetOf(selected);
+  const moon = !!planet;
+  const centre = referenceBody(run.variant, planet);
   const point = run.variant.find((body) => body.id === selected);
   const shadow = run.baseline.find((body) => body.id === selected);
   const orbit =
@@ -134,9 +136,21 @@ export default function SandboxBodyEditor({
     read('distance'),
     (centre?.mass ?? 1) * SOLAR_MASS_KG,
   );
+  // The fields switch from a planet's terms to the Sun's the moment a moon is
+  // no longer its planet's, which is worth saying where they change.
+  const formerPlanet =
+    spec.parentId && !planet
+      ? run.facts.find((body) => body.id === spec.parentId)
+      : undefined;
   const centreNote = isCentre ? (
     <p className="sandbox-note">
       {t('其他天体的距离与速度都从中心天体量起，所以它自身没有这两项。')}
+    </p>
+  ) : formerPlanet ? (
+    <p className="sandbox-note">
+      {t('它已不再绕{{planet}}运行，距离与速度改从中心天体量起。', {
+        planet: t(formerPlanet.name),
+      })}
     </p>
   ) : null;
 

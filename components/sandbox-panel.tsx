@@ -84,7 +84,7 @@ function eventLabel(
     case 'set':
       return t('{{name}} {{field}}已调整', {
         name: name(event.id),
-        field: t(fieldSpec(event.field).label),
+        field: t(fieldSpec(event.field, !!event.parent).label),
       });
   }
 }
@@ -106,14 +106,17 @@ export function foldedLabel(
     : t('暂未发生变化');
 }
 
-/** The before and after of a changed value, read the way the editor shows it. */
+/**
+ * The before and after of a changed value, read the way the editor showed it
+ * then: a moon's distance is kilometres from its planet only while the planet
+ * held it.
+ */
 function changeDetail(
   event: Extract<SandboxEvent, { kind: 'set' }>,
-  moon: boolean,
   t: Translate,
   locale: string,
 ) {
-  const spec = fieldSpec(event.field, moon);
+  const spec = fieldSpec(event.field, !!event.parent);
   const reading = (value: number) =>
     formatReading(value * (spec.scale ?? 1), spec.precision, locale);
   // Held to its number, so a narrow panel never strands the unit on its own.
@@ -438,15 +441,7 @@ export default function SandboxPanel({
                 <span>{eventLabel(event, label, t)}</span>
                 <small>{elapsedLabel(event.day, t)}</small>
                 {event.kind === 'set' && (
-                  <em>
-                    {changeDetail(
-                      event,
-                      !!run.facts.find((body) => body.id === event.id)
-                        ?.parentId,
-                      t,
-                      locale,
-                    )}
-                  </em>
+                  <em>{changeDetail(event, t, locale)}</em>
                 )}
               </li>
             ))}

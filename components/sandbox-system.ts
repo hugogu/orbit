@@ -133,6 +133,10 @@ export function createSandboxSystem(
   // The explorer keeps moon roots in the same map as the planets, inside a
   // container the sandbox hides, so only a planet's root is taken over.
   const planetIds = new Set(bodies.map((body) => body.id));
+  // The planet a moon came with, which it is drawn out from even after it has
+  // left: the moon map bleeds its magnification away with distance, so a moon
+  // flung loose drifts back to its true place instead of jumping into the
+  // planet it just left, which is drawn far larger than the gap between them.
   const parentOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.parentId;
 
@@ -225,13 +229,16 @@ export function createSandboxSystem(
   /**
    * Draws each moon's current orbit as a ring around its planet, through the
    * same map the moon itself is drawn with. An orbit that has opened into an
-   * escape has no ring to draw.
+   * escape has no ring to draw, and neither has a moon its planet no longer
+   * holds: out past the planet's Hill sphere its path is the Sun's to set,
+   * and a two-body orbit about the planet it left would only mislead.
    */
   function drawRings(
     run: SandboxRun,
     store: Map<string, Ring>,
     points: readonly PointMass[],
     drawn: Map<string, Vec3>,
+    held: (id: string) => boolean,
     brightness: number,
     show: boolean,
     options: SandboxSceneOptions,
@@ -253,7 +260,7 @@ export function createSandboxSystem(
         store.set(point.id, ring);
       }
       const planet = points.find((item) => item.id === parentId);
-      if (!show || !planet) {
+      if (!show || !planet || !held(point.id)) {
         ring.line.visible = false;
         continue;
       }
@@ -463,6 +470,7 @@ export function createSandboxSystem(
         rings,
         run.variant,
         run.drawn,
+        (id) => !!run.planetOf(id),
         VARIANT_RING_BRIGHTNESS,
         options.trails,
         options,
@@ -488,6 +496,8 @@ export function createSandboxSystem(
         ghostRings,
         run.baseline,
         run.baselineDrawn,
+        // Nothing is ever changed there, so every moon stays its planet's.
+        () => true,
         GHOST_RING_BRIGHTNESS,
         options.baseline && options.trails,
         options,
@@ -552,14 +562,15 @@ export function createSandboxSystem(
     ) {
       if (!visible) return;
       const selectedParent = options.selected
-        ? parentOf(run, options.selected)
+        ? run.planetOf(options.selected)
         : undefined;
       for (const point of run.variant) {
         const extra = extras.get(point.id);
         if (!extra) continue;
         // A moon is named only around the planet being looked at, as in the
-        // explorer; thirteen names at once would bury the planets'.
-        const parentId = parentOf(run, point.id);
+        // explorer; thirteen names at once would bury the planets'. One that
+        // has left its planet is a body of its own and is named like one.
+        const parentId = run.planetOf(point.id);
         const named =
           !parentId ||
           options.selected === point.id ||
