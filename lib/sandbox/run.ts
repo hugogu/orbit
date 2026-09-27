@@ -563,6 +563,16 @@ const CORE_CLEARANCE = 2;
  */
 const RECAPTURE_ECCENTRICITY = 0.9;
 
+/** A moon's planet, while that planet is still there and still holds it. */
+function holder(track: Track, id: string) {
+  const planet = track.parents.get(id);
+  return planet &&
+    !track.loosened.has(id) &&
+    track.points.some((point) => point.id === planet)
+    ? planet
+    : undefined;
+}
+
 function watchEscapes(track: Track, run: SandboxRun) {
   const anchor = dominant(track.points);
   // A moon leaves its planet first, so that is looked for first.
@@ -571,13 +581,7 @@ function watchEscapes(track: Track, run: SandboxRun) {
     // The heaviest body is what the system is; it cannot leave itself.
     if (point === anchor) continue;
     // Nor has a moon left anything while its planet still holds it.
-    const planet = track.parents.get(point.id);
-    if (
-      planet &&
-      !track.loosened.has(point.id) &&
-      track.points.some((item) => item.id === planet)
-    )
-      continue;
+    if (holder(track, point.id)) continue;
     const rest = track.points.filter(
       (other) => other !== point && !track.escaped.has(other.id),
     );
