@@ -64,6 +64,8 @@ type Ring = {
   shaped: number;
   /** What it was last shaped from, as `orbitInputs` lists it. */
   from: number[];
+  /** Whether that orbit was a closed one, with a ring to draw. */
+  closed: boolean;
 };
 
 /**
@@ -255,6 +257,7 @@ export function createSandboxSystem(
           line: createOrbitLine(colorOf(run, point.id), brightness),
           shaped: -Infinity,
           from: [],
+          closed: false,
         };
         group.add(ring.line);
         store.set(point.id, ring);
@@ -270,6 +273,9 @@ export function createSandboxSystem(
         ...scenePosition(drawn.get(parentId) ?? planet.position),
       );
       setOrbitLineWidth(ring.line, options.lineWidth);
+      // Shown as it was last shaped, whatever hid it since: a paused run
+      // reshapes nothing, so a ring hidden and shown again would stay hidden.
+      ring.line.visible = ring.closed;
       // Moving, a ring follows its orbit a few times a second. Paused, the
       // clock that paces it stands still, so the ring is reshaped whenever
       // what it is drawn from has changed: an edit, a rewind or a new run.
@@ -285,7 +291,8 @@ export function createSandboxSystem(
       ring.shaped = clock;
       ring.from = from;
       const orbit = osculatingOrbit(point, planet);
-      ring.line.visible = !!orbit;
+      ring.closed = !!orbit;
+      ring.line.visible = ring.closed;
       if (!orbit) continue;
       setOrbitLinePoints(
         ring.line,

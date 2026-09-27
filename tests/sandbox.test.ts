@@ -2265,3 +2265,43 @@ void test('a moon’s ring reshapes on an edit even while the run is paused', ()
     const [edited] = ringStart();
     assert.ok(edited.distanceTo(moving[0]) > 1e-6);
   }));
+
+void test('a moon’s ring hidden and shown again while paused comes back', () =>
+  withLabels(() => {
+    const run = createRun(forkScenario(SHARED_EPOCH, true));
+    run.advance(1);
+    const scene = new Scene();
+    const system = createSandboxSystem(
+      scene,
+      new Map(bodies.map((body) => [body.id, new Group()])),
+      new Map(),
+      { appendChild: () => {} } as unknown as HTMLElement,
+      () => {},
+    );
+    system.setVisible(true);
+    const paused = {
+      baseline: false,
+      realSizes: false,
+      selected: null,
+      labels: false,
+      lineWidth: 1,
+      seconds: 0,
+      daysPerSecond: 0,
+      translate: (key: string) => key,
+    };
+    const rings = () => {
+      let count = 0;
+      scene.traverse((object) => {
+        if (isOrbitLine(object) && object.visible && object.position.length())
+          count += 1;
+      });
+      return count;
+    };
+    system.update(run, { ...paused, trails: true });
+    assert.equal(rings(), sandboxMoons.length);
+    system.update(run, { ...paused, trails: false });
+    assert.equal(rings(), 0);
+    // Nothing is reshaped while paused, yet every ring is back.
+    system.update(run, { ...paused, trails: true });
+    assert.equal(rings(), sandboxMoons.length);
+  }));
