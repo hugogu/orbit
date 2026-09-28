@@ -2054,14 +2054,11 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
   assert.match(panel, /Moons/);
   assert.match(panel, /13 large moons join the run/);
   assert.match(panel, /Illustrated sizes spread moon systems on screen/);
-  const toggles = [
-    ...panel.matchAll(/<button[^>]*data-slot="toggle"[^>]*>([^<]*)<\/button>/g),
-  ];
-  assert.deepEqual(
-    toggles.map((match) => match[1]),
-    ['Compare with the original', 'Show paths', 'Moons'],
-  );
-  assert.ok(toggles.every((match) => match[0].includes('aria-pressed="true"')));
+  assert.equal([...panel.matchAll(/data-slot="switch"/g)].length, 3);
+  assert.match(panel, /Show original/);
+  assert.match(panel, /Show paths/);
+  assert.match(panel, /Moons/);
+  assert.equal([...panel.matchAll(/aria-checked="true"/g)].length, 2);
   // Moons follow their planet in the list, set in under it.
   assert.match(
     panel,

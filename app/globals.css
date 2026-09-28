@@ -1883,35 +1883,14 @@ button:disabled {
 .sandbox-toggles {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
 }
-.sandbox-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
+.sandbox-toggles .setting-row {
   min-height: 44px;
-  padding: 9px 10px;
-  border: 1px solid #ffffff1a;
-  border-radius: 6px;
-  background: transparent;
-  font-size: 13px;
-  line-height: 1.35;
-  text-align: left;
-  white-space: normal;
-  color: #b6bfcd;
+  padding: 10px 0;
 }
-.sandbox-toggle:hover {
-  background: #ffffff07;
-}
-.sandbox-toggle[aria-pressed='true'] {
-  background: #d6bb8710;
-  border-color: #d6bb8724;
-  color: #e9d1a5;
-}
-.sandbox-toggle:focus-visible {
-  outline: 2px solid #d9c49a;
-  outline-offset: 2px;
+.sandbox-toggles .setting-row:last-child {
+  border-bottom: 0;
 }
 .sandbox-events h3 {
   font-size: 11px;
