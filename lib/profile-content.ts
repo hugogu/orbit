@@ -3,6 +3,7 @@ import { asteroids } from './asteroids';
 export type ProfileContent = {
   headline: string;
   intro: string;
+  seo?: { title?: string; description?: string };
   sections: { heading: string; text: string }[];
   groups: { heading: string; indices: number[] }[];
 };
@@ -735,7 +736,12 @@ export const profileContent: Record<string, ProfileContent> = {
   encke: {
     headline: '频繁回归，反复经历太阳加热',
     intro:
-      '恩克彗星约每 3.3 年绕太阳一周，频繁穿过内太阳系。细长轨道让它从较冷的远端返回强烈日照下的近日点，一次次经历活动和物质流失。它与金牛座流星群相关的碎屑，也把短暂可见的彗星和更广泛的行星际尘埃联系起来。',
+      '2P/恩克彗星约每 3.3 年绕太阳一周，频繁回到内太阳系。它以计算出周期轨道的约翰·恩克命名，而不是以 1786 年首先观测到它的皮埃尔·梅尚命名。细长轨道使它反复经历太阳加热与物质流失；留下的碎屑与金牛座流星群有关。',
+    seo: {
+      title: '恩克彗星（2P/Encke）：轨道、周期与名字的由来',
+      description:
+        '2P/恩克彗星约每 3.3 年绕太阳一周。它以计算出周期轨道的约翰·恩克命名，而不是最初的发现者；它的碎屑与金牛座流星群有关。',
+    },
     sections: [],
     groups: [
       {

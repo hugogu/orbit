@@ -12,6 +12,7 @@ import {
   entryImagePath,
   ogImagePath,
   profileAncestors,
+  profileDescription,
   profileTitle,
   seoSiteName,
   seoLocales,
@@ -91,6 +92,15 @@ for (const entry of entries) {
         `<title>${escapeHtml(profileTitle(entry, locale))} | ORBIT</title>`,
       ),
       path,
+    );
+    assert.ok(
+      metaTags.some(
+        (attributes) =>
+          attributes.get('name') === 'description' &&
+          attributes.get('content') ===
+            escapeHtml(profileDescription(entry, locale)),
+      ),
+      `Profile description: ${path}`,
     );
     assert.ok(
       linkTags.some(

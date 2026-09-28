@@ -12,6 +12,7 @@ import {
 import { orbitingMoons, type OrbitingMoon } from './moon-orbits';
 import { bodies, type Body } from './solar';
 import { portraitPath, wideImagePath, portraitCredit } from './profile-images';
+import { profileContent } from './profile-content';
 import {
   profileProperties,
   propertyUnits,
@@ -133,7 +134,16 @@ export function aboutDescription(locale: Locale) {
 
 export function profileTitle(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
-  return t('{{name}}：结构、轨道与探索', { name: t(entry.data.name) });
+  return t(
+    profileContent[entry.data.id]?.seo?.title ?? '{{name}}：结构、轨道与探索',
+    { name: t(entry.data.name) },
+  );
+}
+
+export function profileDescription(entry: CatalogEntry, locale: Locale) {
+  return translator(locale)(
+    profileContent[entry.data.id]?.seo?.description ?? entry.data.description,
+  );
 }
 
 export function bodiesIndexTitle(locale: Locale) {

@@ -40,6 +40,8 @@ Environment variables such as `NEXT_PUBLIC_GA_MEASUREMENT_ID` are read at build 
 
 Set `NEXT_PUBLIC_SITE_URL` to the exact public origin, for example `https://orbits.observer`, without a path. Redeploy after changing it because static metadata and SEO files are generated during the build.
 
+For the public ORBIT deployment, keep `orbits.observer` as the primary domain and redirect `www.orbits.observer` to it. The production `NEXT_PUBLIC_SITE_URL` must be `https://orbits.observer` so canonical tags, hreflang links, and sitemap entries use the same host. After a domain or deployment change, check that a www profile URL redirects to its apex counterpart and that the served page and sitemap name the apex URL. Search Console's indexed canonical can reflect an older crawl until Google revisits the page.
+
 ### Google Analytics (optional)
 
 ORBIT can report page views to Google Analytics 4 through `gtag.js`. The script only loads when a Measurement ID is configured, so analytics stays off by default and the site remains fully static either way.
