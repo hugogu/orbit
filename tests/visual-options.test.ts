@@ -20,6 +20,10 @@ import { bodyFromHash } from '../lib/body-navigation';
 import MoonDetails from '../components/moon-details';
 import BodyNavigation from '../components/body-navigation';
 import { createEclipseSystem } from '../components/eclipse-system';
+import { createRun } from '../lib/sandbox/run';
+import { forkScenario } from '../lib/sandbox/scenario';
+import { AU_KM } from '../lib/eclipse-shadows';
+import { sandboxGroundOrientation } from '../lib/sandbox/ground-sky';
 
 void test('true sizes preserve all Sun/planet/moon radius ratios in either distance mode', () => {
   for (const scale of ['illustrated', 'distance'] as const) {
@@ -108,6 +112,54 @@ void test('Earth night texture follows solar direction even with eclipse shadows
     before.distanceTo(shader.uniforms.eclipseSun.value as THREE.Vector3) > 1,
   );
   assert.equal(system.guideRoot.visible, false);
+  system.dispose();
+});
+
+void test('sandbox night lighting uses the drawn Sun, Earth orientation and edited radii', () => {
+  const run = createRun(forkScenario(Date.parse('2026-09-28T00:00:00Z')));
+  const material = new THREE.MeshStandardMaterial();
+  const root = new THREE.Group();
+  const pivot = new THREE.Group();
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(1), material);
+  pivot.add(earth);
+  root.add(pivot);
+  const system = createEclipseSystem(new Map([['earth', earth]]));
+  const shader = {
+    vertexShader: THREE.ShaderLib.standard.vertexShader,
+    fragmentShader: THREE.ShaderLib.standard.fragmentShader,
+    uniforms: {} as Record<string, { value: unknown }>,
+  };
+  material.onBeforeCompile(
+    shader as Parameters<typeof material.onBeforeCompile>[0],
+    {} as THREE.WebGLRenderer,
+  );
+  system.update(0, 'earth', true, false);
+  run.advance(0.25);
+  run.apply({ kind: 'set', id: 'earth', field: 'distance', value: 2 });
+  run.apply({ kind: 'set', id: 'sun', field: 'radius', value: 900_000 });
+  pivot.quaternion.copy(
+    sandboxGroundOrientation(
+      run,
+      run.facts.find((body) => body.id === 'earth')!,
+    ),
+  );
+  system.updateSandbox(run, () => earth);
+  const earthPosition = new THREE.Vector3(...run.drawn.get('earth')!);
+  const sunPosition = new THREE.Vector3(...run.drawn.get('sun')!);
+  const expected = sunPosition
+    .sub(earthPosition)
+    .applyQuaternion(pivot.quaternion.clone().invert())
+    .divideScalar(run.variant.find((body) => body.id === 'earth')!.radius);
+  assert.ok(
+    (shader.uniforms.eclipseSun.value as THREE.Vector3).distanceTo(expected) <
+      1e-8,
+  );
+  assert.equal(
+    shader.uniforms.eclipseSunRadius.value,
+    900_000 /
+      (run.variant.find((body) => body.id === 'earth')!.radius * AU_KM),
+  );
+  assert.equal(shader.uniforms.eclipseCount.value, 0);
   system.dispose();
 });
 

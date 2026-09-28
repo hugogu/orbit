@@ -21,7 +21,6 @@ import {
   orbitState,
   surfaceGravity,
 } from '@/lib/sandbox/derived';
-import { spinIsSlowed } from '@/lib/sandbox/display';
 import { auToKm, kmToAu } from '@/lib/sandbox/scenario';
 import { SOLAR_MASS_KG } from '@/lib/sandbox/physics';
 import { AU_KM } from '@/lib/eclipse-shadows';
@@ -34,7 +33,6 @@ const STEPS = 1000;
 export default function SandboxBodyEditor({
   run,
   selected,
-  daysPerSecond,
   onChange,
   onReset,
   compact = false,
@@ -43,8 +41,6 @@ export default function SandboxBodyEditor({
 }: {
   run: SandboxRun;
   selected: string;
-  /** The live time rate, which sets how fast the rotation can be shown. */
-  daysPerSecond: number;
   onChange: (field: SandboxField, value: number) => void;
   onReset: () => void;
   /**
@@ -223,13 +219,6 @@ export default function SandboxBodyEditor({
         {t('点质量模型中，自转与倾角不产生引力效应。')}
       </p>
       {appearance.map(control)}
-      {spinIsSlowed(read('spinDays'), daysPerSecond) && (
-        <p className="sandbox-note">
-          {t(
-            '当前时间流速下，真实自转已快过画面刷新，屏幕上的转动按比例放慢显示。',
-          )}
-        </p>
-      )}
 
       <h4 className="sandbox-group">{t('实时读数')}</h4>
       <dl className="sandbox-readout">

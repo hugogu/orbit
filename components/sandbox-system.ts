@@ -3,7 +3,8 @@ import type { Translate } from '../lib/i18n';
 import { AU_SCENE_UNITS } from '../lib/display-scale';
 import { bodies } from '../lib/solar';
 import { orbitingMoons } from '../lib/moon-orbits';
-import { sandboxRadius, scenePosition, spinStep } from '../lib/sandbox/display';
+import { sandboxRadius, scenePosition } from '../lib/sandbox/display';
+import { sandboxGroundOrientation } from '../lib/sandbox/ground-sky';
 import { osculatingOrbit } from '../lib/sandbox/derived';
 import { auToKm } from '../lib/sandbox/scenario';
 import type { PointMass, Vec3 } from '../lib/sandbox/physics';
@@ -37,10 +38,8 @@ export type SandboxSceneOptions = {
   selected: string | null;
   labels: boolean;
   lineWidth: number;
-  /** Real seconds since the last frame, for the rotation. */
+  /** Real seconds since the last frame, for orbit-guide pacing. */
   seconds: number;
-  /** Simulated days per real second, the rate the rotation follows. */
-  daysPerSecond: number;
   /** Names a body's label the moment it appears, not only on a locale change. */
   translate: Translate;
 };
@@ -100,13 +99,6 @@ export function createSandboxSystem(
   const ghosts = new Map<string, THREE.Mesh>();
   const trails = new Map<string, SandboxTrail>();
   const ghostTrails = new Map<string, SandboxTrail>();
-  // Accumulated display rotation per body. Integrating the rate frame by
-  // frame keeps the turn continuous when the viewer changes the time rate,
-  // which reading an angle straight off elapsed time could not do once the
-  // rate is capped for legibility.
-  const phase = new Map<string, number>();
-  const spinRotation = new THREE.Quaternion();
-  const tiltRotation = new THREE.Quaternion();
   // One segment from a body to where it would have been: the clearest way to
   // read "the same instant" off the screen rather than off the panel.
   const connector = createOrbitLine(0xffffff, 0.75);
@@ -339,32 +331,16 @@ export function createSandboxSystem(
   }
 
   const projected = new THREE.Vector3();
-  const north = new THREE.Vector3(0, 1, 0);
-  const roll = new THREE.Vector3(0, 0, 1);
-
-  /** Turns a body about its own axis and leans it by its tilt. */
-  function orient(
-    pivot: THREE.Object3D,
-    id: string,
-    run: SandboxRun,
-    options: SandboxSceneOptions,
-  ) {
+  /** Use the same physical orientation as the ground observer. */
+  function orient(pivot: THREE.Object3D, id: string, run: SandboxRun) {
     const spec = run.facts.find((body) => body.id === id);
-    const turned =
-      (phase.get(id) ?? 0) +
-      spinStep(spec?.spinDays ?? 0, options.daysPerSecond, options.seconds);
-    phase.set(id, turned % (Math.PI * 2));
-    pivot.quaternion
-      .copy(spinRotation.setFromAxisAngle(north, turned))
-      .premultiply(
-        tiltRotation.setFromAxisAngle(
-          roll,
-          ((spec?.tilt ?? 0) * Math.PI) / 180,
-        ),
-      );
+    if (spec) pivot.quaternion.copy(sandboxGroundOrientation(run, spec));
   }
 
   return {
+    meshOf(id: string) {
+      return extras.get(id)?.mesh ?? meshes.get(id);
+    },
     /** Catalogue bodies the run no longer contains, so the scene can hide them. */
     missing(run: SandboxRun) {
       const present = new Set(run.variant.map((point) => point.id));
@@ -394,7 +370,7 @@ export function createSandboxSystem(
         const root = planetIds.has(point.id) ? roots.get(point.id) : undefined;
         if (root) {
           const pivot = meshes.get(point.id)?.parent;
-          if (pivot) orient(pivot, point.id, run, options);
+          if (pivot) orient(pivot, point.id, run);
           root.position.set(...scenePosition(position));
           root.scale.setScalar(
             sandboxRadius(
@@ -406,7 +382,7 @@ export function createSandboxSystem(
         } else {
           const extra = extraFor(run, point, options.translate);
           extra.root.visible = true;
-          orient(extra.mesh, point.id, run, options);
+          orient(extra.mesh, point.id, run);
           place(
             extra.root,
             point,

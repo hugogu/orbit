@@ -541,7 +541,6 @@ void test('the central body offers no distance or speed of its own', () => {
         createElement(SandboxBodyEditor, {
           run,
           selected,
-          daysPerSecond: 20,
           onChange: () => {},
           onReset: () => {},
         }),
@@ -1141,7 +1140,6 @@ void test('a merge adds the absorbed body’s mass and keeps the momentum', () =
     labels: false,
     lineWidth: 1,
     seconds: 0,
-    daysPerSecond: 20,
     translate: (key) => key,
   });
   const drawn: unknown[] = [];
@@ -1313,7 +1311,6 @@ void test('a phone edits the forces in reach and keeps the rest one tap away', (
         createElement(SandboxBodyEditor, {
           run,
           selected,
-          daysPerSecond: 20,
           onChange: () => {},
           onReset: () => {},
           compact: true,
@@ -1616,7 +1613,6 @@ void test('the scene draws a run at the moment on screen', () => {
     labels: false,
     lineWidth: 1,
     seconds: 1 / 60,
-    daysPerSecond: 0.1,
     translate: (key) => key,
   });
   const drawn = scenePosition(run.drawn.get('mercury')!);
@@ -2061,7 +2057,6 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
     createElement(SandboxBodyEditor, {
       run,
       selected: 'moon-io',
-      daysPerSecond: 20,
       onChange: noop,
       onReset: noop,
     }),
@@ -2092,7 +2087,6 @@ void test('a moon that has left is shown in the Sun’s terms, with each change 
     createElement(SandboxBodyEditor, {
       run,
       selected: 'moon-io',
-      daysPerSecond: 20,
       onChange: noop,
       onReset: noop,
     }),
@@ -2321,7 +2315,6 @@ void test('the scene draws moons around their planets with borrowed meshes', () 
       labels: true,
       lineWidth: 1,
       seconds: 0.016,
-      daysPerSecond: 20,
       translate: (key) => key,
     });
     // Size settings change radii, never coordinates. Io and its planet
@@ -2391,7 +2384,6 @@ void test('a moon’s ring reshapes on an edit even while the run is paused', ()
       selected: null,
       labels: false,
       lineWidth: 1,
-      daysPerSecond: 20,
       translate: (key: string) => key,
     };
     // Triton is Neptune's only large moon here, so its ring is the only one
@@ -2458,7 +2450,6 @@ void test('a moon’s ring hidden and shown again while paused comes back', () =
       labels: false,
       lineWidth: 1,
       seconds: 0,
-      daysPerSecond: 0,
       translate: (key: string) => key,
     };
     const rings = () => {
@@ -2540,7 +2531,6 @@ void test('the scene draws a moon’s inertial trail through its physical positi
       labels: false,
       lineWidth: 1,
       seconds: 0,
-      daysPerSecond: 0,
       translate: (key: string) => key,
     };
     const pathTo = () => {
@@ -2634,7 +2624,6 @@ void test('a moon that has left its planet draws its own way out, not its planet
       labels: false,
       lineWidth: 1,
       seconds: 0,
-      daysPerSecond: 0,
       translate: (key: string) => key,
     });
     const moon = system.positionOf(run, 'moon-moon', false)!;

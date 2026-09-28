@@ -1350,7 +1350,6 @@ export default function Home() {
                     compact
                     run={sandboxRun}
                     selected={selected}
-                    daysPerSecond={sandboxPaused ? 0 : sandboxRate}
                     onChange={(field, value) =>
                       editSandboxBody(selected, field, value)
                     }
@@ -1431,7 +1430,6 @@ export default function Home() {
           <SandboxBodyEditor
             run={sandboxRun}
             selected={selected}
-            daysPerSecond={sandboxPaused ? 0 : sandboxRate}
             onChange={(field, value) => editSandboxBody(selected, field, value)}
             onReset={() => resetSandboxBody(selected)}
           />
@@ -2270,7 +2268,6 @@ export default function Home() {
             <SandboxBodyEditor
               run={sandboxRun}
               selected={selected}
-              daysPerSecond={sandboxPaused ? 0 : sandboxRate}
               onChange={(field, value) =>
                 editSandboxBody(selected, field, value)
               }

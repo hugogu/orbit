@@ -1,5 +1,5 @@
 import { Matrix4, Quaternion, Vector3 } from 'three';
-import { bodyOrientation } from '../ephemeris';
+import { astroBodies, bodyOrientation } from '../ephemeris';
 import { bodies } from '../solar';
 import type { SkyLocation } from '../sky-events';
 import type { BodyFacts, SandboxRun } from './run';
@@ -8,12 +8,13 @@ import { auToKm, daysFromEpoch, kmToAu } from './scenario';
 const north = new Vector3(0, 1, 0);
 const radians = Math.PI / 180;
 
-/** Physical spin follows simulated time, never the orbit view's slowed display spin. */
+/** Shared physical orientation for the space globe and ground observer. */
 export function sandboxGroundOrientation(run: SandboxRun, fact: BodyFacts) {
   const catalogue = bodies.find((body) => body.id === fact.sourceId);
-  const rotation = catalogue
-    ? bodyOrientation(catalogue.id, daysFromEpoch(run.scenario.epoch))
-    : new Quaternion();
+  const rotation =
+    fact.sourceId && astroBodies[fact.sourceId]
+      ? bodyOrientation(fact.sourceId, daysFromEpoch(run.scenario.epoch))
+      : new Quaternion();
   const pole = north.clone().applyQuaternion(rotation);
   const tiltAxis = north.clone().cross(pole);
   if (tiltAxis.lengthSq() < 1e-12) tiltAxis.set(0, 0, 1);

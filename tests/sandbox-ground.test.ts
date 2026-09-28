@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Quaternion, Vector3 } from 'three';
+import {
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  Quaternion,
+  Scene,
+  SphereGeometry,
+  Vector3,
+} from 'three';
 import { createRun } from '../lib/sandbox/run';
 import { forkScenario, kmToAu } from '../lib/sandbox/scenario';
 import {
@@ -11,6 +19,7 @@ import { groundBodyDisplay, horizonFrame } from '../lib/ground-sky';
 import { bodyOrientation } from '../lib/ephemeris';
 import { bodies } from '../lib/solar';
 import { DAY_MS, J2000_MS } from '../lib/simulation-time';
+import { createSandboxSystem } from '../components/sandbox-system';
 
 const epoch = Date.parse('2026-09-22T12:00:00Z');
 const site = {
@@ -90,6 +99,109 @@ void test('sandbox horizon starts at the fork and follows its physical Earth, in
   assert.ok(
     !sky.bodies.some((body) => body.id === 'moon-moon' || body.id === 'earth'),
   );
+});
+
+void test('rendered Earth and ground horizon agree on solar altitude after years and spin edits', () => {
+  const run = createRun(forkScenario(epoch));
+  const scene = new Scene();
+  const roots = new Map<string, Group>();
+  const meshes = new Map<string, Mesh>();
+  for (const body of bodies) {
+    const root = new Group();
+    const pivot = new Group();
+    const mesh = new Mesh(new SphereGeometry(1), new MeshStandardMaterial());
+    pivot.add(mesh);
+    root.add(pivot);
+    scene.add(root);
+    roots.set(body.id, root);
+    meshes.set(body.id, mesh);
+  }
+  const system = createSandboxSystem(
+    scene,
+    roots,
+    meshes,
+    { appendChild() {} } as unknown as HTMLElement,
+    () => {},
+  );
+  system.setVisible(true);
+  const verify = () => {
+    system.update(run, {
+      baseline: false,
+      trails: false,
+      realSizes: true,
+      selected: 'earth',
+      labels: false,
+      lineWidth: 1,
+      seconds: 1 / 60,
+      translate: (key) => key,
+    });
+    const sky = sandboxGroundSnapshot(run, site)!;
+    const earth = new Vector3(...run.drawn.get('earth')!);
+    const sun = new Vector3(...run.drawn.get('sun')!);
+    const rendered = meshes.get('earth')!.parent!.getWorldQuaternion(new Quaternion());
+    close(
+      rendered.angleTo(
+        sandboxGroundOrientation(
+          run,
+          run.facts.find((body) => body.id === 'earth')!,
+        ),
+      ),
+      0,
+      1e-7,
+    );
+    const localUp = new Vector3(
+      Math.cos((site.latitude * Math.PI) / 180) *
+        Math.cos((site.longitude * Math.PI) / 180),
+      Math.sin((site.latitude * Math.PI) / 180),
+      -Math.cos((site.latitude * Math.PI) / 180) *
+        Math.sin((site.longitude * Math.PI) / 180),
+    );
+    const globeUp = localUp.applyQuaternion(rendered);
+    close(globeUp.distanceTo(sky.frame.up), 0, 1e-8);
+    close(
+      globeUp.dot(sun.sub(earth).normalize()),
+      sky.frame.up.dot(
+        sky.bodies.find((body) => body.id === 'sun')!.vector.clone().normalize(),
+      ),
+      1e-4,
+    );
+  };
+  verify();
+  const elapsed = 2 * 365.25 + 241;
+  while (run.shownDays < elapsed)
+    run.advance(Math.min(20, elapsed - run.shownDays));
+  verify();
+  run.apply({ kind: 'set', id: 'earth', field: 'spinDays', value: -2 });
+  run.advance(0.4);
+  verify();
+  system.dispose();
+});
+
+void test('Beijing Moon visibility crosses the sandbox horizon with physical Earth spin', () => {
+  const fork = Date.parse('2026-09-28T00:00:00Z');
+  const run = createRun(forkScenario(fork, true));
+  close(
+    sandboxGroundOrientation(
+      run,
+      run.facts.find((body) => body.id === 'moon-moon')!,
+    ).angleTo(bodyOrientation('moon-moon', (fork - J2000_MS) / DAY_MS)),
+    0,
+    1e-7,
+  );
+  const beijing = {
+    latitude: 39.9042,
+    longitude: 116.4074,
+    height: 0,
+    utcOffset: 8,
+  };
+  const moonAltitude = () => {
+    const sky = sandboxGroundSnapshot(run, beijing)!;
+    const moon = sky.bodies.find((body) => body.id === 'moon-moon')!;
+    return moon.vector.clone().normalize().dot(sky.frame.up);
+  };
+  assert.ok(moonAltitude() < 0, 'the Moon starts below Beijing’s horizon');
+  run.advance(0.5);
+  assert.ok(moonAltitude() > 0, 'Earth’s physical spin brings it above the horizon');
 });
 
 void test('ground sky reads the advanced and edited system including paused edits and its live radii', () => {
