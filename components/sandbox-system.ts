@@ -3,7 +3,11 @@ import type { Translate } from '../lib/i18n';
 import { AU_SCENE_UNITS } from '../lib/display-scale';
 import { bodies } from '../lib/solar';
 import { orbitingMoons } from '../lib/moon-orbits';
-import { sandboxRadius, scenePosition } from '../lib/sandbox/display';
+import {
+  moonDisplayDistance,
+  sandboxRadius,
+  scenePosition,
+} from '../lib/sandbox/display';
 import { sandboxGroundOrientation } from '../lib/sandbox/ground-sky';
 import { osculatingOrbit } from '../lib/sandbox/derived';
 import { auToKm } from '../lib/sandbox/scenario';
@@ -15,7 +19,11 @@ import {
   setOrbitLineWidth,
   type OrbitLine,
 } from './orbit-line';
-import { createSandboxTrail, type SandboxTrail } from './sandbox-trail';
+import {
+  createSandboxTrail,
+  type SandboxTrail,
+  type TrailPoint,
+} from './sandbox-trail';
 import { createSceneLabel } from './scene-label';
 
 /** How dim the untouched system is drawn against the edited one. */
@@ -109,6 +117,7 @@ export function createSandboxSystem(
   const ghostRings = new Map<string, Ring>();
   let clock = 0;
   let ringSizes: boolean | null = null;
+  let displayRealSizes = true;
   let visible = false;
 
   // A catalogue mesh is built at the body's authored `size`, so its group
@@ -125,8 +134,43 @@ export function createSandboxSystem(
   const parentOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.parentId;
 
-  const shownAt = (position: Vec3, into: THREE.Vector3) =>
+  const anchor = new THREE.Vector3();
+  function shownAt(
+    run: SandboxRun,
+    drawn: Map<string, Vec3>,
+    parentAnchors: Map<string, Vec3>,
+    id: string,
+    position: Vec3,
+    realSizes: boolean,
+    into: THREE.Vector3,
+  ) {
     into.set(...scenePosition(position));
+    const parentId = parentOf(run, id);
+    const parent = parentId
+      ? (drawn.get(parentId) ?? parentAnchors.get(parentId))
+      : undefined;
+    if (!parentId || !parent || realSizes) return into;
+    anchor.set(...scenePosition(parent));
+    into.sub(anchor);
+    const distance = into.length();
+    return distance > 0
+      ? into
+          .multiplyScalar(
+            moonDisplayDistance(parentId, distance, false) / distance,
+          )
+          .add(anchor)
+      : into.copy(anchor);
+  }
+
+  function aroundPlanet(parentId: string, offset: Vec3, realSizes: boolean) {
+    const point = new THREE.Vector3(...scenePosition(offset));
+    const distance = point.length();
+    return distance > 0
+      ? point.multiplyScalar(
+          moonDisplayDistance(parentId, distance, realSizes) / distance,
+        )
+      : point;
+  }
   const colorOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.color ?? '#ffffff';
   const sourceOf = (run: SandboxRun, id: string) =>
@@ -249,7 +293,9 @@ export function createSandboxSystem(
       if (!orbit) continue;
       setOrbitLinePoints(
         ring.line,
-        orbit.map((offset) => new THREE.Vector3(...scenePosition(offset))),
+        orbit.map((offset) =>
+          aroundPlanet(parentId, offset, options.realSizes),
+        ),
       );
     }
     for (const [id, ring] of store)
@@ -261,10 +307,31 @@ export function createSandboxSystem(
     id: string,
     color: THREE.ColorRepresentation,
     brightness: number,
+    run: SandboxRun,
   ) {
     const existing = store.get(id);
     if (existing) return existing;
-    const trail = createSandboxTrail(color, brightness);
+    const parentId = parentOf(run, id);
+    const place = parentId
+      ? (point: TrailPoint) => {
+          const position: Vec3 = [point[0], point[1], point[2]];
+          if (point.length < 6)
+            return new THREE.Vector3(...scenePosition(position));
+          const planet: Vec3 = [point[3], point[4], point[5]];
+          return new THREE.Vector3(...scenePosition(planet)).add(
+            aroundPlanet(
+              parentId,
+              [
+                position[0] - planet[0],
+                position[1] - planet[1],
+                position[2] - planet[2],
+              ],
+              displayRealSizes,
+            ),
+          );
+        }
+      : undefined;
+    const trail = createSandboxTrail(color, brightness, place);
     group.add(trail.line);
     store.set(id, trail);
     return trail;
@@ -297,19 +364,30 @@ export function createSandboxSystem(
     run: SandboxRun,
     store: Map<string, SandboxTrail>,
     histories: Map<string, Vec3[]>,
+    anchoredHistories: Map<string, number[][]>,
     heads: Map<string, Vec3>,
+    parentAnchors: Map<string, Vec3>,
     brightness: number,
     show: boolean,
     width: number,
   ) {
     for (const [id, history] of histories) {
-      const trail = trailFor(store, id, colorOf(run, id), brightness);
+      const trail = trailFor(store, id, colorOf(run, id), brightness, run);
       if (!show || history.length === 0) {
         trail.line.visible = false;
         continue;
       }
       setOrbitLineWidth(trail.line, width);
-      trail.draw(history, heads.get(id) ?? history[history.length - 1]);
+      const anchored = anchoredHistories.get(id);
+      const position = heads.get(id) ?? history[history.length - 1];
+      const parentId = parentOf(run, id);
+      const parent = parentId
+        ? (heads.get(parentId) ?? parentAnchors.get(parentId))
+        : undefined;
+      trail.draw(
+        anchored ?? history,
+        anchored && parent ? [...position, ...parent] : position,
+      );
     }
     for (const [id, trail] of store)
       if (!histories.has(id)) trail.line.visible = false;
@@ -322,8 +400,17 @@ export function createSandboxSystem(
     run: SandboxRun,
     realSizes: boolean,
     unit = 1,
+    parentAnchors = run.parentAnchors,
   ) {
-    shownAt(drawn.get(point.id) ?? point.position, object.position);
+    shownAt(
+      run,
+      drawn,
+      parentAnchors,
+      point.id,
+      drawn.get(point.id) ?? point.position,
+      realSizes,
+      object.position,
+    );
     object.scale.setScalar(
       sandboxRadius(auToKm(point.radius), sourceOf(run, point.id), realSizes) /
         unit,
@@ -355,6 +442,11 @@ export function createSandboxSystem(
     update(run: SandboxRun, options: SandboxSceneOptions) {
       if (!visible) return;
       clock += options.seconds;
+      if (displayRealSizes !== options.realSizes) {
+        displayRealSizes = options.realSizes;
+        for (const trail of [...trails.values(), ...ghostTrails.values()])
+          trail.restart();
+      }
       const live = new Set(run.variant.map((point) => point.id));
       for (const [id, extra] of extras)
         if (!live.has(id)) {
@@ -407,7 +499,9 @@ export function createSandboxSystem(
         run,
         trails,
         run.trails,
+        run.anchoredTrails,
         run.drawn,
+        run.parentAnchors,
         VARIANT_TRAIL_BRIGHTNESS,
         options.trails,
         options.lineWidth,
@@ -417,7 +511,15 @@ export function createSandboxSystem(
       for (const point of run.baseline) {
         const ghost = ghostFor(run, point);
         ghost.visible = options.baseline;
-        place(ghost, point, run.baselineDrawn, run, options.realSizes);
+        place(
+          ghost,
+          point,
+          run.baselineDrawn,
+          run,
+          options.realSizes,
+          1,
+          run.baselineParentAnchors,
+        );
       }
       drawRings(
         run,
@@ -437,7 +539,9 @@ export function createSandboxSystem(
         run,
         ghostTrails,
         run.baselineTrails,
+        run.baselineAnchoredTrails,
         run.baselineDrawn,
+        run.baselineParentAnchors,
         GHOST_TRAIL_BRIGHTNESS,
         options.baseline && options.trails,
         options.lineWidth,
@@ -455,8 +559,24 @@ export function createSandboxSystem(
         options.baseline && gap * AU_SCENE_UNITS > 0.05 && !!here && !!there;
       if (connector.visible && focus && here && there)
         setOrbitLinePoints(connector, [
-          shownAt(here, new THREE.Vector3()),
-          shownAt(there, new THREE.Vector3()),
+          shownAt(
+            run,
+            run.drawn,
+            run.parentAnchors,
+            focus,
+            here,
+            options.realSizes,
+            new THREE.Vector3(),
+          ),
+          shownAt(
+            run,
+            run.baselineDrawn,
+            run.baselineParentAnchors,
+            focus,
+            there,
+            options.realSizes,
+            new THREE.Vector3(),
+          ),
         ]);
     },
     localize(run: SandboxRun, t: Translate) {
@@ -509,9 +629,19 @@ export function createSandboxSystem(
       }
     },
     /** Scene-unit position of a body in the edited system, for camera framing. */
-    positionOf(run: SandboxRun, id: string, _realSizes: boolean) {
+    positionOf(run: SandboxRun, id: string, realSizes: boolean) {
       const position = run.drawn.get(id);
-      return position ? shownAt(position, new THREE.Vector3()) : null;
+      return position
+        ? shownAt(
+            run,
+            run.drawn,
+            run.parentAnchors,
+            id,
+            position,
+            realSizes,
+            new THREE.Vector3(),
+          )
+        : null;
     },
     dispose() {
       for (const extra of extras.values()) extra.label.remove();

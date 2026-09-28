@@ -148,6 +148,12 @@ export type SandboxRun = {
   facts: BodyFacts[];
   trails: Map<string, Vec3[]>;
   baselineTrails: Map<string, Vec3[]>;
+  /** Inertial moon samples paired with their planet's position at each sample. */
+  anchoredTrails: Map<string, number[][]>;
+  baselineAnchoredTrails: Map<string, number[][]>;
+  /** Last position of each original moon parent, even after its removal. */
+  parentAnchors: Map<string, Vec3>;
+  baselineParentAnchors: Map<string, Vec3>;
   events: SandboxEvent[];
   /** Bodies announced as having left the system and not captured since. */
   readonly escaped: ReadonlySet<string>;
@@ -208,6 +214,8 @@ type Track = {
   points: PointMass[];
   acceleration: Vec3[];
   trails: Map<string, Vec3[]>;
+  anchoredTrails: Map<string, number[][]>;
+  parentAnchors: Map<string, Vec3>;
   /**
    * Each body's velocity when its trail last recorded a point, a held moon's
    * measured against its planet.
@@ -228,6 +236,8 @@ function createTrack(specs: SandboxBodySpec[]): Track {
     points,
     acceleration,
     trails: new Map(),
+    anchoredTrails: new Map(),
+    parentAnchors: new Map(),
     headings: new Map(),
     escaped: new Set(),
     parents: new Map(
@@ -237,6 +247,10 @@ function createTrack(specs: SandboxBodySpec[]): Track {
     ),
     loosened: new Set(),
   };
+  for (const parentId of track.parents.values()) {
+    const parent = points.find((point) => point.id === parentId);
+    if (parent) track.parentAnchors.set(parentId, [...parent.position]);
+  }
   for (const point of points) mark(track, point);
   return track;
 }
@@ -250,22 +264,34 @@ function extend(
   // A point on top of the last one is a span of no length, which leaves the
   // drawn curve without a direction to take.
   const last = trail[trail.length - 1];
-  if (position.every((value, axis) => value === last[axis])) return;
+  if (position.every((value, axis) => value === last[axis])) return -1;
   trail.push([...position]);
+  let removed = 0;
   if (trail.length > limit)
-    trail.splice(0, trail.length - Math.round(limit * TRAIL_KEEP));
+    removed = trail.splice(
+      0,
+      trail.length - Math.round(limit * TRAIL_KEEP),
+    ).length;
+  return removed;
 }
 
-/** Extends a body's trail in `trails`, or starts one. */
-function extendIn(
-  trails: Map<string, number[][]>,
-  id: string,
-  position: readonly number[],
-  limit: number,
-) {
-  const trail = trails.get(id);
-  if (trail) extend(trail, position, limit);
-  else trails.set(id, [[...position]]);
+/** Record an inertial point and, for a moon, its parent's position beside it. */
+function recordTrail(track: Track, id: string, position: Vec3) {
+  const trail = track.trails.get(id);
+  const removed = trail ? extend(trail, position, TRAIL_LIMIT) : 0;
+  if (removed < 0) return;
+  if (!trail) track.trails.set(id, [[...position]]);
+  const parentId = track.parents.get(id);
+  if (!parentId) return;
+  const parent = track.points.find((point) => point.id === parentId);
+  const anchor = parent?.position ?? track.parentAnchors.get(parentId);
+  const sample = anchor ? [...position, ...anchor] : [...position];
+  const anchored = track.anchoredTrails.get(id);
+  if (!anchored) track.anchoredTrails.set(id, [sample]);
+  else {
+    anchored.push(sample);
+    if (removed > 0) anchored.splice(0, removed);
+  }
 }
 
 function offset(to: Vec3, from: Vec3): Vec3 {
@@ -290,7 +316,7 @@ function mark(track: Track, point: PointMass) {
       ? offset(point.velocity, planet.velocity)
       : [...point.velocity],
   );
-  extendIn(track.trails, point.id, point.position, TRAIL_LIMIT);
+  recordTrail(track, point.id, point.position);
 }
 
 const AT_REST: Vec3 = [0, 0, 0];
@@ -312,6 +338,10 @@ function turned(from: Vec3, velocity: Vec3, frame = AT_REST) {
 }
 
 function record(track: Track) {
+  for (const parentId of track.parents.values()) {
+    const parent = track.points.find((item) => item.id === parentId);
+    if (parent) track.parentAnchors.set(parentId, [...parent.position]);
+  }
   for (const point of track.points) {
     const parentId = track.parents.get(point.id);
     let frame: Vec3 | undefined;
@@ -369,6 +399,10 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     facts,
     trails: variant.trails,
     baselineTrails: baseline.trails,
+    anchoredTrails: variant.anchoredTrails,
+    baselineAnchoredTrails: baseline.anchoredTrails,
+    parentAnchors: variant.parentAnchors,
+    baselineParentAnchors: baseline.parentAnchors,
     events: [],
     escaped: variant.escaped,
     step,
@@ -508,10 +542,14 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     if (change.kind === 'remove') {
       const index = variant.points.findIndex((p) => p.id === change.id);
       if (index >= 0) {
+        variant.parentAnchors.set(change.id, [
+          ...variant.points[index].position,
+        ]);
         variant.points.splice(index, 1);
         run.events.push({ kind: 'remove', id: change.id, day: change.at });
       }
       variant.trails.delete(change.id);
+      variant.anchoredTrails.delete(change.id);
       variant.headings.delete(change.id);
     } else if (change.kind === 'add') {
       if (!facts.some((item) => item.id === change.body.id))
@@ -519,6 +557,8 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       if (!variant.points.some((p) => p.id === change.body.id)) {
         const point = toPointMass(change.body);
         variant.points.push(point);
+        if (change.body.parentId)
+          variant.parents.set(point.id, change.body.parentId);
         mark(variant, point);
         run.events.push({ kind: 'add', id: change.body.id, day: change.at });
       }
@@ -611,8 +651,9 @@ function collide(track: Track, run: SandboxRun | null) {
   for (const collision of collisions) {
     // The absorbed body's trail stays, run on to where the two touched: the
     // path that led into the merge is the only record of how it happened.
-    const trail = track.trails.get(collision.absorbed);
-    if (trail) extend(trail, collision.position);
+    track.parentAnchors.set(collision.absorbed, [...collision.position]);
+    if (track.trails.has(collision.absorbed))
+      recordTrail(track, collision.absorbed, collision.position);
     track.headings.delete(collision.absorbed);
     // A merge moves the survivor to the pair's centre of mass and changes its
     // course, so its trail takes a point there.

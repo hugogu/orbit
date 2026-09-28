@@ -1531,13 +1531,15 @@ export default function Home() {
                     ? '实际视角大小 · 方位准确'
                     : '天体放大演示 · 方位准确',
                 )
-              : realSizes
-                ? displayScale === 'distance'
-                  ? t('大小与距离采用同一比例')
-                  : t('天体大小按真实比例 · 距离示意')
-                : displayScale === 'distance'
-                  ? t('距离按比例 · 天体已放大')
-                  : t('演示比例 · 距离与天体大小已调整')}
+              : sandboxScenario?.moons && !realSizes
+                ? t('卫星间距示意 · 天体已放大')
+                : realSizes
+                  ? displayScale === 'distance'
+                    ? t('大小与距离采用同一比例')
+                    : t('天体大小按真实比例 · 距离示意')
+                  : displayScale === 'distance'
+                    ? t('距离按比例 · 天体已放大')
+                    : t('演示比例 · 距离与天体大小已调整')}
           </span>
         </div>
         <section className="timeline glass" aria-label={t('时间控制')}>

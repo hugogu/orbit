@@ -1,13 +1,13 @@
 /**
  * Turning sandbox quantities into scene units.
  *
- * A sandbox run always draws at true distances: the illustrated layout gives
- * each body its own hand-authored distance, so a physical trajectory rendered
- * through it would simply be wrong. Sizes keep the same choice the rest of the
- * observatory offers.
+ * The run stays in one inertial frame at physical distances. Illustrated sizes
+ * spread nearby moons on screen so enlarged planets do not hide them. This
+ * display map never changes the positions the integrator records or advances.
  */
 import { AU_SCENE_UNITS, displayRadius, kmToScene } from '../display-scale';
 import { moonRadii } from '../eclipse-shadows';
+import { moonSemimajorKm } from '../satellite-elements';
 import { orbitingMoons } from '../moon-orbits';
 import { bodies } from '../solar';
 import type { Vec3 } from './physics';
@@ -53,4 +53,61 @@ export function sandboxRadius(
   const reference =
     body?.radius ?? (moon ? moonRadii[moon.en] : EARTH_RADIUS_KM);
   return authored * Math.cbrt(radiusKm / reference);
+}
+
+type Anchor = [distance: number, shown: number];
+const moonAnchors = new Map<string, Anchor[]>();
+
+function anchorsFor(parentId: string): Anchor[] {
+  const cached = moonAnchors.get(parentId);
+  if (cached) return cached;
+  const planet = bodies.find((body) => body.id === parentId);
+  const anchors: Anchor[] = planet
+    ? [
+        [
+          planet.radius * kmToScene('distance'),
+          sandboxRadius(planet.radius, planet.id, false),
+        ],
+        ...orbitingMoons
+          .filter((moon) => moon.parentId === parentId)
+          .map(
+            (moon): Anchor => [
+              moonSemimajorKm(moon) * kmToScene('distance'),
+              moon.distance * 0.32,
+            ],
+          )
+          .sort((a, b) => a[0] - b[0]),
+      ]
+    : [];
+  moonAnchors.set(parentId, anchors);
+  return anchors;
+}
+
+/**
+ * Illustrated distance from a moon's original planet, in scene units.
+ * Physics and recorded positions stay inertial. The mapping is continuous
+ * across departure and fades to true distance beyond the moon system.
+ */
+export function moonDisplayDistance(
+  parentId: string,
+  distance: number,
+  realSizes: boolean,
+) {
+  const anchors = anchorsFor(parentId);
+  if (realSizes || anchors.length < 2) return distance;
+  const [surface, shown] = anchors[0];
+  if (distance <= surface) return (distance * shown) / surface;
+  for (let index = 1; index < anchors.length; index++) {
+    const [to, toShown] = anchors[index];
+    if (distance > to) continue;
+    const [from, fromShown] = anchors[index - 1];
+    return (
+      fromShown + ((toShown - fromShown) * (distance - from)) / (to - from)
+    );
+  }
+  const [last, lastShown] = anchors[anchors.length - 1];
+  const extra = lastShown - last;
+  return extra > 0
+    ? distance + extra * Math.exp(-(distance - last) / (1.5 * extra))
+    : distance;
 }
