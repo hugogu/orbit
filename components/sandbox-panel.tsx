@@ -17,6 +17,7 @@ import {
 } from '../lib/sandbox/view';
 import { sandboxMoons } from '../lib/sandbox/moons';
 import { speedLabel } from '../lib/solar';
+import { Toggle } from './ui/toggle';
 
 /** Starting points for a body the viewer creates, in kilograms and kilometres. */
 const templates: { label: string; mass: number; radius: number }[] = [
@@ -278,30 +279,28 @@ export default function SandboxPanel({
       )}
 
       <div className="sandbox-toggles">
-        <label>
-          <input
-            type="checkbox"
-            checked={baseline}
-            onChange={(event) => onBaselineChange(event.target.checked)}
-          />
+        <Toggle
+          className="sandbox-toggle"
+          pressed={baseline}
+          onPressedChange={onBaselineChange}
+        >
           {t('对照原始轨迹')}
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={trails}
-            onChange={(event) => onTrailsChange(event.target.checked)}
-          />
+        </Toggle>
+        <Toggle
+          className="sandbox-toggle"
+          pressed={trails}
+          onPressedChange={onTrailsChange}
+        >
           {t('显示轨迹')}
-        </label>
-        <label title={t('切换后从分叉时刻重新演算，已做的改动保留')}>
-          <input
-            type="checkbox"
-            checked={moons}
-            onChange={(event) => onMoonsChange(event.target.checked)}
-          />
+        </Toggle>
+        <Toggle
+          className="sandbox-toggle"
+          pressed={moons}
+          onPressedChange={onMoonsChange}
+          title={t('切换后从分叉时刻重新演算，已做的改动保留')}
+        >
           {t('卫星体系')}
-        </label>
+        </Toggle>
       </div>
       {moons && (
         <p className="sandbox-note">

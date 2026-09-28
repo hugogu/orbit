@@ -161,7 +161,7 @@ import {
   MIN_ORBIT_LINE_WIDTH,
   ORBIT_LINE_WIDTH_STEP,
 } from '@/lib/orbit-line-width';
-// The slowest preset, one day per second, and the fastest stay labelled at any
+// Real time, one day per second, and the fastest stay labelled at any
 // control width. The remaining stops appear only where the track is wide enough
 // for them, so the class follows the preset rather than its index. The set is
 // read from whichever list is live, because the sandbox offers its own.

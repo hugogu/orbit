@@ -1883,19 +1883,35 @@ button:disabled {
 .sandbox-toggles {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 6px;
 }
-.sandbox-toggles label {
+.sandbox-toggle {
   display: flex;
   align-items: center;
-  gap: 9px;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid #ffffff1a;
+  border-radius: 6px;
+  background: transparent;
   font-size: 13px;
-  color: #c4ccd9;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  color: #b6bfcd;
 }
-.sandbox-toggles input {
-  accent-color: #d9c49a;
-  width: 14px;
-  height: 14px;
+.sandbox-toggle:hover {
+  background: #ffffff07;
+}
+.sandbox-toggle[aria-pressed='true'] {
+  background: #d6bb8710;
+  border-color: #d6bb8724;
+  color: #e9d1a5;
+}
+.sandbox-toggle:focus-visible {
+  outline: 2px solid #d9c49a;
+  outline-offset: 2px;
 }
 .sandbox-events h3 {
   font-size: 11px;
