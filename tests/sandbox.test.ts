@@ -2009,6 +2009,15 @@ void test('a run with moons offers only the rates its step can keep up with', ()
   assert.match(page, /forkScenario\(current\.epoch, current\.moons\)/);
 });
 
+void test('sandbox hides ephemeris-based lunar phase information', () => {
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(page, /const showMoonCard =\s*tab !== 'sandbox'/);
+  assert.match(page, /<LunarPanel\s+open=\{lunar && tab !== 'sandbox'\}/);
+});
+
 void test('the panel and editor speak of a moon in its planet’s terms', () => {
   const run = createRun(forkScenario(SHARED_EPOCH, true));
   run.advance(1);

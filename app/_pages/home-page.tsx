@@ -1099,7 +1099,10 @@ export default function Home() {
   // column, so only one of them is up at a time; an eclipse in progress is the
   // more urgent of the two and already answers where the Moon is.
   const showMoonCard =
-    selected === 'moon-moon' && !eclipse.event && time !== null;
+    tab !== 'sandbox' &&
+    selected === 'moon-moon' &&
+    !eclipse.event &&
+    time !== null;
   // Hiding a label must not take the name away from a screen reader, so the
   // text stays in the button and only leaves the picture.
   const actionLabel = actionLabels ? undefined : 'sr-only';
@@ -1721,7 +1724,7 @@ export default function Home() {
         }}
       />
       <LunarPanel
-        open={lunar}
+        open={lunar && tab !== 'sandbox'}
         onOpenChange={setLunar}
         time={time ?? J2000_MS}
         location={timedObserverLocation}
