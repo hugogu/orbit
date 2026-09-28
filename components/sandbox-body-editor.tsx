@@ -36,7 +36,6 @@ export default function SandboxBodyEditor({
   selected,
   daysPerSecond,
   onChange,
-  onSpeedEditStart,
   onReset,
   compact = false,
   onBack,
@@ -47,7 +46,6 @@ export default function SandboxBodyEditor({
   /** The live time rate, which sets how fast the rotation can be shown. */
   daysPerSecond: number;
   onChange: (field: SandboxField, value: number) => void;
-  onSpeedEditStart: () => void;
   onReset: () => void;
   /**
    * Only the fields that enter the force law, under a one-line header: the
@@ -110,7 +108,6 @@ export default function SandboxBodyEditor({
           step={1}
           value={[Math.round(fieldPosition(field, value) * STEPS)]}
           onValueChange={(next) => {
-            if (field.id === 'speed' && spec.parentId) onSpeedEditStart();
             setDraft({
               field: field.id,
               value: fieldValue(
@@ -120,7 +117,6 @@ export default function SandboxBodyEditor({
             });
           }}
           onValueCommitted={(next) => {
-            if (field.id === 'speed' && spec.parentId) onSpeedEditStart();
             setDraft(null);
             onChange(
               field.id,
@@ -164,12 +160,6 @@ export default function SandboxBodyEditor({
       {t('调整行星的轨道距离或速度时，仍绕它运行的卫星会一同移动。')}
     </p>
   ) : null;
-  const speedNote = spec.parentId ? (
-    <p className="sandbox-note">
-      {t('调整卫星速度时会暂停沙盘，避免运行中的时间流速掩盖轨迹变化。')}
-    </p>
-  ) : null;
-
   if (compact)
     return (
       <div className="sandbox-editor" data-compact="true">
@@ -198,7 +188,6 @@ export default function SandboxBodyEditor({
           </button>
         </div>
         {centreNote}
-        {speedNote}
         {dynamical.map(control)}
       </div>
     );
@@ -220,7 +209,6 @@ export default function SandboxBodyEditor({
 
       <h4 className="sandbox-group">{t('参与引力计算')}</h4>
       {centreNote}
-      {speedNote}
       {dynamical.map(control)}
       {!isCentre && (
         <p className="sandbox-note">

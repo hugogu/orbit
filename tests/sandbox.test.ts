@@ -39,22 +39,12 @@ import {
 import {
   createRun,
   MAX_STEPS_PER_ADVANCE,
-  MOON_TRAIL_LIMIT,
   type SandboxRun,
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
-import {
-  moonDisplayDistance,
-  sandboxRadius,
-  scenePosition,
-} from '../lib/sandbox/display.ts';
-import {
-  AU_SCENE_UNITS,
-  displayRadius,
-  kmToScene,
-} from '../lib/display-scale.ts';
+import { sandboxRadius, scenePosition } from '../lib/sandbox/display.ts';
+import { AU_SCENE_UNITS } from '../lib/display-scale.ts';
 import { orbitingMoons } from '../lib/moon-orbits.ts';
-import { moonSemimajorKm } from '../lib/satellite-elements.ts';
 import { bodies } from '../lib/solar.ts';
 import { moonState, sandboxMoons } from '../lib/sandbox/moons.ts';
 import {
@@ -168,6 +158,47 @@ void test('a circular orbit keeps Kepler’s third law and closes on itself', ()
       points[1].position[2],
     ) < 1e-6,
   );
+});
+
+void test('the N-body trajectory is unchanged by a moving reference frame', () => {
+  const original = [
+    point('star', 1, [0, 0, 0], [0, 0, 0]),
+    point('planet', 3e-6, [1, 0, 0], [0, 0, -0.017]),
+    point('satellite', 3.7e-8, [1.0025, 0, 0], [0, 0, -0.019]),
+  ];
+  const shift: Vec3 = [3, -2, 1];
+  const drift: Vec3 = [0.004, 0.002, -0.003];
+  const moving = original.map((body) => ({
+    ...body,
+    position: body.position.map((value, axis) => value + shift[axis]) as Vec3,
+    velocity: body.velocity.map((value, axis) => value + drift[axis]) as Vec3,
+  }));
+  const a = zeroVectors(original.length);
+  const b = zeroVectors(moving.length);
+  accelerations(original, a);
+  accelerations(moving, b);
+  for (let step = 0; step < 200; step++) {
+    advance(original, 0.001, a);
+    advance(moving, 0.001, b);
+  }
+  for (let index = 0; index < original.length; index++)
+    for (let axis = 0; axis < 3; axis++) {
+      assert.ok(
+        Math.abs(
+          moving[index].position[axis] -
+            original[index].position[axis] -
+            shift[axis] -
+            drift[axis] * 0.2,
+        ) < 1e-11,
+      );
+      assert.ok(
+        Math.abs(
+          moving[index].velocity[axis] -
+            original[index].velocity[axis] -
+            drift[axis],
+        ) < 1e-11,
+      );
+    }
 });
 
 void test('an added body starts prograde, matching the scene’s orbit convention', () => {
@@ -512,7 +543,6 @@ void test('the central body offers no distance or speed of its own', () => {
           selected,
           daysPerSecond: 20,
           onChange: () => {},
-          onSpeedEditStart: () => {},
           onReset: () => {},
         }),
       ),
@@ -1285,7 +1315,6 @@ void test('a phone edits the forces in reach and keeps the rest one tap away', (
           selected,
           daysPerSecond: 20,
           onChange: () => {},
-          onSpeedEditStart: () => {},
           onReset: () => {},
           compact: true,
           onBack: () => {},
@@ -1747,8 +1776,8 @@ void test('a run with moons resolves its fastest one and keeps to the sky', () =
   run.advance(1);
   // Io sets the step, and gets about six hundred of them an orbit.
   assert.ok(1.769 / run.step > 600, String(run.step));
-  // A moon's path is kept around its planet, not among the paths round the Sun.
-  assert.ok(![...run.trails.keys()].some((id) => id.startsWith('moon-')));
+  // Every path stays in the integrator's inertial frame, including moons.
+  assert.ok(run.trails.has('moon-moon'));
   const off = (id: string, parent: string) => {
     const moon = sandboxMoons.find((item) => item.id === id)!;
     const truth = moonState(
@@ -2015,6 +2044,7 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
   );
   assert.match(panel, /Moons/);
   assert.match(panel, /13 large moons join the run/);
+  assert.match(panel, /Moons stay at their true distances/);
   // Moons follow their planet in the list, set in under it.
   assert.match(
     panel,
@@ -2033,12 +2063,10 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
       selected: 'moon-io',
       daysPerSecond: 20,
       onChange: noop,
-      onSpeedEditStart: noop,
       onReset: noop,
     }),
   );
   assert.match(editor, /Distance from its planet/);
-  assert.match(editor, /Changing a moon.s speed pauses the sandbox/);
   assert.match(editor, /Periapsis \/ apoapsis/);
   assert.doesNotMatch(editor, /Distance from the Sun/);
 });
@@ -2066,7 +2094,6 @@ void test('a moon that has left is shown in the Sun’s terms, with each change 
       selected: 'moon-io',
       daysPerSecond: 20,
       onChange: noop,
-      onSpeedEditStart: noop,
       onReset: noop,
     }),
   );
@@ -2101,44 +2128,59 @@ void test('a moon that has left is shown in the Sun’s terms, with each change 
   assert.ok(events.includes('→ 7 AU'), events);
 });
 
-void test('a moon is drawn where the explorer draws it, along a map that only grows', () => {
-  for (const planet of new Set(sandboxMoons.map((moon) => moon.parentId))) {
-    const body = bodies.find((item) => item.id === planet)!;
-    const surface = body.radius * kmToScene('distance');
-    // The planet's surface lands on its drawn surface, so a moon that touches
-    // it is drawn touching it.
-    assert.ok(
-      Math.abs(
-        moonDisplayDistance(planet, surface, false) -
-          displayRadius(planet, 'distance', false),
-      ) < 1e-12,
-      planet,
-    );
-    // Each catalogued moon's orbit lands where the explorer draws it.
-    for (const moon of orbitingMoons.filter((item) => item.parentId === planet))
-      assert.ok(
-        Math.abs(
-          moonDisplayDistance(
-            planet,
-            moonSemimajorKm(moon) * kmToScene('distance'),
-            false,
-          ) -
-            moon.distance * 0.32,
-        ) < 1e-12,
-        moon.id,
-      );
-    // Out to far past the moons it only ever grows, and a moon flung loose
-    // ends up drawn near its true distance.
-    let last = 0;
-    for (let distance = surface / 10; distance < 200; distance *= 1.05) {
-      const shown = moonDisplayDistance(planet, distance, false);
-      assert.ok(shown > last, `${planet} at ${distance}`);
-      last = shown;
-    }
-    assert.ok(Math.abs(moonDisplayDistance(planet, 100, false) - 100) < 1);
-    // At true sizes nothing needs mapping.
-    assert.equal(moonDisplayDistance(planet, 0.01, true), 0.01);
+void test('every sandbox body uses the same inertial position before and after escape', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  const system = createSandboxSystem(
+    new Scene(),
+    new Map(),
+    new Map(),
+    {} as HTMLElement,
+    () => {},
+  );
+  run.advance(1);
+  run.apply({ kind: 'set', id: 'moon-moon', field: 'speed', value: 2.28 });
+  for (const held of [true, false]) {
+    if (!held) runUntil(run, () => !run.planetOf('moon-moon'));
+    for (const point of run.variant)
+      for (const realSizes of [false, true])
+        assert.ok(
+          system
+            .positionOf(run, point.id, realSizes)!
+            .distanceTo(
+              new Vector3(...scenePosition(run.drawn.get(point.id)!)),
+            ) < 1e-12,
+          `${point.id} ${held} ${realSizes}`,
+        );
   }
+  system.dispose();
+});
+
+void test('a moon crosses the departure event without a position or trail jump', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  const system = createSandboxSystem(
+    new Scene(),
+    new Map(),
+    new Map(),
+    {} as HTMLElement,
+    () => {},
+  );
+  run.advance(1);
+  run.apply({ kind: 'set', id: 'moon-moon', field: 'speed', value: 2.28 });
+  const history = run.trails.get('moon-moon')!;
+  let before = system.positionOf(run, 'moon-moon', false)!;
+  for (let index = 0; index < 1000; index++) {
+    run.advance(0.02);
+    const after = system.positionOf(run, 'moon-moon', false)!;
+    if (!run.planetOf('moon-moon')) {
+      assert.ok(after.distanceTo(before) < 0.01);
+      assert.equal(run.trails.get('moon-moon'), history);
+      assert.ok(history.length > 1);
+      system.dispose();
+      return;
+    }
+    before = after;
+  }
+  assert.fail('Moon did not reach the departure event');
 });
 
 void test('true sizes and moon distances share the same physical scale', () => {
@@ -2150,7 +2192,7 @@ void test('true sizes and moon distances share the same physical scale', () => {
       (coordinate, axis) => coordinate - earth.position[axis],
     ),
   );
-  const shown = moonDisplayDistance('earth', separation * AU_SCENE_UNITS, true);
+  const shown = separation * AU_SCENE_UNITS;
   const earthRadius = sandboxRadius(earth.radius, earth.sourceId, true);
   const moonRadius = sandboxRadius(moon.radius, moon.sourceId, true);
   assert.ok(
@@ -2282,24 +2324,17 @@ void test('the scene draws moons around their planets with borrowed meshes', () 
       daysPerSecond: 20,
       translate: (key) => key,
     });
-    // Io is drawn out where the explorer draws it, not buried inside a planet
-    // drawn a hundred times further across than Io's real distance. Measured
-    // at the moment on screen, the same place `positionOf` reads it from,
-    // rather than at the last whole step.
+    // Size settings change radii, never coordinates. Io and its planet
+    // are measured at the same moment on screen.
     const drawnIo = run.drawn.get('moon-io')!;
     const drawnJupiter = run.drawn.get('jupiter')!;
     const trueDistance =
       Math.hypot(...drawnIo.map((value, axis) => value - drawnJupiter[axis])) *
-      AU_KM *
-      kmToScene('distance');
+      AU_SCENE_UNITS;
     const drawn = system
       .positionOf(run, 'moon-io', false)!
       .distanceTo(system.positionOf(run, 'jupiter', false)!);
-    assert.ok(
-      Math.abs(drawn - moonDisplayDistance('jupiter', trueDistance, false)) <
-        1e-9,
-    );
-    assert.ok(drawn > 1.4 && drawn < 1.9, String(drawn));
+    assert.ok(Math.abs(drawn - trueDistance) < 1e-9);
     const real = system
       .positionOf(run, 'moon-io', true)!
       .distanceTo(system.positionOf(run, 'jupiter', true)!);
@@ -2443,42 +2478,46 @@ void test('a moon’s ring hidden and shown again while paused comes back', () =
     assert.equal(rings(), sandboxMoons.length);
   }));
 
-void test('a moon’s path is kept around its planet, a couple of dozen points a lap', () => {
+void test('a moon’s inertial trail samples its quick turns without changing frames', () => {
   const run = createRun(forkScenario(SHARED_EPOCH, true));
-  // A few laps, well short of the ten the path holds.
   runUntil(run, () => run.elapsedDays > 8);
-  const io = run.moonPaths.around.get('moon-io')!;
-  // Offsets from Jupiter, every one about Io's own distance from it.
-  for (const point of io) {
-    const distance = Math.hypot(...point) * AU_KM;
-    assert.ok(distance > 415_000 && distance < 430_000, String(distance));
-  }
-  // Its heading is taken against Jupiter's motion, so a lap costs the usual
-  // two dozen points rather than one each time Jupiter's own path turns.
+  const io = run.trails.get('moon-io')!;
+  assert.deepEqual(
+    io[0],
+    forkBodies(SHARED_EPOCH, true).find((body) => body.id === 'moon-io')!
+      .position,
+  );
+  assert.ok(io.every((point) => point.every(Number.isFinite)));
+  // Sampling a moon's turn relative to Jupiter still gives about two dozen
+  // points a lap, though each point itself stays in inertial coordinates.
   const perLap = (io.length - 1) / (run.elapsedDays / 1.769);
   assert.ok(perLap > 20 && perLap < 28, String(perLap));
-  // A lap takes days, so the path holds about ten of them, not the whole run.
+  const earlyCount = io.length;
   runUntil(run, () => run.elapsedDays > 60);
-  const kept = run.moonPaths.around.get('moon-io')!.length;
-  assert.ok(
-    kept <= MOON_TRAIL_LIMIT && kept > MOON_TRAIL_LIMIT / 2,
-    String(kept),
-  );
+  assert.ok(run.trails.get('moon-io')!.length > earlyCount * 5);
 });
 
 void test('a moon’s path shows the orbit an edit put it on', () => {
   const run = createRun(forkScenario(SHARED_EPOCH, true));
   run.advance(1);
-  const before = run.moonPaths.around.get('moon-io')!.length;
+  const before = run.trails.get('moon-io')!.length;
   // Past circular speed at its distance, Io swings out to about 840,000 km.
   run.apply({ kind: 'set', id: 'moon-io', field: 'speed', value: 20 });
+  assert.deepEqual(
+    run.trails.get('moon-io')!.at(-1),
+    run.variant.find((body) => body.id === 'moon-io')!.position,
+  );
   runUntil(run, () => run.elapsedDays > 6);
-  const after = run.moonPaths.around.get('moon-io')!.slice(before);
-  const farthest = Math.max(...after.map((point) => Math.hypot(...point)));
-  assert.ok(farthest * AU_KM > 800_000, String(farthest * AU_KM));
+  assert.ok(run.trails.get('moon-io')!.length > before);
+  const io = run.variant.find((body) => body.id === 'moon-io')!;
+  const jupiter = run.variant.find((body) => body.id === 'jupiter')!;
+  const separation = Math.hypot(
+    ...io.position.map((value, axis) => value - jupiter.position[axis]),
+  );
+  assert.ok(separation * AU_KM > 800_000, String(separation * AU_KM));
 });
 
-void test('the scene draws a moon’s path around its planet, on to the moon', () =>
+void test('the scene draws a moon’s inertial trail through its physical position', () =>
   withLabels(() => {
     const run = createRun(forkScenario(SHARED_EPOCH, true));
     run.advance(1);
@@ -2504,59 +2543,34 @@ void test('the scene draws a moon’s path around its planet, on to the moon', (
       daysPerSecond: 0,
       translate: (key: string) => key,
     };
-    type Points = {
-      getX: (index: number) => number;
-      getY: (index: number) => number;
-      getZ: (index: number) => number;
-    };
-    // The points of the one line drawn out from Jupiter that ends on Io as
-    // the scene draws Io, in that line's own space around Jupiter.
-    const pathTo = (realSizes: boolean) => {
-      const io = system.positionOf(run, 'moon-io', realSizes)!;
-      const jupiter = system.positionOf(run, 'jupiter', realSizes)!;
+    const pathTo = () => {
+      const io = system.positionOf(run, 'moon-io', false)!;
       const found: Vector3[][] = [];
       scene.traverse((object) => {
-        if (!isOrbitLine(object) || !object.visible) return;
-        if (object.position.distanceTo(jupiter) > 1e-9) return;
-        const count = object.geometry.instanceCount;
-        const starts = object.geometry.getAttribute('instanceStart') as Points;
-        const ends = object.geometry.getAttribute('instanceEnd') as Points;
-        const last = count - 1;
-        const tip = new Vector3(
-          ends.getX(last),
-          ends.getY(last),
-          ends.getZ(last),
-        );
-        if (tip.add(object.position).distanceTo(io) > 1e-6) return;
-        found.push(
-          Array.from(
-            { length: count },
-            (_, index) =>
-              new Vector3(
-                starts.getX(index),
-                starts.getY(index),
-                starts.getZ(index),
-              ),
-          ),
-        );
+        if (!isOrbitLine(object) || !object.visible || object.userData.ringOf)
+          return;
+        const points = drawnThrough(object);
+        if (points.at(-1)!.distanceTo(io) < 1e-6) found.push(points);
       });
       return found;
     };
     system.update(run, options);
-    const shown = pathTo(false);
+    const shown = pathTo();
     assert.equal(shown.length, 1);
-    // Drawn out along the moon map, well clear of a Jupiter drawn far larger
-    // than Io's real distance from it.
-    assert.ok(shown[0].every((point) => point.length() > 1.3));
-    // At true sizes the map stands aside, and every point moves, not just the
-    // one the body is on.
+    assert.ok(
+      shown[0][0].distanceTo(
+        new Vector3(...scenePosition(run.trails.get('moon-io')![0])),
+      ) < 1e-6,
+    );
+    // Radius mode cannot move any point of an inertial trajectory.
     system.update(run, { ...options, realSizes: true });
-    const real = pathTo(true);
+    const real = pathTo();
     assert.equal(real.length, 1);
-    assert.ok(real[0].every((point) => point.length() < 0.05));
-    // It is one of the paths, and goes with them.
+    assert.ok(
+      real[0].every((point, index) => point.distanceTo(shown[0][index]) < 1e-8),
+    );
     system.update(run, { ...options, trails: false });
-    assert.equal(pathTo(false).length, 0);
+    assert.equal(pathTo().length, 0);
   }));
 
 /** The points a drawn line runs through, in the scene's own space. */
@@ -2637,19 +2651,14 @@ void test('a moon that has left its planet draws its own way out, not its planet
       (points) => points[points.length - 1].distanceTo(moon) < same,
     );
     assert.equal(ways.length, 1);
-    // Its orbit around Earth stays where Earth was when it left, and ends
-    // where its way away begins: one journey, drawn as one line.
-    const start = ways[0][0];
-    assert.equal(
-      lines.filter(
-        (points) => points[points.length - 1].distanceTo(start) < same,
-      ).length,
-      1,
+    // One world-space line begins where the Moon forked and continues through
+    // departure; the membership event adds no second path or coordinate jump.
+    const start = new Vector3(
+      ...scenePosition(run.trails.get('moon-moon')![0]),
     );
-    // Out past a couple of AU, where the moon map has long let go, the way
-    // drawn is the way it went. Drawn from where Earth is now rather than
-    // where Earth was, each point moved with Earth, and the path took on
-    // Earth's own year as a wave.
+    assert.ok(ways[0][0].distanceTo(start) < same);
+    // Out past a couple of AU, the drawn way is still near the integrated
+    // trajectory rather than inheriting Earth's later motion.
     const out = ways[0].filter(
       (point) => point.distanceTo(sun) > 2 * AU_SCENE_UNITS,
     );

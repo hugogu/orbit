@@ -3,12 +3,7 @@ import type { Translate } from '../lib/i18n';
 import { AU_SCENE_UNITS } from '../lib/display-scale';
 import { bodies } from '../lib/solar';
 import { orbitingMoons } from '../lib/moon-orbits';
-import {
-  moonDisplayDistance,
-  sandboxRadius,
-  scenePosition,
-  spinStep,
-} from '../lib/sandbox/display';
+import { sandboxRadius, scenePosition, spinStep } from '../lib/sandbox/display';
 import { osculatingOrbit } from '../lib/sandbox/derived';
 import { auToKm } from '../lib/sandbox/scenario';
 import type { PointMass, Vec3 } from '../lib/sandbox/physics';
@@ -19,11 +14,7 @@ import {
   setOrbitLineWidth,
   type OrbitLine,
 } from './orbit-line';
-import {
-  createSandboxTrail,
-  type SandboxTrail,
-  type TrailPoint,
-} from './sandbox-trail';
+import { createSandboxTrail, type SandboxTrail } from './sandbox-trail';
 import { createSceneLabel } from './scene-label';
 
 /** How dim the untouched system is drawn against the edited one. */
@@ -63,20 +54,6 @@ type Extra = {
   project: ReturnType<typeof createSceneLabel>;
 };
 
-/**
- * Where an offset from a planet is drawn from that planet's centre, in scene
- * units: out along the moon map, the way a moon itself is drawn.
- */
-function aroundPlanet(parentId: string, offset: Vec3, realSizes: boolean) {
-  const at = new THREE.Vector3(...scenePosition(offset));
-  const distance = at.length();
-  return distance === 0
-    ? at
-    : at.multiplyScalar(
-        moonDisplayDistance(parentId, distance, realSizes) / distance,
-      );
-}
-
 type Ring = {
   line: OrbitLine;
   shaped: number;
@@ -107,8 +84,7 @@ function orbitInputs(point: PointMass, planet: PointMass) {
  * the mode does not turn the Solar System into abstract dots. Bodies the
  * viewer created get their own plain spheres here, and the untouched fork is
  * drawn as wireframe ghosts with their own paths. A moon borrows the
- * explorer's mesh for it, shared rather than copied, and is drawn out from
- * its planet along the moon map with its current orbit as a ring.
+ * explorer's mesh for it, shared rather than copied.
  */
 export function createSandboxSystem(
   scene: THREE.Scene,
@@ -141,12 +117,6 @@ export function createSandboxSystem(
   const ghostRings = new Map<string, Ring>();
   let clock = 0;
   let ringSizes: boolean | null = null;
-  // Moons' paths: their orbits around their planets, and their ways away.
-  const orbitLines = new Map<string, SandboxTrail>();
-  const awayLines = new Map<string, SandboxTrail>();
-  // The sizes the moon map last placed those paths at.
-  let pathSizes: boolean | null = null;
-  const anchor = new THREE.Vector3();
   let visible = false;
 
   // A catalogue mesh is built at the body's authored `size`, so its group
@@ -158,45 +128,13 @@ export function createSandboxSystem(
   // The explorer keeps moon roots in the same map as the planets, inside a
   // container the sandbox hides, so only a planet's root is taken over.
   const planetIds = new Set(bodies.map((body) => body.id));
-  // The planet a moon came with, which it is drawn out from even after it has
-  // left: the moon map bleeds its magnification away with distance, so a moon
-  // flung loose drifts back to its true place instead of jumping into the
-  // planet it just left, which is drawn far larger than the gap between them.
+  // A moon's original planet is metadata for its local orbit guide, never a
+  // coordinate frame for the body's position or its travelled path.
   const parentOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.parentId;
 
-  /**
-   * Where a body is drawn. Everything sits at its true place except a moon,
-   * which is drawn out from its planet along the moon map so that it is seen
-   * beside a planet drawn thousands of times its size.
-   *
-   * `drawn` is whichever of the run's own interpolated maps `id` belongs to —
-   * `run.drawn` for the edited system, `run.baselineDrawn` for the untouched
-   * one — so a moon is remapped from the same moment on screen its planet is
-   * drawn at, not from the last whole step.
-   */
-  function shownAt(
-    run: SandboxRun,
-    drawn: Map<string, Vec3>,
-    id: string,
-    position: Vec3,
-    realSizes: boolean,
-    into: THREE.Vector3,
-  ) {
+  const shownAt = (position: Vec3, into: THREE.Vector3) =>
     into.set(...scenePosition(position));
-    const parentId = parentOf(run, id);
-    const planetPosition = parentId ? drawn.get(parentId) : undefined;
-    if (!parentId || !planetPosition) return into;
-    anchor.set(...scenePosition(planetPosition));
-    into.sub(anchor);
-    const distance = into.length();
-    if (distance === 0) return into.copy(anchor);
-    return into
-      .multiplyScalar(
-        moonDisplayDistance(parentId, distance, realSizes) / distance,
-      )
-      .add(anchor);
-  }
   const colorOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.color ?? '#ffffff';
   const sourceOf = (run: SandboxRun, id: string) =>
@@ -252,11 +190,9 @@ export function createSandboxSystem(
   }
 
   /**
-   * Draws each moon's current orbit as a ring around its planet, through the
-   * same map the moon itself is drawn with. An orbit that has opened into an
-   * escape has no ring to draw, and neither has a moon its planet no longer
-   * holds: out past the planet's Hill sphere its path is the Sun's to set,
-   * and a two-body orbit about the planet it left would only mislead.
+   * Draws each moon's current local orbit as a ring around its planet.
+   * A hyperbolic local orbit or a moon beyond its planet's Hill sphere has
+   * no meaningful two-body ring. Its travelled trail remains inertial.
    */
   function drawRings(
     run: SandboxRun,
@@ -282,7 +218,7 @@ export function createSandboxSystem(
           from: [],
           closed: false,
         };
-        // Named, since a moon's path is drawn out from the same planet.
+        // The guide belongs to this moon even though its offset is local.
         ring.line.userData.ringOf = point.id;
         group.add(ring.line);
         store.set(point.id, ring);
@@ -321,9 +257,7 @@ export function createSandboxSystem(
       if (!orbit) continue;
       setOrbitLinePoints(
         ring.line,
-        orbit.map((offset) =>
-          aroundPlanet(parentId, offset, options.realSizes),
-        ),
+        orbit.map((offset) => new THREE.Vector3(...scenePosition(offset))),
       );
     }
     for (const [id, ring] of store)
@@ -389,112 +323,6 @@ export function createSandboxSystem(
       if (!histories.has(id)) trail.line.visible = false;
   }
 
-  /** A moon's path in `store`, made to draw with `place` the first time. */
-  function moonPathIn(
-    store: Map<string, SandboxTrail>,
-    run: SandboxRun,
-    id: string,
-    place: (point: TrailPoint) => THREE.Vector3,
-    resized: boolean,
-  ) {
-    const existing = store.get(id);
-    if (existing) {
-      if (resized) existing.restart();
-      return existing;
-    }
-    const path = createSandboxTrail(
-      colorOf(run, id),
-      VARIANT_TRAIL_BRIGHTNESS,
-      place,
-    );
-    group.add(path.line);
-    store.set(id, path);
-    return path;
-  }
-
-  /**
-   * Draws each moon's path in the frame it is kept in (see `MoonPaths`),
-   * placed through the moon map as the moon itself is, so the line always
-   * runs on to the moon on screen. A held moon's orbit goes with its planet;
-   * once the moon has left, that orbit stays where the planet was when it
-   * left, and its way away is drawn where it was, out from where its planet
-   * was at each point. A change of sizes moves every point, so every path is
-   * placed again.
-   */
-  function drawMoonPaths(run: SandboxRun, options: SandboxSceneOptions) {
-    const resized = pathSizes !== options.realSizes;
-    pathSizes = options.realSizes;
-    const { around, leftFrom, away } = run.moonPaths;
-    for (const [id, history] of around) {
-      const parentId = parentOf(run, id);
-      if (!parentId) continue;
-      const path = moonPathIn(
-        orbitLines,
-        run,
-        id,
-        (offset) =>
-          aroundPlanet(
-            parentId,
-            [offset[0], offset[1], offset[2]],
-            !!pathSizes,
-          ),
-        resized,
-      );
-      const held = !!run.planetOf(id);
-      const planet = held ? run.drawn.get(parentId) : leftFrom.get(id);
-      if (!options.trails || !planet || history.length === 0) {
-        path.line.visible = false;
-        continue;
-      }
-      path.line.position.set(...scenePosition(planet));
-      setOrbitLineWidth(path.line, options.lineWidth);
-      // It runs on to the moon only while the moon is on it: one that has
-      // left, or merged, ended its orbit at the last point recorded.
-      const moon = held ? run.drawn.get(id) : undefined;
-      path.draw(
-        history,
-        moon
-          ? [moon[0] - planet[0], moon[1] - planet[1], moon[2] - planet[2]]
-          : history[history.length - 1],
-      );
-    }
-    for (const [id, history] of away) {
-      const parentId = parentOf(run, id);
-      if (!parentId) continue;
-      const path = moonPathIn(
-        awayLines,
-        run,
-        id,
-        (point) =>
-          aroundPlanet(
-            parentId,
-            [point[0] - point[3], point[1] - point[4], point[2] - point[5]],
-            !!pathSizes,
-          ).add(
-            new THREE.Vector3(...scenePosition([point[3], point[4], point[5]])),
-          ),
-        resized,
-      );
-      if (!options.trails || history.length === 0) {
-        path.line.visible = false;
-        continue;
-      }
-      setOrbitLineWidth(path.line, options.lineWidth);
-      // It runs on to the moon only while the moon is still away: one taken
-      // back by its planet, or merged, ended its way where that happened.
-      const moon = run.planetOf(id) ? undefined : run.drawn.get(id);
-      const planet = run.drawn.get(parentId);
-      path.draw(
-        history,
-        moon && planet ? [...moon, ...planet] : history[history.length - 1],
-      );
-    }
-    for (const [id, path] of orbitLines)
-      if (!around.has(id)) path.line.visible = false;
-    for (const [id, path] of awayLines)
-      if (!away.has(id)) path.line.visible = false;
-  }
-
   function place(
     object: THREE.Object3D,
     point: PointMass,
@@ -503,14 +331,7 @@ export function createSandboxSystem(
     realSizes: boolean,
     unit = 1,
   ) {
-    shownAt(
-      run,
-      drawn,
-      point.id,
-      drawn.get(point.id) ?? point.position,
-      realSizes,
-      object.position,
-    );
+    shownAt(drawn.get(point.id) ?? point.position, object.position);
     object.scale.setScalar(
       sandboxRadius(auToKm(point.radius), sourceOf(run, point.id), realSizes) /
         unit,
@@ -615,7 +436,6 @@ export function createSandboxSystem(
         options.trails,
         options.lineWidth,
       );
-      drawMoonPaths(run, options);
 
       const shadowed = new Set(run.baseline.map((point) => point.id));
       for (const point of run.baseline) {
@@ -659,22 +479,8 @@ export function createSandboxSystem(
         options.baseline && gap * AU_SCENE_UNITS > 0.05 && !!here && !!there;
       if (connector.visible && focus && here && there)
         setOrbitLinePoints(connector, [
-          shownAt(
-            run,
-            run.drawn,
-            focus,
-            here,
-            options.realSizes,
-            new THREE.Vector3(),
-          ),
-          shownAt(
-            run,
-            run.baselineDrawn,
-            focus,
-            there,
-            options.realSizes,
-            new THREE.Vector3(),
-          ),
+          shownAt(here, new THREE.Vector3()),
+          shownAt(there, new THREE.Vector3()),
         ]);
     },
     localize(run: SandboxRun, t: Translate) {
@@ -727,11 +533,9 @@ export function createSandboxSystem(
       }
     },
     /** Scene-unit position of a body in the edited system, for camera framing. */
-    positionOf(run: SandboxRun, id: string, realSizes: boolean) {
+    positionOf(run: SandboxRun, id: string, _realSizes: boolean) {
       const position = run.drawn.get(id);
-      return position
-        ? shownAt(run, run.drawn, id, position, realSizes, new THREE.Vector3())
-        : null;
+      return position ? shownAt(position, new THREE.Vector3()) : null;
     },
     dispose() {
       for (const extra of extras.values()) extra.label.remove();

@@ -311,6 +311,9 @@ export default function SandboxPanel({
               count: sandboxMoons.length,
               rate: speedLabel(MOON_SPEED_LIMIT, t),
             },
+          )}{' '}
+          {t(
+            '卫星始终按真实距离定位；放大的示意大小可能遮住它们，可在显示设置中切换真实大小。',
           )}
         </p>
       )}
