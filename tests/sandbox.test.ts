@@ -512,6 +512,7 @@ void test('the central body offers no distance or speed of its own', () => {
           selected,
           daysPerSecond: 20,
           onChange: () => {},
+          onSpeedEditStart: () => {},
           onReset: () => {},
         }),
       ),
@@ -1284,6 +1285,7 @@ void test('a phone edits the forces in reach and keeps the rest one tap away', (
           selected,
           daysPerSecond: 20,
           onChange: () => {},
+          onSpeedEditStart: () => {},
           onReset: () => {},
           compact: true,
           onBack: () => {},
@@ -2031,10 +2033,12 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
       selected: 'moon-io',
       daysPerSecond: 20,
       onChange: noop,
+      onSpeedEditStart: noop,
       onReset: noop,
     }),
   );
   assert.match(editor, /Distance from its planet/);
+  assert.match(editor, /Changing a moon.s speed pauses the sandbox/);
   assert.match(editor, /Periapsis \/ apoapsis/);
   assert.doesNotMatch(editor, /Distance from the Sun/);
 });
@@ -2062,6 +2066,7 @@ void test('a moon that has left is shown in the Sun’s terms, with each change 
       selected: 'moon-io',
       daysPerSecond: 20,
       onChange: noop,
+      onSpeedEditStart: noop,
       onReset: noop,
     }),
   );
@@ -2155,6 +2160,32 @@ void test('true sizes and moon distances share the same physical scale', () => {
     Math.abs(moonRadius / earthRadius - moon.radius / earth.radius) < 1e-12,
   );
   assert.ok(shown > 50 * earthRadius && shown < 70 * earthRadius);
+});
+
+void test('raising a moon’s speed leaves its displayed position continuous', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  const system = createSandboxSystem(
+    new Scene(),
+    new Map(),
+    new Map(),
+    {} as HTMLElement,
+    () => {},
+  );
+  // Edit between whole steps, when the picture already draws the banked time.
+  run.advance(0.001);
+  const before = [false, true].map((realSizes) =>
+    system.positionOf(run, 'moon-moon', realSizes)!,
+  );
+  run.apply({ kind: 'set', id: 'moon-moon', field: 'speed', value: 2.1 });
+  for (const [index, realSizes] of [false, true].entries()) {
+    const after = system.positionOf(run, 'moon-moon', realSizes)!;
+    assert.ok(after.distanceTo(before[index]) < 1e-12, String(realSizes));
+  }
+  run.advance(0.001);
+  assert.ok(
+    system.positionOf(run, 'moon-moon', false)!.distanceTo(before[0]) < 0.01,
+  );
+  system.dispose();
 });
 
 void test('a moon’s ring is the orbit it is on right now', () => {

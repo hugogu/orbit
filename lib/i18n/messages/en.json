@@ -1692,6 +1692,7 @@
   "其他天体的距离与速度都从中心天体量起，所以它自身没有这两项。": "Every other body’s distance and speed are measured from the central body, so it has neither of its own.",
   "它已不再绕{{planet}}运行，距离与速度改从中心天体量起。": "It no longer orbits {{planet}}, so its distance and speed are measured from the central body.",
   "调整行星的轨道距离或速度时，仍绕它运行的卫星会一同移动。": "Changing a planet’s orbital distance or speed moves the moons still orbiting it with the planet.",
+  "调整卫星速度时会暂停沙盘，避免运行中的时间流速掩盖轨迹变化。": "Changing a moon’s speed pauses the sandbox so the current time rate cannot hide the change in its path.",
   "在此距离上，逃逸速度约为 {{value}} km/s。": "Escape speed at this distance is about {{value}} km/s.",
   "仅影响外观": "Appearance only",
   "点质量模型中，自转与倾角不产生引力效应。": "In a point-mass model, spin and tilt have no gravitational effect.",

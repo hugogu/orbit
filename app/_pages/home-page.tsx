@@ -1354,6 +1354,7 @@ export default function Home() {
                     onChange={(field, value) =>
                       editSandboxBody(selected, field, value)
                     }
+                    onSpeedEditStart={() => setSandboxPaused(true)}
                     onReset={() => resetSandboxBody(selected)}
                     onBack={deselect}
                     onMore={() => setDetails(true)}
@@ -1433,6 +1434,7 @@ export default function Home() {
             selected={selected}
             daysPerSecond={sandboxPaused ? 0 : sandboxRate}
             onChange={(field, value) => editSandboxBody(selected, field, value)}
+            onSpeedEditStart={() => setSandboxPaused(true)}
             onReset={() => resetSandboxBody(selected)}
           />
         ) : tab === 'structure' && !body ? (
@@ -2274,6 +2276,7 @@ export default function Home() {
               onChange={(field, value) =>
                 editSandboxBody(selected, field, value)
               }
+              onSpeedEditStart={() => setSandboxPaused(true)}
               onReset={() => resetSandboxBody(selected)}
             />
           ) : tab === 'structure' && !body ? (
