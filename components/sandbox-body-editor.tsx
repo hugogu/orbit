@@ -142,6 +142,9 @@ export default function SandboxBodyEditor({
     spec.parentId && !planet
       ? run.facts.find((body) => body.id === spec.parentId)
       : undefined;
+  const carriesMoons = run.variant.some(
+    (body) => run.planetOf(body.id) === selected,
+  );
   const centreNote = isCentre ? (
     <p className="sandbox-note">
       {t('其他天体的距离与速度都从中心天体量起，所以它自身没有这两项。')}
@@ -151,6 +154,10 @@ export default function SandboxBodyEditor({
       {t('它已不再绕{{planet}}运行，距离与速度改从中心天体量起。', {
         planet: t(formerPlanet.name),
       })}
+    </p>
+  ) : carriesMoons ? (
+    <p className="sandbox-note">
+      {t('调整行星的轨道距离或速度时，仍绕它运行的卫星会一同移动。')}
     </p>
   ) : null;
 

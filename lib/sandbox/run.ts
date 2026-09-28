@@ -634,6 +634,26 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       // or a body that jumps does so at the moment it did, not somewhere on a
       // curve smoothed across it.
       mark(variant, point);
+      // Distance and speed edit the planet's solar orbit. Move its still-held
+      // moons in the same frame so their relative positions and velocities
+      // remain continuous; a moon that has left keeps its own trajectory.
+      if (change.field === 'distance' || change.field === 'speed') {
+        const positionDelta = next.position.map(
+          (value, axis) => value - point.position[axis],
+        );
+        const velocityDelta = next.velocity.map(
+          (value, axis) => value - point.velocity[axis],
+        );
+        for (const companion of variant.points) {
+          if (holder(variant, companion.id) !== point.id) continue;
+          companion.position = companion.position.map(
+            (value, axis) => value + positionDelta[axis],
+          ) as Vec3;
+          companion.velocity = companion.velocity.map(
+            (value, axis) => value + velocityDelta[axis],
+          ) as Vec3;
+        }
+      }
       fact.spinDays = next.spinDays;
       fact.tilt = next.tilt;
       point.mass = next.mass / SOLAR_MASS_KG;

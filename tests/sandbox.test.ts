@@ -43,7 +43,11 @@ import {
   type SandboxRun,
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
-import { moonDisplayDistance, scenePosition } from '../lib/sandbox/display.ts';
+import {
+  moonDisplayDistance,
+  sandboxRadius,
+  scenePosition,
+} from '../lib/sandbox/display.ts';
 import {
   AU_SCENE_UNITS,
   displayRadius,
@@ -1767,6 +1771,69 @@ void test('a run with moons resolves its fastest one and keeps to the sky', () =
   assert.ok(run.energyDrift < 1e-9, String(run.energyDrift));
 });
 
+void test('a planet orbit edit carries its held moons without changing their relative orbit', () => {
+  for (const [field, value] of [
+    ['speed', 60],
+    ['distance', 1.5],
+  ] as const) {
+    const run = createRun(forkScenario(SHARED_EPOCH, true));
+    const body = (id: string) => run.variant.find((item) => item.id === id)!;
+    const earth = body('earth');
+    const moon = body('moon-moon');
+    const before = {
+      earthPosition: [...earth.position],
+      earthVelocity: [...earth.velocity],
+      moonPosition: [...moon.position],
+      moonVelocity: [...moon.velocity],
+    };
+    const ioPosition = [...body('moon-io').position];
+    run.apply({ kind: 'set', id: 'earth', field, value });
+    for (const key of ['position', 'velocity'] as const) {
+      const previousEarth =
+        key === 'position' ? before.earthPosition : before.earthVelocity;
+      const previousMoon =
+        key === 'position' ? before.moonPosition : before.moonVelocity;
+      const earthDelta = earth[key].map(
+        (coordinate, axis) => coordinate - previousEarth[axis],
+      );
+      const moonDelta = moon[key].map(
+        (coordinate, axis) => coordinate - previousMoon[axis],
+      );
+      assert.ok(
+        Math.hypot(
+          ...moonDelta.map((coordinate, axis) => coordinate - earthDelta[axis]),
+        ) < 1e-12,
+        `${field} ${key}`,
+      );
+    }
+    assert.deepEqual(body('moon-io').position, ioPosition);
+    assert.equal(run.planetOf('moon-moon'), 'earth');
+    run.advance(1);
+    const separation =
+      Math.hypot(
+        ...moon.position.map(
+          (coordinate, axis) => coordinate - earth.position[axis],
+        ),
+      ) * AU_KM;
+    assert.ok(separation < 500_000, `${field}: ${separation} km`);
+    assert.equal(run.planetOf('moon-moon'), 'earth');
+    const replay = createRun(
+      decodeSandbox(encodeSandbox(run.scenario), SHARED_EPOCH)!,
+    );
+    replay.advance(1);
+    for (const id of ['earth', 'moon-moon']) {
+      const original = run.drawn.get(id)!;
+      const restored = replay.drawn.get(id)!;
+      assert.ok(
+        Math.hypot(
+          ...original.map((coordinate, axis) => coordinate - restored[axis]),
+        ) < 1e-12,
+        `${field} replay ${id}`,
+      );
+    }
+  }
+});
+
 /** Runs `run` on until `done`, a few days at a time, or fails the test. */
 function runUntil(run: SandboxRun, done: () => boolean) {
   for (let guard = 0; !done(); guard++) {
@@ -1807,6 +1874,17 @@ void test('a moon is edited from its planet and reported leaving it', () => {
   );
   // Restoring a moon's real values finds them in the moon catalogue.
   assert.ok(Math.abs(catalogueDefaults('moon-io')!.mass - 8.93e22) < 1e20);
+});
+
+void test('a moon that has left its planet is not carried by later planet edits', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  run.apply({ kind: 'set', id: 'moon-moon', field: 'speed', value: 80 });
+  runUntil(run, () => !run.planetOf('moon-moon'));
+  const moon = run.variant.find((body) => body.id === 'moon-moon')!;
+  const before = { position: [...moon.position], velocity: [...moon.velocity] };
+  run.apply({ kind: 'set', id: 'earth', field: 'speed', value: 60 });
+  assert.deepEqual(moon.position, before.position);
+  assert.deepEqual(moon.velocity, before.velocity);
 });
 
 void test('a moon that has left its planet is read from the Sun, and can leave it too', () => {
@@ -2056,6 +2134,27 @@ void test('a moon is drawn where the explorer draws it, along a map that only gr
     // At true sizes nothing needs mapping.
     assert.equal(moonDisplayDistance(planet, 0.01, true), 0.01);
   }
+});
+
+void test('true sizes and moon distances share the same physical scale', () => {
+  const split = forkBodies(SHARED_EPOCH, true);
+  const earth = split.find((body) => body.id === 'earth')!;
+  const moon = split.find((body) => body.id === 'moon-moon')!;
+  const separation = Math.hypot(
+    ...moon.position.map(
+      (coordinate, axis) => coordinate - earth.position[axis],
+    ),
+  );
+  const shown = moonDisplayDistance('earth', separation * AU_SCENE_UNITS, true);
+  const earthRadius = sandboxRadius(earth.radius, earth.sourceId, true);
+  const moonRadius = sandboxRadius(moon.radius, moon.sourceId, true);
+  assert.ok(
+    Math.abs(shown / earthRadius - (separation * AU_KM) / earth.radius) < 1e-9,
+  );
+  assert.ok(
+    Math.abs(moonRadius / earthRadius - moon.radius / earth.radius) < 1e-12,
+  );
+  assert.ok(shown > 50 * earthRadius && shown < 70 * earthRadius);
 });
 
 void test('a moon’s ring is the orbit it is on right now', () => {
