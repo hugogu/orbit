@@ -72,6 +72,8 @@ export type SandboxTrail = {
   line: OrbitLine;
   /** Draws `history` on to the body at `head`, redrawing only what moved. */
   draw(history: Vec3[], head: Vec3): void;
+  /** Writes every span again on the next draw, for when `place` has changed. */
+  restart(): void;
 };
 
 /**
@@ -81,10 +83,14 @@ export type SandboxTrail = {
  * is what used to keep trails short. Spans whose surrounding points are all
  * recorded are final, so they are written once to a buffer that only grows;
  * each frame redraws just the last recorded span and the way on to the body.
+ * `place` puts a recorded point in the line's own space: a scene position by
+ * default, or, for a moon's path kept around its planet, the moon map.
  */
 export function createSandboxTrail(
   color: THREE.ColorRepresentation,
   brightness: number,
+  place: (point: Vec3) => THREE.Vector3 = (point) =>
+    new THREE.Vector3(...scenePosition(point)),
 ): SandboxTrail {
   const line = createOrbitLine(color, brightness);
   // Its extent changes every frame and it is never picked, so a bounding
@@ -101,8 +107,6 @@ export function createSandboxTrail(
   let recordedAt = -1;
   const headAt: Vec3 = [NaN, NaN, NaN];
   let drewAny = false;
-
-  const toScene = (point: Vec3) => new THREE.Vector3(...scenePosition(point));
 
   function reserve(segments: number) {
     const capacity = buffer ? buffer.array.length / 6 : 0;
@@ -148,6 +152,10 @@ export function createSandboxTrail(
 
   return {
     line,
+    restart() {
+      origin = undefined;
+      recordedAt = -1;
+    },
     draw(history, head) {
       // Nothing has moved since the last draw — a paused run, or a body that
       // has merged away — so the same curve would only be uploaded again.
@@ -177,7 +185,7 @@ export function createSandboxTrail(
       const final = recorded - 2;
       if (final > spansDone) {
         const from = Math.max(0, spansDone - 1);
-        const path = history.slice(from).map(toScene);
+        const path = history.slice(from).map(place);
         sealed += write(spans(path, spansDone - from, final - from), sealed);
         spansDone = final;
       }
@@ -188,8 +196,8 @@ export function createSandboxTrail(
         Math.hypot(head[0] - last[0], head[1] - last[1], head[2] - last[2]) >
         COINCIDENT_AU;
       const from = Math.max(0, spansDone - 1);
-      const path = history.slice(from).map(toScene);
-      if (moved) path.push(toScene(head));
+      const path = history.slice(from).map(place);
+      if (moved) path.push(place(head));
       const tail =
         path.length < 3 ? path : spans(path, spansDone - from, path.length - 1);
       const drawn = sealed + write(tail, sealed);

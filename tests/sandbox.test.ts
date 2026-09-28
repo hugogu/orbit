@@ -39,6 +39,7 @@ import {
 import {
   createRun,
   MAX_STEPS_PER_ADVANCE,
+  MOON_TRAIL_LIMIT,
   type SandboxRun,
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
@@ -1735,7 +1736,7 @@ void test('a run with moons resolves its fastest one and keeps to the sky', () =
   run.advance(1);
   // Io sets the step, and gets about six hundred of them an orbit.
   assert.ok(1.769 / run.step > 600, String(run.step));
-  // Moons keep no trail of their own; they are drawn around their planets.
+  // A moon's path is kept around its planet, not among the paths round the Sun.
   assert.ok(![...run.trails.keys()].some((id) => id.startsWith('moon-')));
   const off = (id: string, parent: string) => {
     const moon = sandboxMoons.find((item) => item.id === id)!;
@@ -2184,7 +2185,7 @@ void test('the scene draws moons around their planets with borrowed meshes', () 
     );
     const rings: unknown[] = [];
     scene.traverse((object) => {
-      if (isOrbitLine(object) && object.visible && object.position.length() > 0)
+      if (isOrbitLine(object) && object.visible && object.userData.ringOf)
         rings.push(object);
     });
     assert.equal(rings.length, sandboxMoons.length * 2);
@@ -2232,6 +2233,7 @@ void test('a moon’s ring reshapes on an edit even while the run is paused', ()
         if (
           isOrbitLine(object) &&
           object.visible &&
+          object.userData.ringOf &&
           object.position.distanceTo(neptune) < 1e-9
         ) {
           const points = object.geometry.getAttribute('instanceStart') as {
@@ -2292,7 +2294,7 @@ void test('a moon’s ring hidden and shown again while paused comes back', () =
     const rings = () => {
       let count = 0;
       scene.traverse((object) => {
-        if (isOrbitLine(object) && object.visible && object.position.length())
+        if (isOrbitLine(object) && object.visible && object.userData.ringOf)
           count += 1;
       });
       return count;
@@ -2304,4 +2306,120 @@ void test('a moon’s ring hidden and shown again while paused comes back', () =
     // Nothing is reshaped while paused, yet every ring is back.
     system.update(run, { ...paused, trails: true });
     assert.equal(rings(), sandboxMoons.length);
+  }));
+
+void test('a moon’s path is kept around its planet, a couple of dozen points a lap', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  // A few laps, well short of the ten the path holds.
+  runUntil(run, () => run.elapsedDays > 8);
+  const io = run.moonTrails.get('moon-io')!;
+  // Offsets from Jupiter, every one about Io's own distance from it.
+  for (const point of io) {
+    const distance = Math.hypot(...point) * AU_KM;
+    assert.ok(distance > 415_000 && distance < 430_000, String(distance));
+  }
+  // Its heading is taken against Jupiter's motion, so a lap costs the usual
+  // two dozen points rather than one each time Jupiter's own path turns.
+  const perLap = (io.length - 1) / (run.elapsedDays / 1.769);
+  assert.ok(perLap > 20 && perLap < 28, String(perLap));
+  // A lap takes days, so the path holds about ten of them, not the whole run.
+  runUntil(run, () => run.elapsedDays > 60);
+  const kept = run.moonTrails.get('moon-io')!.length;
+  assert.ok(
+    kept <= MOON_TRAIL_LIMIT && kept > MOON_TRAIL_LIMIT / 2,
+    String(kept),
+  );
+});
+
+void test('a moon’s path shows the orbit an edit put it on', () => {
+  const run = createRun(forkScenario(SHARED_EPOCH, true));
+  run.advance(1);
+  const before = run.moonTrails.get('moon-io')!.length;
+  // Past circular speed at its distance, Io swings out to about 840,000 km.
+  run.apply({ kind: 'set', id: 'moon-io', field: 'speed', value: 20 });
+  runUntil(run, () => run.elapsedDays > 6);
+  const after = run.moonTrails.get('moon-io')!.slice(before);
+  const farthest = Math.max(...after.map((point) => Math.hypot(...point)));
+  assert.ok(farthest * AU_KM > 800_000, String(farthest * AU_KM));
+});
+
+void test('the scene draws a moon’s path around its planet, on to the moon', () =>
+  withLabels(() => {
+    const run = createRun(forkScenario(SHARED_EPOCH, true));
+    run.advance(1);
+    run.apply({ kind: 'set', id: 'moon-io', field: 'speed', value: 20 });
+    runUntil(run, () => run.elapsedDays > 6);
+    const scene = new Scene();
+    const system = createSandboxSystem(
+      scene,
+      new Map(bodies.map((body) => [body.id, new Group()])),
+      new Map(),
+      { appendChild: () => {} } as unknown as HTMLElement,
+      () => {},
+    );
+    system.setVisible(true);
+    const options = {
+      baseline: false,
+      trails: true,
+      realSizes: false,
+      selected: null,
+      labels: false,
+      lineWidth: 1,
+      seconds: 0,
+      daysPerSecond: 0,
+      translate: (key: string) => key,
+    };
+    type Points = {
+      getX: (index: number) => number;
+      getY: (index: number) => number;
+      getZ: (index: number) => number;
+    };
+    // The points of the one line drawn out from Jupiter that ends on Io as
+    // the scene draws Io, in that line's own space around Jupiter.
+    const pathTo = (realSizes: boolean) => {
+      const io = system.positionOf(run, 'moon-io', realSizes)!;
+      const jupiter = system.positionOf(run, 'jupiter', realSizes)!;
+      const found: Vector3[][] = [];
+      scene.traverse((object) => {
+        if (!isOrbitLine(object) || !object.visible) return;
+        if (object.position.distanceTo(jupiter) > 1e-9) return;
+        const count = object.geometry.instanceCount;
+        const starts = object.geometry.getAttribute('instanceStart') as Points;
+        const ends = object.geometry.getAttribute('instanceEnd') as Points;
+        const last = count - 1;
+        const tip = new Vector3(
+          ends.getX(last),
+          ends.getY(last),
+          ends.getZ(last),
+        );
+        if (tip.add(object.position).distanceTo(io) > 1e-6) return;
+        found.push(
+          Array.from(
+            { length: count },
+            (_, index) =>
+              new Vector3(
+                starts.getX(index),
+                starts.getY(index),
+                starts.getZ(index),
+              ),
+          ),
+        );
+      });
+      return found;
+    };
+    system.update(run, options);
+    const shown = pathTo(false);
+    assert.equal(shown.length, 1);
+    // Drawn out along the moon map, well clear of a Jupiter drawn far larger
+    // than Io's real distance from it.
+    assert.ok(shown[0].every((point) => point.length() > 1.3));
+    // At true sizes the map stands aside, and every point moves, not just the
+    // one the body is on.
+    system.update(run, { ...options, realSizes: true });
+    const real = pathTo(true);
+    assert.equal(real.length, 1);
+    assert.ok(real[0].every((point) => point.length() < 0.05));
+    // It is one of the paths, and goes with them.
+    system.update(run, { ...options, trails: false });
+    assert.equal(pathTo(false).length, 0);
   }));

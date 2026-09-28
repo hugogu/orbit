@@ -137,6 +137,9 @@ export function createSandboxSystem(
   const ghostRings = new Map<string, Ring>();
   let clock = 0;
   let ringSizes: boolean | null = null;
+  const moonPaths = new Map<string, SandboxTrail>();
+  // The sizes the moon map last placed those paths at.
+  let pathSizes: boolean | null = null;
   const anchor = new THREE.Vector3();
   let visible = false;
 
@@ -273,6 +276,8 @@ export function createSandboxSystem(
           from: [],
           closed: false,
         };
+        // Named, since a moon's path is drawn out from the same planet.
+        ring.line.userData.ringOf = point.id;
         group.add(ring.line);
         store.set(point.id, ring);
       }
@@ -376,6 +381,49 @@ export function createSandboxSystem(
     }
     for (const [id, trail] of store)
       if (!histories.has(id)) trail.line.visible = false;
+  }
+
+  /**
+   * Draws each moon's path around its planet. It is kept as offsets from the
+   * planet and placed through the moon map, as the moon itself is, so the
+   * line always runs on to the moon on screen and travels with its planet;
+   * a change of sizes moves every point, so the whole path is placed again.
+   */
+  function drawMoonPaths(run: SandboxRun, options: SandboxSceneOptions) {
+    const resized = pathSizes !== options.realSizes;
+    pathSizes = options.realSizes;
+    for (const [id, history] of run.moonTrails) {
+      const parentId = parentOf(run, id);
+      if (!parentId) continue;
+      let path = moonPaths.get(id);
+      if (!path) {
+        path = createSandboxTrail(
+          colorOf(run, id),
+          VARIANT_TRAIL_BRIGHTNESS,
+          (offset) => aroundPlanet(parentId, offset, !!pathSizes),
+        );
+        group.add(path.line);
+        moonPaths.set(id, path);
+      } else if (resized) path.restart();
+      const planet = run.drawn.get(parentId);
+      if (!options.trails || !planet || history.length === 0) {
+        path.line.visible = false;
+        continue;
+      }
+      path.line.position.set(...scenePosition(planet));
+      setOrbitLineWidth(path.line, options.lineWidth);
+      // A moon absorbed in a merge has no place of its own left; its path
+      // ends where it hit.
+      const moon = run.drawn.get(id);
+      path.draw(
+        history,
+        moon
+          ? [moon[0] - planet[0], moon[1] - planet[1], moon[2] - planet[2]]
+          : history[history.length - 1],
+      );
+    }
+    for (const [id, path] of moonPaths)
+      if (!run.moonTrails.has(id)) path.line.visible = false;
   }
 
   function place(
@@ -498,6 +546,7 @@ export function createSandboxSystem(
         options.trails,
         options.lineWidth,
       );
+      drawMoonPaths(run, options);
 
       const shadowed = new Set(run.baseline.map((point) => point.id));
       for (const point of run.baseline) {
