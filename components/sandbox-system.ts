@@ -19,7 +19,11 @@ import {
   setOrbitLineWidth,
   type OrbitLine,
 } from './orbit-line';
-import { createSandboxTrail, type SandboxTrail } from './sandbox-trail';
+import {
+  createSandboxTrail,
+  type SandboxTrail,
+  type TrailPoint,
+} from './sandbox-trail';
 import { createSceneLabel } from './scene-label';
 
 /** How dim the untouched system is drawn against the edited one. */
@@ -137,7 +141,9 @@ export function createSandboxSystem(
   const ghostRings = new Map<string, Ring>();
   let clock = 0;
   let ringSizes: boolean | null = null;
-  const moonPaths = new Map<string, SandboxTrail>();
+  // Moons' paths: their orbits around their planets, and their ways away.
+  const orbitLines = new Map<string, SandboxTrail>();
+  const awayLines = new Map<string, SandboxTrail>();
   // The sizes the moon map last placed those paths at.
   let pathSizes: boolean | null = null;
   const anchor = new THREE.Vector3();
@@ -383,38 +389,68 @@ export function createSandboxSystem(
       if (!histories.has(id)) trail.line.visible = false;
   }
 
+  /** A moon's path in `store`, made to draw with `place` the first time. */
+  function moonPathIn(
+    store: Map<string, SandboxTrail>,
+    run: SandboxRun,
+    id: string,
+    place: (point: TrailPoint) => THREE.Vector3,
+    resized: boolean,
+  ) {
+    const existing = store.get(id);
+    if (existing) {
+      if (resized) existing.restart();
+      return existing;
+    }
+    const path = createSandboxTrail(
+      colorOf(run, id),
+      VARIANT_TRAIL_BRIGHTNESS,
+      place,
+    );
+    group.add(path.line);
+    store.set(id, path);
+    return path;
+  }
+
   /**
-   * Draws each moon's path around its planet. It is kept as offsets from the
-   * planet and placed through the moon map, as the moon itself is, so the
-   * line always runs on to the moon on screen and travels with its planet;
-   * a change of sizes moves every point, so the whole path is placed again.
+   * Draws each moon's path in the frame it is kept in (see `MoonPaths`),
+   * placed through the moon map as the moon itself is, so the line always
+   * runs on to the moon on screen. A held moon's orbit goes with its planet;
+   * once the moon has left, that orbit stays where the planet was when it
+   * left, and its way away is drawn where it was, out from where its planet
+   * was at each point. A change of sizes moves every point, so every path is
+   * placed again.
    */
   function drawMoonPaths(run: SandboxRun, options: SandboxSceneOptions) {
     const resized = pathSizes !== options.realSizes;
     pathSizes = options.realSizes;
-    for (const [id, history] of run.moonTrails) {
+    const { around, leftFrom, away } = run.moonPaths;
+    for (const [id, history] of around) {
       const parentId = parentOf(run, id);
       if (!parentId) continue;
-      let path = moonPaths.get(id);
-      if (!path) {
-        path = createSandboxTrail(
-          colorOf(run, id),
-          VARIANT_TRAIL_BRIGHTNESS,
-          (offset) => aroundPlanet(parentId, offset, !!pathSizes),
-        );
-        group.add(path.line);
-        moonPaths.set(id, path);
-      } else if (resized) path.restart();
-      const planet = run.drawn.get(parentId);
+      const path = moonPathIn(
+        orbitLines,
+        run,
+        id,
+        (offset) =>
+          aroundPlanet(
+            parentId,
+            [offset[0], offset[1], offset[2]],
+            !!pathSizes,
+          ),
+        resized,
+      );
+      const held = !!run.planetOf(id);
+      const planet = held ? run.drawn.get(parentId) : leftFrom.get(id);
       if (!options.trails || !planet || history.length === 0) {
         path.line.visible = false;
         continue;
       }
       path.line.position.set(...scenePosition(planet));
       setOrbitLineWidth(path.line, options.lineWidth);
-      // A moon absorbed in a merge has no place of its own left; its path
-      // ends where it hit.
-      const moon = run.drawn.get(id);
+      // It runs on to the moon only while the moon is on it: one that has
+      // left, or merged, ended its orbit at the last point recorded.
+      const moon = held ? run.drawn.get(id) : undefined;
       path.draw(
         history,
         moon
@@ -422,8 +458,41 @@ export function createSandboxSystem(
           : history[history.length - 1],
       );
     }
-    for (const [id, path] of moonPaths)
-      if (!run.moonTrails.has(id)) path.line.visible = false;
+    for (const [id, history] of away) {
+      const parentId = parentOf(run, id);
+      if (!parentId) continue;
+      const path = moonPathIn(
+        awayLines,
+        run,
+        id,
+        (point) =>
+          aroundPlanet(
+            parentId,
+            [point[0] - point[3], point[1] - point[4], point[2] - point[5]],
+            !!pathSizes,
+          ).add(
+            new THREE.Vector3(...scenePosition([point[3], point[4], point[5]])),
+          ),
+        resized,
+      );
+      if (!options.trails || history.length === 0) {
+        path.line.visible = false;
+        continue;
+      }
+      setOrbitLineWidth(path.line, options.lineWidth);
+      // It runs on to the moon only while the moon is still away: one taken
+      // back by its planet, or merged, ended its way where that happened.
+      const moon = run.planetOf(id) ? undefined : run.drawn.get(id);
+      const planet = run.drawn.get(parentId);
+      path.draw(
+        history,
+        moon && planet ? [...moon, ...planet] : history[history.length - 1],
+      );
+    }
+    for (const [id, path] of orbitLines)
+      if (!around.has(id)) path.line.visible = false;
+    for (const [id, path] of awayLines)
+      if (!away.has(id)) path.line.visible = false;
   }
 
   function place(

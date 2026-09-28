@@ -44,7 +44,11 @@ import {
 } from '../lib/sandbox/run.ts';
 import { decodeSandbox, encodeSandbox } from '../lib/sandbox/share.ts';
 import { moonDisplayDistance, scenePosition } from '../lib/sandbox/display.ts';
-import { displayRadius, kmToScene } from '../lib/display-scale.ts';
+import {
+  AU_SCENE_UNITS,
+  displayRadius,
+  kmToScene,
+} from '../lib/display-scale.ts';
 import { orbitingMoons } from '../lib/moon-orbits.ts';
 import { moonSemimajorKm } from '../lib/satellite-elements.ts';
 import { bodies } from '../lib/solar.ts';
@@ -57,7 +61,7 @@ import {
 import { AU_KM } from '../lib/eclipse-shadows.ts';
 import { createSandboxTrail, smoothed } from '../components/sandbox-trail.ts';
 import { createSandboxSystem } from '../components/sandbox-system.ts';
-import { isOrbitLine } from '../components/orbit-line.ts';
+import { isOrbitLine, type OrbitLine } from '../components/orbit-line.ts';
 import SandboxPanel, {
   foldedLabel,
   nextColor,
@@ -69,6 +73,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   Group,
+  Line3,
   Mesh,
   MeshBasicMaterial,
   Scene,
@@ -2312,7 +2317,7 @@ void test('a moon’s path is kept around its planet, a couple of dozen points a
   const run = createRun(forkScenario(SHARED_EPOCH, true));
   // A few laps, well short of the ten the path holds.
   runUntil(run, () => run.elapsedDays > 8);
-  const io = run.moonTrails.get('moon-io')!;
+  const io = run.moonPaths.around.get('moon-io')!;
   // Offsets from Jupiter, every one about Io's own distance from it.
   for (const point of io) {
     const distance = Math.hypot(...point) * AU_KM;
@@ -2324,7 +2329,7 @@ void test('a moon’s path is kept around its planet, a couple of dozen points a
   assert.ok(perLap > 20 && perLap < 28, String(perLap));
   // A lap takes days, so the path holds about ten of them, not the whole run.
   runUntil(run, () => run.elapsedDays > 60);
-  const kept = run.moonTrails.get('moon-io')!.length;
+  const kept = run.moonPaths.around.get('moon-io')!.length;
   assert.ok(
     kept <= MOON_TRAIL_LIMIT && kept > MOON_TRAIL_LIMIT / 2,
     String(kept),
@@ -2334,11 +2339,11 @@ void test('a moon’s path is kept around its planet, a couple of dozen points a
 void test('a moon’s path shows the orbit an edit put it on', () => {
   const run = createRun(forkScenario(SHARED_EPOCH, true));
   run.advance(1);
-  const before = run.moonTrails.get('moon-io')!.length;
+  const before = run.moonPaths.around.get('moon-io')!.length;
   // Past circular speed at its distance, Io swings out to about 840,000 km.
   run.apply({ kind: 'set', id: 'moon-io', field: 'speed', value: 20 });
   runUntil(run, () => run.elapsedDays > 6);
-  const after = run.moonTrails.get('moon-io')!.slice(before);
+  const after = run.moonPaths.around.get('moon-io')!.slice(before);
   const farthest = Math.max(...after.map((point) => Math.hypot(...point)));
   assert.ok(farthest * AU_KM > 800_000, String(farthest * AU_KM));
 });
@@ -2422,4 +2427,118 @@ void test('the scene draws a moon’s path around its planet, on to the moon', (
     // It is one of the paths, and goes with them.
     system.update(run, { ...options, trails: false });
     assert.equal(pathTo(false).length, 0);
+  }));
+
+/** The points a drawn line runs through, in the scene's own space. */
+function drawnThrough(line: OrbitLine) {
+  type Points = {
+    getX: (index: number) => number;
+    getY: (index: number) => number;
+    getZ: (index: number) => number;
+  };
+  const count = line.geometry.instanceCount;
+  const starts = line.geometry.getAttribute('instanceStart') as Points;
+  const ends = line.geometry.getAttribute('instanceEnd') as Points;
+  const at = (points: Points, index: number) =>
+    new Vector3(points.getX(index), points.getY(index), points.getZ(index)).add(
+      line.position,
+    );
+  return [
+    ...Array.from({ length: count }, (_, index) => at(starts, index)),
+    at(ends, count - 1),
+  ];
+}
+
+void test('a moon that has left its planet draws its own way out, not its planet’s year', () =>
+  withLabels(() => {
+    // The run a shared link carried: the Moon flung out of Earth's hold, and
+    // out of the system with it, on its third day.
+    const run = createRun({
+      ...forkScenario(SHARED_EPOCH, true),
+      changes: [
+        {
+          at: 2.43,
+          kind: 'set',
+          id: 'moon-moon',
+          field: 'speed',
+          value: 28.44,
+        },
+      ],
+    });
+    // Where the Moon really was along the way, in scene units.
+    const truth: Vector3[] = [];
+    runUntil(run, () => {
+      const at = run.variant.find((body) => body.id === 'moon-moon')!.position;
+      truth.push(new Vector3(...scenePosition(at)));
+      return run.elapsedDays > 200;
+    });
+    assert.ok(run.escaped.has('moon-moon'));
+    const scene = new Scene();
+    const system = createSandboxSystem(
+      scene,
+      new Map(bodies.map((body) => [body.id, new Group()])),
+      new Map(),
+      { appendChild: () => {} } as unknown as HTMLElement,
+      () => {},
+    );
+    system.setVisible(true);
+    system.update(run, {
+      baseline: false,
+      trails: true,
+      realSizes: false,
+      selected: null,
+      labels: false,
+      lineWidth: 1,
+      seconds: 0,
+      daysPerSecond: 0,
+      translate: (key: string) => key,
+    });
+    const moon = system.positionOf(run, 'moon-moon', false)!;
+    const sun = system.positionOf(run, 'sun', false)!;
+    const lines: Vector3[][] = [];
+    scene.traverse((object) => {
+      if (isOrbitLine(object) && object.visible)
+        lines.push(drawnThrough(object));
+    });
+    // Drawn lines hold single-precision points, good to a few parts in ten
+    // million of a coordinate several AU out.
+    const same = 1e-5;
+    const ways = lines.filter(
+      (points) => points[points.length - 1].distanceTo(moon) < same,
+    );
+    assert.equal(ways.length, 1);
+    // Its orbit around Earth stays where Earth was when it left, and ends
+    // where its way away begins: one journey, drawn as one line.
+    const start = ways[0][0];
+    assert.equal(
+      lines.filter(
+        (points) => points[points.length - 1].distanceTo(start) < same,
+      ).length,
+      1,
+    );
+    // Out past a couple of AU, where the moon map has long let go, the way
+    // drawn is the way it went. Drawn from where Earth is now rather than
+    // where Earth was, each point moved with Earth, and the path took on
+    // Earth's own year as a wave.
+    const out = ways[0].filter(
+      (point) => point.distanceTo(sun) > 2 * AU_SCENE_UNITS,
+    );
+    // A way that hardly turns takes few points of its own; it still has to
+    // reach out there.
+    assert.ok(out.length > 1, String(out.length));
+    const segment = new Line3();
+    const nearest = new Vector3();
+    for (const point of out) {
+      const off = Math.min(
+        ...truth
+          .slice(1)
+          .map((end, index) =>
+            segment
+              .set(truth[index], end)
+              .closestPointToPoint(point, true, nearest)
+              .distanceTo(point),
+          ),
+      );
+      assert.ok(off < 0.05 * AU_SCENE_UNITS, `${off / AU_SCENE_UNITS} AU off`);
+    }
   }));

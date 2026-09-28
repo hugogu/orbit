@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { scenePosition } from '../lib/sandbox/display';
-import type { Vec3 } from '../lib/sandbox/physics';
 import { createOrbitLine, type OrbitLine } from './orbit-line';
 
 /** Drawn segments per recorded span: a lap of two dozen points reads as a curve. */
@@ -68,10 +67,16 @@ export function smoothed(points: THREE.Vector3[]) {
   return points.length < 3 ? points : spans(points, 0, points.length - 1);
 }
 
+/**
+ * A recorded point: the body's place in AU first, which is what tells whether
+ * it has moved on, then anything else `place` needs to draw it.
+ */
+export type TrailPoint = readonly number[];
+
 export type SandboxTrail = {
   line: OrbitLine;
   /** Draws `history` on to the body at `head`, redrawing only what moved. */
-  draw(history: Vec3[], head: Vec3): void;
+  draw(history: readonly TrailPoint[], head: TrailPoint): void;
   /** Writes every span again on the next draw, for when `place` has changed. */
   restart(): void;
 };
@@ -84,13 +89,13 @@ export type SandboxTrail = {
  * recorded are final, so they are written once to a buffer that only grows;
  * each frame redraws just the last recorded span and the way on to the body.
  * `place` puts a recorded point in the line's own space: a scene position by
- * default, or, for a moon's path kept around its planet, the moon map.
+ * default, or a moon's out from its planet along the moon map.
  */
 export function createSandboxTrail(
   color: THREE.ColorRepresentation,
   brightness: number,
-  place: (point: Vec3) => THREE.Vector3 = (point) =>
-    new THREE.Vector3(...scenePosition(point)),
+  place: (point: TrailPoint) => THREE.Vector3 = (point) =>
+    new THREE.Vector3(...scenePosition([point[0], point[1], point[2]])),
 ): SandboxTrail {
   const line = createOrbitLine(color, brightness);
   // Its extent changes every frame and it is never picked, so a bounding
@@ -102,10 +107,10 @@ export function createSandboxTrail(
   let spansDone = 0;
   // The recorded point the sealed part starts from. A trail that has lost its
   // oldest part, or belongs to a new run, starts from another one.
-  let origin: Vec3 | undefined;
+  let origin: TrailPoint | undefined;
   // What the last draw was drawn from, and whether it drew anything.
   let recordedAt = -1;
-  const headAt: Vec3 = [NaN, NaN, NaN];
+  const headAt = [NaN, NaN, NaN];
   let drewAny = false;
 
   function reserve(segments: number) {

@@ -133,6 +133,25 @@ export type BodyFacts = Pick<
  */
 export type RunEdit = SandboxEdit | ((run: SandboxRun) => SandboxEdit);
 
+/**
+ * The paths a run keeps for its moons, each in the frame it is drawn in.
+ *
+ * While its planet holds it, a moon's path is its orbit, kept as offsets from
+ * the planet and drawn out from wherever the planet is. Once it has left, the
+ * planet is only a neighbour drifting off along its own orbit: a path drawn
+ * from wherever that planet is now would carry the planet's own year as a
+ * wave, so from then on each point keeps where the planet was too, and the
+ * orbit it left stays drawn from where the planet was when it left.
+ */
+export type MoonPaths = {
+  /** Offsets from its planet, recorded while the planet held it. */
+  around: Map<string, Vec3[]>;
+  /** Where its planet was when it left, which that orbit stays drawn from. */
+  leftFrom: Map<string, Vec3>;
+  /** Its place and then its planet's, six numbers a point, since it left. */
+  away: Map<string, number[][]>;
+};
+
 export type SandboxRun = {
   readonly scenario: SandboxScenario;
   /** Simulated days since the fork, as far as whole steps have taken it. */
@@ -157,11 +176,11 @@ export type SandboxRun = {
   trails: Map<string, Vec3[]>;
   baselineTrails: Map<string, Vec3[]>;
   /**
-   * Each moon's path around its planet, as offsets from the planet when each
-   * point was recorded. Only the edited system keeps these: the untouched
-   * one's moons stay on the orbits its rings already draw.
+   * Each moon's path, kept in the frame it is drawn in. Only the edited
+   * system keeps these: the untouched one's moons stay on the orbits its
+   * rings already draw.
    */
-  moonTrails: Map<string, Vec3[]>;
+  moonPaths: MoonPaths;
   events: SandboxEvent[];
   /** Bodies announced as having left the system and not captured since. */
   readonly escaped: ReadonlySet<string>;
@@ -222,10 +241,10 @@ type Track = {
   points: PointMass[];
   acceleration: Vec3[];
   trails: Map<string, Vec3[]>;
-  /** Moons' paths around their planets, or null where none are kept. */
-  moonTrails: Map<string, Vec3[]> | null;
+  /** Moons' paths, or null where none are kept. */
+  moonPaths: MoonPaths | null;
   /**
-   * Each body's velocity when its trail last recorded a point, a moon's
+   * Each body's velocity when its trail last recorded a point, a held moon's
    * measured against its planet.
    */
   headings: Map<string, Vec3>;
@@ -238,7 +257,7 @@ type Track = {
 
 function createTrack(
   specs: SandboxBodySpec[],
-  moonTrails: Map<string, Vec3[]> | null,
+  moonPaths: MoonPaths | null,
 ): Track {
   const points = specs.map(toPointMass);
   const acceleration = zeroVectors(points.length);
@@ -247,7 +266,7 @@ function createTrack(
     points,
     acceleration,
     trails: new Map(),
-    moonTrails,
+    moonPaths,
     headings: new Map(),
     escaped: new Set(),
     parents: new Map(
@@ -262,7 +281,11 @@ function createTrack(
 }
 
 /** Adds a point to a trail, unless the body has not left the last one. */
-function extend(trail: Vec3[], position: Vec3, limit = TRAIL_LIMIT) {
+function extend(
+  trail: number[][],
+  position: readonly number[],
+  limit = TRAIL_LIMIT,
+) {
   // A point on top of the last one is a span of no length, which leaves the
   // drawn curve without a direction to take.
   const last = trail[trail.length - 1];
@@ -274,9 +297,9 @@ function extend(trail: Vec3[], position: Vec3, limit = TRAIL_LIMIT) {
 
 /** Extends a body's trail in `trails`, or starts one. */
 function extendIn(
-  trails: Map<string, Vec3[]>,
+  trails: Map<string, number[][]>,
   id: string,
-  position: Vec3,
+  position: readonly number[],
   limit: number,
 ) {
   const trail = trails.get(id);
@@ -291,25 +314,41 @@ function offset(to: Vec3, from: Vec3): Vec3 {
 /**
  * Records where a body is now and measures its next turn from here.
  *
- * A moon's path is kept around its planet rather than the Sun. Around the Sun
- * it is its planet's with a ripple a few planet widths across, far below
- * anything the scene can show; around its planet it is the orbit an edit
- * bends, or the way it went once it left. Its heading is measured against its
- * planet's motion for the same reason, so a lap takes the usual couple of
- * dozen points rather than one every time the planet's own path turns.
+ * A held moon's path is kept around its planet rather than the Sun. Around
+ * the Sun it is its planet's with a ripple a few planet widths across, far
+ * below anything the scene can show; around its planet it is the orbit an
+ * edit bends. Its heading is measured against its planet's motion for the
+ * same reason, so a lap takes the usual couple of dozen points rather than
+ * one every time the planet's own path turns. A moon that has left turns
+ * about the Sun like any other body (see `MoonPaths`).
  */
 function mark(track: Track, point: PointMass) {
   const parentId = track.parents.get(point.id);
-  if (!parentId) {
+  // The untouched system keeps no path for its moons at all.
+  if (parentId && !track.moonPaths) return;
+  const planet = parentId
+    ? track.points.find((item) => item.id === parentId)
+    : undefined;
+  // Every other body's path is kept around the Sun, and so is a moon's once
+  // its planet is gone.
+  if (!planet || !track.moonPaths) {
     track.headings.set(point.id, [...point.velocity]);
     extendIn(track.trails, point.id, point.position, TRAIL_LIMIT);
     return;
   }
-  const planet = track.points.find((item) => item.id === parentId);
-  if (!track.moonTrails || !planet) return;
+  if (track.loosened.has(point.id)) {
+    track.headings.set(point.id, [...point.velocity]);
+    extendIn(
+      track.moonPaths.away,
+      point.id,
+      [...point.position, ...planet.position],
+      TRAIL_LIMIT,
+    );
+    return;
+  }
   track.headings.set(point.id, offset(point.velocity, planet.velocity));
   extendIn(
-    track.moonTrails,
+    track.moonPaths.around,
     point.id,
     offset(point.position, planet.position),
     MOON_TRAIL_LIMIT,
@@ -339,10 +378,11 @@ function record(track: Track) {
     const parentId = track.parents.get(point.id);
     let frame: Vec3 | undefined;
     if (parentId) {
-      if (!track.moonTrails) continue;
-      const planet = track.points.find((item) => item.id === parentId);
-      if (!planet) continue;
-      frame = planet.velocity;
+      if (!track.moonPaths) continue;
+      // Held, a moon turns about its planet; once it has left, or lost it,
+      // about the Sun like any other body.
+      if (!track.loosened.has(point.id))
+        frame = track.points.find((item) => item.id === parentId)?.velocity;
     }
     const heading = track.headings.get(point.id);
     if (!heading || turned(heading, point.velocity, frame)) mark(track, point);
@@ -361,8 +401,12 @@ function ahead(track: Track, days: number) {
 
 export function createRun(scenario: SandboxScenario): SandboxRun {
   const start = forkBodies(scenario.epoch, scenario.moons);
-  const moonTrails = new Map<string, Vec3[]>();
-  const variant = createTrack(start, moonTrails);
+  const moonPaths: MoonPaths = {
+    around: new Map(),
+    leftFrom: new Map(),
+    away: new Map(),
+  };
+  const variant = createTrack(start, moonPaths);
   const baseline = createTrack(start, null);
   const facts = start.map(toFacts);
   let referenceEnergy = systemEnergy(variant.points);
@@ -393,7 +437,7 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     facts,
     trails: variant.trails,
     baselineTrails: baseline.trails,
-    moonTrails,
+    moonPaths,
     events: [],
     escaped: variant.escaped,
     step,
@@ -537,7 +581,9 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
         run.events.push({ kind: 'remove', id: change.id, day: change.at });
       }
       variant.trails.delete(change.id);
-      moonTrails.delete(change.id);
+      moonPaths.around.delete(change.id);
+      moonPaths.leftFrom.delete(change.id);
+      moonPaths.away.delete(change.id);
       variant.headings.delete(change.id);
     } else if (change.kind === 'add') {
       if (!facts.some((item) => item.id === change.body.id))
@@ -619,16 +665,21 @@ function collide(track: Track, run: SandboxRun | null) {
     // path that led into the merge is the only record of how it happened.
     const trail = track.trails.get(collision.absorbed);
     if (trail) extend(trail, collision.position);
-    // A moon's path is kept around its planet, so its last point is too.
-    const path = track.moonTrails?.get(collision.absorbed);
+    // A moon's path runs on to the contact in the frame it is kept in.
     const planetId = track.parents.get(collision.absorbed);
     const planet = track.points.find((item) => item.id === planetId);
-    if (path && planet)
-      extend(
-        path,
-        offset(collision.position, planet.position),
-        MOON_TRAIL_LIMIT,
-      );
+    if (planet && track.moonPaths) {
+      const away = track.moonPaths.away.get(collision.absorbed);
+      const around = track.moonPaths.around.get(collision.absorbed);
+      if (track.loosened.has(collision.absorbed)) {
+        if (away) extend(away, [...collision.position, ...planet.position]);
+      } else if (around)
+        extend(
+          around,
+          offset(collision.position, planet.position),
+          MOON_TRAIL_LIMIT,
+        );
+    }
     track.headings.delete(collision.absorbed);
     // A merge moves the survivor to the pair's centre of mass and changes its
     // course, so its trail takes a point there.
@@ -753,7 +804,13 @@ function watchMoons(track: Track, run: SandboxRun, anchor: PointMass) {
         orbit.eccentricity < RECAPTURE_ECCENTRICITY &&
         orbit.distance < hill
       ) {
+        // Its way away ends here, and a new orbit starts: carried on from the
+        // one it left, it would cut straight across the time it was away.
+        mark(track, moon);
         track.loosened.delete(id);
+        track.moonPaths?.around.delete(id);
+        track.moonPaths?.leftFrom.delete(id);
+        mark(track, moon);
         run.events.push({
           kind: 'capture',
           id,
@@ -772,7 +829,13 @@ function watchMoons(track: Track, run: SandboxRun, anchor: PointMass) {
         0,
       ) > 0;
     if (!orbit.escaping || !receding || orbit.distance <= hill) continue;
+    // Its orbit ends here, where the planet is now, and its way away starts
+    // here; a way from an earlier departure would cut across its time back.
+    mark(track, moon);
     track.loosened.add(id);
+    track.moonPaths?.leftFrom.set(id, [...planet.position]);
+    track.moonPaths?.away.delete(id);
+    mark(track, moon);
     run.events.push({
       kind: 'escape',
       id,
