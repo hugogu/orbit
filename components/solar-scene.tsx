@@ -645,7 +645,6 @@ export default function SolarScene({
     controls.addEventListener('start', () => {
       wake();
       transition = 0;
-      following = null;
       sharedPose = null;
     });
     // Damping keeps the camera gliding after a drag ends, one change a frame.
