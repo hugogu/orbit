@@ -41,6 +41,7 @@ import {
   ogImagePath,
   privacyPath,
   profileAncestors,
+  profileDescription,
   profileJsonLd,
   profileTitle,
   serializeJsonLd,
@@ -73,10 +74,6 @@ async function resolvePage(params: PageProps['params']): Promise<ResolvedPage> {
 
 function entryName(entry: CatalogEntry, locale: Locale) {
   return translator(locale)(entry.data.name);
-}
-
-function entryDescription(entry: CatalogEntry, locale: Locale) {
-  return translator(locale)(entry.data.description);
 }
 
 function sourceUrl(entry: CatalogEntry) {
@@ -190,7 +187,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { locale, entry } = await resolvePage(params);
   const title = profileTitle(entry, locale);
-  const description = entryDescription(entry, locale);
+  const description = profileDescription(entry, locale);
   const canonical = absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id));
   return {
     title,
@@ -377,7 +374,7 @@ export default async function BodyPage({ params }: PageProps) {
   const { locale, entry } = await resolvePage(params);
   const t = translator(locale);
   const name = entryName(entry, locale);
-  const description = entryDescription(entry, locale);
+  const description = profileDescription(entry, locale);
   const title = profileTitle(entry, locale);
   const canonical = absoluteSiteUrl(bodyDetailsPath(locale, entry.data.id));
   const content = profileContent[entry.data.id];

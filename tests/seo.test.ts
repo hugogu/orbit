@@ -29,6 +29,7 @@ import {
   privacyDescription,
   privacyTitle,
   profileAncestors,
+  profileDescription,
   profileJsonLd,
   profileTitle,
   serializeJsonLd,
@@ -222,7 +223,7 @@ function profileGraph(entry: CatalogEntry, locale: Locale) {
     entry,
     locale,
     title: profileTitle(entry, locale),
-    description: translator(locale)(entry.data.description),
+    description: profileDescription(entry, locale),
     canonical,
   })['@graph'] as Node[];
   return { canonical, nodes };
@@ -561,7 +562,7 @@ void test('sitemap repeats reciprocal hreflang links for every localized page', 
   );
 });
 
-void test('sitemap lists each profile\'s hero image for direct image discovery', () => {
+void test("sitemap lists each profile's hero image for direct image discovery", () => {
   const entries = sitemapEntries();
   const byLoc = new Map(entries.map((entry) => [entry.loc, entry]));
   const catalog = catalogEntries();
@@ -944,7 +945,7 @@ void test('Encke metadata and introduction answer the observed search intents', 
     profileTitle(entry, 'en'),
     "Encke's Comet (2P/Encke): Orbit, Period and Name",
   );
-  const description = translator('en')(entry.data.description);
+  const description = profileDescription(entry, 'en');
   const introduction = translator('en')(profileContent.encke.intro);
   assert.match(description, /3\.3 years/);
   assert.match(description, /Johann Encke/);
@@ -952,11 +953,31 @@ void test('Encke metadata and introduction answer the observed search intents', 
   assert.match(introduction, /Taurid meteor stream/);
   for (const locale of seoLocales) {
     assert.ok(profileTitle(entry, locale).length > 0);
-    const translatedDescription = translator(locale)(entry.data.description);
+    const translatedDescription = profileDescription(entry, locale);
     assert.ok(translatedDescription.length > 0);
+    assert.equal(
+      translatedDescription,
+      translator(locale)(profileContent.encke.seo!.description!),
+    );
     if (locale !== 'zh-CN') {
       assert.notEqual(translatedDescription, entry.data.description);
-      assert.notEqual(translator(locale)(profileContent.encke.intro), profileContent.encke.intro);
+      assert.notEqual(
+        translator(locale)(profileContent.encke.intro),
+        profileContent.encke.intro,
+      );
     }
+  }
+});
+
+void test('profile metadata uses catalog defaults when no editorial override exists', () => {
+  const entry = catalogEntry('halley');
+  assert.ok(entry);
+  for (const locale of seoLocales) {
+    const t = translator(locale);
+    assert.equal(
+      profileTitle(entry, locale),
+      t('{{name}}：结构、轨道与探索', { name: t(entry.data.name) }),
+    );
+    assert.equal(profileDescription(entry, locale), t(entry.data.description));
   }
 });
