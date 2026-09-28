@@ -133,6 +133,9 @@ export function aboutDescription(locale: Locale) {
 
 export function profileTitle(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
+  if (entry.data.id === 'encke') {
+    return t('恩克彗星（2P/Encke）：轨道、周期与名字的由来');
+  }
   return t('{{name}}：结构、轨道与探索', { name: t(entry.data.name) });
 }
 

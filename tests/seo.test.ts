@@ -40,6 +40,7 @@ import {
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
 import { portraitCredit } from '../lib/profile-images';
 import { physicalParameters } from '../lib/physical-facts';
+import { profileContent } from '../lib/profile-content';
 import { profileProperties, propertyUnits } from '../lib/profile-properties';
 import {
   solarSystemItem,
@@ -934,4 +935,28 @@ void test('the home heading names the subject and survives the phone layout', ()
 void test('the built-in origin is the canonical host, not one that redirects', () => {
   assert.match(seoModule, /fallbackSiteOrigin = 'https:\/\/orbits\.observer'/);
   assert.doesNotMatch(seoModule, /https:\/\/www\./);
+});
+
+void test('Encke metadata and introduction answer the observed search intents', () => {
+  const entry = catalogEntry('encke');
+  assert.ok(entry);
+  assert.equal(
+    profileTitle(entry, 'en'),
+    "Encke's Comet (2P/Encke): Orbit, Period and Name",
+  );
+  const description = translator('en')(entry.data.description);
+  const introduction = translator('en')(profileContent.encke.intro);
+  assert.match(description, /3\.3 years/);
+  assert.match(description, /Johann Encke/);
+  assert.match(introduction, /Pierre Méchain/);
+  assert.match(introduction, /Taurid meteor stream/);
+  for (const locale of seoLocales) {
+    assert.ok(profileTitle(entry, locale).length > 0);
+    const translatedDescription = translator(locale)(entry.data.description);
+    assert.ok(translatedDescription.length > 0);
+    if (locale !== 'zh-CN') {
+      assert.notEqual(translatedDescription, entry.data.description);
+      assert.notEqual(translator(locale)(profileContent.encke.intro), profileContent.encke.intro);
+    }
+  }
 });
