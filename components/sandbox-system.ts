@@ -59,6 +59,20 @@ type Extra = {
   project: ReturnType<typeof createSceneLabel>;
 };
 
+/**
+ * Where an offset from a planet is drawn from that planet's centre, in scene
+ * units: out along the moon map, the way a moon itself is drawn.
+ */
+function aroundPlanet(parentId: string, offset: Vec3, realSizes: boolean) {
+  const at = new THREE.Vector3(...scenePosition(offset));
+  const distance = at.length();
+  return distance === 0
+    ? at
+    : at.multiplyScalar(
+        moonDisplayDistance(parentId, distance, realSizes) / distance,
+      );
+}
+
 type Ring = {
   line: OrbitLine;
   shaped: number;
@@ -296,16 +310,9 @@ export function createSandboxSystem(
       if (!orbit) continue;
       setOrbitLinePoints(
         ring.line,
-        orbit.map((offset) => {
-          const at = new THREE.Vector3(...scenePosition(offset));
-          const distance = at.length();
-          return distance === 0
-            ? at
-            : at.multiplyScalar(
-                moonDisplayDistance(parentId, distance, options.realSizes) /
-                  distance,
-              );
-        }),
+        orbit.map((offset) =>
+          aroundPlanet(parentId, offset, options.realSizes),
+        ),
       );
     }
     for (const [id, ring] of store)
