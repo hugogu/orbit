@@ -845,7 +845,6 @@ export default function SolarScene({
           width,
           height,
           s.stars && s.constellations && s.labels,
-          groundSky.up,
         );
         if (now - lastReport > 350) {
           latest.current.onTime(time);

@@ -381,10 +381,44 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
       /groundBodyClipPosition\(mvPosition, gl_Position\)/,
     );
     assert.match(shader.vertexShader, /centerViewPosition/);
-    const horizon = meshes.find((object) => object.renderOrder === 10)!;
-    assert.match(
-      (horizon.material as THREE.ShaderMaterial).vertexShader,
-      /projectionMatrix \* modelViewMatrix/,
+    const guides = scene.children[0].children.filter((object) =>
+      object.userData.id?.endsWith('-guide'),
+    ) as THREE.LineSegments[];
+    assert.deepEqual(
+      guides.map((guide) => guide.userData.id),
+      ['horizon-guide', 'ecliptic-guide'],
+    );
+    for (const guide of guides) {
+      assert.equal(guide.renderOrder, -0.5);
+      assert.equal((guide.material as THREE.Material).depthTest, false);
+      assert.equal((guide.material as THREE.Material).depthWrite, false);
+      const positions = guide.geometry.getAttribute('instanceStart');
+      for (let index = 0; index < positions.count; index++)
+        close(positions.getY(index), 0);
+    }
+    close(guides[0].quaternion.angleTo(horizonFrame(days, site).rotation), 0);
+    close(guides[1].quaternion.angleTo(new THREE.Quaternion()), 0);
+    const below = groundBodies.find(
+      (body) =>
+        groundBodyVector(body.id, days, site).dot(horizonFrame(days, site).up) <
+        0,
+    )!;
+    assert.ok(below);
+    const localDirection = groundBodyVector(below.id, days, site)
+      .normalize()
+      .applyQuaternion(horizonFrame(days, site).rotation.clone().invert());
+    update(null);
+    update(
+      new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        localDirection,
+      ),
+    );
+    assert.equal(
+      elements.find(
+        (element) => element.textContent === translator('en')(below.name),
+      )?.style.display,
+      'block',
     );
     // Exercise the same sensor -> smoothed camera path used by playback.
     const tracker = new DeviceAttitudeTracker();

@@ -13,6 +13,7 @@ import type { Translate } from '../lib/i18n';
 import { createSceneLabel } from './scene-label';
 import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
 import type { SandboxRun } from '../lib/sandbox/run';
+import { createOrbitLine, setOrbitLineWidth } from './orbit-line';
 
 const GROUND_BODY_SHAPE_PROJECTION = /* glsl */ `
 vec4 groundBodyClipPosition(vec4 viewPosition, vec4 clipPosition) {
@@ -113,23 +114,26 @@ export function createGroundSky(
   const entries = groundBodies.map((body) =>
     makeEntry({ ...body, sourceId: body.id }),
   );
-  const groundMaterial = new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    depthTest: false,
-    depthWrite: false,
-    uniforms: { up: { value: new THREE.Vector3(0, 1, 0) } },
-    vertexShader: `varying vec3 direction; void main() { direction = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform vec3 up; varying vec3 direction; void main() {
-      float altitude = dot(normalize(direction), up);
-      if (altitude > 0.0) discard;
-      vec3 color = mix(vec3(0.012, 0.022, 0.028), vec3(0.065, 0.105, 0.115), exp(altitude * 35.0));
-      gl_FragColor = vec4(color, 1.0);
-      #include <colorspace_fragment>
-    }`,
+  const guidePoints = Array.from({ length: 2049 }, (_, index) => {
+    const angle = (index * Math.PI * 2) / 2048;
+    return new THREE.Vector3(
+      3000 * Math.cos(angle),
+      0,
+      -3000 * Math.sin(angle),
+    );
   });
-  const ground = new THREE.Mesh(sphere, groundMaterial);
-  ground.renderOrder = 10;
-  root.add(ground);
+  const makeGuide = (id: string, color: number) => {
+    const line = createOrbitLine(color, 1, guidePoints);
+    line.userData.id = id;
+    line.renderOrder = -0.5;
+    line.material.depthTest = false;
+    line.frustumCulled = false;
+    setOrbitLineWidth(line, 1.5);
+    root.add(line);
+    return line;
+  };
+  const horizon = makeGuide('horizon-guide', 0x70b6b4);
+  const ecliptic = makeGuide('ecliptic-guide', 0xcaa46f);
   const cardinals = ['北', '东', '南', '西'].map((name, index) => ({
     name,
     direction: new THREE.Vector3(
@@ -220,9 +224,6 @@ export function createGroundSky(
   canvas.addEventListener('keydown', key);
   return {
     camera,
-    get up() {
-      return frame.up;
-    },
     setActive(value: boolean) {
       if (value === active) return;
       active = value;
@@ -307,7 +308,7 @@ export function createGroundSky(
             entry.sunDirection.value.copy(sun).sub(entry.vector).normalize();
           else entry.sunDirection.value.set(0, 0, 0);
         }
-        groundMaterial.uniforms.up.value.copy(frame.up);
+        horizon.quaternion.copy(frame.rotation);
         lastKey = key;
         lastSandbox = sandbox;
       }
@@ -363,12 +364,7 @@ export function createGroundSky(
           .copy(entry.mesh.position)
           .addScaledVector(frame.up, entry.mesh.scale.x * 1.3)
           .project(camera);
-        entry.place(
-          projected,
-          width,
-          height,
-          showLabels && entry.vector.dot(frame.up) > 0,
-        );
+        entry.place(projected, width, height, showLabels);
       }
       for (const entry of cardinals) {
         projected
@@ -388,7 +384,10 @@ export function createGroundSky(
       root.removeFromParent();
       labels.remove();
       sphere.dispose();
-      groundMaterial.dispose();
+      for (const line of [horizon, ecliptic]) {
+        line.geometry.dispose();
+        line.material.dispose();
+      }
       entries.forEach((entry) => entry.mesh.material.dispose());
     },
   };
