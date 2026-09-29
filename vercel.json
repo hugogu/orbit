@@ -54,6 +54,11 @@
       "source": "/ja/bodies/:id",
       "destination": "/ja-JP/bodies/:id",
       "permanent": true
+    },
+    {
+      "source": "/media/v2/bodies/:file",
+      "destination": "/media/v3/bodies/:file",
+      "permanent": true
     }
   ]
 }

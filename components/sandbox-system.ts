@@ -7,8 +7,8 @@ import {
   moonDisplayDistance,
   sandboxRadius,
   scenePosition,
-  spinStep,
 } from '../lib/sandbox/display';
+import { sandboxGroundOrientation } from '../lib/sandbox/ground-sky';
 import { osculatingOrbit } from '../lib/sandbox/derived';
 import { auToKm } from '../lib/sandbox/scenario';
 import type { PointMass, Vec3 } from '../lib/sandbox/physics';
@@ -19,7 +19,11 @@ import {
   setOrbitLineWidth,
   type OrbitLine,
 } from './orbit-line';
-import { createSandboxTrail, type SandboxTrail } from './sandbox-trail';
+import {
+  createSandboxTrail,
+  type SandboxTrail,
+  type TrailPoint,
+} from './sandbox-trail';
 import { createSceneLabel } from './scene-label';
 
 /** How dim the untouched system is drawn against the edited one. */
@@ -42,10 +46,8 @@ export type SandboxSceneOptions = {
   selected: string | null;
   labels: boolean;
   lineWidth: number;
-  /** Real seconds since the last frame, for the rotation. */
+  /** Real seconds since the last frame, for orbit-guide pacing. */
   seconds: number;
-  /** Simulated days per real second, the rate the rotation follows. */
-  daysPerSecond: number;
   /** Names a body's label the moment it appears, not only on a locale change. */
   translate: Translate;
 };
@@ -89,8 +91,7 @@ function orbitInputs(point: PointMass, planet: PointMass) {
  * the mode does not turn the Solar System into abstract dots. Bodies the
  * viewer created get their own plain spheres here, and the untouched fork is
  * drawn as wireframe ghosts with their own paths. A moon borrows the
- * explorer's mesh for it, shared rather than copied, and is drawn out from
- * its planet along the moon map with its current orbit as a ring.
+ * explorer's mesh for it, shared rather than copied.
  */
 export function createSandboxSystem(
   scene: THREE.Scene,
@@ -106,13 +107,6 @@ export function createSandboxSystem(
   const ghosts = new Map<string, THREE.Mesh>();
   const trails = new Map<string, SandboxTrail>();
   const ghostTrails = new Map<string, SandboxTrail>();
-  // Accumulated display rotation per body. Integrating the rate frame by
-  // frame keeps the turn continuous when the viewer changes the time rate,
-  // which reading an angle straight off elapsed time could not do once the
-  // rate is capped for legibility.
-  const phase = new Map<string, number>();
-  const spinRotation = new THREE.Quaternion();
-  const tiltRotation = new THREE.Quaternion();
   // One segment from a body to where it would have been: the clearest way to
   // read "the same instant" off the screen rather than off the panel.
   const connector = createOrbitLine(0xffffff, 0.75);
@@ -123,7 +117,7 @@ export function createSandboxSystem(
   const ghostRings = new Map<string, Ring>();
   let clock = 0;
   let ringSizes: boolean | null = null;
-  const anchor = new THREE.Vector3();
+  let displayRealSizes = true;
   let visible = false;
 
   // A catalogue mesh is built at the body's authored `size`, so its group
@@ -135,26 +129,16 @@ export function createSandboxSystem(
   // The explorer keeps moon roots in the same map as the planets, inside a
   // container the sandbox hides, so only a planet's root is taken over.
   const planetIds = new Set(bodies.map((body) => body.id));
-  // The planet a moon came with, which it is drawn out from even after it has
-  // left: the moon map bleeds its magnification away with distance, so a moon
-  // flung loose drifts back to its true place instead of jumping into the
-  // planet it just left, which is drawn far larger than the gap between them.
+  // A moon's original planet is metadata for its local orbit guide, never a
+  // coordinate frame for the body's position or its travelled path.
   const parentOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.parentId;
 
-  /**
-   * Where a body is drawn. Everything sits at its true place except a moon,
-   * which is drawn out from its planet along the moon map so that it is seen
-   * beside a planet drawn thousands of times its size.
-   *
-   * `drawn` is whichever of the run's own interpolated maps `id` belongs to —
-   * `run.drawn` for the edited system, `run.baselineDrawn` for the untouched
-   * one — so a moon is remapped from the same moment on screen its planet is
-   * drawn at, not from the last whole step.
-   */
+  const anchor = new THREE.Vector3();
   function shownAt(
     run: SandboxRun,
     drawn: Map<string, Vec3>,
+    parentAnchors: Map<string, Vec3>,
     id: string,
     position: Vec3,
     realSizes: boolean,
@@ -162,17 +146,30 @@ export function createSandboxSystem(
   ) {
     into.set(...scenePosition(position));
     const parentId = parentOf(run, id);
-    const planetPosition = parentId ? drawn.get(parentId) : undefined;
-    if (!parentId || !planetPosition) return into;
-    anchor.set(...scenePosition(planetPosition));
+    const parent = parentId
+      ? (drawn.get(parentId) ?? parentAnchors.get(parentId))
+      : undefined;
+    if (!parentId || !parent || realSizes) return into;
+    anchor.set(...scenePosition(parent));
     into.sub(anchor);
     const distance = into.length();
-    if (distance === 0) return into.copy(anchor);
-    return into
-      .multiplyScalar(
-        moonDisplayDistance(parentId, distance, realSizes) / distance,
-      )
-      .add(anchor);
+    return distance > 0
+      ? into
+          .multiplyScalar(
+            moonDisplayDistance(parentId, distance, false) / distance,
+          )
+          .add(anchor)
+      : into.copy(anchor);
+  }
+
+  function aroundPlanet(parentId: string, offset: Vec3, realSizes: boolean) {
+    const point = new THREE.Vector3(...scenePosition(offset));
+    const distance = point.length();
+    return distance > 0
+      ? point.multiplyScalar(
+          moonDisplayDistance(parentId, distance, realSizes) / distance,
+        )
+      : point;
   }
   const colorOf = (run: SandboxRun, id: string) =>
     run.facts.find((body) => body.id === id)?.color ?? '#ffffff';
@@ -229,11 +226,9 @@ export function createSandboxSystem(
   }
 
   /**
-   * Draws each moon's current orbit as a ring around its planet, through the
-   * same map the moon itself is drawn with. An orbit that has opened into an
-   * escape has no ring to draw, and neither has a moon its planet no longer
-   * holds: out past the planet's Hill sphere its path is the Sun's to set,
-   * and a two-body orbit about the planet it left would only mislead.
+   * Draws each moon's current local orbit as a ring around its planet.
+   * A hyperbolic local orbit or a moon beyond its planet's Hill sphere has
+   * no meaningful two-body ring. Its travelled trail remains inertial.
    */
   function drawRings(
     run: SandboxRun,
@@ -259,6 +254,8 @@ export function createSandboxSystem(
           from: [],
           closed: false,
         };
+        // The guide belongs to this moon even though its offset is local.
+        ring.line.userData.ringOf = point.id;
         group.add(ring.line);
         store.set(point.id, ring);
       }
@@ -296,16 +293,9 @@ export function createSandboxSystem(
       if (!orbit) continue;
       setOrbitLinePoints(
         ring.line,
-        orbit.map((offset) => {
-          const at = new THREE.Vector3(...scenePosition(offset));
-          const distance = at.length();
-          return distance === 0
-            ? at
-            : at.multiplyScalar(
-                moonDisplayDistance(parentId, distance, options.realSizes) /
-                  distance,
-              );
-        }),
+        orbit.map((offset) =>
+          aroundPlanet(parentId, offset, options.realSizes),
+        ),
       );
     }
     for (const [id, ring] of store)
@@ -317,10 +307,31 @@ export function createSandboxSystem(
     id: string,
     color: THREE.ColorRepresentation,
     brightness: number,
+    run: SandboxRun,
   ) {
     const existing = store.get(id);
     if (existing) return existing;
-    const trail = createSandboxTrail(color, brightness);
+    const parentId = parentOf(run, id);
+    const place = parentId
+      ? (point: TrailPoint) => {
+          const position: Vec3 = [point[0], point[1], point[2]];
+          if (point.length < 6)
+            return new THREE.Vector3(...scenePosition(position));
+          const planet: Vec3 = [point[3], point[4], point[5]];
+          return new THREE.Vector3(...scenePosition(planet)).add(
+            aroundPlanet(
+              parentId,
+              [
+                position[0] - planet[0],
+                position[1] - planet[1],
+                position[2] - planet[2],
+              ],
+              displayRealSizes,
+            ),
+          );
+        }
+      : undefined;
+    const trail = createSandboxTrail(color, brightness, place);
     group.add(trail.line);
     store.set(id, trail);
     return trail;
@@ -353,19 +364,30 @@ export function createSandboxSystem(
     run: SandboxRun,
     store: Map<string, SandboxTrail>,
     histories: Map<string, Vec3[]>,
+    anchoredHistories: Map<string, number[][]>,
     heads: Map<string, Vec3>,
+    parentAnchors: Map<string, Vec3>,
     brightness: number,
     show: boolean,
     width: number,
   ) {
     for (const [id, history] of histories) {
-      const trail = trailFor(store, id, colorOf(run, id), brightness);
+      const trail = trailFor(store, id, colorOf(run, id), brightness, run);
       if (!show || history.length === 0) {
         trail.line.visible = false;
         continue;
       }
       setOrbitLineWidth(trail.line, width);
-      trail.draw(history, heads.get(id) ?? history[history.length - 1]);
+      const anchored = anchoredHistories.get(id);
+      const position = heads.get(id) ?? history[history.length - 1];
+      const parentId = parentOf(run, id);
+      const parent = parentId
+        ? (heads.get(parentId) ?? parentAnchors.get(parentId))
+        : undefined;
+      trail.draw(
+        anchored ?? history,
+        anchored && parent ? [...position, ...parent] : position,
+      );
     }
     for (const [id, trail] of store)
       if (!histories.has(id)) trail.line.visible = false;
@@ -378,10 +400,12 @@ export function createSandboxSystem(
     run: SandboxRun,
     realSizes: boolean,
     unit = 1,
+    parentAnchors = run.parentAnchors,
   ) {
     shownAt(
       run,
       drawn,
+      parentAnchors,
       point.id,
       drawn.get(point.id) ?? point.position,
       realSizes,
@@ -394,32 +418,16 @@ export function createSandboxSystem(
   }
 
   const projected = new THREE.Vector3();
-  const north = new THREE.Vector3(0, 1, 0);
-  const roll = new THREE.Vector3(0, 0, 1);
-
-  /** Turns a body about its own axis and leans it by its tilt. */
-  function orient(
-    pivot: THREE.Object3D,
-    id: string,
-    run: SandboxRun,
-    options: SandboxSceneOptions,
-  ) {
+  /** Use the same physical orientation as the ground observer. */
+  function orient(pivot: THREE.Object3D, id: string, run: SandboxRun) {
     const spec = run.facts.find((body) => body.id === id);
-    const turned =
-      (phase.get(id) ?? 0) +
-      spinStep(spec?.spinDays ?? 0, options.daysPerSecond, options.seconds);
-    phase.set(id, turned % (Math.PI * 2));
-    pivot.quaternion
-      .copy(spinRotation.setFromAxisAngle(north, turned))
-      .premultiply(
-        tiltRotation.setFromAxisAngle(
-          roll,
-          ((spec?.tilt ?? 0) * Math.PI) / 180,
-        ),
-      );
+    if (spec) pivot.quaternion.copy(sandboxGroundOrientation(run, spec));
   }
 
   return {
+    meshOf(id: string) {
+      return extras.get(id)?.mesh ?? meshes.get(id);
+    },
     /** Catalogue bodies the run no longer contains, so the scene can hide them. */
     missing(run: SandboxRun) {
       const present = new Set(run.variant.map((point) => point.id));
@@ -434,6 +442,11 @@ export function createSandboxSystem(
     update(run: SandboxRun, options: SandboxSceneOptions) {
       if (!visible) return;
       clock += options.seconds;
+      if (displayRealSizes !== options.realSizes) {
+        displayRealSizes = options.realSizes;
+        for (const trail of [...trails.values(), ...ghostTrails.values()])
+          trail.restart();
+      }
       const live = new Set(run.variant.map((point) => point.id));
       for (const [id, extra] of extras)
         if (!live.has(id)) {
@@ -449,7 +462,7 @@ export function createSandboxSystem(
         const root = planetIds.has(point.id) ? roots.get(point.id) : undefined;
         if (root) {
           const pivot = meshes.get(point.id)?.parent;
-          if (pivot) orient(pivot, point.id, run, options);
+          if (pivot) orient(pivot, point.id, run);
           root.position.set(...scenePosition(position));
           root.scale.setScalar(
             sandboxRadius(
@@ -461,7 +474,7 @@ export function createSandboxSystem(
         } else {
           const extra = extraFor(run, point, options.translate);
           extra.root.visible = true;
-          orient(extra.mesh, point.id, run, options);
+          orient(extra.mesh, point.id, run);
           place(
             extra.root,
             point,
@@ -486,7 +499,9 @@ export function createSandboxSystem(
         run,
         trails,
         run.trails,
+        run.anchoredTrails,
         run.drawn,
+        run.parentAnchors,
         VARIANT_TRAIL_BRIGHTNESS,
         options.trails,
         options.lineWidth,
@@ -496,7 +511,15 @@ export function createSandboxSystem(
       for (const point of run.baseline) {
         const ghost = ghostFor(run, point);
         ghost.visible = options.baseline;
-        place(ghost, point, run.baselineDrawn, run, options.realSizes);
+        place(
+          ghost,
+          point,
+          run.baselineDrawn,
+          run,
+          options.realSizes,
+          1,
+          run.baselineParentAnchors,
+        );
       }
       drawRings(
         run,
@@ -516,7 +539,9 @@ export function createSandboxSystem(
         run,
         ghostTrails,
         run.baselineTrails,
+        run.baselineAnchoredTrails,
         run.baselineDrawn,
+        run.baselineParentAnchors,
         GHOST_TRAIL_BRIGHTNESS,
         options.baseline && options.trails,
         options.lineWidth,
@@ -537,6 +562,7 @@ export function createSandboxSystem(
           shownAt(
             run,
             run.drawn,
+            run.parentAnchors,
             focus,
             here,
             options.realSizes,
@@ -545,6 +571,7 @@ export function createSandboxSystem(
           shownAt(
             run,
             run.baselineDrawn,
+            run.baselineParentAnchors,
             focus,
             there,
             options.realSizes,
@@ -605,7 +632,15 @@ export function createSandboxSystem(
     positionOf(run: SandboxRun, id: string, realSizes: boolean) {
       const position = run.drawn.get(id);
       return position
-        ? shownAt(run, run.drawn, id, position, realSizes, new THREE.Vector3())
+        ? shownAt(
+            run,
+            run.drawn,
+            run.parentAnchors,
+            id,
+            position,
+            realSizes,
+            new THREE.Vector3(),
+          )
         : null;
     },
     dispose() {

@@ -148,6 +148,12 @@ export type SandboxRun = {
   facts: BodyFacts[];
   trails: Map<string, Vec3[]>;
   baselineTrails: Map<string, Vec3[]>;
+  /** Inertial moon samples paired with their planet's position at each sample. */
+  anchoredTrails: Map<string, number[][]>;
+  baselineAnchoredTrails: Map<string, number[][]>;
+  /** Last position of each original moon parent, even after its removal. */
+  parentAnchors: Map<string, Vec3>;
+  baselineParentAnchors: Map<string, Vec3>;
   events: SandboxEvent[];
   /** Bodies announced as having left the system and not captured since. */
   readonly escaped: ReadonlySet<string>;
@@ -208,7 +214,12 @@ type Track = {
   points: PointMass[];
   acceleration: Vec3[];
   trails: Map<string, Vec3[]>;
-  /** Each body's velocity when its trail last recorded a point. */
+  anchoredTrails: Map<string, number[][]>;
+  parentAnchors: Map<string, Vec3>;
+  /**
+   * Each body's velocity when its trail last recorded a point, a held moon's
+   * measured against its planet.
+   */
   headings: Map<string, Vec3>;
   escaped: Set<string>;
   /** Each moon's planet. */
@@ -225,6 +236,8 @@ function createTrack(specs: SandboxBodySpec[]): Track {
     points,
     acceleration,
     trails: new Map(),
+    anchoredTrails: new Map(),
+    parentAnchors: new Map(),
     headings: new Map(),
     escaped: new Set(),
     parents: new Map(
@@ -234,52 +247,112 @@ function createTrack(specs: SandboxBodySpec[]): Track {
     ),
     loosened: new Set(),
   };
+  for (const parentId of track.parents.values()) {
+    const parent = points.find((point) => point.id === parentId);
+    if (parent) track.parentAnchors.set(parentId, [...parent.position]);
+  }
   for (const point of points) mark(track, point);
   return track;
 }
 
 /** Adds a point to a trail, unless the body has not left the last one. */
-function extend(trail: Vec3[], position: Vec3) {
+function extend(
+  trail: number[][],
+  position: readonly number[],
+  limit = TRAIL_LIMIT,
+) {
   // A point on top of the last one is a span of no length, which leaves the
   // drawn curve without a direction to take.
   const last = trail[trail.length - 1];
-  if (position.every((value, axis) => value === last[axis])) return;
+  if (position.every((value, axis) => value === last[axis])) return -1;
   trail.push([...position]);
-  if (trail.length > TRAIL_LIMIT)
-    trail.splice(0, trail.length - Math.round(TRAIL_LIMIT * TRAIL_KEEP));
+  let removed = 0;
+  if (trail.length > limit)
+    removed = trail.splice(
+      0,
+      trail.length - Math.round(limit * TRAIL_KEEP),
+    ).length;
+  return removed;
+}
+
+/** Record an inertial point and, for a moon, its parent's position beside it. */
+function recordTrail(track: Track, id: string, position: Vec3) {
+  const trail = track.trails.get(id);
+  const removed = trail ? extend(trail, position, TRAIL_LIMIT) : 0;
+  if (removed < 0) return;
+  if (!trail) track.trails.set(id, [[...position]]);
+  const parentId = track.parents.get(id);
+  if (!parentId) return;
+  const parent = track.points.find((point) => point.id === parentId);
+  const anchor = parent?.position ?? track.parentAnchors.get(parentId);
+  const sample = anchor ? [...position, ...anchor] : [...position];
+  const anchored = track.anchoredTrails.get(id);
+  if (!anchored) track.anchoredTrails.set(id, [sample]);
+  else {
+    anchored.push(sample);
+    if (removed > 0) anchored.splice(0, removed);
+  }
+}
+
+function offset(to: Vec3, from: Vec3): Vec3 {
+  return [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
 }
 
 /**
  * Records where a body is now and measures its next turn from here.
  *
- * A moon keeps no trail of its own. Around the Sun its path is its planet's
- * with a ripple a few planet widths across, far below anything the scene can
- * show, and its turn every few days would cost a point each time; it is drawn
- * around its planet instead.
+ * Every body's trail keeps positions in the same inertial frame as the
+ * integrator. A held moon's heading is measured against its planet to sample
+ * its quick turns, but changing that sampling frame never moves old points.
  */
 function mark(track: Track, point: PointMass) {
-  if (track.parents.has(point.id)) return;
-  track.headings.set(point.id, [...point.velocity]);
-  const trail = track.trails.get(point.id);
-  if (trail) extend(trail, point.position);
-  else track.trails.set(point.id, [[...point.position]]);
+  const parentId = track.parents.get(point.id);
+  const planet = parentId
+    ? track.points.find((item) => item.id === parentId)
+    : undefined;
+  track.headings.set(
+    point.id,
+    planet && !track.loosened.has(point.id)
+      ? offset(point.velocity, planet.velocity)
+      : [...point.velocity],
+  );
+  recordTrail(track, point.id, point.position);
 }
 
-/** Whether a body's heading has turned far enough to be worth a point. */
-function turned(from: Vec3, to: Vec3) {
+const AT_REST: Vec3 = [0, 0, 0];
+
+/**
+ * Whether a body's heading, measured against the motion of `frame`, has
+ * turned far enough to be worth a point.
+ */
+function turned(from: Vec3, velocity: Vec3, frame = AT_REST) {
+  const x = velocity[0] - frame[0];
+  const y = velocity[1] - frame[1];
+  const z = velocity[2] - frame[2];
   const was = from[0] * from[0] + from[1] * from[1] + from[2] * from[2];
-  const now = to[0] * to[0] + to[1] * to[1] + to[2] * to[2];
+  const now = x * x + y * y + z * z;
   // Setting off from rest starts a heading; coming to rest ends one.
   if (was === 0 || now === 0) return was === 0 && now > 0;
-  const dot = from[0] * to[0] + from[1] * to[1] + from[2] * to[2];
+  const dot = from[0] * x + from[1] * y + from[2] * z;
   return dot <= 0 || dot * dot < TURN_COSINE_SQUARED * was * now;
 }
 
 function record(track: Track) {
+  for (const parentId of track.parents.values()) {
+    const parent = track.points.find((item) => item.id === parentId);
+    if (parent) track.parentAnchors.set(parentId, [...parent.position]);
+  }
   for (const point of track.points) {
-    if (track.parents.has(point.id)) continue;
+    const parentId = track.parents.get(point.id);
+    let frame: Vec3 | undefined;
+    if (parentId) {
+      // Held, a moon turns about its planet; once it has left, or lost it,
+      // about the Sun like any other body.
+      if (!track.loosened.has(point.id))
+        frame = track.points.find((item) => item.id === parentId)?.velocity;
+    }
     const heading = track.headings.get(point.id);
-    if (!heading || turned(heading, point.velocity)) mark(track, point);
+    if (!heading || turned(heading, point.velocity, frame)) mark(track, point);
   }
 }
 
@@ -326,6 +399,10 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     facts,
     trails: variant.trails,
     baselineTrails: baseline.trails,
+    anchoredTrails: variant.anchoredTrails,
+    baselineAnchoredTrails: baseline.anchoredTrails,
+    parentAnchors: variant.parentAnchors,
+    baselineParentAnchors: baseline.parentAnchors,
     events: [],
     escaped: variant.escaped,
     step,
@@ -465,10 +542,14 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
     if (change.kind === 'remove') {
       const index = variant.points.findIndex((p) => p.id === change.id);
       if (index >= 0) {
+        variant.parentAnchors.set(change.id, [
+          ...variant.points[index].position,
+        ]);
         variant.points.splice(index, 1);
         run.events.push({ kind: 'remove', id: change.id, day: change.at });
       }
       variant.trails.delete(change.id);
+      variant.anchoredTrails.delete(change.id);
       variant.headings.delete(change.id);
     } else if (change.kind === 'add') {
       if (!facts.some((item) => item.id === change.body.id))
@@ -476,6 +557,8 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       if (!variant.points.some((p) => p.id === change.body.id)) {
         const point = toPointMass(change.body);
         variant.points.push(point);
+        if (change.body.parentId)
+          variant.parents.set(point.id, change.body.parentId);
         mark(variant, point);
         run.events.push({ kind: 'add', id: change.body.id, day: change.at });
       }
@@ -519,6 +602,26 @@ export function createRun(scenario: SandboxScenario): SandboxRun {
       // or a body that jumps does so at the moment it did, not somewhere on a
       // curve smoothed across it.
       mark(variant, point);
+      // Distance and speed edit the planet's solar orbit. Move its still-held
+      // moons in the same frame so their relative positions and velocities
+      // remain continuous; a moon that has left keeps its own trajectory.
+      if (change.field === 'distance' || change.field === 'speed') {
+        const positionDelta = next.position.map(
+          (value, axis) => value - point.position[axis],
+        );
+        const velocityDelta = next.velocity.map(
+          (value, axis) => value - point.velocity[axis],
+        );
+        for (const companion of variant.points) {
+          if (holder(variant, companion.id) !== point.id) continue;
+          companion.position = companion.position.map(
+            (value, axis) => value + positionDelta[axis],
+          ) as Vec3;
+          companion.velocity = companion.velocity.map(
+            (value, axis) => value + velocityDelta[axis],
+          ) as Vec3;
+        }
+      }
       fact.spinDays = next.spinDays;
       fact.tilt = next.tilt;
       point.mass = next.mass / SOLAR_MASS_KG;
@@ -548,8 +651,9 @@ function collide(track: Track, run: SandboxRun | null) {
   for (const collision of collisions) {
     // The absorbed body's trail stays, run on to where the two touched: the
     // path that led into the merge is the only record of how it happened.
-    const trail = track.trails.get(collision.absorbed);
-    if (trail) extend(trail, collision.position);
+    track.parentAnchors.set(collision.absorbed, [...collision.position]);
+    if (track.trails.has(collision.absorbed))
+      recordTrail(track, collision.absorbed, collision.position);
     track.headings.delete(collision.absorbed);
     // A merge moves the survivor to the pair's centre of mass and changes its
     // course, so its trail takes a point there.
@@ -674,7 +778,9 @@ function watchMoons(track: Track, run: SandboxRun, anchor: PointMass) {
         orbit.eccentricity < RECAPTURE_ECCENTRICITY &&
         orbit.distance < hill
       ) {
+        mark(track, moon);
         track.loosened.delete(id);
+        mark(track, moon);
         run.events.push({
           kind: 'capture',
           id,
@@ -693,7 +799,9 @@ function watchMoons(track: Track, run: SandboxRun, anchor: PointMass) {
         0,
       ) > 0;
     if (!orbit.escaping || !receding || orbit.distance <= hill) continue;
+    mark(track, moon);
     track.loosened.add(id);
+    mark(track, moon);
     run.events.push({
       kind: 'escape',
       id,

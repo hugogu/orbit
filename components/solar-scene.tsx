@@ -632,7 +632,6 @@ export default function SolarScene({
       labels: state.labels,
       lineWidth: state.orbitLineWidth,
       seconds: view.paused ? 0 : seconds,
-      daysPerSecond: view.speed,
       translate: translator(state.locale),
     });
     // A shared pose replaces automatic framing until the viewer takes over.
@@ -645,7 +644,6 @@ export default function SolarScene({
     controls.addEventListener('start', () => {
       wake();
       transition = 0;
-      following = null;
       sharedPose = null;
     });
     // Damping keeps the camera gliding after a drag ends, one change a frame.
@@ -874,6 +872,7 @@ export default function SolarScene({
         const gone = sandboxSystem.missing(sandbox.run);
         for (const body of bodies) roots.get(body.id)!.visible = !gone(body.id);
         sandboxSystem.update(sandbox.run, sandboxOptions(s, sandbox, dt));
+        eclipseSystem.updateSandbox(sandbox.run, (id) => sandboxSystem.meshOf(id));
       } else
         for (const body of bodies) {
           const root = roots.get(body.id)!;
@@ -891,6 +890,8 @@ export default function SolarScene({
             setOrbitLineWidth(line, s.orbitLineWidth);
           }
         }
+      sunlight.visible = !sandbox || !sandboxSystem.missing(sandbox.run)('sun');
+      sunlight.position.copy(roots.get('sun')!.position);
       observerMarker?.update(
         s.observerLocation.latitude,
         s.observerLocation.longitude,

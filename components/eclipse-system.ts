@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { attachEclipseMaterial, MAX_CASTERS } from './eclipse-material';
+import type { SandboxRun } from '../lib/sandbox/run';
 import {
+  AU_KM,
   shadowFrame,
   possibleCasters,
   shadowBoundary,
@@ -92,6 +94,42 @@ export function createEclipseSystem(meshes: Map<string, THREE.Mesh>) {
       if (!earth) return;
       earth.material.uniforms.earthNightMap.value = texture;
       earth.material.uniforms.earthNightReady.value = 1;
+    },
+    updateSandbox(
+      run: SandboxRun,
+      meshOf: (id: string) => THREE.Mesh | undefined,
+    ) {
+      const positions = new Map(
+        run.variant.map((point) => [
+          point.id,
+          {
+            id: point.id,
+            position: new THREE.Vector3(
+              ...(run.drawn.get(point.id) ?? point.position),
+            ).multiplyScalar(AU_KM),
+            radius: point.radius * AU_KM,
+            size: 1,
+          },
+        ]),
+      );
+      const sun = positions.get('sun');
+      for (const entry of entries) {
+        const receiver = positions.get(entry.id);
+        const mesh = meshOf(entry.id);
+        if (!receiver || !mesh) continue;
+        mesh.getWorldQuaternion(inverseRotation).invert();
+        entry.material.update(
+          receiver,
+          sun?.position ?? receiver.position,
+          [],
+          inverseRotation,
+          false,
+          sun?.radius ?? 0,
+        );
+      }
+      guideRoot.visible = false;
+      lastShadowDay = NaN;
+      lastMaterialDay = NaN;
     },
     update(
       days: number,

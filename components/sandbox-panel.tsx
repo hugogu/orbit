@@ -17,6 +17,7 @@ import {
 } from '../lib/sandbox/view';
 import { sandboxMoons } from '../lib/sandbox/moons';
 import { speedLabel } from '../lib/solar';
+import { Switch } from './ui/switch';
 
 /** Starting points for a body the viewer creates, in kilograms and kilometres. */
 const templates: { label: string; mass: number; radius: number }[] = [
@@ -278,30 +279,35 @@ export default function SandboxPanel({
       )}
 
       <div className="sandbox-toggles">
-        <label>
-          <input
-            type="checkbox"
+        <div className="setting-row">
+          <label htmlFor="sandbox-baseline">{t('显示原始')}</label>
+          <Switch
+            id="sandbox-baseline"
             checked={baseline}
-            onChange={(event) => onBaselineChange(event.target.checked)}
+            onCheckedChange={onBaselineChange}
           />
-          {t('对照原始轨迹')}
-        </label>
-        <label>
-          <input
-            type="checkbox"
+        </div>
+        <div className="setting-row">
+          <label htmlFor="sandbox-trails">{t('显示轨迹')}</label>
+          <Switch
+            id="sandbox-trails"
             checked={trails}
-            onChange={(event) => onTrailsChange(event.target.checked)}
+            onCheckedChange={onTrailsChange}
           />
-          {t('显示轨迹')}
-        </label>
-        <label title={t('切换后从分叉时刻重新演算，已做的改动保留')}>
-          <input
-            type="checkbox"
+        </div>
+        <div className="setting-row">
+          <label
+            htmlFor="sandbox-moons"
+            title={t('切换后从分叉时刻重新演算，已做的改动保留')}
+          >
+            {t('卫星体系')}
+          </label>
+          <Switch
+            id="sandbox-moons"
             checked={moons}
-            onChange={(event) => onMoonsChange(event.target.checked)}
+            onCheckedChange={onMoonsChange}
           />
-          {t('卫星体系')}
-        </label>
+        </div>
       </div>
       {moons && (
         <p className="sandbox-note">
@@ -311,6 +317,9 @@ export default function SandboxPanel({
               count: sandboxMoons.length,
               rate: speedLabel(MOON_SPEED_LIMIT, t),
             },
+          )}{' '}
+          {t(
+            '示意大小会在画面中展开卫星间距；引力和轨道仍按真实位置计算。开启真实大小可查看同一物理尺度。',
           )}
         </p>
       )}

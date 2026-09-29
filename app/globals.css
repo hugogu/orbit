@@ -1883,19 +1883,14 @@ button:disabled {
 .sandbox-toggles {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 0;
 }
-.sandbox-toggles label {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 13px;
-  color: #c4ccd9;
+.sandbox-toggles .setting-row {
+  min-height: 44px;
+  padding: 10px 0;
 }
-.sandbox-toggles input {
-  accent-color: #d9c49a;
-  width: 14px;
-  height: 14px;
+.sandbox-toggles .setting-row:last-child {
+  border-bottom: 0;
 }
 .sandbox-events h3 {
   font-size: 11px;

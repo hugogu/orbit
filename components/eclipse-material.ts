@@ -92,13 +92,14 @@ export function attachEclipseMaterial(
       casters: ShadowBody[],
       inverseRotation: THREE.Quaternion,
       enabled: boolean,
+      sunRadius = SUN_RADIUS_KM,
     ) {
       uniforms.eclipseSun.value
         .copy(sun)
         .sub(receiver.position)
         .applyQuaternion(inverseRotation)
         .divideScalar(receiver.radius);
-      uniforms.eclipseSunRadius.value = SUN_RADIUS_KM / receiver.radius;
+      uniforms.eclipseSunRadius.value = sunRadius / receiver.radius;
       uniforms.eclipseCount.value = enabled
         ? Math.min(casters.length, MAX_CASTERS)
         : 0;

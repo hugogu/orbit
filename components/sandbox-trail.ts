@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { scenePosition } from '../lib/sandbox/display';
-import type { Vec3 } from '../lib/sandbox/physics';
 import { createOrbitLine, type OrbitLine } from './orbit-line';
 
 /** Drawn segments per recorded span: a lap of two dozen points reads as a curve. */
@@ -68,10 +67,18 @@ export function smoothed(points: THREE.Vector3[]) {
   return points.length < 3 ? points : spans(points, 0, points.length - 1);
 }
 
+/**
+ * A recorded point: the body's place in AU first, which is what tells whether
+ * it has moved on, then anything else `place` needs to draw it.
+ */
+export type TrailPoint = readonly number[];
+
 export type SandboxTrail = {
   line: OrbitLine;
   /** Draws `history` on to the body at `head`, redrawing only what moved. */
-  draw(history: Vec3[], head: Vec3): void;
+  draw(history: readonly TrailPoint[], head: TrailPoint): void;
+  /** Writes every span again on the next draw, for when `place` has changed. */
+  restart(): void;
 };
 
 /**
@@ -81,10 +88,14 @@ export type SandboxTrail = {
  * is what used to keep trails short. Spans whose surrounding points are all
  * recorded are final, so they are written once to a buffer that only grows;
  * each frame redraws just the last recorded span and the way on to the body.
+ * `place` puts a recorded point in the line's own space: a scene position by
+ * default, or a moon's out from its planet along the moon map.
  */
 export function createSandboxTrail(
   color: THREE.ColorRepresentation,
   brightness: number,
+  place: (point: TrailPoint) => THREE.Vector3 = (point) =>
+    new THREE.Vector3(...scenePosition([point[0], point[1], point[2]])),
 ): SandboxTrail {
   const line = createOrbitLine(color, brightness);
   // Its extent changes every frame and it is never picked, so a bounding
@@ -96,13 +107,11 @@ export function createSandboxTrail(
   let spansDone = 0;
   // The recorded point the sealed part starts from. A trail that has lost its
   // oldest part, or belongs to a new run, starts from another one.
-  let origin: Vec3 | undefined;
+  let origin: TrailPoint | undefined;
   // What the last draw was drawn from, and whether it drew anything.
   let recordedAt = -1;
-  const headAt: Vec3 = [NaN, NaN, NaN];
+  const headAt = [NaN, NaN, NaN];
   let drewAny = false;
-
-  const toScene = (point: Vec3) => new THREE.Vector3(...scenePosition(point));
 
   function reserve(segments: number) {
     const capacity = buffer ? buffer.array.length / 6 : 0;
@@ -148,6 +157,10 @@ export function createSandboxTrail(
 
   return {
     line,
+    restart() {
+      origin = undefined;
+      recordedAt = -1;
+    },
     draw(history, head) {
       // Nothing has moved since the last draw — a paused run, or a body that
       // has merged away — so the same curve would only be uploaded again.
@@ -177,7 +190,7 @@ export function createSandboxTrail(
       const final = recorded - 2;
       if (final > spansDone) {
         const from = Math.max(0, spansDone - 1);
-        const path = history.slice(from).map(toScene);
+        const path = history.slice(from).map(place);
         sealed += write(spans(path, spansDone - from, final - from), sealed);
         spansDone = final;
       }
@@ -188,8 +201,8 @@ export function createSandboxTrail(
         Math.hypot(head[0] - last[0], head[1] - last[1], head[2] - last[2]) >
         COINCIDENT_AU;
       const from = Math.max(0, spansDone - 1);
-      const path = history.slice(from).map(toScene);
-      if (moved) path.push(toScene(head));
+      const path = history.slice(from).map(place);
+      if (moved) path.push(place(head));
       const tail =
         path.length < 3 ? path : spans(path, spansDone - from, path.length - 1);
       const drawn = sealed + write(tail, sealed);

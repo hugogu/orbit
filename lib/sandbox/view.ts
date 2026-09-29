@@ -15,8 +15,8 @@ import type { SandboxRun } from './run';
  * the fastest rate this model can carry without overstating what it knows: a
  * century still takes about three minutes to watch.
  */
-export const sandboxSpeeds = [0.1, 0.5, 1, 5, 20, 60, 180];
-export const defaultSandboxSpeed = 20;
+export const sandboxSpeeds = [1 / 86400, 0.1, 0.5, 1, 5, 20, 60, 180];
+export const defaultSandboxSpeed = 1;
 
 /**
  * The fastest rate while the planets carry their moons.

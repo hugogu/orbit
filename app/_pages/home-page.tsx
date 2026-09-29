@@ -161,7 +161,7 @@ import {
   MIN_ORBIT_LINE_WIDTH,
   ORBIT_LINE_WIDTH_STEP,
 } from '@/lib/orbit-line-width';
-// The slowest preset, one day per second, and the fastest stay labelled at any
+// Real time, one day per second, and the fastest stay labelled at any
 // control width. The remaining stops appear only where the track is wide enough
 // for them, so the class follows the preset rather than its index. The set is
 // read from whichever list is live, because the sandbox offers its own.
@@ -1099,7 +1099,10 @@ export default function Home() {
   // column, so only one of them is up at a time; an eclipse in progress is the
   // more urgent of the two and already answers where the Moon is.
   const showMoonCard =
-    selected === 'moon-moon' && !eclipse.event && time !== null;
+    tab !== 'sandbox' &&
+    selected === 'moon-moon' &&
+    !eclipse.event &&
+    time !== null;
   // Hiding a label must not take the name away from a screen reader, so the
   // text stays in the button and only leaves the picture.
   const actionLabel = actionLabels ? undefined : 'sr-only';
@@ -1350,7 +1353,6 @@ export default function Home() {
                     compact
                     run={sandboxRun}
                     selected={selected}
-                    daysPerSecond={sandboxPaused ? 0 : sandboxRate}
                     onChange={(field, value) =>
                       editSandboxBody(selected, field, value)
                     }
@@ -1431,7 +1433,6 @@ export default function Home() {
           <SandboxBodyEditor
             run={sandboxRun}
             selected={selected}
-            daysPerSecond={sandboxPaused ? 0 : sandboxRate}
             onChange={(field, value) => editSandboxBody(selected, field, value)}
             onReset={() => resetSandboxBody(selected)}
           />
@@ -1533,13 +1534,15 @@ export default function Home() {
                     ? '实际视角大小 · 方位准确'
                     : '天体放大演示 · 方位准确',
                 )
-              : realSizes
-                ? displayScale === 'distance'
-                  ? t('大小与距离采用同一比例')
-                  : t('天体大小按真实比例 · 距离示意')
-                : displayScale === 'distance'
-                  ? t('距离按比例 · 天体已放大')
-                  : t('演示比例 · 距离与天体大小已调整')}
+              : sandboxScenario?.moons && !realSizes
+                ? t('卫星间距示意 · 天体已放大')
+                : realSizes
+                  ? displayScale === 'distance'
+                    ? t('大小与距离采用同一比例')
+                    : t('天体大小按真实比例 · 距离示意')
+                  : displayScale === 'distance'
+                    ? t('距离按比例 · 天体已放大')
+                    : t('演示比例 · 距离与天体大小已调整')}
           </span>
         </div>
         <section className="timeline glass" aria-label={t('时间控制')}>
@@ -1721,7 +1724,7 @@ export default function Home() {
         }}
       />
       <LunarPanel
-        open={lunar}
+        open={lunar && tab !== 'sandbox'}
         onOpenChange={setLunar}
         time={time ?? J2000_MS}
         location={timedObserverLocation}
@@ -2270,7 +2273,6 @@ export default function Home() {
             <SandboxBodyEditor
               run={sandboxRun}
               selected={selected}
-              daysPerSecond={sandboxPaused ? 0 : sandboxRate}
               onChange={(field, value) =>
                 editSandboxBody(selected, field, value)
               }
