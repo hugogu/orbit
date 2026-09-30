@@ -7,6 +7,7 @@ uniform vec3 eclipseSun;
 uniform float eclipseSunRadius;
 uniform vec4 eclipseCasters[6];
 uniform int eclipseCount;
+uniform int eclipseEarthIndex;
 varying vec3 eclipseSurface;
 float eclipseCover(float a, float b, float angle) {
   if (angle >= a+b) return 0.0;
@@ -17,10 +18,11 @@ float eclipseCover(float a, float b, float angle) {
   float lens=sqrt(max(0.0,(-d+1.0+r)*(d+1.0-r)*(d-1.0+r)*(d+1.0+r)));
   return clamp((x+r*r*y-0.5*lens)/3.14159265359, 0.0, 1.0);
 }
-float eclipseVisibility() {
+vec3 eclipseTransmission() {
   vec3 p=normalize(eclipseSurface);
   vec3 s=eclipseSun-p;
   float sd=length(s), cover=0.0;
+  vec3 refracted=vec3(0.0);
   float a=asin(clamp(eclipseSunRadius/sd,0.0,1.0));
   for(int i=0;i<6;i++) {
     if(i>=eclipseCount) break;
@@ -29,14 +31,25 @@ float eclipseVisibility() {
     if(od<=r || od>=sd || dot(s,o)<=0.0) continue;
     float angle=atan(length(cross(s/sd,o/od)),dot(s/sd,o/od));
     float b=asin(clamp(r/od,0.0,1.0));
-    cover=max(cover,eclipseCover(a,b,angle));
+    float covered=eclipseCover(a,b,angle);
+    cover=max(cover,covered);
+    if(i==eclipseEarthIndex) {
+      // Distance inside the umbra in solar angular diameters. This remains
+      // tied to the physical shadow, even when the displayed Moon is enlarged.
+      float depth=clamp((b-a-angle)/(2.0*a),0.0,1.0);
+      // Schematic clear-atmosphere refraction: copper at the edge, darker red
+      // inside. Clouds/aerosols make the real brightness unpredictable.
+      vec3 copper=mix(vec3(0.16,0.045,0.012),vec3(0.045,0.006,0.002),depth);
+      refracted=copper*smoothstep(0.9,1.0,covered);
+    }
   }
-  return 1.0-cover;
+  if(eclipseEarthIndex>=0) return vec3(1.0-cover)+refracted;
+  return vec3(mix(0.035,1.0,1.0-cover));
 }
 `;
 
 export function attachEclipseMaterial(
-  material: THREE.MeshStandardMaterial,
+  material: THREE.MeshStandardMaterial | THREE.MeshBasicMaterial,
   night = false,
 ) {
   const uniforms = {
@@ -48,8 +61,12 @@ export function attachEclipseMaterial(
       value: Array.from({ length: MAX_CASTERS }, () => new THREE.Vector4()),
     },
     eclipseCount: { value: 0 },
+    eclipseEarthIndex: { value: -1 },
   };
-  material.onBeforeCompile = (shader) => {
+  const previousCompile = material.onBeforeCompile.bind(material);
+  const previousCacheKey = material.customProgramCacheKey();
+  material.onBeforeCompile = (shader, renderer) => {
+    previousCompile(shader, renderer);
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader =
       (night ? 'varying vec2 earthNightUv;\n' : '') +
@@ -67,9 +84,7 @@ export function attachEclipseMaterial(
       shader.fragmentShader.replace(
         '#include <opaque_fragment>',
         `
-      float visibility=eclipseVisibility();
-      // Retain a small neutral floor for readability; atmospheric refraction is omitted.
-      outgoingLight *= mix(0.035,1.0,visibility);
+      outgoingLight *= eclipseTransmission();
       ${
         night
           ? `
@@ -82,7 +97,8 @@ export function attachEclipseMaterial(
       #include <opaque_fragment>`,
       );
   };
-  material.customProgramCacheKey = () => `orbit-finite-sun-shadows-v2-${night}`;
+  material.customProgramCacheKey = () =>
+    `${previousCacheKey}-orbit-finite-sun-shadows-v3-${night}`;
   material.needsUpdate = true;
   return {
     uniforms,
@@ -103,6 +119,12 @@ export function attachEclipseMaterial(
       uniforms.eclipseCount.value = enabled
         ? Math.min(casters.length, MAX_CASTERS)
         : 0;
+      uniforms.eclipseEarthIndex.value =
+        enabled && receiver.id === 'moon-moon'
+          ? casters
+              .slice(0, MAX_CASTERS)
+              .findIndex((caster) => caster.id === 'earth')
+          : -1;
       for (let i = 0; i < uniforms.eclipseCount.value; i++) {
         const caster = casters[i];
         const local = caster.position

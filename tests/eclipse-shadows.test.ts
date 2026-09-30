@@ -143,7 +143,7 @@ void test('material integration is independent of display scale and can disable 
     {} as THREE.WebGLRenderer,
   );
   assert.ok(
-    shader.fragmentShader.includes('float visibility=eclipseVisibility()'),
+    shader.fragmentShader.includes('outgoingLight *= eclipseTransmission()'),
   );
   const d = days('2024-04-08T18:17:15Z'),
     frame = shadowFrame(d),
@@ -256,5 +256,151 @@ void test('cached shadow positions preserve rotation and refresh on short date s
   assertCurrent(start);
   system.dispose();
   mesh.geometry.dispose();
+  material.dispose();
+});
+
+void test('only Earth casts copper atmospheric light onto the Moon, in its rotating physical frame', () => {
+  const material = new THREE.MeshStandardMaterial();
+  const controller = attachEclipseMaterial(material);
+  const d = days('2025-03-14T06:59:00Z');
+  const frame = shadowFrame(d);
+  const moon = frame.get('moon-moon')!;
+  const sun = frame.get('sun')!.position;
+  const earth = frame.get('earth')!;
+  const rotation = bodyOrientation(moon.id, d).invert();
+  const casters = possibleCasters(moon, frame);
+  controller.update(moon, sun, casters, rotation, true);
+  assert.equal(
+    casters[controller.uniforms.eclipseEarthIndex.value].id,
+    'earth',
+  );
+  const localEarth = new THREE.Vector3().fromArray(
+    controller.uniforms.eclipseCasters.value[
+      controller.uniforms.eclipseEarthIndex.value
+    ].toArray(),
+  );
+  assert.ok(
+    localEarth.distanceTo(
+      earth.position
+        .clone()
+        .sub(moon.position)
+        .applyQuaternion(rotation)
+        .divideScalar(moon.radius),
+    ) < 1e-10,
+  );
+  const before = localEarth.clone();
+  controller.update(
+    { ...moon, size: moon.size * 100 },
+    sun,
+    casters,
+    rotation,
+    true,
+  );
+  assert.deepEqual(
+    new THREE.Vector3().fromArray(
+      controller.uniforms.eclipseCasters.value[
+        controller.uniforms.eclipseEarthIndex.value
+      ].toArray(),
+    ),
+    before,
+  );
+  controller.update(moon, sun, casters, rotation, false);
+  assert.equal(controller.uniforms.eclipseEarthIndex.value, -1);
+  controller.update(earth, sun, [moon], rotation, true);
+  assert.equal(controller.uniforms.eclipseEarthIndex.value, -1);
+  const ordinary = shadowFrame(days('2025-03-21T12:00:00Z'));
+  const ordinaryMoon = ordinary.get(moon.id)!;
+  controller.update(
+    ordinaryMoon,
+    ordinary.get('sun')!.position,
+    possibleCasters(ordinaryMoon, ordinary),
+    rotation,
+    true,
+  );
+  assert.equal(controller.uniforms.eclipseEarthIndex.value, -1);
+  material.dispose();
+});
+
+void test('partial lunar eclipse has a curved umbral edge on the physical lunar surface', () => {
+  const frame = shadowFrame(days('2025-03-14T06:00:00Z'));
+  const moon = frame.get('moon-moon')!;
+  const earth = frame.get('earth')!;
+  const sun = frame.get('sun')!.position;
+  const boundary = shadowBoundary(moon, sun, earth, 'umbra').filter(
+    (p) => p !== null,
+  );
+  assert.ok(boundary.length > 10);
+  const toSun = sun.clone().sub(moon.position).normalize();
+  const lateral = earth.position
+    .clone()
+    .sub(moon.position)
+    .projectOnPlane(toSun)
+    .normalize();
+  const cover = (side: number) =>
+    obscuration(
+      moon.position
+        .clone()
+        .add(
+          toSun
+            .clone()
+            .addScaledVector(lateral, side)
+            .normalize()
+            .multiplyScalar(moon.radius),
+        ),
+      sun,
+      earth.position,
+      earth.radius,
+    );
+  assert.ok(
+    cover(2) > 0.999,
+    'the limb toward the Earth shadow axis is in the umbra',
+  );
+  assert.ok(
+    cover(-2) < 0.9,
+    'the opposite limb still receives direct sunlight',
+  );
+  for (const p of boundary) {
+    assert.ok(Math.abs(p.length() - moon.radius) < 1e-5);
+    assert.ok(
+      obscuration(
+        p.clone().add(moon.position),
+        sun,
+        earth.position,
+        earth.radius,
+      ) > 0.999,
+    );
+  }
+});
+
+void test('ground Moon material composes physical eclipse lighting with its existing projection and phase shaders', () => {
+  const material = new THREE.MeshBasicMaterial();
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = '/* ground projection */\n' + shader.vertexShader;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      'outgoingLight *= 0.5;\n#include <opaque_fragment>',
+    );
+  };
+  material.customProgramCacheKey = () => 'ground-body-shape-lit';
+  const controller = attachEclipseMaterial(material);
+  const shader = {
+    uniforms: {},
+    vertexShader: THREE.ShaderLib.basic.vertexShader,
+    fragmentShader: THREE.ShaderLib.basic.fragmentShader,
+  } as THREE.WebGLProgramParametersWithUniforms;
+  material.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+  assert.ok(shader.vertexShader.includes('/* ground projection */'));
+  assert.ok(shader.vertexShader.includes('eclipseSurface=position'));
+  assert.ok(
+    shader.fragmentShader.indexOf('outgoingLight *= 0.5') <
+      shader.fragmentShader.indexOf('outgoingLight *= eclipseTransmission()'),
+  );
+  assert.equal(
+    shader.uniforms.eclipseEarthIndex,
+    controller.uniforms.eclipseEarthIndex,
+  );
+  assert.ok(
+    material.customProgramCacheKey().startsWith('ground-body-shape-lit-'),
+  );
   material.dispose();
 });

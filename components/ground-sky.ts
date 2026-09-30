@@ -14,6 +14,8 @@ import { createSceneLabel } from './scene-label';
 import { sandboxGroundSnapshot } from '../lib/sandbox/ground-sky';
 import type { SandboxRun } from '../lib/sandbox/run';
 import { createOrbitLine, setOrbitLineWidth } from './orbit-line';
+import { attachEclipseMaterial } from './eclipse-material';
+import { shadowFrame, possibleCasters } from '../lib/eclipse-shadows';
 
 const GROUND_BODY_SHAPE_PROJECTION = /* glsl */ `
 vec4 groundBodyClipPosition(vec4 viewPosition, vec4 clipPosition) {
@@ -100,6 +102,8 @@ export function createGroundSky(
     };
     material.customProgramCacheKey = () =>
       body.id === 'sun' ? 'ground-body-shape-sun' : 'ground-body-shape-lit';
+    const eclipse =
+      body.id === 'moon-moon' ? attachEclipseMaterial(material) : null;
     const mesh = new THREE.Mesh(sphere, material);
     mesh.userData.id = body.id;
     root.add(mesh);
@@ -107,6 +111,7 @@ export function createGroundSky(
       body,
       mesh,
       sunDirection,
+      eclipse,
       vector: new THREE.Vector3(),
       ...makeLabel('planet-label ground-body-label'),
     };
@@ -243,9 +248,10 @@ export function createGroundSky(
       translate: Translate,
       sandbox: SandboxRun | null = null,
       frameSeconds = 1 / 60,
+      shadows = true,
     ) {
       // A 100 ms sky snapshot is far below sensor accuracy, including the Moon.
-      const key = `${Math.floor(days * 864000)}:${location.latitude}:${location.longitude}:${location.height}:${scale}:${realSizes}`;
+      const key = `${Math.floor(days * 864000)}:${location.latitude}:${location.longitude}:${location.height}:${scale}:${realSizes}:${shadows}`;
       if (sandbox || key !== lastKey || sandbox !== lastSandbox) {
         const snapshot = sandbox
           ? sandboxGroundSnapshot(sandbox, location)
@@ -276,6 +282,9 @@ export function createGroundSky(
           entries.splice(index, 1);
         }
         const sun = skyBodies.find((body) => body.id === 'sun')?.vector;
+        const lunarFrame = !sandbox
+          ? shadowFrame(days, ['earth', 'moon-moon'])
+          : null;
         for (const body of skyBodies) {
           let entry = entries.find((item) => item.body.id === body.id);
           if (!entry) {
@@ -304,6 +313,19 @@ export function createGroundSky(
           entry.mesh.position.copy(display.position);
           entry.mesh.scale.setScalar(display.radius);
           entry.mesh.quaternion.copy(body.orientation);
+          if (entry.eclipse && lunarFrame) {
+            const receiver = lunarFrame.get('moon-moon')!;
+            entry.eclipse.update(
+              receiver,
+              lunarFrame.get('sun')!.position,
+              possibleCasters(receiver, lunarFrame),
+              entry.mesh.quaternion.clone().invert(),
+              shadows,
+            );
+          } else if (entry.eclipse) {
+            entry.eclipse.uniforms.eclipseCount.value = 0;
+            entry.eclipse.uniforms.eclipseEarthIndex.value = -1;
+          }
           if (sun)
             entry.sunDirection.value.copy(sun).sub(entry.vector).normalize();
           else entry.sunDirection.value.set(0, 0, 0);

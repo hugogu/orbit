@@ -148,10 +148,7 @@ void test('ground view keeps the horizon straight and corrects off-axis body sha
       );
       const offset = pointScreen.clone().sub(centerScreen);
       const radialOffset = offset.dot(radialAxis);
-      pointScreen.addScaledVector(
-        radialAxis,
-        radialOffset * (viewCosine - 1),
-      );
+      pointScreen.addScaledVector(radialAxis, radialOffset * (viewCosine - 1));
       point.x = pointScreen.x * projectionScale.x;
       point.y = pointScreen.y * projectionScale.y;
     }
@@ -168,10 +165,11 @@ void test('ground view keeps the horizon straight and corrects off-axis body sha
   assert.ok(perspectiveRatio > 1.3, `${perspectiveRatio}`);
   assert.ok(Math.abs(correctedRatio - 1) < 1e-4, `${correctedRatio}`);
 
-  const horizonYs = [-70, -35, 0, 35, 70].map((azimuth) =>
-    new Vector3(Math.sin(azimuth * radians), 0, -Math.cos(azimuth * radians))
-      .multiplyScalar(100)
-      .project(camera).y,
+  const horizonYs = [-70, -35, 0, 35, 70].map(
+    (azimuth) =>
+      new Vector3(Math.sin(azimuth * radians), 0, -Math.cos(azimuth * radians))
+        .multiplyScalar(100)
+        .project(camera).y,
   );
   assert.ok(Math.max(...horizonYs) - Math.min(...horizonYs) < 1e-10);
 });
@@ -381,6 +379,59 @@ void test('ground renderer integrates camera attitude, physical bodies, texture 
       /groundBodyClipPosition\(mvPosition, gl_Position\)/,
     );
     assert.match(shader.vertexShader, /centerViewPosition/);
+    const eclipseDay = (Date.parse('2025-03-14T06:59:00Z') - J2000_MS) / DAY_MS;
+    sky.update(
+      eclipseDay,
+      site,
+      'illustrated',
+      false,
+      null,
+      1280,
+      720,
+      true,
+      translator('en'),
+    );
+    assert.equal(shader.uniforms.eclipseEarthIndex.value, 0);
+    assert.match(
+      shader.fragmentShader,
+      /outgoingLight \*= eclipseTransmission\(\)/,
+    );
+    const physicalSun = (
+      shader.uniforms.eclipseSun.value as THREE.Vector3
+    ).clone();
+    sky.update(
+      eclipseDay,
+      site,
+      'distance',
+      true,
+      null,
+      1280,
+      720,
+      true,
+      translator('en'),
+    );
+    assert.ok(
+      physicalSun.distanceTo(
+        shader.uniforms.eclipseSun.value as THREE.Vector3,
+      ) < 1e-10,
+    );
+    sky.update(
+      eclipseDay,
+      site,
+      'distance',
+      true,
+      null,
+      1280,
+      720,
+      true,
+      translator('en'),
+      null,
+      1 / 60,
+      false,
+    );
+    assert.equal(shader.uniforms.eclipseEarthIndex.value, -1);
+    assert.equal(shader.uniforms.eclipseCount.value, 0);
+    update(q, 390, 844, 'distance', true);
     const guides = scene.children[0].children.filter((object) =>
       object.userData.id?.endsWith('-guide'),
     ) as THREE.LineSegments[];

@@ -838,6 +838,7 @@ export default function SolarScene({
           translate,
           sandbox?.run ?? null,
           dt,
+          s.shadows,
         );
         renderer.render(scene, groundSky.camera);
         starField.project(

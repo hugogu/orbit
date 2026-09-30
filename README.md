@@ -184,7 +184,7 @@ ORBIT is an educational tool with explicit assumptions, not a navigation product
 | Other representative moons               | Fixed-epoch JPL mean orbital elements                                                                                       | Perturbations, resonances, and long-term precession are omitted; phase error can grow away from the epoch     |
 | Four comets                              | Two-body propagation of JPL Small-Body Database snapshots; body-specific observed or observation-constrained nucleus meshes | Gravitational perturbations and outgassing are omitted; return and perihelion dates are not precise forecasts |
 | Sunrise, sunset, and eclipses            | Independent Web Worker search; sunrise/sunset use a supplied fixed UTC offset, solar upper limb, and standard refraction    | No terrain, weather, or dynamic daylight-saving rules; a global eclipse is not necessarily locally visible    |
-| Eclipse shadows                          | Physical radii and heliocentric vectors produce umbra, penumbra, and antumbra before mapping to the display meshes          | No atmospheric refraction, limb darkening, terrain, rings, or comet effects                                   |
+| Eclipse shadows                          | Physical radii and heliocentric vectors locate shadows; lunar eclipses add schematic copper-red atmospheric transmission in both space and ground views          | Lunar colour and brightness are illustrative, not atmospheric forecasts; no limb darkening, terrain, rings, or comet effects                                   |
 
 ### Scale options
 
