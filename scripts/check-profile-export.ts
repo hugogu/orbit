@@ -89,7 +89,7 @@ for (const entry of entries) {
     assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
     assert.ok(
       head.includes(
-        `<title>${escapeHtml(profileTitle(entry, locale))} | ORBIT</title>`,
+        `<title>${escapeHtml(profileTitle(entry, locale))} | ${seoSiteName}</title>`,
       ),
       path,
     );
@@ -284,7 +284,7 @@ for (const locale of seoLocales) {
   assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
   assert.ok(
     head.includes(
-      `<title>${escapeHtml(bodiesIndexTitle(locale))} | ORBIT</title>`,
+      `<title>${escapeHtml(bodiesIndexTitle(locale))} | ${seoSiteName}</title>`,
     ),
     path,
   );

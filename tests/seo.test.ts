@@ -789,13 +789,14 @@ void test('root layouts emit the route locale before client hydration', () => {
   assert.match(explorerPage, /homeJsonLd\(\)/);
 });
 
-void test('the root page previews in English first, with the Chinese name as a hint', () => {
+void test('the root page previews under its public name in English', () => {
   // A crawler reads only this server-rendered metadata, never the client code
   // that picks the visitor's language, so it must be readable in English.
   const english = translator('en');
   const title = (siteMetadata.title as { default: string }).default;
-  assert.ok(title.startsWith(english('ORBIT · 太阳系漫游')), title);
-  assert.ok(title.endsWith('太阳系漫游'), title);
+  assert.equal(title, 'Orbits Observer: Realtime 3D Solar System Explorer');
+  assert.equal(siteMetadata.applicationName, seoSiteName);
+  assert.equal(siteMetadata.openGraph?.siteName, seoSiteName);
   const description = english(
     '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
   );
@@ -803,13 +804,11 @@ void test('the root page previews in English first, with the Chinese name as a h
   assert.doesNotMatch(description, /[\u3040-\u30ff\u4e00-\u9fff]/);
   assert.equal(siteMetadata.openGraph?.title, title);
   assert.equal(siteMetadata.openGraph?.description, description);
-  assert.equal(
-    (siteMetadata.openGraph as { locale?: string }).locale,
-    'en_US',
-  );
+  assert.equal((siteMetadata.openGraph as { locale?: string }).locale, 'en_US');
   assert.equal(siteMetadata.twitter?.title, title);
   assert.equal(siteMetadata.twitter?.description, description);
-  const images = (siteMetadata.openGraph as { images: { alt: string }[] }).images;
+  const images = (siteMetadata.openGraph as { images: { alt: string }[] })
+    .images;
   for (const image of images)
     assert.doesNotMatch(image.alt, /[\u3040-\u30ff\u4e00-\u9fff]/);
 });
@@ -940,7 +939,7 @@ void test('Encke metadata and introduction answer the observed search intents', 
   assert.ok(entry);
   assert.equal(
     profileTitle(entry, 'en'),
-    "Encke's Comet (2P/Encke): Orbit, Period and Name",
+    "Encke's Comet: Facts, Orbit and Current Status",
   );
   const description = profileDescription(entry, 'en');
   const introduction = translator('en')(profileContent.encke.intro);
@@ -950,6 +949,11 @@ void test('Encke metadata and introduction answer the observed search intents', 
   assert.match(introduction, /Taurid meteor stream/);
   for (const locale of seoLocales) {
     assert.ok(profileTitle(entry, locale).length > 0);
+    assert.doesNotMatch(
+      translator(locale)(profileContent.encke.intro),
+      /^2P\//,
+    );
+    assert.doesNotMatch(profileDescription(entry, locale), /^2P\//);
     const translatedDescription = profileDescription(entry, locale);
     assert.ok(translatedDescription.length > 0);
     assert.equal(
@@ -973,8 +977,23 @@ void test('profile metadata uses catalog defaults when no editorial override exi
     const t = translator(locale);
     assert.equal(
       profileTitle(entry, locale),
-      t('{{name}}：结构、轨道与探索', { name: t(entry.data.name) }),
+      t('{{name}}：结构、轨道与当前状态', { name: t(entry.data.name) }),
     );
     assert.equal(profileDescription(entry, locale), t(entry.data.description));
+  }
+});
+
+void test('home and localized profiles share one site name and its alternatives', () => {
+  assert.equal(seoSiteName, 'Orbits Observer');
+  for (const nodes of [
+    homeJsonLd()['@graph'] as Node[],
+    ...seoLocales.map(
+      (locale) => profileGraph(catalogEntry('encke')!, locale).nodes,
+    ),
+  ]) {
+    const website = nodes.find((node) => node['@type'] === 'WebSite')!;
+    assert.equal(website.name, seoSiteName);
+    assert.equal(website.url, absoluteSiteUrl('/'));
+    assert.deepEqual(website.alternateName, ['ORBIT', 'orbits.observer']);
   }
 });

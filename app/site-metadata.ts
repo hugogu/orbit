@@ -10,11 +10,11 @@ export const viewport: Viewport = {
 
 // Link cards and search snippets are built from this server-rendered metadata,
 // and a crawler never runs the client code that picks a visitor's language, so
-// the root page leads in English with the Chinese name as a hint. The explorer
+// the root page leads in English under the public site name. The explorer
 // puts the visitor's own language in the tab title and description once it has
 // hydrated (`I18nProvider`). The strings come from the catalog so the two agree.
 const english = translator('en');
-const title = `${english('ORBIT · 太阳系漫游')} · 太阳系漫游`;
+const title = english('Orbits Observer：实时三维太阳系探索');
 const description = english(
   '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
 );
@@ -25,10 +25,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(`${siteOrigin}/`),
   title: {
     default: title,
-    template: '%s | ORBIT',
+    template: '%s | Orbits Observer',
   },
   description,
-  applicationName: 'ORBIT',
+  applicationName: seoSiteName,
   category: 'education',
   alternates: {
     canonical: '/',

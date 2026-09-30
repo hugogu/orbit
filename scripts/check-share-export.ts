@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { absoluteSiteUrl, catalogEntries, seoLocales } from '../lib/seo';
+import {
+  absoluteSiteUrl,
+  catalogEntries,
+  seoLocales,
+  seoSiteName,
+} from '../lib/seo';
 import { squareImagePath, wideImagePath } from '../lib/profile-images';
 import { sharePath } from '../lib/share-view';
 import { languages, translator } from '../lib/i18n';
@@ -44,7 +49,7 @@ for (const locale of seoLocales) {
     assert.equal(htmlTag?.get('lang'), intl, path);
     // The card names the body being observed, without the link's details.
     assert.ok(
-      head.includes(`<title>${escapeHtml(name)} | ORBIT</title>`),
+      head.includes(`<title>${escapeHtml(name)} | ${seoSiteName}</title>`),
       path,
     );
     assert.deepEqual(content('og:title'), [escapeHtml(name)], path);

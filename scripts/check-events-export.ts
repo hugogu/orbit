@@ -8,6 +8,7 @@ import {
   eventsIndexTitle,
   eventTitle,
   seoLocales,
+  seoSiteName,
 } from '../lib/seo';
 import { eventTopics } from '../lib/event-guide';
 import { languages, translator } from '../lib/i18n';
@@ -57,7 +58,7 @@ function checkShell(
 ) {
   assert.equal(page.htmlTag?.get('lang'), languages[locale].intl, path);
   assert.ok(
-    page.head.includes(`<title>${escapeHtml(title)} | ORBIT</title>`),
+    page.head.includes(`<title>${escapeHtml(title)} | ${seoSiteName}</title>`),
     path,
   );
   assert.equal((page.html.match(/<h1\b/g) ?? []).length, 1, path);

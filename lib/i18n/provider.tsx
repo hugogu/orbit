@@ -81,7 +81,7 @@ export function I18nProvider({
     document.documentElement.lang = languages[locale].intl;
     // Profile routes own their metadata; only the explorer changes it client-side.
     if (window.location.pathname !== '/') return;
-    document.title = value.t('ORBIT · 太阳系漫游');
+    document.title = value.t('Orbits Observer：实时三维太阳系探索');
     document
       .querySelector('meta[name="description"]')
       ?.setAttribute(

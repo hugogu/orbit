@@ -29,7 +29,7 @@ import {
 const fallbackSiteOrigin = 'https://orbits.observer';
 
 /** Plain entity name for metadata and structured data; UI labels may be more decorative. */
-export const seoSiteName = 'ORBIT Solar System Observatory';
+export const seoSiteName = 'Orbits Observer';
 
 export function normalizeSiteOrigin(value: string) {
   const candidate = value.trim();
@@ -135,7 +135,8 @@ export function aboutDescription(locale: Locale) {
 export function profileTitle(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
   return t(
-    profileContent[entry.data.id]?.seo?.title ?? '{{name}}：结构、轨道与探索',
+    profileContent[entry.data.id]?.seo?.title ??
+      '{{name}}：结构、轨道与当前状态',
     { name: t(entry.data.name) },
   );
 }
@@ -326,6 +327,7 @@ function websiteNode(locale: Locale) {
     '@type': 'WebSite',
     '@id': `${siteOrigin}#website`,
     name: seoSiteName,
+    alternateName: ['ORBIT', 'orbits.observer'],
     url: absoluteSiteUrl('/'),
     publisher: { '@id': `${siteOrigin}#organization` },
     inLanguage: languages[locale].intl,
@@ -525,6 +527,7 @@ export function homeJsonLd() {
         '@type': 'WebSite',
         '@id': websiteId,
         name: seoSiteName,
+        alternateName: ['ORBIT', 'orbits.observer'],
         url: absoluteSiteUrl('/'),
         description,
         publisher: { '@id': organizationId },
