@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import { siteOrigin } from '../lib/seo';
+import { translator } from '../lib/i18n';
+import { seoSiteName, siteOrigin } from '../lib/seo';
 import { pwaThemeColor } from '../lib/pwa';
 
 export const viewport: Viewport = {
@@ -7,17 +8,27 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 };
 
+// Link cards and search snippets are built from this server-rendered metadata,
+// and a crawler never runs the client code that picks a visitor's language, so
+// the root page leads in English with the Chinese name as a hint. The explorer
+// puts the visitor's own language in the tab title and description once it has
+// hydrated (`I18nProvider`). The strings come from the catalog so the two agree.
+const english = translator('en');
+const title = `${english('ORBIT · 太阳系漫游')} · 太阳系漫游`;
+const description = english(
+  '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
+);
+
 export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'ORBIT', statusBarStyle: 'default' },
   metadataBase: new URL(`${siteOrigin}/`),
   title: {
-    default: 'ORBIT · 太阳系漫游',
+    default: title,
     template: '%s | ORBIT',
   },
-  description:
-    '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
-  applicationName: 'ORBIT · 太阳系漫游',
+  description,
+  applicationName: 'ORBIT',
   category: 'education',
   alternates: {
     canonical: '/',
@@ -25,25 +36,23 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: '/',
-    siteName: 'ORBIT · 太阳系漫游',
-    title: 'ORBIT · 太阳系漫游',
-    description:
-      '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
-    locale: 'zh_CN',
+    siteName: seoSiteName,
+    title,
+    description,
+    locale: 'en_US',
     images: [
       {
         url: '/og-image.png',
         width: 1672,
         height: 941,
-        alt: 'ORBIT 交互式三维太阳系观测台',
+        alt: 'The Sun, planets and asteroid belt of the Solar System on their orbits, against the Milky Way',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ORBIT · 太阳系漫游',
-    description:
-      '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
+    title,
+    description,
     images: ['/og-image.png'],
   },
   // A raster icon beside the vector one: system surfaces that represent a page

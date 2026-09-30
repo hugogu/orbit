@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import '../globals.css';
-import GoogleAdSense from '../../components/google-adsense';
 import RootProviders from '../root-providers';
 import { metadata as siteMetadata } from '../site-metadata';
 
@@ -14,9 +13,6 @@ export default function ExplorerLayout({
 }) {
   return (
     <html lang="zh-CN" className="dark">
-      <head>
-        <GoogleAdSense />
-      </head>
       <body>
         <RootProviders>{children}</RootProviders>
       </body>

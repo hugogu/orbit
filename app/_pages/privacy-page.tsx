@@ -127,7 +127,7 @@ export default async function PrivacyPage({ params }: PageProps) {
           </p>
           <p className="seo-lead">{description}</p>
           <p className="little-note">
-            {t('最近更新：{{date}}', { date: '2026-09-26' })}
+            {t('最近更新：{{date}}', { date: '2026-09-30' })}
           </p>
           <div className="seo-actions">
             <a className="seo-primary-action" href={explorerPath(locale)}>
@@ -200,21 +200,6 @@ export default async function PrivacyPage({ params }: PageProps) {
             )}
           </p>
           <div className="profile-chapter">
-            <h3>Google AdSense</h3>
-            <p>
-              {t(
-                'ORBIT 通过 Google AdSense 展示广告以维持运营。Google 可能使用 Cookie 及类似技术，根据您的兴趣展示广告；您可以在这里查看或关闭个性化广告：',
-              )}{' '}
-              <a
-                href="https://adssettings.google.com/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('Google 广告设置')}
-              </a>
-            </p>
-          </div>
-          <div className="profile-chapter">
             <h3>Google Analytics</h3>
             <p>
               {t(
@@ -247,15 +232,6 @@ export default async function PrivacyPage({ params }: PageProps) {
               {t(
                 '在浏览器设置中清除本地存储或屏蔽 Cookie，将重置您在本站保存的偏好。',
               )}
-            </li>
-            <li>
-              <a
-                href="https://adssettings.google.com/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('管理广告个性化')}
-              </a>
             </li>
             <li>
               {t(
