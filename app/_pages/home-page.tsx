@@ -698,7 +698,6 @@ export default function Home() {
     setTop(false);
     setEclipseView(false);
     setCameraPose(null);
-    if (!sandboxRun) seekTime(Date.now(), true);
     // Permission APIs must be called during this tap, before any location await.
     if (window.matchMedia('(pointer: coarse)').matches) void sensor.start();
     if (observerLocationSource !== 'manual') {
@@ -711,7 +710,7 @@ export default function Home() {
               { ...observerLocation, ...fix },
               sandboxRun
                 ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
-                : Date.now(),
+                : (time ?? Date.now()),
             ),
             'device',
           );
