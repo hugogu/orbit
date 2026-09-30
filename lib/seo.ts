@@ -114,7 +114,7 @@ export function privacyTitle(locale: Locale) {
 
 export function privacyDescription(locale: Locale) {
   return translator(locale)(
-    '本页说明 ORBIT 如何处理数据：本地保存的显示设置、可选的定位与设备朝向，以及 Google AdSense、Google Analytics 与 Vercel Analytics 等第三方服务。',
+    '本页说明 ORBIT 如何处理数据：本地保存的显示设置、可选的定位与设备朝向，以及 Google Analytics 与 Vercel Analytics 等第三方服务。',
   );
 }
 

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import '../../globals.css';
-import GoogleAdSense from '../../../components/google-adsense';
 import RootProviders from '../../root-providers';
 import { metadata as siteMetadata } from '../../site-metadata';
 import {
@@ -34,9 +33,6 @@ export default async function LocalizedLayout({
   if (!locale || localePath(locale) !== localeParam) notFound();
   return (
     <html lang={languages[locale].intl} className="dark">
-      <head>
-        <GoogleAdSense />
-      </head>
       <body>
         <RootProviders locale={locale}>{children}</RootProviders>
       </body>

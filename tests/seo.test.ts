@@ -819,35 +819,6 @@ void test('shared root providers mount analytics for every route group', () => {
   assert.match(rootProviders, /<Analytics \/>/);
 });
 
-void test('root layouts place the AdSense loader in each document head', () => {
-  const headContent = (layout: string) =>
-    layout.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? '';
-  assert.match(
-    explorerLayout,
-    /import GoogleAdSense from '\.\.\/\.\.\/components\/google-adsense'/,
-  );
-  assert.match(headContent(explorerLayout), /<GoogleAdSense \/>/);
-  assert.match(
-    localizedLayout,
-    /import GoogleAdSense from '\.\.\/\.\.\/\.\.\/components\/google-adsense'/,
-  );
-  assert.match(headContent(localizedLayout), /<GoogleAdSense \/>/);
-});
-
-void test('AdSense loader uses the supplied client ID and cross-origin settings', () => {
-  const adSense = readFileSync(
-    new URL('../components/google-adsense.tsx', import.meta.url),
-    'utf8',
-  );
-  assert.match(adSense, /ca-pub-8644095085401499/);
-  assert.match(
-    adSense,
-    /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/,
-  );
-  assert.match(adSense, /crossOrigin="anonymous"/);
-  assert.match(adSense, /<script/);
-});
-
 void test('locale hydration preserves route-owned profile titles and descriptions', () => {
   const provider = readFileSync(
     new URL('../lib/i18n/provider.tsx', import.meta.url),
