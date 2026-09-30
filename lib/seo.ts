@@ -128,7 +128,7 @@ export function aboutTitle(locale: Locale) {
 
 export function aboutDescription(locale: Locale) {
   return translator(locale)(
-    'ORBIT 是什么、由谁维护，以及如何联系我们、报告问题或参与这个开源项目。',
+    'ORBIT 是什么、由谁维护，以及如何联系我们、报告问题或参与改进。',
   );
 }
 
