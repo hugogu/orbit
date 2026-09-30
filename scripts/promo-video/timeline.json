@@ -1,0 +1,74 @@
+{
+  "fps": 30,
+  "duration": 20,
+  "clips": [
+    { "shot": "sun", "start": 0, "end": 2, "in": 0.05 },
+    { "shot": "roam", "start": 2, "end": 5, "in": 0.15 },
+    { "shot": "eclipse", "start": 5, "end": 7.5, "in": 0.1 },
+    { "shot": "eclipseui", "start": 7.5, "end": 9, "in": 0.2 },
+    { "shot": "moon", "start": 9, "end": 10.5, "in": 0.2 },
+    { "shot": "lunar", "start": 10.5, "end": 12.5, "in": 0 },
+    { "shot": "slider", "start": 12.5, "end": 14, "in": 0.1 },
+    { "shot": "chaos", "start": 14, "end": 17, "in": 0.25 },
+    { "shot": "plate", "start": 17, "end": 20, "in": 0 }
+  ],
+  "cuts": {
+    "2": "zoom",
+    "5": "zoom",
+    "7.5": "punch",
+    "9": "zoom",
+    "10.5": "cut",
+    "12.5": "zoom",
+    "14": "flashzoom",
+    "17": "flash"
+  },
+  "hook": { "start": 0.45, "second": 1.5, "end": 2.55 },
+  "titles": {
+    "f1": [2.7, 4.88],
+    "f2": [5.2, 7.42],
+    "f3": [9.15, 10.47],
+    "f4": [14.15, 16.9]
+  },
+  "callout": [13.3, 13.98],
+  "endCard": 17,
+  "cursor": [
+    {
+      "from": 10.5,
+      "to": 12.25,
+      "clicks": [10.6, 11.6],
+      "points": [
+        [10.5, 0.84, 0.37],
+        [10.58, 0.866, 0.314],
+        [10.75, 0.866, 0.314],
+        [11.5, 0.7258, 0.2514],
+        [12.25, 0.7258, 0.2514]
+      ]
+    },
+    {
+      "from": 12.5,
+      "to": 13.95,
+      "clicks": [12.65],
+      "held": [12.65, 13.5],
+      "points": [
+        [12.65, 0.9102, 0.5014],
+        [13.45, 0.9355, 0.5014]
+      ]
+    }
+  ],
+  "voice": [
+    { "file": "vo1.flac", "at": 0.35 },
+    { "file": "vo2.flac", "at": 5.25 },
+    { "file": "vo3.flac", "at": 9.25 },
+    { "file": "vo4.flac", "at": 12.55 },
+    { "file": "vo5a.flac", "at": 17.45 },
+    { "file": "vo5b.flac", "at": 18.15 }
+  ],
+  "whooshes": [
+    [2, "cut"],
+    [3.12, "warp"],
+    [5, "cut"],
+    [9, "cut"],
+    [12.5, "cut"],
+    [14, "cut"]
+  ]
+}

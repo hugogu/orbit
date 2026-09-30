@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ORBIT promo, 16:9</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #000;
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+        font-family: 'Avenir Next', 'SF Pro Display', system-ui, sans-serif;
+        color: #fff;
+        -webkit-font-smoothing: antialiased;
+      }
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+      #video {
+        overflow: hidden;
+      }
+      #screen {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+      }
+      #shot {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+      }
+      #cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 38px;
+        height: 54px;
+        opacity: 0;
+        transform-origin: 0 0;
+      }
+      #ripple {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80px;
+        height: 80px;
+        margin: -40px 0 0 -40px;
+        border-radius: 50%;
+        border: 5px solid #f3dcaa;
+        box-shadow: 0 0 24px rgba(243, 220, 170, 0.7);
+        opacity: 0;
+      }
+      #vignette {
+        background: radial-gradient(
+          ellipse 75% 70% at 50% 50%,
+          rgba(0, 0, 0, 0) 55%,
+          rgba(0, 0, 0, 0.5) 100%
+        );
+      }
+      #lowfade {
+        background: linear-gradient(
+          to top,
+          rgba(2, 4, 10, 0.82) 0%,
+          rgba(2, 4, 10, 0.5) 26%,
+          rgba(2, 4, 10, 0) 48%
+        );
+        opacity: 0;
+      }
+      #leftfade {
+        background: linear-gradient(
+          to right,
+          rgba(2, 4, 10, 0.7) 0%,
+          rgba(2, 4, 10, 0.25) 30%,
+          rgba(2, 4, 10, 0) 50%
+        );
+        opacity: 0;
+      }
+      #flash {
+        background: #fff6e3;
+        opacity: 0;
+      }
+
+      /* Hook */
+      .hook {
+        position: absolute;
+        left: 0;
+        right: 0;
+        text-align: center;
+        white-space: nowrap;
+      }
+      #hook1 {
+        top: 704px;
+        font-size: 96px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-shadow: 0 4px 40px rgba(0, 0, 0, 0.7);
+      }
+      #hook2 {
+        top: 830px;
+        font-size: 38px;
+        font-weight: 600;
+        letter-spacing: 0.42em;
+        color: #e6cf9c;
+        text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+      }
+
+      /* Feature titles */
+      .feature {
+        position: absolute;
+        left: 120px;
+        bottom: 150px;
+        opacity: 0;
+      }
+      .feature .index {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: #e6cf9c;
+      }
+      .feature .index i {
+        display: block;
+        height: 3px;
+        width: 70px;
+        background: #e6cf9c;
+        border-radius: 2px;
+        transform-origin: 0 50%;
+      }
+      .feature .name {
+        margin-top: 10px;
+        font-size: 104px;
+        line-height: 1.02;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-shadow: 0 6px 40px rgba(0, 0, 0, 0.6);
+        white-space: nowrap;
+      }
+      .feature .sub {
+        margin-top: 14px;
+        font-size: 38px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
+        white-space: nowrap;
+      }
+
+      .callout {
+        position: absolute;
+        left: 120px;
+        bottom: 150px;
+        opacity: 0;
+        padding: 18px 34px;
+        border-radius: 999px;
+        background: rgba(8, 13, 22, 0.78);
+        border: 3px solid #e6cf9c;
+        font-size: 46px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: #fff;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
+      }
+      .callout b {
+        color: #e6cf9c;
+      }
+
+      /* End card */
+      #end {
+        opacity: 0;
+        background: radial-gradient(
+          ellipse 42% 40% at 50% 52%,
+          rgba(2, 4, 10, 0.72) 0%,
+          rgba(2, 4, 10, 0.35) 60%,
+          rgba(2, 4, 10, 0) 100%
+        );
+      }
+      #lockup {
+        position: absolute;
+        left: 50%;
+        top: 318px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 44px;
+      }
+      #mark {
+        width: 176px;
+        height: 176px;
+      }
+      #word {
+        font-size: 168px;
+        font-weight: 600;
+        letter-spacing: 0.3em;
+        line-height: 1;
+      }
+      #word span {
+        margin-right: -0.3em;
+      }
+      #tagline {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 548px;
+        text-align: center;
+        font-size: 46px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      #url {
+        position: absolute;
+        left: 50%;
+        top: 660px;
+        transform: translateX(-50%);
+        padding: 16px 48px;
+        border-radius: 999px;
+        border: 3px solid #e6cf9c;
+        color: #f1dcae;
+        font-size: 54px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        background: rgba(8, 13, 22, 0.55);
+      }
+      #perks {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 800px;
+        text-align: center;
+        font-size: 32px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.7);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <div id="video" class="layer">
+        <div id="screen">
+          <img id="shot" alt="" />
+          <div id="ripple"></div>
+          <svg id="cursor" viewBox="0 0 19 27" aria-hidden="true">
+            <path
+              d="M1.5 1.5 L1.5 21.5 L6.4 16.9 L9.8 24.8 L13.1 23.4 L9.8 15.7 L16.4 15.7 Z"
+              fill="#fff"
+              stroke="#000"
+              stroke-width="1.6"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+      <div id="vignette" class="layer"></div>
+      <div id="lowfade" class="layer"></div>
+      <div id="leftfade" class="layer"></div>
+
+      <div id="hook1" class="hook">THE WHOLE SOLAR SYSTEM</div>
+      <div id="hook2" class="hook">RIGHT IN YOUR BROWSER</div>
+
+      <div class="feature" id="f1">
+        <div class="index">01<i></i>EXPLORE</div>
+        <div class="name">FREE ROAM</div>
+        <div class="sub">Fly to planets, moons, comets and asteroids</div>
+      </div>
+      <div class="feature" id="f2">
+        <div class="index">02<i></i>SKY EVENTS</div>
+        <div class="name">REAL ECLIPSES</div>
+        <div class="sub">8 April 2024 · the Moon’s real shadow path</div>
+      </div>
+      <div class="feature" id="f3">
+        <div class="index">03<i></i>THE MOON</div>
+        <div class="name">MOON PHASES</div>
+        <div class="sub">Phase, age and tonight’s viewing window</div>
+      </div>
+      <div class="callout" id="c4">JUPITER <b>× 155</b> MASS</div>
+      <div class="feature" id="f4">
+        <div class="index">04<i></i>WHAT IF?</div>
+        <div class="name">SANDBOX MODE</div>
+        <div class="sub">Real Newtonian gravity · reshape the solar system</div>
+      </div>
+
+      <div id="end" class="layer">
+        <div id="lockup">
+          <svg id="mark" viewBox="0 0 64 64" aria-hidden="true">
+            <g
+              fill="none"
+              stroke="#e6cf9c"
+              stroke-width="2.4"
+              stroke-linecap="round"
+            >
+              <circle cx="32" cy="32" r="7" />
+              <ellipse
+                id="ring"
+                cx="32"
+                cy="32"
+                rx="24"
+                ry="15"
+                transform="rotate(-40 32 32)"
+                pathLength="100"
+                stroke-dasharray="100"
+                stroke-dashoffset="100"
+              />
+            </g>
+            <circle id="planet" cx="49" cy="16" r="4" fill="#e6cf9c" />
+          </svg>
+          <div id="word"><span>ORBIT</span></div>
+        </div>
+        <div id="tagline">The solar system, in your browser</div>
+        <div id="url">orbits.observer</div>
+        <div id="perks">FREE · NO INSTALL · DESKTOP &amp; MOBILE</div>
+      </div>
+
+      <div id="flash" class="layer"></div>
+    </div>
+    <script type="module">
+      import {
+        setup,
+        plan,
+        frameAt,
+        effects,
+        cursorAt,
+        keyframes,
+        animateTitle,
+        animateCallout,
+        animateEndCard,
+        fadeToBlack,
+        envelope,
+        span,
+        lerp,
+        ease,
+      } from './common.js';
+
+      // Punch-in per shot: [clip time, scale, focus x, focus y], the focus in
+      // coordinates normalized to the captured frame.
+      const framing = {
+        sun: [[0, 1, 0.5, 0.5]],
+        roam: [
+          [0, 1, 0.5, 0.5],
+          [3, 1.04, 0.5, 0.5],
+        ],
+        eclipse: [
+          [0, 1, 0.5, 0.5],
+          [2.5, 1.07, 0.5, 0.5],
+        ],
+        eclipseui: [
+          [0, 1.2, 0.93, 0.47],
+          [1.5, 1.32, 0.93, 0.47],
+        ],
+        moon: [
+          [0, 1, 0.6, 0.42],
+          [1.5, 1.06, 0.6, 0.42],
+        ],
+        lunar: [
+          [0, 1, 0.6, 0.35],
+          [0.5, 1.04, 0.55, 0.3],
+          [2, 1.1, 0.5, 0.3],
+        ],
+        slider: [
+          [0, 1.3, 0.95, 0.48],
+          [1.5, 1.5, 0.95, 0.48],
+        ],
+        chaos: [
+          [0, 1.12, 0.52, 0.5],
+          [3, 1.24, 0.52, 0.5],
+        ],
+        plate: [
+          [0, 1, 0.5, 0.5],
+          [3, 1.07, 0.5, 0.5],
+        ],
+      };
+      const WIDTH = 1920,
+        HEIGHT = 1080;
+      const $ = (id) => document.getElementById(id);
+      let lastSrc = '';
+
+      window.setup = setup;
+      window.render = async (frame) => {
+        const { t, clip, local, src } = frameAt(frame);
+        if (src !== lastSrc) {
+          $('shot').src = src;
+          await $('shot').decode();
+          lastSrc = src;
+        }
+        const { hook, titles, callout, endCard } = plan();
+
+        const fx = effects(clip, t, local);
+        const [punch, focusX, focusY] = keyframes(framing[clip.shot], local);
+        const scale = punch * fx.scale;
+        const screen = $('screen');
+        screen.style.transformOrigin = `${focusX * 100}% ${focusY * 100}%`;
+        screen.style.transform = `translate(${fx.dx}px, ${fx.dy}px) scale(${scale})`;
+        let filter = `brightness(${fx.bright}) contrast(1.05) saturate(1.08)`;
+        if (fx.blur > 0.05) filter += ` blur(${fx.blur}px)`;
+        if (t >= endCard) {
+          const x = span(t, endCard, endCard + 0.6, ease.out);
+          filter = `brightness(${lerp(1, 0.42, x)}) saturate(1.1) blur(${lerp(0, 3, x)}px)`;
+        }
+        $('shot').style.filter = filter;
+        $('flash').style.opacity = fx.flash;
+
+        const cursor = cursorAt(t);
+        $('cursor').style.opacity = cursor ? cursor.alpha : 0;
+        $('ripple').style.opacity = 0;
+        if (cursor) {
+          const px = cursor.x * WIDTH,
+            py = cursor.y * HEIGHT;
+          // The pointer keeps its size however far the frame is punched in.
+          $('cursor').style.transform =
+            `translate(${px - 4}px, ${py - 3}px) scale(${(cursor.press / scale) * 1.25})`;
+          if (cursor.ripple !== null) {
+            $('ripple').style.opacity = 0.9 * (1 - cursor.ripple);
+            $('ripple').style.transform =
+              `translate(${px}px, ${py}px) scale(${0.3 + 1.1 * cursor.ripple})`;
+          }
+        }
+
+        // Legibility gradients under whichever text is up.
+        const hookWindow = [hook.start, hook.end];
+        $('lowfade').style.opacity = Math.max(
+          envelope(t, hookWindow),
+          0.8 * envelope(t, callout, 0.18, 0.12),
+        );
+        $('leftfade').style.opacity =
+          0.95 * Math.max(...Object.values(titles).map((w) => envelope(t, w)));
+
+        const h1 = span(t, hook.start, hook.start + 0.4, ease.out);
+        const h2 = span(t, hook.second, hook.second + 0.35, ease.out);
+        const hOut = span(t, hook.end - 0.25, hook.end, ease.in);
+        Object.assign($('hook1').style, {
+          opacity: h1 * (1 - hOut),
+          transform: `translateY(${lerp(40, 0, h1) - 30 * hOut}px)`,
+          letterSpacing: `${lerp(0.25, 0.05, h1)}em`,
+          filter: `blur(${lerp(12, 0, h1) + 8 * hOut}px)`,
+        });
+        Object.assign($('hook2').style, {
+          opacity: h2 * (1 - hOut),
+          transform: `translateY(${lerp(24, 0, h2) - 30 * hOut}px)`,
+          filter: `blur(${lerp(8, 0, h2) + 8 * hOut}px)`,
+        });
+        for (const [id, window] of Object.entries(titles))
+          animateTitle($(id), t, window);
+        animateCallout($('c4'), t, callout);
+
+        if (t >= endCard) {
+          $('end').style.opacity = Math.min(
+            span(t, endCard, endCard + 0.15),
+            fadeToBlack(t),
+          );
+          $('screen').style.opacity = fadeToBlack(t);
+          animateEndCard(t);
+        } else {
+          $('end').style.opacity = 0;
+          $('screen').style.opacity = 1;
+        }
+      };
+    </script>
+  </body>
+</html>
