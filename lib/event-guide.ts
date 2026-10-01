@@ -761,7 +761,7 @@ export const eventTopics: EventTopic[] = [
     name: '月食',
     en: 'Lunar eclipse',
     category: 'eclipse',
-    season: '每年 0 至 3 次',
+    season: '全球每公历年 2 至 5 次，含半影月食',
     summary: '月球进入地球的影子，整个夜半球都能同时看到。',
     headline: '半个地球同时可见的一场食',
     intro:

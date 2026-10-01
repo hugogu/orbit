@@ -82,3 +82,16 @@ void test('guide copy is translated in every language', () => {
     }
   }
 });
+
+void test('lunar eclipse recurrence counts every type worldwide by calendar year', () => {
+  const recurrence = eventTopic('lunar-eclipse')?.season;
+  assert.equal(recurrence, '全球每公历年 2 至 5 次，含半影月食');
+  assert.equal(
+    translator('en')(recurrence),
+    'Worldwide, 2–5 per calendar year, including penumbral eclipses',
+  );
+  assert.equal(
+    translator('ja')(recurrence),
+    '世界全体で暦年に2〜5回（半影月食を含む）',
+  );
+});
