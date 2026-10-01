@@ -82,3 +82,37 @@ void test('guide copy is translated in every language', () => {
     }
   }
 });
+
+void test('Ursids guidance qualifies circumpolar viewing by latitude and darkness', () => {
+  const ursids = eventTopic('ursids');
+  assert.ok(ursids);
+  const radiant = ursids.sections.find(
+    (section) => section.heading === '拱极的辐射点',
+  );
+  assert.ok(radiant);
+  for (const [locale, latitude, horizon, darkness, south] of [
+    ['zh-CN', /北半球中高纬度/, /低纬度.*升落/, /天空.*暗/, /南半球.*难以观测/],
+    [
+      'en',
+      /northern mid and high latitudes/,
+      /lower northern latitudes.*rise and set/,
+      /bright sky/,
+      /difficult.*southern/,
+    ],
+    [
+      'ja',
+      /北半球の中・高緯度/,
+      /低緯度.*昇り沈み/,
+      /空が明るい/,
+      /南半球.*困難/,
+    ],
+  ] as const) {
+    const t = translator(locale);
+    assert.match(t(ursids.summary), latitude);
+    assert.match(t(radiant.text), horizon);
+    assert.match(t(radiant.text), darkness);
+    assert.match(t(radiant.text), south);
+    assert.match(t(ursids.observing[0]), latitude);
+    assert.doesNotMatch(t(ursids.observing[0]), /任何时段|any hour|どの時間帯/);
+  }
+});
