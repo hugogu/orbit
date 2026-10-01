@@ -28,6 +28,7 @@ import {
   eventsIndexPath,
   eventTitle,
   explorerPath,
+  lunarPlannerPath,
   privacyPath,
   serializeJsonLd,
   seoSiteName,
@@ -175,9 +176,17 @@ export default async function EventPage({ params }: PageProps) {
           <div className="seo-actions">
             <a
               className="seo-primary-action"
-              href={explorerPath(locale, topic.bodies[0])}
+              href={
+                topic.id === 'lunar-eclipse'
+                  ? lunarPlannerPath(locale)
+                  : explorerPath(locale, topic.bodies[0])
+              }
             >
-              {t('在 3D 观测台中观察')}
+              {t(
+                topic.id === 'lunar-eclipse'
+                  ? '查询月食时间'
+                  : '在 3D 观测台中观察',
+              )}
             </a>
             <ProfileShare
               locale={locale}

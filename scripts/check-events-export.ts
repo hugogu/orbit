@@ -7,6 +7,8 @@ import {
   eventsIndexPath,
   eventsIndexTitle,
   eventTitle,
+  explorerPath,
+  lunarPlannerPath,
   seoLocales,
   seoSiteName,
 } from '../lib/seo';
@@ -122,6 +124,26 @@ for (const locale of seoLocales) {
     );
     assert.ok(page.html.includes(escapeHtml(t(topic.intro))), path);
     assert.ok(page.html.includes(escapeHtml(t(topic.observing[0]))), path);
+    const action = page.html.match(
+      /<a class="seo-primary-action" href="([^"]+)">([^<]+)<\/a>/,
+    );
+    assert.ok(action, `${path}: primary action`);
+    assert.equal(
+      action[1],
+      escapeHtml(
+        topic.id === 'lunar-eclipse'
+          ? lunarPlannerPath(locale)
+          : explorerPath(locale, topic.bodies[0]),
+      ),
+      `${path}: primary action URL`,
+    );
+    assert.equal(
+      action[2],
+      escapeHtml(
+        t(topic.id === 'lunar-eclipse' ? '查询月食时间' : '在 3D 观测台中观察'),
+      ),
+      `${path}: primary action label`,
+    );
     for (const source of topic.sources)
       assert.ok(page.html.includes(source.url), `${path}: ${source.url}`);
     // The breadcrumb ancestor is the guide index, never the topic itself.
