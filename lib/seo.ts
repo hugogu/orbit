@@ -181,6 +181,10 @@ export function explorerPath(locale: Locale, id?: string) {
   return `/?lang=${encodeURIComponent(locale)}${hash}`;
 }
 
+export function lunarPlannerPath(locale: Locale) {
+  return `${explorerPath(locale)}&planner=lunar`;
+}
+
 export function absoluteSiteUrl(path: string) {
   return new URL(path, `${siteOrigin}/`).toString();
 }

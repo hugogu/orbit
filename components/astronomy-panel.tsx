@@ -52,12 +52,16 @@ function stillAnswers(
 export default function AstronomyPanel({
   open,
   onOpenChange,
+  tab,
+  onTabChange,
   time,
   onEclipse,
   location,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  tab: Kind;
+  onTabChange: (kind: Kind) => void;
   time: number;
   onEclipse: (ms: number, kind: Kind) => void;
   location: SkyLocation;
@@ -65,8 +69,7 @@ export default function AstronomyPanel({
   const { t, locale } = useI18n();
   const [loaded, setLoaded] = useState<Loaded | null>(null),
     [busy, setBusy] = useState<'first' | Kind | null>(null),
-    [error, setError] = useState(''),
-    [tab, setTab] = useState<Kind>('solar');
+    [error, setError] = useState('');
   const live = useRef(true),
     // Only the newest request may land: reopening the panel on a new moment
     // must not be overwritten by the answer to the moment before it.
@@ -311,7 +314,7 @@ export default function AstronomyPanel({
         </DialogDescription>
         <Tabs
           value={tab}
-          onValueChange={(value) => setTab(String(value) as Kind)}
+          onValueChange={(value) => onTabChange(String(value) as Kind)}
           className="settings-tabs"
         >
           <TabsList className="settings-tabs-list" aria-label={t('天象分类')}>

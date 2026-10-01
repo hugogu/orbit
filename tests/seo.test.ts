@@ -23,6 +23,7 @@ import {
   eventTitle,
   explorerPath,
   homeJsonLd,
+  lunarPlannerPath,
   normalizeSiteOrigin,
   ogImagePath,
   privacyPath,
@@ -766,6 +767,7 @@ void test('every crawlable page links to the privacy policy', () => {
 void test('explorer links keep the language and optional body selection', () => {
   assert.equal(explorerPath('zh-CN'), '/?lang=zh-CN');
   assert.equal(explorerPath('en', 'earth'), '/?lang=en#earth');
+  assert.equal(lunarPlannerPath('ja'), '/?lang=ja&planner=lunar');
   assert.equal(absoluteSiteUrl('/sitemap.xml').endsWith('/sitemap.xml'), true);
 });
 

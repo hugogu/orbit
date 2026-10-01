@@ -48,6 +48,7 @@ import CuriosityCard, { CuriositySource } from '@/components/curiosity-card';
 import ConceptHint from '@/components/concept-hint';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
+import { plannerIntent, withoutPlannerIntent } from '@/lib/explorer-intent';
 import TimeJump from '@/components/time-jump';
 import EclipseProgressPanel from '@/components/eclipse-progress-panel';
 import { useEclipseProgress } from '@/components/use-eclipse-progress';
@@ -197,6 +198,8 @@ export default function Home() {
     [time, setTime] = useState<number | null>(null),
     [epoch, setEpoch] = useState<number | null>(null),
     [astronomy, setAstronomy] = useState(false),
+    [astronomyKind, setAstronomyKind] = useState<'solar' | 'lunar'>('solar'),
+    [plannerStart, setPlannerStart] = useState<number | null>(null),
     [lunar, setLunar] = useState(false),
     [timeJump, setTimeJump] = useState(false),
     [tab, setTab] = useState('explore'),
@@ -765,19 +768,46 @@ export default function Home() {
     setReset((value) => value + 1);
   }, []);
   useEffect(() => {
-    const restore = () => {
+    const restoreSelection = () => {
       const id = bodyFromHash(window.location.hash);
       if (id) select(id);
       else home();
     };
+    const openPlanner = () => {
+      const { pathname, search, hash } = window.location;
+      const intent = plannerIntent(search);
+      if (intent) {
+        const params = new URLSearchParams(search);
+        setPlannerStart(
+          hasShareView(params)
+            ? decodeShareView(params, bodyFromHash(hash)).time
+            : null,
+        );
+        setAstronomyKind(intent);
+        setAstronomy(true);
+        window.history.replaceState(
+          window.history.state,
+          '',
+          pathname + withoutPlannerIntent(search) + hash,
+        );
+      }
+    };
+    const restore = () => {
+      restoreSelection();
+      openPlanner();
+    };
+    let live = true;
     queueMicrotask(() => {
+      if (!live) return;
       const { search, hash } = window.location;
-      restore();
+      restoreSelection();
       applyShareView(search, hash);
+      openPlanner();
     });
     window.addEventListener('hashchange', restore);
     window.addEventListener('popstate', restore);
     return () => {
+      live = false;
       window.removeEventListener('hashchange', restore);
       window.removeEventListener('popstate', restore);
     };
@@ -1404,7 +1434,10 @@ export default function Home() {
             className="astronomy-button"
             aria-label={t('天象推演')}
             title={t('天象推演')}
-            onClick={() => setAstronomy(true)}
+            onClick={() => {
+              setPlannerStart(null);
+              setAstronomy(true);
+            }}
           >
             <CalendarDays size={18} />
             <span className={actionLabel}>{t('天象推演')}</span>
@@ -1710,8 +1743,13 @@ export default function Home() {
       />
       <AstronomyPanel
         open={astronomy}
-        onOpenChange={setAstronomy}
-        time={time ?? J2000_MS}
+        onOpenChange={(open) => {
+          setAstronomy(open);
+          if (!open) setPlannerStart(null);
+        }}
+        tab={astronomyKind}
+        onTabChange={setAstronomyKind}
+        time={plannerStart ?? time ?? J2000_MS}
         location={timedObserverLocation}
         onEclipse={(ms, kind) => {
           seekTime(ms);
