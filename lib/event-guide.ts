@@ -740,8 +740,10 @@ export const eventTopics: EventTopic[] = [
       { label: '沙罗周期', value: '约 18 年 11 天 8 小时' },
     ],
     observing: [
-      '除全食阶段以外，任何时候都必须使用合格的太阳滤光片。',
-      '普通墨镜、曝光过的胶片和滤光不足的装置都不安全。',
+      '直接用眼睛观看日食时，除当地短暂的全食阶段外，始终使用符合 ISO 12312-2 标准的日食眼镜或手持太阳观测镜。',
+      '用双筒望远镜、望远镜或相机看太阳时，必须在物镜前端牢固安装适配的专用太阳滤镜；不能用日食眼镜或装在目镜处的滤镜代替。',
+      '只有当地进入全食、月球完全遮住太阳明亮的光球时，才能短暂摘下护目镜；只要太阳亮面重新露出，立即重新戴上。',
+      '普通墨镜和曝光过的胶片都不能用于观测太阳。',
       '观测台的“天象推演”可以列出未来的日食，并跳到食甚时刻。',
     ],
     bodies: ['sun', 'moon-moon', 'earth'],
@@ -753,6 +755,10 @@ export const eventTopics: EventTopic[] = [
       {
         name: 'NASA — Eclipse Web Site',
         url: 'https://eclipse.gsfc.nasa.gov/eclipse.html',
+      },
+      {
+        name: 'NASA Science — Eclipse Viewing Safety',
+        url: 'https://science.nasa.gov/eclipses/safety/',
       },
     ],
   },
