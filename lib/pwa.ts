@@ -48,6 +48,7 @@ export function isPwaAssetPath(pathname: string) {
   return (
     /^\/(assets|_next\/static)\/.+\.(js|css|woff2?)$/.test(pathname) ||
     /^\/(textures|media)\/.+\.(jpg|jpeg|png|webp)$/.test(pathname) ||
+    /^\/events\/sky\/.+\.(webp|svg)$/.test(pathname) ||
     /^\/models\/.+\.bin$/.test(pathname)
   );
 }

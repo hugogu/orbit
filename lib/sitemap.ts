@@ -12,6 +12,7 @@ import {
   type CatalogEntry,
 } from './seo';
 import { eventTopics } from './event-guide';
+import { eventOccurrences, occurrenceImagePath } from './event-occurrences';
 import { defaultLocale, languages, type Locale } from './i18n';
 
 export type SitemapAlternate = {
@@ -35,7 +36,7 @@ type LocalizedRoute = (locale: Locale) => string;
  */
 type RouteSpec = {
   route: LocalizedRoute;
-  images?: string[];
+  images?: string[] | ((locale: Locale) => string[]);
 };
 
 function alternateLinks(route: LocalizedRoute): SitemapAlternate[] {
@@ -66,6 +67,14 @@ function routeSpecs(entries: CatalogEntry[]): RouteSpec[] {
         route: (locale) => eventDetailsPath(locale, topic.id),
       }),
     ),
+    ...eventOccurrences.map(
+      (event): RouteSpec => ({
+        route: (locale) => eventDetailsPath(locale, event.id),
+        images: (locale) => [
+          absoluteSiteUrl(occurrenceImagePath(event, locale)),
+        ],
+      }),
+    ),
     { route: privacyPath },
     { route: aboutPath },
   ];
@@ -86,7 +95,9 @@ export function sitemapEntries(
       routes.map(({ route, alternates, images }) => ({
         loc: absoluteSiteUrl(route(locale)),
         alternates,
-        ...(images && { images }),
+        ...(images && {
+          images: typeof images === 'function' ? images(locale) : images,
+        }),
       })),
     ),
   ];

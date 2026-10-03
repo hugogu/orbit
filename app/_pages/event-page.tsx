@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { ArrowUpRight } from 'lucide-react';
 import {
   eventCategory,
@@ -18,6 +18,14 @@ import {
 } from '../../lib/i18n';
 import GitHubLink from '../../components/github-link';
 import ProfileShare from '../../components/profile-share';
+import EventOccurrencePage, {
+  occurrenceMetadata,
+} from './event-occurrence-page';
+import {
+  eventOccurrence,
+  eventOccurrences,
+  type EventOccurrence,
+} from '../../lib/event-occurrences';
 import {
   absoluteSiteUrl,
   bodyDetailsPath,
@@ -40,18 +48,26 @@ type PageProps = {
   params: Promise<{ locale: string; id: string }>;
 };
 
-type ResolvedPage = {
-  locale: Locale;
-  topic: EventTopic;
-};
+type ResolvedPage =
+  | {
+      locale: Locale;
+      topic: EventTopic;
+    }
+  | {
+      locale: Locale;
+      occurrence: EventOccurrence;
+    };
 
 /** Averaged dates and rates describe a long-term pattern, not a given year. */
 const dataNote =
   '活跃期、极大日期与出现率为多年平均值，实际情况每年略有差别；计划观测时请以当年的预报为准。';
 
 export function generateStaticParams() {
+  // Vercel redirects this legacy URL before serving static files.
+  const legacy =
+    process.env.VERCEL === '1' ? [] : [{ id: 'saturn-opposition' }];
   return seoLocales.flatMap((locale) =>
-    eventTopics.map((topic) => ({
+    [...eventTopics, ...eventOccurrences, ...legacy].map((topic) => ({
       locale: localePath(locale),
       id: topic.id,
     })),
@@ -63,15 +79,23 @@ export const dynamicParams = false;
 async function resolvePage(params: PageProps['params']): Promise<ResolvedPage> {
   const { locale: localeParam, id } = await params;
   const locale = resolveLocalePath(localeParam);
+  if (!locale || localePath(locale) !== localeParam) notFound();
+  if (id === 'saturn-opposition')
+    permanentRedirect(eventDetailsPath(locale, eventOccurrences[0].id));
+  const occurrence = eventOccurrence(id);
+  if (occurrence) return { locale, occurrence };
   const topic = eventTopic(id);
-  if (!locale || localePath(locale) !== localeParam || !topic) notFound();
+  if (!topic) notFound();
   return { locale, topic };
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { locale, topic } = await resolvePage(params);
+  const page = await resolvePage(params);
+  if ('occurrence' in page)
+    return occurrenceMetadata(page.occurrence, page.locale);
+  const { locale, topic } = page;
   const t = translator(locale);
   const title = eventTitle(topic, locale);
   const description = t(topic.summary);
@@ -118,7 +142,10 @@ export async function generateMetadata({
 }
 
 export default async function EventPage({ params }: PageProps) {
-  const { locale, topic } = await resolvePage(params);
+  const page = await resolvePage(params);
+  if ('occurrence' in page)
+    return <EventOccurrencePage event={page.occurrence} locale={page.locale} />;
+  const { locale, topic } = page;
   const t = translator(locale);
   const name = t(topic.name);
   const category = eventCategory(topic.category);

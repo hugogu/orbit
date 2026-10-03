@@ -59,6 +59,11 @@
       "source": "/media/v2/bodies/:file",
       "destination": "/media/v3/bodies/:file",
       "permanent": true
+    },
+    {
+      "source": "/:locale/events/saturn-opposition",
+      "destination": "/:locale/events/saturn-opposition-2026-10-04",
+      "permanent": true
     }
   ]
 }

@@ -4956,3 +4956,8 @@ html:lang(en) .moon-children button > span:last-child {
   }
   .ground-controls-toggle { top: 10px; }
 }
+/* Dated forecasts reuse the guide's reading layout. */
+.occurrence-sky-figure { margin: 1.5rem 0; }
+.occurrence-sky-image { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 14px; }
+.occurrence-sky-figure figcaption { color: var(--muted-foreground); font-size: .85rem; line-height: 1.7; }
+.sky-event-guide-link { display: inline-block; margin: .75rem 0 0 1rem; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }

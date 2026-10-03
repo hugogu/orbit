@@ -26,6 +26,7 @@ import {
   lunarPlannerPath,
   normalizeSiteOrigin,
   ogImagePath,
+  occurrenceJsonLd,
   privacyPath,
   privacyDescription,
   privacyTitle,
@@ -40,6 +41,7 @@ import {
   type CatalogEntry,
 } from '../lib/seo';
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
+import { eventOccurrences } from '../lib/event-occurrences';
 import { portraitCredit } from '../lib/profile-images';
 import { physicalParameters } from '../lib/physical-facts';
 import { profileContent } from '../lib/profile-content';
@@ -274,6 +276,11 @@ function publishedGraphs() {
         })['@graph'] as Node[],
       });
     }
+    for (const event of eventOccurrences)
+      graphs.push({
+        page: absoluteSiteUrl(eventDetailsPath(locale, event.id)),
+        nodes: occurrenceJsonLd(event, locale)['@graph'] as Node[],
+      });
   }
   return graphs;
 }
@@ -291,10 +298,12 @@ void test('structured data uses only types that schema.org defines', () => {
   // schema.org has no celestial-body type. A validator rejects an unknown
   // @type such as AstronomicalBody, and with it every `about` naming it.
   const vocabulary = new Set([
+    'Article',
     'BreadcrumbList',
     'CollectionPage',
     'DefinedTerm',
     'DefinedTermSet',
+    'GeoCoordinates',
     'ImageObject',
     'ItemList',
     'LearningResource',
@@ -543,7 +552,8 @@ void test('sitemap repeats reciprocal hreflang links for every localized page', 
   const localized = entries.filter((entry) => entry.alternates);
   // Every profile and sky-event topic, plus the two indexes above them and
   // the two standalone legal pages (privacy, about).
-  const routes = catalogEntries().length + eventTopics.length + 4;
+  const routes =
+    catalogEntries().length + eventTopics.length + eventOccurrences.length + 4;
   assert.equal(localized.length, routes * seoLocales.length);
   assert.equal(
     new Set(
@@ -577,7 +587,10 @@ void test("sitemap lists each profile's hero image for direct image discovery", 
     }
   }
   const withImages = entries.filter((entry) => entry.images);
-  assert.equal(withImages.length, catalog.length * seoLocales.length);
+  assert.equal(
+    withImages.length,
+    (catalog.length + eventOccurrences.length) * seoLocales.length,
+  );
   assert.match(
     renderSitemap(),
     /xmlns:image="http:\/\/www\.google\.com\/schemas\/sitemap-image\/1\.1"/,

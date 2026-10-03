@@ -6,6 +6,9 @@ import {
   eventDetailsPath,
   eventAction,
   eventPlanetPlannerTab,
+  occurrenceTitle,
+  occurrenceName,
+  occurrenceSkyCaption,
   eventsIndexPath,
   eventsIndexTitle,
   eventTitle,
@@ -13,6 +16,10 @@ import {
   seoSiteName,
 } from '../lib/seo';
 import { eventTopics } from '../lib/event-guide';
+import {
+  eventOccurrences,
+  occurrenceImagePath,
+} from '../lib/event-occurrences';
 import { languages, translator } from '../lib/i18n';
 import { htmlTagAttributes } from './lib/html-tags';
 
@@ -34,6 +41,17 @@ const hasRel = (attributes: ReadonlyMap<string, string>, rel: string) =>
   (attributes.get('rel') ?? '')
     .split(/\s+/)
     .some((value) => value.toLowerCase() === rel);
+
+const deployment = JSON.parse(readFileSync('vercel.json', 'utf8'));
+assert.ok(
+  deployment.redirects.some(
+    (rule: { source: string; destination: string; permanent: boolean }) =>
+      rule.source === '/:locale/events/saturn-opposition' &&
+      rule.destination === `/:locale/events/${eventOccurrences[0].id}` &&
+      rule.permanent,
+  ),
+  'legacy Saturn URL redirects to its dated edition',
+);
 
 /** One exported document, with the parts every page of the guide must carry. */
 function documentAt(path: string) {
@@ -105,6 +123,53 @@ for (const locale of seoLocales) {
   )!;
   const terms = termSet.hasDefinedTerm as Array<Record<string, string>>;
   assert.equal(terms.length, eventTopics.length, indexPath);
+  for (const event of eventOccurrences) {
+    assert.ok(
+      !index.html.includes(`href="${eventDetailsPath(locale, event.id)}"`),
+      `${indexPath}: occurrences are not concepts`,
+    );
+    const path = eventDetailsPath(locale, event.id);
+    const page = documentAt(path);
+    checkShell(path, page, locale, occurrenceTitle(event, locale), (item) =>
+      eventDetailsPath(item, event.id),
+    );
+    assert.ok(
+      page.html.includes(escapeHtml(occurrenceName(event, locale))),
+      path,
+    );
+    assert.ok(
+      page.html.includes(escapeHtml(occurrenceSkyCaption(event, locale))),
+      path,
+    );
+    const image = occurrenceImagePath(event, locale);
+    assert.ok(page.html.includes(`src="${image}"`), `${path}: sky chart`);
+    assert.ok(
+      readFileSync(output(image)).byteLength > 10_000,
+      `${path}: generated chart`,
+    );
+    assert.ok(
+      page.head.includes(absoluteSiteUrl(image)),
+      `${path}: social chart`,
+    );
+    assert.ok(
+      page.html.includes(`href="${eventDetailsPath(locale, event.concept)}"`),
+      `${path}: parent concept`,
+    );
+    assert.ok(
+      !page.graph.some((node) => node['@type'] === 'DefinedTerm'),
+      `${path}: dated article, not a concept`,
+    );
+    const article = page.graph.find((node) => node['@type'] === 'Article');
+    assert.equal(
+      article?.temporalCoverage,
+      new Date(event.peak).toISOString(),
+      path,
+    );
+    assert.ok(
+      page.graph.some((node) => node['@type'] === 'ImageObject'),
+      path,
+    );
+  }
 
   for (const topic of eventTopics) {
     const path = eventDetailsPath(locale, topic.id);
@@ -161,5 +226,5 @@ for (const locale of seoLocales) {
 }
 
 console.log(
-  `Verified ${(eventTopics.length + 1) * seoLocales.length} exported sky-event pages: localized copy, titles, canonical links, hreflang, sources and structured data.`,
+  `Verified ${(eventTopics.length + eventOccurrences.length + 1) * seoLocales.length} exported sky-event pages: concepts, dated forecasts, charts, localized copy, canonical links, hreflang and structured data.`,
 );

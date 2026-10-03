@@ -2,6 +2,12 @@ import { comets, type Comet } from './comets';
 import { asteroids, type Asteroid } from './asteroids';
 import { eventCategory, eventTopics, type EventTopic } from './event-guide';
 import {
+  occurrenceImagePath,
+  occurrenceImageSize,
+  occurrenceReferenceLocation,
+  type EventOccurrence,
+} from './event-occurrences';
+import {
   defaultLocale,
   languages,
   localePath,
@@ -163,9 +169,53 @@ export function eventsIndexTitle(locale: Locale) {
 
 export function eventTitle(topic: EventTopic, locale: Locale) {
   const t = translator(locale);
-  if (topic.id === 'saturn-opposition')
-    return t('2026 年土星冲日：时间、原理与观测指南');
   return t('{{name}}：成因、周期与观测', { name: t(topic.name) });
+}
+
+export function occurrenceName(event: EventOccurrence, locale: Locale) {
+  const date = new Intl.DateTimeFormat(languages[locale].intl, {
+    dateStyle: 'long',
+    timeZone: 'UTC',
+  }).format(event.peak);
+  return translator(locale)('{{date}}土星冲日', { date });
+}
+
+export function occurrenceTitle(event: EventOccurrence, locale: Locale) {
+  return translator(locale)('{{name}}：本次数据与天空位置', {
+    name: occurrenceName(event, locale),
+  });
+}
+
+export function occurrenceDescription(event: EventOccurrence, locale: Locale) {
+  return translator(locale)(
+    '{{name}}的预测时刻、距离、亮度与星环倾角，以及北京夜空中的土星位置图和观测时段。',
+    { name: occurrenceName(event, locale) },
+  );
+}
+
+export function occurrenceExplorerPath(event: EventOccurrence, locale: Locale) {
+  const params = new URLSearchParams({
+    lang: locale,
+    t: new Date(event.peak - 60_000).toISOString(),
+    p: '1',
+    planner: 'opposition',
+  });
+  return `/?${params.toString()}#saturn`;
+}
+
+export function occurrenceSkyCaption(event: EventOccurrence, locale: Locale) {
+  const time = new Intl.DateTimeFormat(languages[locale].intl, {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    hourCycle: 'h23',
+    timeZone: 'UTC',
+  }).format(
+    event.chartTime + occurrenceReferenceLocation.utcOffset * 3_600_000,
+  );
+  return translator(locale)(
+    '预测星图：{{time}}（UTC+8），北京（39.9042° N，116.4074° E，海拔 43 米）。',
+    { time },
+  );
 }
 
 /** Build-time generated social preview for one localized profile. */
@@ -191,8 +241,7 @@ export function eventPlanetPlannerTab(
   topic: EventTopic,
 ): 'opposition' | 'transit' | undefined {
   if (topic.id === 'transit') return 'transit';
-  if (topic.id === 'opposition' || topic.id === 'saturn-opposition')
-    return 'opposition';
+  if (topic.id === 'opposition') return 'opposition';
 }
 
 export function eventAction(topic: EventTopic, locale: Locale) {
@@ -200,9 +249,8 @@ export function eventAction(topic: EventTopic, locale: Locale) {
     return { path: lunarPlannerPath(locale), label: '查询月食时间' };
   const tab = eventPlanetPlannerTab(topic);
   if (tab) {
-    const hash = topic.id === 'saturn-opposition' ? '#saturn' : '';
     return {
-      path: `${explorerPath(locale)}&planner=${tab}${hash}`,
+      path: `${explorerPath(locale)}&planner=${tab}`,
       label: tab === 'transit' ? '查询行星凌日时间' : '查询行星冲日时间',
     };
   }
@@ -714,6 +762,73 @@ export function eventJsonLd({
         isPartOf: { '@id': `${siteOrigin}#website` },
         about: { '@id': termId },
         breadcrumb: { '@id': breadcrumbId },
+      },
+    ],
+  };
+}
+
+/** A dated forecast is an article about an occurrence, not another defined term. */
+export function occurrenceJsonLd(event: EventOccurrence, locale: Locale) {
+  const t = translator(locale);
+  const canonical = absoluteSiteUrl(eventDetailsPath(locale, event.id));
+  const concept = absoluteSiteUrl(eventDetailsPath(locale, event.concept));
+  const imageId = `${canonical}#sky-chart`;
+  const image = absoluteSiteUrl(occurrenceImagePath(event, locale));
+  const title = occurrenceTitle(event, locale);
+  const description = occurrenceDescription(event, locale);
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      organizationNode(),
+      websiteNode(locale),
+      breadcrumbNode(`${canonical}#breadcrumb`, [
+        { name: 'ORBIT', item: absoluteSiteUrl('/') },
+        { name: t('天象事件'), item: absoluteSiteUrl(eventsIndexPath(locale)) },
+        { name: t('冲'), item: concept },
+        { name: occurrenceName(event, locale), item: canonical },
+      ]),
+      {
+        '@type': 'ImageObject',
+        '@id': imageId,
+        contentUrl: image,
+        width: occurrenceImageSize.width,
+        height: occurrenceImageSize.height,
+        caption: occurrenceSkyCaption(event, locale),
+        contentLocation: {
+          '@type': 'Place',
+          name: t('北京'),
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: occurrenceReferenceLocation.latitude,
+            longitude: occurrenceReferenceLocation.longitude,
+          },
+        },
+      },
+      {
+        '@type': 'Article',
+        '@id': `${canonical}#article`,
+        headline: title,
+        description,
+        url: canonical,
+        inLanguage: languages[locale].intl,
+        temporalCoverage: new Date(event.peak).toISOString(),
+        about: { '@id': `${concept}#sky-event` },
+        author: { '@id': `${siteOrigin}#organization` },
+        publisher: { '@id': `${siteOrigin}#organization` },
+        image: { '@id': imageId },
+        mainEntityOfPage: { '@id': `${canonical}#webpage` },
+      },
+      {
+        '@type': 'WebPage',
+        '@id': `${canonical}#webpage`,
+        url: canonical,
+        name: title,
+        description,
+        inLanguage: languages[locale].intl,
+        isPartOf: { '@id': `${siteOrigin}#website` },
+        mainEntity: { '@id': `${canonical}#article` },
+        primaryImageOfPage: { '@id': imageId },
+        breadcrumb: { '@id': `${canonical}#breadcrumb` },
       },
     ],
   };

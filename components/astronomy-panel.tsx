@@ -20,7 +20,8 @@ import {
   type PlanetEventList,
   type PlannerTab,
 } from '../lib/planet-events';
-import { catalogEntry } from '../lib/seo';
+import { catalogEntry, eventDetailsPath } from '../lib/seo';
+import { occurrenceForPlanetEvent } from '../lib/event-occurrences';
 // Vite generates the default constructor; it is not an export of the worker source.
 // oxlint-disable-next-line import/default
 import AstronomyWorker from '../workers/astronomy.worker?worker';
@@ -333,64 +334,87 @@ export default function AstronomyPanel({
           <p className="little-note">{t('在支持的日期范围内未找到下一次。')}</p>
         )}
         <div className="sky-results">
-          {events.map((event: PlanetEvent) => (
-            <article className="sky-event" key={`${event.body}-${event.peak}`}>
-              <div className="sky-event-heading">
-                <h3>
-                  {t(kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日', {
-                    name: t(catalogEntry(event.body)!.data.name),
-                  })}
-                </h3>
-              </div>
-              <strong>{format(event.peak)}</strong>
-              <p>
-                {t(kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻')}
-              </p>
-              {kind === 'opposition' ? (
-                <>
-                  <p>
-                    {t('地心距离 {{distance}} AU · 视星等 {{magnitude}}', {
-                      distance: event.distance.toFixed(3),
-                      magnitude: event.magnitude.toFixed(1),
-                    })}
-                  </p>
-                  <p>
-                    {t(
-                      '此地冲日时行星高度 {{altitude}}°；请在附近夜晚、行星升高时观测。',
-                      {
-                        altitude: event.altitude.toFixed(1),
-                      },
-                    )}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    {t('凌始')} {format(event.begin!)}
-                    <br />
-                    {t('凌终')} {format(event.end!)}
-                  </p>
-                  <p>
-                    {t(
-                      '此地凌日中点时太阳高度 {{altitude}}°；完整可见时段还取决于日出日落。',
-                      {
-                        altitude: event.altitude.toFixed(1),
-                      },
-                    )}
-                  </p>
-                </>
-              )}
-              <button
-                className="secondary-action"
-                onClick={() => {
-                  onPlanetEvent(event.peak, event.body);
-                  onOpenChange(false);
-                }}
+          {events.map((event: PlanetEvent) => {
+            const edition = occurrenceForPlanetEvent(
+              kind,
+              event.body,
+              event.peak,
+            );
+            return (
+              <article
+                className="sky-event"
+                key={`${event.body}-${event.peak}`}
               >
-                {t('观察此刻')}
-              </button>
-            </article>
-          ))}
+                <div className="sky-event-heading">
+                  <h3>
+                    {t(
+                      kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日',
+                      {
+                        name: t(catalogEntry(event.body)!.data.name),
+                      },
+                    )}
+                  </h3>
+                </div>
+                <strong>{format(event.peak)}</strong>
+                <p>
+                  {t(
+                    kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻',
+                  )}
+                </p>
+                {kind === 'opposition' ? (
+                  <>
+                    <p>
+                      {t('地心距离 {{distance}} AU · 视星等 {{magnitude}}', {
+                        distance: event.distance.toFixed(3),
+                        magnitude: event.magnitude.toFixed(1),
+                      })}
+                    </p>
+                    <p>
+                      {t(
+                        '此地冲日时行星高度 {{altitude}}°；请在附近夜晚、行星升高时观测。',
+                        {
+                          altitude: event.altitude.toFixed(1),
+                        },
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      {t('凌始')} {format(event.begin!)}
+                      <br />
+                      {t('凌终')} {format(event.end!)}
+                    </p>
+                    <p>
+                      {t(
+                        '此地凌日中点时太阳高度 {{altitude}}°；完整可见时段还取决于日出日落。',
+                        {
+                          altitude: event.altitude.toFixed(1),
+                        },
+                      )}
+                    </p>
+                  </>
+                )}
+                <button
+                  className="secondary-action"
+                  onClick={() => {
+                    onPlanetEvent(event.peak, event.body);
+                    onOpenChange(false);
+                  }}
+                >
+                  {t('观察此刻')}
+                </button>
+                {edition && (
+                  <a
+                    className="sky-event-guide-link"
+                    href={eventDetailsPath(locale, edition.id)}
+                  >
+                    {t('本次事件介绍')}
+                  </a>
+                )}
+              </article>
+            );
+          })}
         </div>
         <p className="little-note">
           {t(

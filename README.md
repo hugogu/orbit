@@ -168,6 +168,8 @@ ORBIT deploys as a static export to Vercel, with a separate Cloudflare Worker bu
 
 The Vercel build also emits crawlable body profiles under `/:locale/bodies/:id`, listed together at `/:locale/bodies`, and the sky-event guide under `/:locale/events` and `/:locale/events/:id`, plus `robots.txt` and `sitemap.xml`. Set `NEXT_PUBLIC_SITE_URL` to the permanent HTTPS hostname in the Vercel project before deploying; the build uses it for canonical, Open Graph, alternate-language, and sitemap URLs. The demo hostname is used when the variable is absent.
 
+The guide lists recurring concepts. Dated forecasts have their own UTC identities, such as `/:locale/events/saturn-opposition-2026-10-04`, and are linked from the matching calculated planner event. `lib/event-occurrences.ts` holds the published editions; each reads its own ephemeris for distances, brightness, ring tilt and observing times. `npm run generate:event-skies` renders their localized Beijing night-sky charts from Astronomy Engine, the shipped Bright Star Catalogue and constellation figures. Development and both production builds regenerate these assets automatically. The charts specify their reference site and time; they are calculated predictions, with enlarged body markers.
+
 ### Install and use offline
 
 On the HTTPS site, use your browser's **Install app** action, or **Share → Add to Home Screen** in Safari on iPhone/iPad. ORBIT opens in its own window and remembers the same language and display preferences.

@@ -43,6 +43,7 @@ next-env.d.ts
 /public/sitemap.xml
 /public/og/
 /public/media/
+/public/events/sky/
 
 # Generated PWA assets (service worker is built directly into dist/client)
 /public/icons/

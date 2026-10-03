@@ -7,15 +7,7 @@ import {
   eventTopics,
   topicsByCategory,
 } from '../lib/event-guide';
-import {
-  catalogEntry,
-  eventAction,
-  eventPlanetPlannerTab,
-  eventDetailsPath,
-  eventTitle,
-} from '../lib/seo';
-import { sitemapEntries } from '../lib/sitemap';
-import { isProfilePath } from '../lib/pwa';
+import { catalogEntry, eventAction, eventPlanetPlannerTab } from '../lib/seo';
 import { languages, translator, type Locale } from '../lib/i18n';
 
 const codes = Object.keys(languages) as Locale[];
@@ -24,7 +16,7 @@ const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 void test('planet planner support is limited to the topics whose dates it computes', () => {
   for (const topic of topicsByCategory('planet-aspect')) {
     const tab = eventPlanetPlannerTab(topic);
-    if (['opposition', 'saturn-opposition', 'transit'].includes(topic.id)) {
+    if (['opposition', 'transit'].includes(topic.id)) {
       assert.equal(tab, topic.id === 'transit' ? 'transit' : 'opposition');
       assert.ok(eventAction(topic, 'en').path.includes(`planner=${tab}`));
     } else {
@@ -34,20 +26,17 @@ void test('planet planner support is limited to the topics whose dates it comput
   }
 });
 
-void test('Saturn opposition is discoverable, localized and connects to its planner', () => {
-  const topic = eventTopic('saturn-opposition');
-  assert.ok(topic);
-  assert.ok(topicsByCategory('planet-aspect').includes(topic));
-  assert.equal(topic.facts[0].value, '2026 年 10 月 4 日');
-  assert.deepEqual(topic.bodies, ['saturn', 'earth', 'sun']);
+void test('concept lists exclude dated occurrences and retain planetary planner links', () => {
+  assert.equal(eventTopic('saturn-opposition'), undefined);
+  assert.deepEqual(
+    topicsByCategory('planet-aspect').map((topic) => topic.id),
+    ['conjunction', 'opposition', 'elongation', 'transit', 'occultation'],
+  );
   for (const locale of codes) {
-    const path = eventDetailsPath(locale, topic.id);
-    assert.ok(isProfilePath(path));
-    const entry = sitemapEntries().find((item) => item.loc.endsWith(path));
-    assert.ok(entry);
-    assert.equal(entry.alternates?.length, codes.length + 1);
-    assert.match(eventTitle(topic, locale), /2026/);
-    assert.match(eventAction(topic, locale).path, /planner=opposition#saturn$/);
+    assert.match(
+      eventAction(eventTopic('opposition')!, locale).path,
+      /planner=opposition$/,
+    );
     assert.match(
       eventAction(eventTopic('transit')!, locale).path,
       /planner=transit$/,
