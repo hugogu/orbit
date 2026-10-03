@@ -107,6 +107,12 @@ function checkShell(
   }
 }
 
+const sitemap = readFileSync(output('/sitemap.xml'), 'utf8');
+assert.ok(sitemap.includes('</urlset>'), 'exported sitemap is complete');
+const sitemapEntries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(
+  (match) => match[1],
+);
+
 for (const locale of seoLocales) {
   const t = translator(locale);
   const indexPath = eventsIndexPath(locale);
@@ -129,6 +135,21 @@ for (const locale of seoLocales) {
       `${indexPath}: occurrences are not concepts`,
     );
     const path = eventDetailsPath(locale, event.id);
+    const entries = sitemapEntries.filter((entry) =>
+      entry.includes(`<loc>${absoluteSiteUrl(path)}</loc>`),
+    );
+    assert.equal(entries.length, 1, `${path}: exported sitemap entry`);
+    assert.ok(
+      entries[0].includes(absoluteSiteUrl(occurrenceImagePath(event, locale))),
+      `${path}: sitemap chart`,
+    );
+    for (const alternate of seoLocales)
+      assert.ok(
+        entries[0].includes(
+          `href="${absoluteSiteUrl(eventDetailsPath(alternate, event.id))}"`,
+        ),
+        `${path}: sitemap alternate ${alternate}`,
+      );
     const page = documentAt(path);
     checkShell(path, page, locale, occurrenceTitle(event, locale), (item) =>
       eventDetailsPath(item, event.id),
@@ -226,5 +247,5 @@ for (const locale of seoLocales) {
 }
 
 console.log(
-  `Verified ${(eventTopics.length + eventOccurrences.length + 1) * seoLocales.length} exported sky-event pages: concepts, dated forecasts, charts, localized copy, canonical links, hreflang and structured data.`,
+  `Verified ${(eventTopics.length + eventOccurrences.length + 1) * seoLocales.length} exported sky-event pages: concepts, dated forecasts, charts, sitemap entries, localized copy, canonical links, hreflang and structured data.`,
 );

@@ -75,7 +75,11 @@ export default function AstronomyPanel({
   onTabChange: (kind: PlannerTab) => void;
   time: number;
   onEclipse: (ms: number, kind: Kind) => void;
-  onPlanetEvent: (ms: number, body: string) => void;
+  onPlanetEvent: (
+    ms: number,
+    body: string,
+    kind: 'opposition' | 'transit',
+  ) => void;
   location: SkyLocation;
 }) {
   const { t, locale } = useI18n();
@@ -398,7 +402,7 @@ export default function AstronomyPanel({
                 <button
                   className="secondary-action"
                   onClick={() => {
-                    onPlanetEvent(event.peak, event.body);
+                    onPlanetEvent(event.peak, event.body, kind);
                     onOpenChange(false);
                   }}
                 >

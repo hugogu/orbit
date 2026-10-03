@@ -132,7 +132,7 @@ void test('a hand-edited or truncated link falls back to the defaults', () => {
     '1,-0.5,1',
     '1,4,1',
     '1,1,0',
-    '1,1,900',
+    '1,1,100000001',
     '',
   ])
     assert.equal(decodeShareView(new URLSearchParams({ c })).camera, null, c);

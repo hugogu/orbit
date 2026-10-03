@@ -66,7 +66,8 @@ const minView = 1;
 const maxView = 2000;
 /** A pose further outside this than any control allows is treated as corrupt. */
 const minZoom = 0.02;
-const maxZoom = 500;
+// Event views include the Sun even around planets drawn at physical sizes.
+const maxZoom = 1e7;
 
 /** Four decimals hold the pose to well under a tenth of a degree. */
 function compact(value: number) {

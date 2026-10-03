@@ -43,6 +43,9 @@ function modeContext(paused: boolean, observerLocationSource = 'manual') {
     setTop: () => {},
     setEclipseView: () => {},
     setCameraPose: () => {},
+    setPlanetEventView: (value: unknown) => {
+      assert.equal(value, null, 'ground sky clears the planetary event camera');
+    },
     setNotice: () => assert.fail('location failed'),
     seekTime: () =>
       assert.fail('mode changes must not seek or resume playback'),

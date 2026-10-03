@@ -49,6 +49,7 @@ import ConceptHint from '@/components/concept-hint';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
 import type { PlannerTab } from '@/lib/planet-events';
+import type { PlanetEventView } from '@/lib/planet-event-view';
 import { plannerIntent, withoutPlannerIntent } from '@/lib/explorer-intent';
 import TimeJump from '@/components/time-jump';
 import EclipseProgressPanel from '@/components/eclipse-progress-panel';
@@ -213,6 +214,9 @@ export default function Home() {
     [shadows, setShadows] = useState(true),
     [shadowGuides, setShadowGuides] = useState(true),
     [eclipseView, setEclipseView] = useState(false),
+    [planetEventView, setPlanetEventView] = useState<PlanetEventView | null>(
+      null,
+    ),
     [galaxy, setGalaxy] = useState(true),
     [stars, setStars] = useState(true),
     [constellations, setConstellations] = useState(true),
@@ -428,6 +432,7 @@ export default function Home() {
     observerLocationSource,
   ]);
   function seekTime(ms: number, live = false) {
+    setPlanetEventView(null);
     setEpoch(ms);
     setTime(ms);
     setPaused(!live);
@@ -529,6 +534,7 @@ export default function Home() {
     setSystemView(false);
     setEclipseView(false);
     setCameraPose(null);
+    setPlanetEventView(null);
     setSelected(null);
     setView(205);
     setReset((v) => v + 1);
@@ -638,6 +644,7 @@ export default function Home() {
     setSystemView(false);
     setEclipseView(false);
     setCameraPose(null);
+    setPlanetEventView(null);
     if (comets.some((c) => c.id === id)) {
       setTab('explore');
       setCometId(id);
@@ -676,6 +683,7 @@ export default function Home() {
     setSystemView(false);
     setEclipseView(false);
     setCameraPose(null);
+    setPlanetEventView(null);
     setTab('explore');
     setSelected(null);
     setView(205);
@@ -702,6 +710,7 @@ export default function Home() {
     setTop(false);
     setEclipseView(false);
     setCameraPose(null);
+    setPlanetEventView(null);
     // Permission APIs must be called during this tap, before any location await.
     if (window.matchMedia('(pointer: coarse)').matches) void sensor.start();
     if (observerLocationSource !== 'manual') {
@@ -751,6 +760,7 @@ export default function Home() {
     } else {
       setView(shared.view);
     }
+    setPlanetEventView(null);
     setCameraPose(shared.camera);
     // A shared run reopens the sandbox on the fork it was shared from and
     // replays the recipe, so the recipient watches the same path form. It
@@ -1177,6 +1187,7 @@ export default function Home() {
           shadows,
           shadowGuides,
           eclipseView,
+          planetEventView,
           activeEclipse: eclipse.event,
           galaxy,
           stars,
@@ -1751,10 +1762,11 @@ export default function Home() {
         onTabChange={setAstronomyKind}
         time={plannerStart ?? time ?? J2000_MS}
         location={timedObserverLocation}
-        onPlanetEvent={(ms, body) => {
+        onPlanetEvent={(ms, body, kind) => {
           seekTime(ms);
           select(body);
-          setEclipseView(false);
+          setTop(false);
+          setPlanetEventView({ body, kind });
         }}
         onEclipse={(ms, kind) => {
           seekTime(ms);

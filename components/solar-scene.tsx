@@ -7,6 +7,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bodies, type ScaleMode } from '@/lib/solar';
 import { planetPosition, bodyOrientation } from '@/lib/ephemeris';
 import {
+  framePlanetEvent,
+  type PlanetEventView,
+} from '@/lib/planet-event-view';
+import {
   DAY_MS,
   J2000_MS,
   JULIAN_YEAR_DAYS,
@@ -78,6 +82,7 @@ export type SceneState = {
   shadows: boolean;
   shadowGuides: boolean;
   eclipseView: boolean;
+  planetEventView: PlanetEventView | null;
   activeEclipse: EclipseProgressEvent | null;
   galaxy: boolean;
   stars: boolean;
@@ -612,12 +617,15 @@ export default function SolarScene({
       lastSystemView = false,
       lastCameraAspect = 0,
       lastEclipseFraming = '',
+      lastPlanetEventView = '',
       lastTop = false,
       lastComet = '',
       highResolutionReadyAt = 0,
       transition = 0;
     const navigationTextureGraceMs = 5000;
-    let targetDistance = 205;
+    let targetDistance = 205,
+      framingDistance = 205;
+    let eventFrame: ReturnType<typeof framePlanetEvent> | null = null;
     let following: THREE.Vector3 | null = null;
     let sandboxActive = false;
     const sandboxOptions = (
@@ -968,6 +976,14 @@ export default function SolarScene({
       );
       const comet = comets.find((c) => c.id === s.cometId);
       const cometKey = `${s.cometId}/${s.cometClose}`;
+      const eventView =
+        !sandbox &&
+        !s.ground &&
+        !s.top &&
+        s.planetEventView?.body === s.selected
+          ? s.planetEventView
+          : null;
+      const eventKey = eventView ? `${eventView.kind}/${eventView.body}` : '';
       if (s.cameraPose !== adoptedPose) {
         adoptedPose = s.cameraPose;
         sharedPose = s.cameraPose;
@@ -982,6 +998,7 @@ export default function SolarScene({
         s.systemView !== lastSystemView ||
         camera.aspect !== lastCameraAspect ||
         framingChanged ||
+        eventKey !== lastPlanetEventView ||
         cometKey !== lastComet
       ) {
         const body = bodies.find((b) => b.id === s.selected);
@@ -1027,6 +1044,31 @@ export default function SolarScene({
                 Math.min(1, camera.aspect),
             );
         }
+        // Keep sharing relative to the ordinary body framing, so the same
+        // camera pose also restores on a link without a planner intent.
+        framingDistance = targetDistance;
+        eventFrame =
+          eventView && body
+            ? framePlanetEvent({
+                kind: eventView.kind,
+                sun: {
+                  center: roots.get('sun')!.position,
+                  radius: displayRadius('sun', s.scale, s.realSizes) * 1.3,
+                },
+                earth: {
+                  center: roots.get('earth')!.position,
+                  radius: displayRadius('earth', s.scale, s.realSizes),
+                },
+                planet: {
+                  center: roots.get(body.id)!.position,
+                  radius: radius * (body.id === 'saturn' ? 2.4 : 1),
+                },
+                fov: camera.fov,
+                aspect: camera.aspect,
+                compact: height <= 720,
+              })
+            : null;
+        if (eventFrame) targetDistance = eventFrame.distance;
         controls.minDistance =
           (s.realSizes || selectedAsteroid) && s.selected ? radius * 1.2 : 1;
         camera.near =
@@ -1045,6 +1087,7 @@ export default function SolarScene({
         lastSystemView = s.systemView;
         lastCameraAspect = camera.aspect;
         lastComet = cometKey;
+        lastPlanetEventView = eventKey;
       }
       newTarget.copy(
         comet
@@ -1091,17 +1134,19 @@ export default function SolarScene({
               ? eclipseSystem
                   .focusDirection(s.selected)
                   .multiplyScalar(targetDistance)
-              : s.top
-                ? new THREE.Vector3(
-                    targetDistance * 0.0001,
-                    targetDistance,
-                    targetDistance * 0.0001,
-                  )
-                : new THREE.Vector3(
-                    0,
-                    targetDistance * 0.52,
-                    targetDistance * 0.85,
-                  ),
+              : eventFrame
+                ? eventFrame.offset
+                : s.top
+                  ? new THREE.Vector3(
+                      targetDistance * 0.0001,
+                      targetDistance,
+                      targetDistance * 0.0001,
+                    )
+                  : new THREE.Vector3(
+                      0,
+                      targetDistance * 0.52,
+                      targetDistance * 0.85,
+                    ),
           );
         camera.position.lerp(desired, 0.055);
         transition -= dt * 0.5;
@@ -1212,8 +1257,8 @@ export default function SolarScene({
           azimuth: controls.getAzimuthalAngle(),
           polar: controls.getPolarAngle(),
           zoom:
-            targetDistance > 0
-              ? camera.position.distanceTo(controls.target) / targetDistance
+            framingDistance > 0
+              ? camera.position.distanceTo(controls.target) / framingDistance
               : 1,
         }),
       };
