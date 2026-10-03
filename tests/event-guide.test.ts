@@ -96,6 +96,42 @@ void test('lunar eclipse recurrence counts every type worldwide by calendar year
   );
 });
 
+void test('solar eclipse guidance separates direct viewing, filtered optics and local totality', () => {
+  const tips = eventTopic('solar-eclipse')?.observing;
+  assert.ok(tips);
+  assert.equal(tips.length, 5);
+  for (const [locale, direct, optics, eyepiece, totality] of [
+    [
+      'zh-CN',
+      /ISO 12312-2.*日食眼镜/,
+      /物镜前端.*牢固.*太阳滤镜/,
+      /不能用日食眼镜.*目镜/,
+      /当地进入全食.*完全遮住.*重新/,
+    ],
+    [
+      'en',
+      /ISO 12312-2.*eclipse glasses|eclipse glasses.*ISO 12312-2/,
+      /securely.*front of the optics/,
+      /Eclipse glasses or an eyepiece filter are not substitutes.*never look through optics/,
+      /totality at your location.*completely covers.*Put it back on/,
+    ],
+    [
+      'ja',
+      /ISO 12312-2.*日食グラス/,
+      /対物側の前端にしっかり/,
+      /日食グラス.*接眼側.*代用できません/,
+      /観測地点が皆既.*完全に覆って.*かけ直して/,
+    ],
+  ] as const) {
+    const t = translator(locale);
+    const translated = tips.map((tip) => t(tip));
+    assert.match(translated[0], direct, locale);
+    assert.match(translated[1], optics, locale);
+    assert.match(translated[1], eyepiece, locale);
+    assert.match(translated[2], totality, locale);
+  }
+});
+
 void test('Ursids guidance qualifies circumpolar viewing by latitude and darkness', () => {
   const ursids = eventTopic('ursids');
   assert.ok(ursids);
