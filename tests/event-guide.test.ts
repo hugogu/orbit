@@ -10,6 +10,7 @@ import {
 import {
   catalogEntry,
   eventAction,
+  eventPlanetPlannerTab,
   eventDetailsPath,
   eventTitle,
 } from '../lib/seo';
@@ -19,6 +20,19 @@ import { languages, translator, type Locale } from '../lib/i18n';
 
 const codes = Object.keys(languages) as Locale[];
 const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+void test('planet planner support is limited to the topics whose dates it computes', () => {
+  for (const topic of topicsByCategory('planet-aspect')) {
+    const tab = eventPlanetPlannerTab(topic);
+    if (['opposition', 'saturn-opposition', 'transit'].includes(topic.id)) {
+      assert.equal(tab, topic.id === 'transit' ? 'transit' : 'opposition');
+      assert.ok(eventAction(topic, 'en').path.includes(`planner=${tab}`));
+    } else {
+      assert.equal(tab, undefined, topic.id);
+      assert.ok(!eventAction(topic, 'en').path.includes('planner='), topic.id);
+    }
+  }
+});
 
 void test('Saturn opposition is discoverable, localized and connects to its planner', () => {
   const topic = eventTopic('saturn-opposition');

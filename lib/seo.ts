@@ -187,11 +187,19 @@ export function lunarPlannerPath(locale: Locale) {
   return `${explorerPath(locale)}&planner=lunar`;
 }
 
+export function eventPlanetPlannerTab(
+  topic: EventTopic,
+): 'opposition' | 'transit' | undefined {
+  if (topic.id === 'transit') return 'transit';
+  if (topic.id === 'opposition' || topic.id === 'saturn-opposition')
+    return 'opposition';
+}
+
 export function eventAction(topic: EventTopic, locale: Locale) {
   if (topic.id === 'lunar-eclipse')
     return { path: lunarPlannerPath(locale), label: '查询月食时间' };
-  if (['saturn-opposition', 'opposition', 'transit'].includes(topic.id)) {
-    const tab = topic.id === 'transit' ? 'transit' : 'opposition';
+  const tab = eventPlanetPlannerTab(topic);
+  if (tab) {
     const hash = topic.id === 'saturn-opposition' ? '#saturn' : '';
     return {
       path: `${explorerPath(locale)}&planner=${tab}${hash}`,

@@ -25,6 +25,7 @@ import {
   entryImagePath,
   eventDetailsPath,
   eventAction,
+  eventPlanetPlannerTab,
   eventJsonLd,
   eventsIndexPath,
   eventTitle,
@@ -247,7 +248,7 @@ export default async function EventPage({ params }: PageProps) {
                 <summary>{t('数据与计算说明')}</summary>
                 <p>
                   {t(
-                    topic.category === 'planet-aspect'
+                    eventPlanetPlannerTab(topic)
                       ? '周期是长期平均值，具体事件日期由天象推演按模拟时间独立计算；几何时刻与当地最佳观测时段并不相同。'
                       : dataNote,
                   )}
