@@ -5,9 +5,16 @@
 
 **An interactive 3D Solar System observatory for learning**
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-orbits.observer-2ea44f?style=flat&logo=safari)](https://orbits.observer/)
+[![React 19](https://img.shields.io/badge/React-19-61dafb.svg?style=flat&logo=react)](https://react.dev/)
+[![Three.js](https://img.shields.io/badge/Three.js-WebGL-black.svg?style=flat&logo=three.js)](https://threejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6.svg?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![PWA](https://img.shields.io/badge/PWA-Offline_Ready-purple.svg?style=flat)]()
+
 **[English](README.md) · [简体中文](README.zh-CN.md)**
 
-[Live demo](https://orbits.observer/) · [Report an issue](https://github.com/hugogu/orbit/issues) · [Request a feature](https://github.com/hugogu/orbit/issues/new)
+[Explore Live Demo](https://orbits.observer/) · [Report an Issue](https://github.com/hugogu/orbit/issues) · [Request a Feature](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
@@ -230,8 +237,8 @@ For a bug report, include the browser and version, device class, viewport size, 
 
 ## License
 
-The source code in this repository is available under the [PolyForm Noncommercial License 1.0.0](LICENSE). It permits personal, educational, research, hobby, and other noncommercial use, including local deployment and noncommercial modifications, subject to the license terms. It does not grant commercial hosting, SaaS, paid distribution, or commercial product rights.
+The source code in this repository is available under the [Apache License 2.0](LICENSE). It permits personal, educational, research, and commercial use, modification, and distribution, subject to the license terms.
 
-Commercial use requires a separate written agreement; see [Commercial licensing](COMMERCIAL-LICENSE.md). The project name, logo, and official distribution rules are described in [Trademark and official distribution policy](TRADEMARKS.md).
+The project name, logo, and official distribution rules are described in [Trademark and official distribution policy](TRADEMARKS.md).
 
 Third-party code, data, and textures keep their own licenses. See the [satellite texture credits](public/textures/satellites/CREDITS.md) and the [texture source manifest](public/textures/source-manifest.json) for asset-specific terms.

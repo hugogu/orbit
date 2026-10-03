@@ -2058,7 +2058,7 @@ void test('the panel and editor speak of a moon in its planet’s terms', () => 
   assert.match(panel, /Show original/);
   assert.match(panel, /Show paths/);
   assert.match(panel, /Moons/);
-  assert.equal([...panel.matchAll(/aria-checked="true"/g)].length, 2);
+  assert.equal([...panel.matchAll(/aria-checked="true"/g)].length, 3);
   // Moons follow their planet in the list, set in under it.
   assert.match(
     panel,
