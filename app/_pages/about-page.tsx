@@ -123,7 +123,7 @@ export default async function AboutPage({ params }: PageProps) {
           </p>
           <h1>{title}</h1>
           <p className="profile-headline">
-            {t('一个源码公开的太阳系可视化项目')}
+            {t('一个开源的太阳系可视化项目')}
           </p>
           <p className="seo-lead">{description}</p>
           <div className="seo-actions">
@@ -152,11 +152,11 @@ export default async function AboutPage({ params }: PageProps) {
           className="seo-section"
           aria-labelledby="about-source-heading"
         >
-          <p className="seo-section-number">02 / {t('源码与数据来源')}</p>
-          <h2 id="about-source-heading">{t('源码与数据来源')}</h2>
+          <p className="seo-section-number">02 / {t('开源与数据来源')}</p>
+          <h2 id="about-source-heading">{t('开源与数据来源')}</h2>
           <p className="profile-intro">
             {t(
-              'ORBIT 的源代码在 GitHub 上公开，欢迎查看实现、提出问题或参与改进。天体数据主要引用 NASA 与 JPL 的公开资料，星表与银河全景引用公开亮星星表和 Solar System Scope 的素材；每份天体档案底部都列出了对应的资料来源。',
+              'ORBIT 在 GitHub 上完全开源，欢迎查看实现、提出问题或参与改进。天体数据主要引用 NASA 与 JPL 的公开资料，星表与银河全景引用公开亮星星表和 Solar System Scope 的素材；每份天体档案底部都列出了对应的资料来源。',
             )}
           </p>
           <a
