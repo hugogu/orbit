@@ -598,7 +598,7 @@ export const eventTopics: EventTopic[] = [
       },
       {
         heading: '上弦与下弦怎么分',
-        text: '上弦月出现在朔之后约七天，傍晚位于南方天空，亮面朝西；下弦月出现在望之后约七天，后半夜升起，亮面朝东。记住“上弦上半夜、亮面朝西”，就不容易把两者弄反。',
+        text: '上弦月通常在朔后约七天出现，傍晚可见；在北半球中纬度常位于南侧天空，在南半球中纬度则常位于北侧。下弦月通常在望后约七天出现，午夜前后升起。亮面朝向太阳，但它在月面上看起来位于哪一侧，会随半球、纬度和月亮在天空中的高度改变；靠近赤道时，月亮甚至可能从头顶附近经过。大致记住上弦偏向前半夜、下弦偏向后半夜，比照搬亮面方向可靠。',
       },
     ],
     facts: [
@@ -624,6 +624,10 @@ export const eventTopics: EventTopic[] = [
       {
         name: 'NASA Science — Moon Facts',
         url: 'https://science.nasa.gov/moon/facts/',
+      },
+      {
+        name: 'NASA Science — Top Moon Questions',
+        url: 'https://science.nasa.gov/moon/top-moon-questions/',
       },
     ],
   },

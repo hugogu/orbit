@@ -96,6 +96,38 @@ void test('lunar eclipse recurrence counts every type worldwide by calendar year
   );
 });
 
+void test('moon phase viewing directions are qualified for each hemisphere', () => {
+  const section = eventTopic('moon-phases')?.sections.find(
+    (item) => item.heading === '上弦与下弦怎么分',
+  );
+  assert.ok(section);
+  for (const [locale, northSouth, latitude, timing] of [
+    [
+      'zh-CN',
+      /北半球中纬度常位于南侧天空.*南半球中纬度则常位于北侧/,
+      /半球、纬度和月亮在天空中的高度.*靠近赤道/,
+      /通常在朔后约七天.*通常在望后约七天.*上弦偏向前半夜、下弦偏向后半夜/,
+    ],
+    [
+      'en',
+      /mid latitudes.*southern sky for northern observers.*northern sky for southern observers/,
+      /hemisphere, latitude and the Moon's height.*near the equator/,
+      /usually appears about seven days after new Moon.*usually appears about seven days after full Moon.*rough guide.*first half of the night.*second/,
+    ],
+    [
+      'ja',
+      /中緯度.*北半球.*南寄りの空.*南半球.*北寄りの空/,
+      /半球、緯度、月の空での高度.*赤道近く/,
+      /通常、新月の約 7 日後.*通常、満月の約 7 日後.*目安として.*夜の前半.*後半/,
+    ],
+  ] as const) {
+    const copy = translator(locale)(section.text);
+    assert.match(copy, northSouth, locale);
+    assert.match(copy, latitude, locale);
+    assert.match(copy, timing, locale);
+  }
+});
+
 void test('solar eclipse guidance separates direct viewing, filtered optics and local totality', () => {
   const tips = eventTopic('solar-eclipse')?.observing;
   assert.ok(tips);
