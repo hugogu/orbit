@@ -5,9 +5,16 @@
 
 **面向学习的交互式 3D 太阳系观测台**
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![在线体验](https://img.shields.io/badge/在线体验-orbits.observer-2ea44f?style=flat&logo=safari)](https://orbits.observer/)
+[![React 19](https://img.shields.io/badge/React-19-61dafb.svg?style=flat&logo=react)](https://react.dev/)
+[![Three.js](https://img.shields.io/badge/Three.js-WebGL-black.svg?style=flat&logo=three.js)](https://threejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6.svg?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![PWA](https://img.shields.io/badge/PWA-离线支持-purple.svg?style=flat)]()
+
 **[English](README.md) · [简体中文](README.zh-CN.md)**
 
-[在线体验](https://orbits.observer/) · [提交问题](https://github.com/hugogu/orbit/issues) · [功能建议](https://github.com/hugogu/orbit/issues/new)
+[立即在线体验](https://orbits.observer/) · [提交反馈与问题](https://github.com/hugogu/orbit/issues) · [提出新功能建议](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
@@ -230,8 +237,8 @@ ORBIT 用于天文学习，并在界面中说明模型的假设与适用范围�
 
 ## 许可证
 
-本仓库中的源代码采用 [PolyForm Noncommercial License 1.0.0](LICENSE) 授权。该许可证允许个人、教育、研究、兴趣项目及其他非商业用途，包括在本地部署和进行非商业修改，但必须遵守许可证条款；它不授予商业托管、SaaS、付费分发或商业产品使用权。
+本仓库中的源代码采用 [Apache License 2.0](LICENSE) 授权。该许可证允许个人、教育、研究和商业用途、修改与分发，但必须遵守许可证条款。
 
-商业使用需要另行签署书面协议，详见[商业授权说明](COMMERCIAL-LICENSE.md)。项目名称、标志和官方分发规则见[商标与官方分发政策](TRADEMARKS.md)。
+项目名称、标志和官方分发规则见[商标与官方分发政策](TRADEMARKS.md)。
 
 第三方代码、数据和纹理仍适用各自的许可证。具体素材条款请查看[卫星纹理致谢](public/textures/satellites/CREDITS.md)和[纹理来源清单](public/textures/source-manifest.json)。

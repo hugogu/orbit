@@ -6,10 +6,16 @@ export const repositoryUrl = 'https://github.com/hugogu/orbit';
  * prop so both the client explorer and the server-rendered profiles can pass
  * their own translator.
  */
-export default function GitHubLink({ label }: { label: string }) {
+export default function GitHubLink({
+  label,
+  className,
+}: {
+  label: string;
+  className?: string;
+}) {
   return (
     <a
-      className="github-link"
+      className={className ?? 'github-link'}
       href={repositoryUrl}
       target="_blank"
       rel="noreferrer"
