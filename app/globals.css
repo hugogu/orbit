@@ -4434,9 +4434,11 @@ button:disabled {
   .timeline .speed-control {
     grid-column: 1 / -1;
     grid-row: 1;
-    /* The thumb overhangs the track, so the row keeps its own top padding. */
-    padding: 6px 2px 0;
-    min-height: 20px;
+    /* Center the thumb in a control-height row, between the bar edge and buttons. */
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 2px;
   }
   .timeline .jump-button {
     grid-column: 3;
