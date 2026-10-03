@@ -4076,9 +4076,9 @@ button:disabled {
     align-items: flex-start;
   }
   .topbar {
-    height: 117px;
+    height: calc(117px + env(safe-area-inset-top, 0px));
     align-items: flex-start;
-    padding-top: 19px;
+    padding-top: calc(19px + env(safe-area-inset-top, 0px));
     inset-inline: 18px;
   }
   .brand > span {
@@ -4096,7 +4096,7 @@ button:disabled {
   }
   .topbar [data-slot='tabs'] {
     position: absolute;
-    top: 67px;
+    top: calc(67px + env(safe-area-inset-top, 0px));
     left: 0;
   }
   .view-tabs {
@@ -4296,13 +4296,13 @@ button:disabled {
     display: none;
   }
   .topbar {
-    height: 100px;
-    padding-top: 12px;
+    height: calc(100px + env(safe-area-inset-top, 0px));
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
     inset-inline: max(12px, env(safe-area-inset-left))
       max(12px, env(safe-area-inset-right));
   }
   .topbar [data-slot='tabs'] {
-    top: 56px;
+    top: calc(56px + env(safe-area-inset-top, 0px));
   }
   .brand i,
   .live,
@@ -4325,7 +4325,7 @@ button:disabled {
     height: 44px;
   }
   .observatory .side-rail {
-    top: 102px;
+    top: calc(102px + env(safe-area-inset-top, 0px));
     max-height: none;
     gap: 6px;
   }
@@ -4378,7 +4378,7 @@ button:disabled {
   .astronomy-actions {
     left: max(12px, env(safe-area-inset-left));
     right: auto;
-    top: 148px;
+    top: calc(148px + env(safe-area-inset-top, 0px));
   }
   .astronomy-button {
     min-height: 40px;
