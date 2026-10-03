@@ -122,6 +122,8 @@ body {
   min-height: 100svh;
   background: #070c15;
   color: #ede9e0;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 .seo-page-header,
 .seo-page-footer,
@@ -130,7 +132,8 @@ body {
   margin-inline: auto;
 }
 .seo-page-header {
-  min-height: 92px;
+  min-height: calc(92px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -823,7 +826,7 @@ body {
   justify-content: space-between;
   font-size: 13px;
   gap: 20px;
-  padding: 26px 0 36px;
+  padding: 26px 0 calc(36px + env(safe-area-inset-bottom, 0px));
 }
 .seo-page-byline {
   display: flex;
@@ -854,7 +857,7 @@ body {
     width: calc(100% - 40px);
   }
   .seo-page-header {
-    min-height: 76px;
+    min-height: calc(76px + env(safe-area-inset-top, 0px));
   }
   .seo-article {
     padding-top: 24px;
