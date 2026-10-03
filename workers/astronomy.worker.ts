@@ -5,7 +5,9 @@ self.onmessage = (event: MessageEvent<EclipseQuery>) => {
     self.postMessage({
       result: {
         ...calculateEclipseList(event.data),
-        ...calculatePlanetEvents(event.data),
+        ...(event.data.page
+          ? { opposition: [], transit: [] }
+          : calculatePlanetEvents(event.data)),
       },
     });
   } catch (error) {
