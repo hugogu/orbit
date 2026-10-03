@@ -48,6 +48,7 @@ import CuriosityCard, { CuriositySource } from '@/components/curiosity-card';
 import ConceptHint from '@/components/concept-hint';
 import { pickCuriosities } from '@/lib/curiosities';
 import AstronomyPanel from '@/components/astronomy-panel';
+import type { PlannerTab } from '@/lib/planet-events';
 import { plannerIntent, withoutPlannerIntent } from '@/lib/explorer-intent';
 import TimeJump from '@/components/time-jump';
 import EclipseProgressPanel from '@/components/eclipse-progress-panel';
@@ -198,7 +199,7 @@ export default function Home() {
     [time, setTime] = useState<number | null>(null),
     [epoch, setEpoch] = useState<number | null>(null),
     [astronomy, setAstronomy] = useState(false),
-    [astronomyKind, setAstronomyKind] = useState<'solar' | 'lunar'>('solar'),
+    [astronomyKind, setAstronomyKind] = useState<PlannerTab>('solar'),
     [plannerStart, setPlannerStart] = useState<number | null>(null),
     [lunar, setLunar] = useState(false),
     [timeJump, setTimeJump] = useState(false),
@@ -1750,6 +1751,11 @@ export default function Home() {
         onTabChange={setAstronomyKind}
         time={plannerStart ?? time ?? J2000_MS}
         location={timedObserverLocation}
+        onPlanetEvent={(ms, body) => {
+          seekTime(ms);
+          select(body);
+          setEclipseView(false);
+        }}
         onEclipse={(ms, kind) => {
           seekTime(ms);
           select(kind === 'solar' ? 'earth' : 'moon-moon');

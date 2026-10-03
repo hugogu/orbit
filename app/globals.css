@@ -2675,6 +2675,12 @@ button:disabled {
   flex: 1;
   min-height: 0;
 }
+@media (max-width: 600px) {
+  .astronomy-dialog .settings-tabs-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .astro-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,7 +1,13 @@
 import { calculateEclipseList, type EclipseQuery } from '../lib/sky-events';
+import { calculatePlanetEvents } from '../lib/planet-events';
 self.onmessage = (event: MessageEvent<EclipseQuery>) => {
   try {
-    self.postMessage({ result: calculateEclipseList(event.data) });
+    self.postMessage({
+      result: {
+        ...calculateEclipseList(event.data),
+        ...calculatePlanetEvents(event.data),
+      },
+    });
   } catch (error) {
     self.postMessage({
       error:

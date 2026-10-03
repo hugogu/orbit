@@ -2,14 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { plannerIntent, withoutPlannerIntent } from '../lib/explorer-intent';
 
-void test('only one recognized planner navigation intent opens the lunar tab', () => {
-  assert.equal(plannerIntent('?lang=en&planner=lunar'), 'lunar');
+void test('one recognized planner intent opens its event tab', () => {
+  for (const tab of ['lunar', 'opposition', 'transit'] as const)
+    assert.equal(plannerIntent(`?lang=en&planner=${tab}`), tab);
   for (const search of [
     '',
     '?lang=en',
     '?planner=solar',
     '?planner=LUNAR',
     '?planner=lunar&planner=lunar',
+    '?planner=transit&planner=opposition',
     '?planner=lunar%00',
   ])
     assert.equal(plannerIntent(search), null, search);

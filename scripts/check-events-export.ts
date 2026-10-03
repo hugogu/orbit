@@ -4,11 +4,10 @@ import { resolve } from 'node:path';
 import {
   absoluteSiteUrl,
   eventDetailsPath,
+  eventAction,
   eventsIndexPath,
   eventsIndexTitle,
   eventTitle,
-  explorerPath,
-  lunarPlannerPath,
   seoLocales,
   seoSiteName,
 } from '../lib/seo';
@@ -130,18 +129,12 @@ for (const locale of seoLocales) {
     assert.ok(action, `${path}: primary action`);
     assert.equal(
       action[1],
-      escapeHtml(
-        topic.id === 'lunar-eclipse'
-          ? lunarPlannerPath(locale)
-          : explorerPath(locale, topic.bodies[0]),
-      ),
+      escapeHtml(eventAction(topic, locale).path),
       `${path}: primary action URL`,
     );
     assert.equal(
       action[2],
-      escapeHtml(
-        t(topic.id === 'lunar-eclipse' ? '查询月食时间' : '在 3D 观测台中观察'),
-      ),
+      escapeHtml(t(eventAction(topic, locale).label)),
       `${path}: primary action label`,
     );
     for (const source of topic.sources)

@@ -453,6 +453,59 @@ export const eventTopics: EventTopic[] = [
     ],
   },
   {
+    id: 'saturn-opposition',
+    name: '土星冲日',
+    en: 'Saturn at opposition',
+    category: 'planet-aspect',
+    season: '约每 378 天一次',
+    summary:
+      '2026 年 10 月 4 日土星冲日：了解日地土的排列、土星环的增亮，以及怎样选择观测时段。',
+    headline: '2026 年 10 月 4 日，迎来观测土星的好时机',
+    intro:
+      '土星冲日是土星与太阳的地心视黄经相差 180° 的时刻，地球位于太阳与土星之间。2026 年这次发生在 10 月 4 日。土星在冲日前后通常傍晚升起、清晨落下，接近整夜可见；它与地球的距离也接近这一年的最小值，适合用望远镜观察星环与卫星。',
+    sections: [
+      {
+        heading: '为什么约一年就有一次',
+        text: '土星绕太阳一周约需 29.4 年，地球每年追上它一次。两者的会合周期约为 378 天，所以冲日通常比上一年晚约两周。冲日按黄经定义，并不要求三颗天体在空间中完全共线，也不一定恰在距离最近的时刻。',
+      },
+      {
+        heading: '星环的冲日增亮',
+        text: '冲日前后，照向星环的阳光几乎从观测者身后射来，冰粒的阴影更容易藏在冰粒后面，光的相干反向散射也会加强亮度。这种冲日增亮称为塞利格效应。星环朝向地球的倾角也会改变外观，因此每年的土星冲日看起来并不相同。',
+      },
+      {
+        heading: '不必守住冲日的那一分钟',
+        text: '冲日是一个全球共同的几何时刻，不代表每个地点当时都在夜间。更实用的选择是冲日前后数周内天气晴朗、土星在当地升得较高的夜晚；午夜前后通常有利，但准确的升落与高度仍取决于观测地点。规划器会从模拟时间计算接下来的冲日，并列出此地在该时刻的行星高度。',
+      },
+    ],
+    facts: [
+      { label: '2026 年冲日日期', value: '2026 年 10 月 4 日' },
+      { label: '几何关系', value: '土星与太阳的地心视黄经相差 180°' },
+      { label: '推荐时段', value: '冲日前后数周，土星在当地升高的夜晚' },
+      { label: '观测器材', value: '肉眼可见土星；看清星环需要望远镜' },
+    ],
+    observing: [
+      '肉眼看到的是明亮的点，辨认星环需要小型望远镜；双筒望远镜更适合辅助定位。',
+      '先用低倍找到土星，再根据大气宁静度逐步提高倍率；避开屋顶与路面的热气流。',
+      '冲日前后数周都适合观测，不必为了精确时刻牺牲当地的夜间条件。',
+      '在天象推演的“行星冲日”页查看计算日期；先在地球信息中设置观测点，才能正确读取当地时间与高度。',
+    ],
+    bodies: ['saturn', 'earth', 'sun'],
+    sources: [
+      {
+        name: 'NASA Science — See Saturn at its Best and Brightest',
+        url: 'https://science.nasa.gov/science-research/planetary-science/25apr_saturn/',
+      },
+      {
+        name: 'NASA Science — Opposition Surge on the B Ring',
+        url: 'https://science.nasa.gov/resource/opposition-surge-on-the-b-ring/',
+      },
+      {
+        name: 'IGN — Astronomical events 2026',
+        url: 'https://astronomia.ign.es/rknowsys-theme/images/webAstro/paginas/publicaciones/atlas-celestes/Atlas_celeste_2026_Peninsula-Baleares_english_version.pdf',
+      },
+    ],
+  },
+  {
     id: 'elongation',
     name: '大距',
     en: 'Greatest elongation',

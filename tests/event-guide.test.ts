@@ -7,11 +7,39 @@ import {
   eventTopics,
   topicsByCategory,
 } from '../lib/event-guide';
-import { catalogEntry } from '../lib/seo';
+import {
+  catalogEntry,
+  eventAction,
+  eventDetailsPath,
+  eventTitle,
+} from '../lib/seo';
+import { sitemapEntries } from '../lib/sitemap';
+import { isProfilePath } from '../lib/pwa';
 import { languages, translator, type Locale } from '../lib/i18n';
 
 const codes = Object.keys(languages) as Locale[];
 const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+void test('Saturn opposition is discoverable, localized and connects to its planner', () => {
+  const topic = eventTopic('saturn-opposition');
+  assert.ok(topic);
+  assert.ok(topicsByCategory('planet-aspect').includes(topic));
+  assert.equal(topic.facts[0].value, '2026 年 10 月 4 日');
+  assert.deepEqual(topic.bodies, ['saturn', 'earth', 'sun']);
+  for (const locale of codes) {
+    const path = eventDetailsPath(locale, topic.id);
+    assert.ok(isProfilePath(path));
+    const entry = sitemapEntries().find((item) => item.loc.endsWith(path));
+    assert.ok(entry);
+    assert.equal(entry.alternates?.length, codes.length + 1);
+    assert.match(eventTitle(topic, locale), /2026/);
+    assert.match(eventAction(topic, locale).path, /planner=opposition#saturn$/);
+    assert.match(
+      eventAction(eventTopic('transit')!, locale).path,
+      /planner=transit$/,
+    );
+  }
+});
 
 void test('every topic is addressable, categorized and complete', () => {
   assert.ok(eventTopics.length > 0);

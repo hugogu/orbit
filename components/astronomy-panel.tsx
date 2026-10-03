@@ -15,12 +15,19 @@ import {
   type SkyEvent,
   type SkyLocation,
 } from '../lib/sky-events';
+import {
+  type PlanetEvent,
+  type PlanetEventList,
+  type PlannerTab,
+} from '../lib/planet-events';
+import { catalogEntry } from '../lib/seo';
 // Vite generates the default constructor; it is not an export of the worker source.
 // oxlint-disable-next-line import/default
 import AstronomyWorker from '../workers/astronomy.worker?worker';
 
 type Kind = 'solar' | 'lunar';
-type Loaded = {
+type PlannerList = EclipseList & PlanetEventList;
+type Loaded = PlanetEventList & {
   /** The moment and place these events answer. */
   query: EclipseQuery;
   solar: SkyEvent[];
@@ -45,6 +52,8 @@ function stillAnswers(
   const first = Math.min(
     loaded.solar[0]?.peak ?? Infinity,
     loaded.lunar[0]?.peak ?? Infinity,
+    loaded.opposition[0]?.peak ?? Infinity,
+    loaded.transit[0]?.peak ?? Infinity,
   );
   return start >= loaded.query.start && start <= first;
 }
@@ -56,14 +65,16 @@ export default function AstronomyPanel({
   onTabChange,
   time,
   onEclipse,
+  onPlanetEvent,
   location,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  tab: Kind;
-  onTabChange: (kind: Kind) => void;
+  tab: PlannerTab;
+  onTabChange: (kind: PlannerTab) => void;
   time: number;
   onEclipse: (ms: number, kind: Kind) => void;
+  onPlanetEvent: (ms: number, body: string) => void;
   location: SkyLocation;
 }) {
   const { t, locale } = useI18n();
@@ -85,7 +96,7 @@ export default function AstronomyPanel({
   }, []);
   // One question, one answer: each request gets its own worker and releases it
   // as soon as it replies, rather than idling with the ephemeris loaded.
-  function ask(query: EclipseQuery, onDone: (list: EclipseList) => void) {
+  function ask(query: EclipseQuery, onDone: (list: PlannerList) => void) {
     const ticket = ++request.current;
     const stale = () => !live.current || ticket !== request.current;
     let task: Worker;
@@ -97,7 +108,7 @@ export default function AstronomyPanel({
       return;
     }
     task.onmessage = (
-      event: MessageEvent<{ result?: EclipseList; error?: string }>,
+      event: MessageEvent<{ result?: PlannerList; error?: string }>,
     ) => {
       task.terminate();
       if (stale()) return;
@@ -130,6 +141,8 @@ export default function AstronomyPanel({
           query,
           solar: list.solar.events,
           lunar: list.lunar.events,
+          opposition: list.opposition,
+          transit: list.transit,
           next: { solar: list.solar.next, lunar: list.lunar.next },
         }),
       );
@@ -298,6 +311,108 @@ export default function AstronomyPanel({
       </>
     );
   };
+  const planetList = (kind: 'opposition' | 'transit') => {
+    if (error)
+      return (
+        <p role="alert" className="astro-error">
+          {t(error)}
+        </p>
+      );
+    if (!loaded) return <p className="little-note">{t('正在计算未来天象…')}</p>;
+    const events = loaded[kind];
+    return (
+      <>
+        <p className="little-note">
+          {t(
+            kind === 'opposition'
+              ? '列出火星、木星、土星、天王星和海王星各自接下来的三次冲日。水星和金星没有冲日。'
+              : '从地球只能看到水星和金星凌日，列出各自接下来的两次；外行星不会凌日。',
+          )}
+        </p>
+        {events.length === 0 && (
+          <p className="little-note">{t('在支持的日期范围内未找到下一次。')}</p>
+        )}
+        <div className="sky-results">
+          {events.map((event: PlanetEvent) => (
+            <article className="sky-event" key={`${event.body}-${event.peak}`}>
+              <div className="sky-event-heading">
+                <h3>
+                  {t(kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日', {
+                    name: t(catalogEntry(event.body)!.data.name),
+                  })}
+                </h3>
+              </div>
+              <strong>{format(event.peak)}</strong>
+              <p>
+                {t(kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻')}
+              </p>
+              {kind === 'opposition' ? (
+                <>
+                  <p>
+                    {t('地心距离 {{distance}} AU · 视星等 {{magnitude}}', {
+                      distance: event.distance.toFixed(3),
+                      magnitude: event.magnitude.toFixed(1),
+                    })}
+                  </p>
+                  <p>
+                    {t(
+                      '此地冲日时行星高度 {{altitude}}°；请在附近夜晚、行星升高时观测。',
+                      {
+                        altitude: event.altitude.toFixed(1),
+                      },
+                    )}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    {t('凌始')} {format(event.begin!)}
+                    <br />
+                    {t('凌终')} {format(event.end!)}
+                  </p>
+                  <p>
+                    {t(
+                      '此地凌日中点时太阳高度 {{altitude}}°；完整可见时段还取决于日出日落。',
+                      {
+                        altitude: event.altitude.toFixed(1),
+                      },
+                    )}
+                  </p>
+                </>
+              )}
+              <button
+                className="secondary-action"
+                onClick={() => {
+                  onPlanetEvent(event.peak, event.body);
+                  onOpenChange(false);
+                }}
+              >
+                {t('观察此刻')}
+              </button>
+            </article>
+          ))}
+        </div>
+        <p className="little-note">
+          {t(
+            kind === 'opposition'
+              ? '冲日按地心视黄经与太阳相差 180° 计算；并不保证恰在距离最近的时刻。日期由 Astronomy Engine 计算，仅列出至 2200 年的事件。'
+              : '凌日接触时刻为地心计算，观测地点的接触时刻会有视差。必须在光学设备物镜前端牢固安装专用太阳滤镜，绝不可通过未加防护的设备看太阳。日期由 Astronomy Engine 计算，仅列出至 2200 年的事件。',
+          )}
+        </p>
+        <p className="little-note">
+          {t('三维观测台的大小与距离可以放大，请勿用画面重叠判断冲日或凌日。')}
+        </p>
+        <p className="little-note">
+          {t('观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}', {
+            latitude: answered.latitude.toFixed(4),
+            longitude: answered.longitude.toFixed(4),
+            offset: `${answered.utcOffset >= 0 ? '+' : ''}${answered.utcOffset}`,
+          })}
+          {t('，可在地球的天体信息中调整。')}
+        </p>
+      </>
+    );
+  };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -307,19 +422,21 @@ export default function AstronomyPanel({
         <DialogTitle>{t('天象推演')}</DialogTitle>
         <DialogDescription>
           {loaded
-            ? t('从 {{date}} 起的食象，均为观测地点的当地时间。', {
+            ? t('从 {{date}} 起的天象，均为观测地点的当地时间。', {
                 date: format(loaded.query.start),
               })
-            : t('正在从当前模拟时间查找接下来的食象。')}
+            : t('正在从当前模拟时间查找接下来的天象。')}
         </DialogDescription>
         <Tabs
           value={tab}
-          onValueChange={(value) => onTabChange(String(value) as Kind)}
+          onValueChange={(value) => onTabChange(String(value) as PlannerTab)}
           className="settings-tabs"
         >
           <TabsList className="settings-tabs-list" aria-label={t('天象分类')}>
             <TabsTrigger value="solar">{t('日食')}</TabsTrigger>
             <TabsTrigger value="lunar">{t('月食')}</TabsTrigger>
+            <TabsTrigger value="opposition">{t('行星冲日')}</TabsTrigger>
+            <TabsTrigger value="transit">{t('行星凌日')}</TabsTrigger>
           </TabsList>
           <TabsContent value="solar" className="settings-tab-panel">
             {list('solar')}
@@ -328,6 +445,12 @@ export default function AstronomyPanel({
           <TabsContent value="lunar" className="settings-tab-panel">
             {list('lunar')}
             {notes}
+          </TabsContent>
+          <TabsContent value="opposition" className="settings-tab-panel">
+            {planetList('opposition')}
+          </TabsContent>
+          <TabsContent value="transit" className="settings-tab-panel">
+            {planetList('transit')}
           </TabsContent>
         </Tabs>
       </DialogContent>

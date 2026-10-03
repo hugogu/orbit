@@ -163,6 +163,8 @@ export function eventsIndexTitle(locale: Locale) {
 
 export function eventTitle(topic: EventTopic, locale: Locale) {
   const t = translator(locale);
+  if (topic.id === 'saturn-opposition')
+    return t('2026 年土星冲日：时间、原理与观测指南');
   return t('{{name}}：成因、周期与观测', { name: t(topic.name) });
 }
 
@@ -183,6 +185,23 @@ export function explorerPath(locale: Locale, id?: string) {
 
 export function lunarPlannerPath(locale: Locale) {
   return `${explorerPath(locale)}&planner=lunar`;
+}
+
+export function eventAction(topic: EventTopic, locale: Locale) {
+  if (topic.id === 'lunar-eclipse')
+    return { path: lunarPlannerPath(locale), label: '查询月食时间' };
+  if (['saturn-opposition', 'opposition', 'transit'].includes(topic.id)) {
+    const tab = topic.id === 'transit' ? 'transit' : 'opposition';
+    const hash = topic.id === 'saturn-opposition' ? '#saturn' : '';
+    return {
+      path: `${explorerPath(locale)}&planner=${tab}${hash}`,
+      label: tab === 'transit' ? '查询行星凌日时间' : '查询行星冲日时间',
+    };
+  }
+  return {
+    path: explorerPath(locale, topic.bodies[0]),
+    label: '在 3D 观测台中观察',
+  };
 }
 
 export function absoluteSiteUrl(path: string) {

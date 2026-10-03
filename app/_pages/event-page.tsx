@@ -24,11 +24,11 @@ import {
   catalogEntry,
   entryImagePath,
   eventDetailsPath,
+  eventAction,
   eventJsonLd,
   eventsIndexPath,
   eventTitle,
   explorerPath,
-  lunarPlannerPath,
   privacyPath,
   serializeJsonLd,
   seoSiteName,
@@ -176,17 +176,9 @@ export default async function EventPage({ params }: PageProps) {
           <div className="seo-actions">
             <a
               className="seo-primary-action"
-              href={
-                topic.id === 'lunar-eclipse'
-                  ? lunarPlannerPath(locale)
-                  : explorerPath(locale, topic.bodies[0])
-              }
+              href={eventAction(topic, locale).path}
             >
-              {t(
-                topic.id === 'lunar-eclipse'
-                  ? '查询月食时间'
-                  : '在 3D 观测台中观察',
-              )}
+              {t(eventAction(topic, locale).label)}
             </a>
             <ProfileShare
               locale={locale}
@@ -253,7 +245,13 @@ export default async function EventPage({ params }: PageProps) {
               </dl>
               <details className="profile-data-note">
                 <summary>{t('数据与计算说明')}</summary>
-                <p>{t(dataNote)}</p>
+                <p>
+                  {t(
+                    topic.category === 'planet-aspect'
+                      ? '周期是长期平均值，具体事件日期由天象推演按模拟时间独立计算；几何时刻与当地最佳观测时段并不相同。'
+                      : dataNote,
+                  )}
+                </p>
               </details>
             </section>
             <section
