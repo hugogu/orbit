@@ -1305,6 +1305,10 @@ export default function Home() {
           >
             <HelpCircle />
           </button>
+          <GitHubLink
+            className="icon-button header-github-link"
+            label={t('在 GitHub 关注与支持项目')}
+          />
           <button
             className="icon-button fullscreen"
             aria-label={fullscreen ? t('退出全屏') : t('进入全屏')}
