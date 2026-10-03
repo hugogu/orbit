@@ -1292,7 +1292,7 @@ export default function Home() {
                 : t('按日期演算')}
           </span>
           <button
-            className="icon-button"
+            className="icon-button header-share-button"
             aria-label={t('分享此刻所见')}
             title={sandboxScenario ? t('分享这个沙盘') : t('分享此刻所见')}
             hidden={ground}
@@ -1548,6 +1548,15 @@ export default function Home() {
         </div>
       </div>
       <div className="bottom-area">
+        <button
+          className="icon-button glass mobile-share-button"
+          aria-label={t('分享此刻所见')}
+          title={sandboxScenario ? t('分享这个沙盘') : t('分享此刻所见')}
+          hidden={ground}
+          onClick={openShare}
+        >
+          <Share2 />
+        </button>
         <div className="scene-meta">
           <span className="follow-status">
             <i />
