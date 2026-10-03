@@ -8,6 +8,8 @@ import { asteroids } from '../lib/asteroids';
 import { orbitingMoons } from '../lib/moon-orbits';
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from './ui/sheet';
 import { bodyDetailsPath } from '../lib/seo';
+import { portraitPath } from '../lib/profile-images';
+import Image from 'next/image';
 
 const smallBodyGroups = [
   { id: 'asteroids', name: '小行星', entries: asteroids },
@@ -70,7 +72,15 @@ function BodyTree({
               <span className="body-number">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span className="planet-dot" style={{ background: body.color }} />
+              <Image
+                className="body-portrait"
+                src={portraitPath(body.id)}
+                alt=""
+                width={36}
+                height={36}
+                loading="lazy"
+                unoptimized
+              />
               <span>
                 {t(body.name)}
                 <small>{body.en.split(' / ')[0]}</small>
@@ -110,9 +120,14 @@ function BodyTree({
                     aria-current={selected === moon.id ? 'true' : undefined}
                     onClick={(event) => handleProfileClick(event, moon.id)}
                   >
-                    <span
-                      className="planet-dot"
-                      style={{ background: moon.color }}
+                    <Image
+                      className="body-portrait"
+                      src={portraitPath(moon.id)}
+                      alt=""
+                      width={36}
+                      height={36}
+                      loading="lazy"
+                      unoptimized
                     />
                     <span>
                       {t(moon.name)}
