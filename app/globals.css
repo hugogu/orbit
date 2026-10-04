@@ -3105,12 +3105,19 @@ button:disabled {
   width: min(920px, calc(100vw - 24px)) !important;
   max-width: 920px !important;
 }
+.lunar-navigation {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
 .calendar-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin: 2px 0 12px;
+  flex-shrink: 0;
 }
 .calendar-nav strong {
   min-width: 10ch;
@@ -3118,10 +3125,26 @@ button:disabled {
   font-size: 15px;
   font-weight: 400;
   color: #ead5ad;
+  white-space: nowrap;
+}
+.calendar-nav .icon-button {
+  width: 44px;
+  height: 44px;
 }
 .calendar-nav .icon-button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+@media (orientation: landscape) and (min-width: 600px) {
+  .lunar-navigation {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+  .lunar-navigation .settings-tabs-list {
+    flex: 1;
+    min-width: 0;
+  }
 }
 /* Both axes scroll inside the panel, so the header row and the date column can
    stay put while a month of readings moves under them. The tab panel is a
