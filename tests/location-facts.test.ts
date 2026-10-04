@@ -21,7 +21,7 @@ void test('uses Beijing as the default observer reference until location is requ
 });
 
 void test('requests location only from the explicit ground-view action, never at startup or in the planner', () => {
-  const start = homePage.indexOf('  function enterGround()');
+  const start = homePage.indexOf('  function enterGround(');
   const end = homePage.indexOf('  // A share link arrives', start);
   assert.ok(start > 0 && end > start);
   const action = homePage.slice(start, end);
@@ -30,7 +30,8 @@ void test('requests location only from the explicit ground-view action, never at
     homePage.slice(0, start) + homePage.slice(end),
     /navigator\.geolocation/,
   );
-  assert.match(homePage, /onClick=\{enterGround\}/);
+  assert.match(homePage, /onClick=\{\(\) => enterGround\(\)\}/);
+  assert.match(homePage, /onClick=\{\(\) => enterGround\(true\)\}/);
 });
 
 void test('geolocation uses the granted device coordinates without map offsets or fabricated altitude', async () => {

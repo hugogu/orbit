@@ -1,6 +1,7 @@
 'use client';
 import { useI18n } from '../lib/i18n/provider';
 import { useEffect, useRef, useState } from 'react';
+import { Eye } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -189,7 +190,19 @@ export default function AstronomyPanel({
         <h3>{t(event.kind)}</h3>
         {event.local && <span className="sky-event-tag">{t('本地可见')}</span>}
       </div>
-      <strong>{format(event.peak)}</strong>
+      <div className="sky-event-time">
+        <strong>{format(event.peak)}</strong>
+        <button
+          className="secondary-action sky-event-view"
+          onClick={() => {
+            onEclipse(event.peak, kind);
+            onOpenChange(false);
+          }}
+        >
+          <Eye size={15} aria-hidden="true" />
+          {t('查看')}
+        </button>
+      </div>
       <p>{kind === 'solar' ? t('全球食甚') : t('食甚时间')}</p>
       {event.begin !== undefined && event.end !== undefined && (
         <p>
@@ -242,15 +255,6 @@ export default function AstronomyPanel({
           </p>
         </div>
       )}
-      <button
-        className="secondary-action"
-        onClick={() => {
-          onEclipse(event.peak, kind);
-          onOpenChange(false);
-        }}
-      >
-        {t('观察食甚阴影')}
-      </button>
     </article>
   );
   // Both notes belong under either list, so they ride inside the scrolling
@@ -275,7 +279,7 @@ export default function AstronomyPanel({
           Astronomy Engine
         </a>{' '}
         {t(
-          '独立计算。“观察食甚阴影”会聚焦地球或月球，暂停于食甚；点击播放可按 1 分钟/秒观察影区移动。表面食影按物理尺度计算，三维天体间距仍有放大，不能用画面重叠判断日月食。未来与历史 UTC 受地球自转预测误差影响。',
+          '独立计算。“查看”会聚焦地球或月球，暂停于食甚；点击播放可按 1 分钟/秒观察影区移动。表面食影按物理尺度计算，三维天体间距仍有放大，不能用画面重叠判断日月食。未来与历史 UTC 受地球自转预测误差影响。',
         )}
       </p>
     </>
@@ -359,7 +363,19 @@ export default function AstronomyPanel({
                     )}
                   </h3>
                 </div>
-                <strong>{format(event.peak)}</strong>
+                <div className="sky-event-time">
+                  <strong>{format(event.peak)}</strong>
+                  <button
+                    className="secondary-action sky-event-view"
+                    onClick={() => {
+                      onPlanetEvent(event.peak, event.body, kind);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <Eye size={15} aria-hidden="true" />
+                    {t('查看')}
+                  </button>
+                </div>
                 <p>
                   {t(
                     kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻',
@@ -399,15 +415,6 @@ export default function AstronomyPanel({
                     </p>
                   </>
                 )}
-                <button
-                  className="secondary-action"
-                  onClick={() => {
-                    onPlanetEvent(event.peak, event.body, kind);
-                    onOpenChange(false);
-                  }}
-                >
-                  {t('观察此刻')}
-                </button>
                 {edition && (
                   <a
                     className="sky-event-guide-link"
