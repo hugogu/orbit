@@ -195,6 +195,40 @@ void test('solar eclipse guidance separates direct viewing, filtered optics and 
   }
 });
 
+void test('solar eclipse types include local and event-wide partial eclipses', () => {
+  const section = eventTopic('solar-eclipse')?.sections[0];
+  assert.ok(section);
+  for (const [locale, heading, penumbra, partialOnly, centralPath] of [
+    [
+      'zh-CN',
+      /偏食、全食、环食与全环食/,
+      /半影.*一部分.*偏食/,
+      /只有半影.*整场日食.*偏食/,
+      /中央食带之外.*同一次日食.*偏食/,
+    ],
+    [
+      'en',
+      /Partial, total, annular and hybrid/,
+      /penumbra.*partial eclipse.*part of the Sun/,
+      /only the penumbra.*entire event is partial/,
+      /Outside the central path.*same event/,
+    ],
+    [
+      'ja',
+      /部分食・皆既食・金環食・金環皆既食/,
+      /半影.*一部.*部分食/,
+      /半影だけ.*日食全体.*部分食/,
+      /中心食帯の外.*同じ日食.*部分食/,
+    ],
+  ] as const) {
+    const t = translator(locale);
+    assert.match(t(section.heading), heading, locale);
+    assert.match(t(section.text), penumbra, locale);
+    assert.match(t(section.text), partialOnly, locale);
+    assert.match(t(section.text), centralPath, locale);
+  }
+});
+
 void test('Ursids guidance qualifies circumpolar viewing by latitude and darkness', () => {
   const ursids = eventTopic('ursids');
   assert.ok(ursids);
