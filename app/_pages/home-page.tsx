@@ -1449,6 +1449,14 @@ export default function Home() {
             <span className={actionLabel}>{t('天象百科')}</span>
           </a>
         )}
+        <button
+          className="mobile-info glass phone-body-info"
+          title={t('天体信息')}
+          onClick={() => setDetails(true)}
+        >
+          <Info size={16} />
+          <span className={actionLabel}>{t('天体信息')}</span>
+        </button>
       </div>
       {/* A sandbox run leaves the ephemeris behind, so its sky planner steps aside. */}
       {tab !== 'sandbox' && (

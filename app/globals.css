@@ -3852,6 +3852,9 @@ button:disabled {
   color: #cdb88f;
   font-size: 12px;
 }
+.mobile-info.phone-body-info {
+  display: none;
+}
 .mobile-details {
   max-height: 82svh;
   overflow-x: hidden;
@@ -4702,8 +4705,27 @@ button:disabled {
     top: 56px;
     gap: 6px;
   }
-  .rail-end .mobile-info {
-    margin-top: 46px;
+  .observatory:not([data-sandbox='true']) .rail-end .mobile-info {
+    display: none;
+  }
+  .observatory:not([data-sandbox='true']) .rail-start .phone-body-info {
+    display: flex;
+    margin-left: auto;
+    min-width: 0;
+  }
+  .rail-start .event-guide-button {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .rail-start .event-guide-button > span:not(.sr-only),
+  .phone-body-info > span:not(.sr-only) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .phone-body-info > svg,
+  .event-guide-button > svg {
+    flex-shrink: 0;
   }
   .rail-end .view-tools {
     order: -1;
