@@ -1458,7 +1458,7 @@ export default function Home() {
           <span className={actionLabel}>{t('天体信息')}</span>
         </button>
       </div>
-      {/* A sandbox run leaves the ephemeris behind, so its sky planner steps aside. */}
+      {/* Hide real-sky planning in sandbox mode, which has its own controls. */}
       {tab !== 'sandbox' && (
         <div className="astronomy-actions">
           <button
