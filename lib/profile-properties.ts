@@ -2,7 +2,8 @@ import { moonRadii } from './eclipse-shadows';
 import { physicalParameters } from './physical-facts';
 import { moonSemimajorKm } from './satellite-elements';
 import type { CatalogEntry } from './seo';
-import { bodies } from './solar';
+import { bodies, type Body } from './solar';
+import { translator, type Locale } from './i18n';
 
 /**
  * UN/CEFACT common codes (Recommendation 20) for the units a profile prints,
@@ -37,6 +38,29 @@ export type ProfileProperty = {
 /** Derived figures lose the floating-point noise the page never prints. */
 const rounded = (value: number) => Number(value.toPrecision(6));
 
+/** Planetary day values are sidereal, as defined in NASA's fact-sheet notes:
+ * https://nssdc.gsfc.nasa.gov/planetary/factsheet/fact_notes.html
+ * The Sun keeps its generic label; it has latitude-dependent rotation.
+ */
+export function profileRotationProperty(body: Body): ProfileProperty {
+  const days = Math.abs(body.day);
+  return {
+    id: 'rotationPeriod',
+    label: body.id === 'sun' ? '自转周期' : '恒星自转周期',
+    value: Number(days.toFixed(days < 2 ? 5 : 2)),
+    unit: 'day',
+  };
+}
+
+export function profileRotationFact(body: Body, locale: Locale) {
+  const t = translator(locale);
+  const property = profileRotationProperty(body);
+  return [
+    t(property.label),
+    `${property.value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 5 })} ${t('天')}`,
+  ];
+}
+
 export function profileProperties(entry: CatalogEntry): ProfileProperty[] {
   if (entry.kind === 'body') {
     const body = entry.data;
@@ -63,12 +87,7 @@ export function profileProperties(entry: CatalogEntry): ProfileProperty[] {
             },
           ]
         : []),
-      {
-        id: 'rotationPeriod',
-        label: '自转周期',
-        value: Math.abs(body.day),
-        unit: 'day',
-      },
+      profileRotationProperty(body),
       ...(physical
         ? [
             {

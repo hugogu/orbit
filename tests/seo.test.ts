@@ -45,7 +45,12 @@ import { eventOccurrences } from '../lib/event-occurrences';
 import { portraitCredit } from '../lib/profile-images';
 import { physicalParameters } from '../lib/physical-facts';
 import { profileContent } from '../lib/profile-content';
-import { profileProperties, propertyUnits } from '../lib/profile-properties';
+import {
+  profileProperties,
+  propertyUnits,
+  profileRotationFact,
+} from '../lib/profile-properties';
+import { bodies } from '../lib/solar';
 import {
   solarSystemItem,
   wikidataClasses,
@@ -407,7 +412,7 @@ void test('structured body properties restate the figures a profile prints', () 
   assert.equal(earth.get('meanRadius')?.value, 6371);
   assert.equal(propertyUnits[earth.get('meanSunDistance')!.unit!].code, 'A12');
   // Venus turns backwards; the page prints the period, not the sign.
-  assert.equal(properties('venus').get('rotationPeriod')?.value, 243.025);
+  assert.equal(properties('venus').get('rotationPeriod')?.value, 243.03);
   // The Sun prints no distance, period or mass, so it states none.
   assert.deepEqual(
     [...properties('sun').keys()],
@@ -434,6 +439,52 @@ void test('structured body properties restate the figures a profile prints', () 
         assert.ok(Number.isFinite(property.value), property.id);
       else assert.ok(Object.hasOwn(source, property.value), property.value);
     }
+});
+
+void test('profile rotation distinguishes sidereal days with matching localized structured values', () => {
+  const labels = {
+    en: 'Sidereal rotation period',
+    'zh-CN': '恒星自转周期',
+    ja: '恒星自転周期',
+  };
+  for (const locale of seoLocales) {
+    for (const [id, value, printed] of [
+      ['earth', 0.99727, '0.99727'],
+      ['mercury', 58.65, '58.65'],
+    ] as const) {
+      const entry = catalogEntry(id)!;
+      const fact = profileRotationFact(
+        bodies.find((body) => body.id === id)!,
+        locale,
+      );
+      assert.deepEqual(fact, [
+        labels[locale],
+        `${printed} ${translator(locale)('天')}`,
+      ]);
+      const node = profileGraph(entry, locale).nodes.find(
+        (node) => node['@type'] === 'Place' && node.additionalProperty,
+      )!;
+      const property = (node.additionalProperty as Node[]).find(
+        (property) => property.propertyID === 'rotationPeriod',
+      )!;
+      assert.equal(property.name, fact[0]);
+      assert.equal(property.value, value);
+      assert.equal(property.unitCode, 'DAY');
+      assert.equal(property.unitText, 'd');
+    }
+  }
+  assert.equal(
+    profileProperties(catalogEntry('sun')!).find(
+      (p) => p.id === 'rotationPeriod',
+    )!.label,
+    '自转周期',
+  );
+  assert.equal(
+    profileProperties(catalogEntry('ceres')!).find(
+      (p) => p.id === 'rotationPeriod',
+    )!.label,
+    '自转周期',
+  );
 });
 
 void test('profile breadcrumbs climb through the body index, a moon through its planet', () => {

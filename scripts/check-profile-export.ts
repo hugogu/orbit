@@ -244,6 +244,35 @@ for (const entry of entries) {
           `${path}: ${name}`,
         );
     }
+    if (entry.kind === 'body') {
+      const rotation = body.additionalProperty.find(
+        (property: Record<string, unknown>) =>
+          property.propertyID === 'rotationPeriod',
+      );
+      const printed = Number(rotation.value).toLocaleString(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 5,
+      });
+      assert.ok(
+        html.includes(`<dd>${printed} ${t('天')}</dd>`),
+        `${path}: visible rotation matches structured value`,
+      );
+      assert.equal(rotation.unitCode, 'DAY', path);
+      assert.equal(rotation.unitText, 'd', path);
+      if (entry.data.id !== 'sun') {
+        assert.equal(rotation.name, t('恒星自转周期'), path);
+        assert.ok(
+          html.includes(
+            escapeHtml(
+              t(
+                '恒星日以远方恒星为参照；太阳日以太阳再次经过同一子午线为参照。',
+              ),
+            ),
+          ),
+          path,
+        );
+      }
+    }
     // Both breadcrumbs climb through the index, and a moon through its planet.
     const ancestors = profileAncestors(entry, locale);
     const trail = graph.find(

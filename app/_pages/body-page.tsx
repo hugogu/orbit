@@ -15,6 +15,7 @@ import {
 import { curiosities, type Curiosity } from '../../lib/curiosities';
 import { extraFacts } from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
+import { profileRotationFact } from '../../lib/profile-properties';
 import { comets, cometModelNote, cometVisualNote } from '../../lib/comets';
 import {
   asteroids,
@@ -135,7 +136,7 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
       [t('平均半径'), `${body.radius.toLocaleString(locale)} km`],
       [t('平均日距'), body.au ? `${body.au} AU` : '—'],
       [t('公转周期'), body.period ? orbitalPeriod : '—'],
-      [t('自转周期'), `${Math.abs(body.day).toFixed(2)} ${t('天')}`],
+      profileRotationFact(body, locale),
     ];
   }
   if (entry.kind === 'moon') {
@@ -524,6 +525,13 @@ export default async function BodyPage({ params }: PageProps) {
               <p className="seo-section-number">02 / {t('关键数据')}</p>
               <h2 id="profile-data-heading">{t('核心参数')}</h2>
               <BodyFacts entry={entry} locale={locale} />
+              {entry.kind === 'body' && entry.data.id !== 'sun' && (
+                <p>
+                  {t(
+                    '恒星日以远方恒星为参照；太阳日以太阳再次经过同一子午线为参照。',
+                  )}
+                </p>
+              )}
               <details className="profile-data-note">
                 <summary>{t('数据与计算说明')}</summary>
                 <p>
