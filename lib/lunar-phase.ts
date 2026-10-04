@@ -396,6 +396,7 @@ export type LunarDay = {
   age: number;
   illumination: number;
   elongation: number;
+  phaseAngle: number;
   phase: string;
   distanceKm: number;
   apparentDiameter: number;
@@ -517,6 +518,7 @@ export function lunarMonth(query: LunarMonthQuery): LunarMonth {
       age: lunationAt(noon).age,
       illumination: illumination.phase_fraction,
       elongation,
+      phaseAngle: illumination.phase_angle,
       phase: phaseName(elongation),
       distanceKm,
       apparentDiameter: apparentDiameter(distanceKm),

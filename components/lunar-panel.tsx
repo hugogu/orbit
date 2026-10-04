@@ -155,6 +155,7 @@ export default function LunarPanel({
       <div className="moon-phase-hero">
         <MoonPhaseDisc
           elongation={moment.phase.elongation}
+          phaseAngle={moment.phase.phaseAngle}
           flip={place.latitude < 0}
           size={96}
         />
@@ -288,6 +289,7 @@ export default function LunarPanel({
         <span className="calendar-day">
           <MoonPhaseDisc
             elongation={day.elongation}
+            phaseAngle={day.phaseAngle}
             flip={place.latitude < 0}
             size={20}
           />
@@ -490,7 +492,7 @@ export default function LunarPanel({
             )}
             <p className="little-note">
               {t(
-                '月面按日月黄经差实时绘制，取地心视角、天球北极朝上；南半球看到的月面左右相反，已按观测点纬度镜像。日月黄经差从朔起算（0\u00b0 朔、90\u00b0 上弦、180\u00b0 望、270\u00b0 下弦），决定月相名称与月面形状；相位角是在月球上看太阳与地球的夹角（望时接近 0\u00b0），两者相加约为 180\u00b0。月龄从上一次朔起算，视直径为地心值。',
+                '月面使用真实月球纹理，按相位角计算球面光照；南半球视图整体旋转 180°。这是亮面左右排列的标准月相视图，未模拟天平动、地平视角的倾斜或月食，暗面地照仅为示意。日月黄经差从朔起算（0° 朔、90° 上弦、180° 望、270° 下弦），决定月相名称；相位角是在月球上看太阳与地球的夹角（望时接近 0°），决定光照。月龄从上一次朔起算，视直径为地心值。',
               )}
             </p>
             {notes}

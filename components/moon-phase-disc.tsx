@@ -1,61 +1,95 @@
 'use client';
-import { useId } from 'react';
-import { phaseDiscPath } from '../lib/lunar-phase';
+import { useEffect, useRef } from 'react';
+import { projectMoonTexture, shadeMoonDisc } from '../lib/moon-disc';
 
-/** The path is written at this radius and scaled by the viewBox, not by numbers. */
-const RADIUS = 100;
+let texturePromise: Promise<ImageData> | undefined;
+function moonTexture() {
+  return (texturePromise ??= new Promise<ImageData>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Moon texture canvas unavailable');
+        context.drawImage(image, 0, 0);
+        resolve(context.getImageData(0, 0, canvas.width, canvas.height));
+      } catch (error) {
+        reject(error);
+      }
+    };
+    image.onerror = () => reject(new Error('Moon texture unavailable'));
+    image.src = '/textures/2k_moon.jpg';
+  }).catch((error: unknown) => {
+    texturePromise = undefined;
+    throw error;
+  }));
+}
 
-/**
- * The lunar disc drawn from the phase angle rather than picked from a set of
- * pictures, so every date in the supported range has its own shape.
- *
- * The view is geocentric with celestial north up. Seen from the southern
- * hemisphere the same Moon appears turned about, which `flip` mirrors.
- *
- * The graphic is decorative: every place it appears already names the phase in
- * text beside it, so it is hidden from assistive technology rather than read
- * out a second time.
+/** Textured sphere with phase-derived sunlight, in the almanac's north-up view.
+ * A southern view rotates both the surface and the light, never mirrors maria.
+ * Decorative: adjacent text already describes the phase.
  */
 export default function MoonPhaseDisc({
   elongation,
+  phaseAngle = Math.abs(180 - (((elongation % 360) + 360) % 360)),
   size = 104,
   flip = false,
 }: {
   elongation: number;
+  phaseAngle?: number;
   size?: number;
   flip?: boolean;
 }) {
-  // A gradient is referenced by id, and the page holds many of these discs —
-  // the panel renders in both the desktop aside and the mobile sheet. A shared
-  // id would send every one of them to the first copy, which is inside a hidden
-  // subtree, and an unresolvable paint server draws nothing at all.
-  const gradient = `moon-disc-${useId().replaceAll(':', '')}`;
-  const { path, waxing } = phaseDiscPath(elongation, RADIUS);
-  // The path is drawn with its lit limb on the right; a waning Moon is the same
-  // shape mirrored, and the southern hemisphere mirrors whichever it already is.
-  const mirrored = waxing === flip;
-  const box = RADIUS + 2;
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const projection = useRef<ReturnType<typeof projectMoonTexture> | null>(null);
+  useEffect(() => {
+    let live = true;
+    const target = canvas.current;
+    if (!target) return;
+    void moonTexture()
+      .then((texture) => {
+        if (!live) return;
+        const resolution = Math.ceil(
+          size * Math.min(window.devicePixelRatio || 1, 2),
+        );
+        if (projection.current?.size !== resolution) {
+          projection.current = projectMoonTexture(texture, resolution);
+        }
+        const context = target.getContext('2d');
+        if (!context) return;
+        target.width = target.height = resolution;
+        const waxing = ((elongation % 360) + 360) % 360 < 180;
+        context.putImageData(
+          new ImageData(
+            shadeMoonDisc(projection.current, phaseAngle, waxing),
+            resolution,
+            resolution,
+          ),
+          0,
+          0,
+        );
+      })
+      .catch(() => {
+        // Keep the dark disc if texture loading fails; a later update can retry.
+      });
+    return () => {
+      live = false;
+    };
+  }, [elongation, phaseAngle, size]);
   return (
-    <svg
+    <canvas
+      ref={canvas}
       className="moon-disc"
-      viewBox={`${-box} ${-box} ${box * 2} ${box * 2}`}
       width={size}
       height={size}
+      style={{
+        width: size,
+        height: size,
+        transform: flip ? 'rotate(180deg)' : undefined,
+      }}
       aria-hidden="true"
-    >
-      <defs>
-        <radialGradient id={gradient} cx="40%" cy="35%" r="75%">
-          <stop offset="0%" stopColor="#fbf3e2" />
-          <stop offset="65%" stopColor="#ecdcba" />
-          <stop offset="100%" stopColor="#c8b48c" />
-        </radialGradient>
-      </defs>
-      {/* The unlit hemisphere stays visible, the way earthshine leaves it. */}
-      <circle r={RADIUS} className="moon-disc-dark" />
-      <g transform={mirrored ? 'scale(-1 1)' : undefined}>
-        <path d={path} fill={`url(#${gradient})`} />
-      </g>
-      <circle r={RADIUS} className="moon-disc-rim" />
-    </svg>
+    />
   );
 }

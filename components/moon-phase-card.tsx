@@ -62,6 +62,7 @@ export default function MoonPhaseCard({
       <button className="moon-phase-card-open" onClick={onOpen}>
         <MoonPhaseDisc
           elongation={phase.elongation}
+          phaseAngle={phase.phaseAngle}
           flip={location.latitude < 0}
           size={46}
         />
