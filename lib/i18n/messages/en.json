@@ -1868,7 +1868,6 @@
   "凌始": "Transit begins",
   "凌终": "Transit ends",
   "此地凌日中点时太阳高度 {{altitude}}°；完整可见时段还取决于日出日落。": "Local solar altitude at mid-transit: {{altitude}}°. The visible portion also depends on sunrise and sunset.",
-  "观察此刻": "Observe this instant",
   "冲日按地心视黄经与太阳相差 180° 计算；并不保证恰在距离最近的时刻。日期由 Astronomy Engine 计算，仅列出至 2200 年的事件。": "Opposition is calculated at an apparent geocentric longitude difference of 180° from the Sun, not necessarily at closest approach. Dates are calculated by Astronomy Engine; events are listed through 2200.",
   "凌日接触时刻为地心计算，观测地点的接触时刻会有视差。必须在光学设备物镜前端牢固安装专用太阳滤镜，绝不可通过未加防护的设备看太阳。日期由 Astronomy Engine 计算，仅列出至 2200 年的事件。": "Transit contacts are geocentric; local contact times differ because of parallax. Secure a purpose-built solar filter to the front of the optics and never view the Sun through unprotected equipment. Dates are calculated by Astronomy Engine; events are listed through 2200.",
   "三维观测台的大小与距离可以放大，请勿用画面重叠判断冲日或凌日。": "The 3D observatory can enlarge sizes and distances. Screen overlap is not a test for opposition or transit.",

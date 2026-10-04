@@ -363,7 +363,19 @@ export default function AstronomyPanel({
                     )}
                   </h3>
                 </div>
-                <strong>{format(event.peak)}</strong>
+                <div className="sky-event-time">
+                  <strong>{format(event.peak)}</strong>
+                  <button
+                    className="secondary-action sky-event-view"
+                    onClick={() => {
+                      onPlanetEvent(event.peak, event.body, kind);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <Eye size={15} aria-hidden="true" />
+                    {t('查看')}
+                  </button>
+                </div>
                 <p>
                   {t(
                     kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻',
@@ -403,15 +415,6 @@ export default function AstronomyPanel({
                     </p>
                   </>
                 )}
-                <button
-                  className="secondary-action"
-                  onClick={() => {
-                    onPlanetEvent(event.peak, event.body, kind);
-                    onOpenChange(false);
-                  }}
-                >
-                  {t('观察此刻')}
-                </button>
                 {edition && (
                   <a
                     className="sky-event-guide-link"
