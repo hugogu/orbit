@@ -2662,9 +2662,7 @@ button:disabled {
   white-space: nowrap;
 }
 .event-guide-button {
-  position: absolute;
-  top: 0;
-  left: calc(100% + 8px);
+  display: none;
 }
 /* Without its label a button is a square the height it already had, so turning
    the text off changes its width alone and the rows it sits in keep their line.
@@ -4382,12 +4380,9 @@ button:disabled {
   .observatory .rail-start {
     bottom: auto;
     left: max(12px, env(safe-area-inset-left));
-    right: max(12px, env(safe-area-inset-right));
+    right: 164px;
     width: auto;
     align-items: flex-start;
-    flex-direction: row;
-    gap: 8px;
-    pointer-events: none;
   }
   .observatory .rail-end {
     right: max(12px, env(safe-area-inset-right));
@@ -4397,10 +4392,6 @@ button:disabled {
     padding: 0;
     border-radius: 8px;
     min-width: 0;
-  }
-  .event-guide-button {
-    position: static;
-    flex-shrink: 0;
   }
   .observatory .mobile-body-picker {
     max-width: 100%;
@@ -4413,9 +4404,6 @@ button:disabled {
   }
   .mobile-body-picker > svg {
     flex-shrink: 0;
-  }
-  .scene-caption {
-    display: none;
   }
   .mobile-body-picker {
     display: flex;
@@ -4787,7 +4775,7 @@ button:disabled {
     top: 110px;
   }
   .observatory .scene-caption {
-    display: none;
+    top: 160px;
   }
   .timeline {
     grid-template-columns: auto minmax(90px, 1fr) auto 44px 44px;
@@ -4822,6 +4810,24 @@ button:disabled {
   }
   .brand > span {
     font-size: 16px;
+  }
+}
+/* Phones keep the guide beside body navigation. Tablets and desktop retain
+   the original pair above the information column, including short windows. */
+@media (max-width: 600px), (orientation: landscape) and (max-width: 1000px) and (max-height: 500px) {
+  .observatory .rail-start {
+    right: max(12px, env(safe-area-inset-right));
+    flex-direction: row;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .event-guide-button {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .desktop-event-guide,
+  .observatory .scene-caption {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {

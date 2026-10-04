@@ -1465,6 +1465,14 @@ export default function Home() {
             <CalendarDays size={18} />
             <span className={actionLabel}>{t('近期天象')}</span>
           </button>
+          <a
+            className="astronomy-button desktop-event-guide"
+            href={eventsIndexPath(locale)}
+            title={t('天象百科')}
+          >
+            <Sparkles size={18} />
+            <span className={actionLabel}>{t('天象百科')}</span>
+          </a>
         </div>
       )}
       {showMoonCard && (
