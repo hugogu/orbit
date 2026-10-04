@@ -256,7 +256,7 @@
   "地平线上方": "above the horizon",
   "地平线下方": "below the horizon",
   "°）；其他阶段是否可见需另看月出月落。": "°); check moonrise and moonset to determine visibility during other phases.",
-  "观察食甚阴影": "View shadows at maximum",
+  "查看": "View",
   "在支持的日期范围内未找到下一次。": "No next event found within the supported dates.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Choose a date to explore the Solar System, and a location for sunrise, sunset, and upcoming eclipses.",
   "模拟时间（UTC）": "Simulation time (UTC)",
@@ -276,7 +276,7 @@
   "日出": "Sunrise",
   "日落": "Sunset",
   "天象由": "Sky events are calculated independently by ",
-  "独立计算。“观察食甚阴影”会聚焦地球或月球，暂停于食甚；点击播放可按 1 分钟/秒观察影区移动。表面食影按物理尺度计算，三维天体间距仍有放大，不能用画面重叠判断日月食。未来与历史 UTC 受地球自转预测误差影响。": ". View shadows at maximum focuses Earth or Moon and pauses at maximum eclipse. Play at 1 minute / s to watch the shadow move. Shadows use physical scales, while 3D separations may be enlarged; visual overlap alone cannot identify eclipses. Historical and future UTC inherit uncertainty in Earth-rotation predictions.",
+  "独立计算。“查看”会聚焦地球或月球，暂停于食甚；点击播放可按 1 分钟/秒观察影区移动。表面食影按物理尺度计算，三维天体间距仍有放大，不能用画面重叠判断日月食。未来与历史 UTC 受地球自转预测误差影响。": "View focuses Earth or Moon and pauses at maximum eclipse. Play at 1 minute / s to watch the shadow move. Shadows use physical scales, while 3D separations may be enlarged; visual overlap alone cannot identify eclipses. Historical and future UTC inherit uncertainty in Earth-rotation predictions.",
   "天体与卫星目录": "Bodies and moons",
   "收起{{name}}的卫星": "Collapse moons of {{name}}",
   "展开{{name}}的卫星": "Expand moons of {{name}}",
@@ -1913,5 +1913,6 @@
   "地平线": "Horizon",
   "天体标记已放大": "Body markers enlarged",
   "星表与历表预测": "Star catalog and ephemeris prediction",
-  "查看完整星图": "View full sky chart"
+  "查看完整星图": "View full sky chart",
+  "定位并进入地表视角": "Locate me and open ground sky"
 }

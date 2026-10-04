@@ -2800,6 +2800,19 @@ button:disabled {
   border-top: 1px solid #ffffff12;
   color: #cbd8e6;
 }
+.sky-event-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sky-event .sky-event-view {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 5px 9px;
+  gap: 5px;
+  white-space: nowrap;
+}
 .sky-event strong {
   color: #e0e8f2;
   font-variant-numeric: tabular-nums;
