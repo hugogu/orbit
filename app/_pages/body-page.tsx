@@ -563,6 +563,10 @@ export default async function BodyPage({ params }: PageProps) {
                         rel="noreferrer"
                       >
                         {t('NASA/NSSDC 行星资料表')}
+                        <ArrowUpRight
+                          className="external-arrow"
+                          aria-hidden="true"
+                        />
                       </a>
                     </p>
                   )}
