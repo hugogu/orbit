@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "next/image": [
+        "./node_modules/vinext/dist/shims/image.js"
       ]
     },
     "allowImportingTsExtensions": true
