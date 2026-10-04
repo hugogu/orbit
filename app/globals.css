@@ -3072,19 +3072,12 @@ button:disabled {
 .moon-phase-summary .little-note {
   margin-top: 4px;
 }
-/* The disc is drawn from the phase angle; only its colours live here. */
+/* Canvas pixels carry the surface and lighting; CSS preserves its footprint. */
 .moon-disc {
   flex: 0 0 auto;
   display: block;
-  overflow: visible;
-}
-.moon-disc-dark {
-  fill: #18202b;
-}
-.moon-disc-rim {
-  fill: none;
-  stroke: #ffffff26;
-  stroke-width: 2;
+  border-radius: 50%;
+  background: #101218;
 }
 .moon-phase-facts {
   border-top: 0;
