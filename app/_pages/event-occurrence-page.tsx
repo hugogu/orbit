@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import GitHubLink from '../../components/github-link';
+import LanguagePicker from '../../components/language-picker';
 import ProfileShare from '../../components/profile-share';
 import {
   eventOccurrences,
@@ -134,18 +135,14 @@ export default function EventOccurrencePage({
         <a className="seo-brand" href={explorerPath(locale)}>
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
-        <nav aria-label={t('语言')} className="seo-language-nav">
-          {seoLocales.map((item) => (
-            <a
-              key={item}
-              href={eventDetailsPath(item, event.id)}
-              hrefLang={languages[item].intl}
-              aria-current={item === locale ? 'page' : undefined}
-            >
-              {languages[item].short}
-            </a>
-          ))}
-        </nav>
+        <LanguagePicker
+          hrefs={Object.fromEntries(
+            seoLocales.map((item) => [
+              item,
+              eventDetailsPath(item, event.id),
+            ]),
+          )}
+        />
       </header>
       <article className="seo-article">
         <nav className="seo-breadcrumb" aria-label={t('面包屑')}>

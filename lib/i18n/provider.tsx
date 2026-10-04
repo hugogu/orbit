@@ -22,7 +22,7 @@ import {
 type I18n = {
   locale: Locale;
   t: Translate;
-  setLocale: (locale: Locale) => void;
+  setLocale: (locale: Locale, href?: string) => void;
 };
 const Context = createContext<I18n>({
   locale: defaultLocale,
@@ -59,19 +59,23 @@ export function I18nProvider({
     window.addEventListener('popstate', restore);
     return () => window.removeEventListener('popstate', restore);
   }, []);
-  const setLocale = useCallback((next: Locale) => {
+  const setLocale = useCallback((next: Locale, href?: string) => {
     updateLocale(next);
     try {
       localStorage.setItem(localeStorageKey, next);
     } catch {
       /* Still usable with storage disabled. */
     }
-    // Localized profile routes replace their regional segment; the explorer keeps its language query.
-    window.history.replaceState(
-      window.history.state,
-      '',
-      languageUrl(window.location.href, next),
-    );
+    if (href) {
+      window.location.assign(href);
+    } else {
+      // Localized profile routes replace their regional segment; the explorer keeps its language query.
+      window.history.replaceState(
+        window.history.state,
+        '',
+        languageUrl(window.location.href, next),
+      );
+    }
   }, []);
   const value = useMemo(
     () => ({ locale, setLocale, t: translator(locale) }),

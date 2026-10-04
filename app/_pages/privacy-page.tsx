@@ -9,6 +9,7 @@ import {
   type Locale,
 } from '../../lib/i18n';
 import GitHubLink, { repositoryUrl } from '../../components/github-link';
+import LanguagePicker from '../../components/language-picker';
 import {
   aboutPath,
   absoluteSiteUrl,
@@ -98,18 +99,11 @@ export default async function PrivacyPage({ params }: PageProps) {
         <a className="seo-brand" href={explorerPath(locale)}>
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
-        <nav aria-label={t('语言')} className="seo-language-nav">
-          {seoLocales.map((item) => (
-            <a
-              key={item}
-              href={privacyPath(item)}
-              hrefLang={languages[item].intl}
-              aria-current={item === locale ? 'page' : undefined}
-            >
-              {languages[item].short}
-            </a>
-          ))}
-        </nav>
+        <LanguagePicker
+          hrefs={Object.fromEntries(
+            seoLocales.map((item) => [item, privacyPath(item)]),
+          )}
+        />
       </header>
       <article className="seo-article">
         <nav className="seo-breadcrumb" aria-label={t('面包屑')}>

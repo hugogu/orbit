@@ -17,6 +17,7 @@ import {
   type Locale,
 } from '../../lib/i18n';
 import GitHubLink from '../../components/github-link';
+import LanguagePicker from '../../components/language-picker';
 import ProfileShare from '../../components/profile-share';
 import EventOccurrencePage, {
   occurrenceMetadata,
@@ -173,18 +174,14 @@ export default async function EventPage({ params }: PageProps) {
         <a className="seo-brand" href={explorerPath(locale)}>
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
-        <nav aria-label={t('语言')} className="seo-language-nav">
-          {seoLocales.map((item) => (
-            <a
-              key={item}
-              href={eventDetailsPath(item, topic.id)}
-              hrefLang={languages[item].intl}
-              aria-current={item === locale ? 'page' : undefined}
-            >
-              {languages[item].short}
-            </a>
-          ))}
-        </nav>
+        <LanguagePicker
+          hrefs={Object.fromEntries(
+            seoLocales.map((item) => [
+              item,
+              eventDetailsPath(item, topic.id),
+            ]),
+          )}
+        />
       </header>
       <article className="seo-article">
         <nav className="seo-breadcrumb" aria-label={t('面包屑')}>
