@@ -699,23 +699,27 @@ export default function Home() {
     setView(205);
     setReset((value) => value + 1);
   }, [home, sandboxRun]);
-  function enterGround() {
-    if (ground) {
+  function enterGround(refreshLocation = false) {
+    if (ground && !refreshLocation) {
       setGround(false);
       locationTicket.current++;
       return;
     }
     if (!sandboxEarthAvailable) return;
+    if (refreshLocation) setNotice('');
     setGround(true);
     setTop(false);
     setEclipseView(false);
     setCameraPose(null);
     setPlanetEventView(null);
     // Permission APIs must be called during this tap, before any location await.
-    if (window.matchMedia('(pointer: coarse)').matches) void sensor.start();
-    if (observerLocationSource !== 'manual') {
+    if (!ground && window.matchMedia('(pointer: coarse)').matches)
+      void sensor.start();
+    if (refreshLocation || observerLocationSource !== 'manual') {
       const pending = ++locationTicket.current;
-      void currentLocation(navigator.geolocation, window.isSecureContext)
+      void currentLocation(navigator.geolocation, window.isSecureContext, {
+        maximumAge: refreshLocation ? 0 : 60000,
+      })
         .then((fix) => {
           if (pending !== locationTicket.current) return;
           updateObserverLocation(
@@ -1513,9 +1517,14 @@ export default function Home() {
         <div className="view-tools glass">
           <button
             className="icon-button"
-            aria-label={t('返回总览')}
-            title={t('返回总览 · R')}
-            onClick={overview}
+            aria-label={t('定位并进入地表视角')}
+            title={t(
+              sandboxEarthAvailable
+                ? '定位并进入地表视角'
+                : '沙盘中没有地球，无法进入地表视角。',
+            )}
+            disabled={!sandboxEarthAvailable}
+            onClick={() => enterGround(true)}
           >
             <LocateFixed />
           </button>
@@ -1541,7 +1550,7 @@ export default function Home() {
             )}
             disabled={!sandboxEarthAvailable}
             aria-pressed={ground}
-            onClick={enterGround}
+            onClick={() => enterGround()}
           >
             <Telescope />
           </button>

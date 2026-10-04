@@ -6,6 +6,7 @@ export type LocationFix = {
 export function currentLocation(
   geolocation: Pick<Geolocation, 'getCurrentPosition'> | undefined,
   secure: boolean,
+  options: Pick<PositionOptions, 'maximumAge'> = {},
 ): Promise<LocationFix> {
   if (!secure)
     return Promise.reject(
@@ -38,7 +39,11 @@ export function currentLocation(
           new Error(messages[error.code] ?? '定位失败，请手动填写经纬度。'),
         );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: options.maximumAge ?? 60000,
+      },
     );
   });
 }
