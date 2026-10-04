@@ -56,7 +56,7 @@ export function normalizeSiteOrigin(value: string) {
  * Override this during a build to use a different public hostname. This helper
  * is also imported by the client entry, so it must not assume `process` exists.
  */
-function resolveSiteOrigin() {
+export function resolveSiteOrigin(windowOrigin?: string) {
   const runtime = globalThis as typeof globalThis & {
     process?: { env?: Record<string, string | undefined> };
   };
@@ -65,7 +65,13 @@ function resolveSiteOrigin() {
     const normalized = normalizeSiteOrigin(configured);
     if (normalized) return normalized;
   }
-  if (typeof window !== 'undefined') return window.location.origin;
+  const candidate =
+    windowOrigin ??
+    (typeof window !== 'undefined' ? window.location.origin : undefined);
+  if (candidate) {
+    const normalized = normalizeSiteOrigin(candidate);
+    if (normalized) return normalized;
+  }
   return fallbackSiteOrigin;
 }
 

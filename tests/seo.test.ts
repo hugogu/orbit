@@ -34,6 +34,7 @@ import {
   profileDescription,
   profileJsonLd,
   profileTitle,
+  resolveSiteOrigin,
   serializeJsonLd,
   siteOrigin,
   seoSiteName,
@@ -897,6 +898,13 @@ void test('site origins normalize scheme-less hosts and discard paths safely', (
     'http://localhost:3000',
   );
   assert.equal(normalizeSiteOrigin('not a URL'), undefined);
+  assert.equal(normalizeSiteOrigin('orbit://app'), undefined);
+  assert.equal(normalizeSiteOrigin('file:///index.html'), undefined);
+  assert.equal(resolveSiteOrigin('orbit://app'), 'https://orbits.observer');
+  assert.equal(
+    resolveSiteOrigin('http://localhost:3000'),
+    'http://localhost:3000',
+  );
 });
 
 void test('root layouts emit the route locale before client hydration', () => {
