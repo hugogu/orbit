@@ -1031,6 +1031,19 @@ button:disabled {
   overflow: hidden;
   background: #05080e;
 }
+.observatory,
+.observatory *:not(input):not(textarea):not([contenteditable='true']) {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.observatory input,
+.observatory textarea,
+.observatory [contenteditable='true'] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
 .eclipse-progress,
 .eclipse-retry {
   position: absolute;
