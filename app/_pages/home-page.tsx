@@ -196,6 +196,7 @@ export default function Home() {
     [reset, setReset] = useState(0),
     [top, setTop] = useState(false),
     [ground, setGround] = useState(false),
+    [observerView, setObserverView] = useState<SkyLocation | null>(null),
     [nearNow, setNearNow] = useState(true),
     [time, setTime] = useState<number | null>(null),
     [epoch, setEpoch] = useState<number | null>(null),
@@ -493,6 +494,7 @@ export default function Home() {
     if (!ground || sandboxEarthAvailable) return;
     queueMicrotask(() => {
       setGround(false);
+      setObserverView(null);
       locationTicket.current++;
       setNotice('沙盘中的地球已被移除或吞并，已返回总览。');
     });
@@ -632,6 +634,7 @@ export default function Home() {
   );
   const select = useCallback((id: string) => {
     setGround(false);
+    setObserverView(null);
     locationTicket.current++;
     if (window.location.hash !== `#${id}`)
       window.history.pushState(
@@ -672,6 +675,7 @@ export default function Home() {
   }, []);
   const home = useCallback(() => {
     setGround(false);
+    setObserverView(null);
     setSandboxScenario(null);
     locationTicket.current++;
     if (window.location.hash)
@@ -693,54 +697,65 @@ export default function Home() {
   const overview = useCallback(() => {
     if (!sandboxRun) return home();
     setGround(false);
+    setObserverView(null);
     locationTicket.current++;
     setSelected(null);
     setTop(false);
     setView(205);
     setReset((value) => value + 1);
   }, [home, sandboxRun]);
-  function enterGround(refreshLocation = false) {
-    if (ground && !refreshLocation) {
+  function requestObserverLocation(
+    maximumAge = 60000,
+    onLocated?: (next: SkyLocation) => void,
+  ) {
+    const pending = ++locationTicket.current;
+    void currentLocation(navigator.geolocation, window.isSecureContext, {
+      maximumAge,
+    })
+      .then((fix) => {
+        if (pending !== locationTicket.current) return;
+        const next = locateTimeZone(
+          { ...observerLocation, ...fix },
+          sandboxRun
+            ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
+            : (time ?? Date.now()),
+        );
+        updateObserverLocation(next, 'device');
+        onLocated?.(next);
+      })
+      .catch((error: unknown) => {
+        if (pending === locationTicket.current)
+          setNotice(
+            error instanceof Error
+              ? error.message
+              : '定位失败，请手动填写经纬度。',
+          );
+      });
+  }
+  function locateEarth() {
+    if (!sandboxEarthAvailable) return;
+    select('earth');
+    setTop(false);
+    setNotice('');
+    setObserverView(observerLocation);
+    requestObserverLocation(0, setObserverView);
+  }
+  function enterGround() {
+    setObserverView(null);
+    if (ground) {
       setGround(false);
       locationTicket.current++;
       return;
     }
     if (!sandboxEarthAvailable) return;
-    if (refreshLocation) setNotice('');
     setGround(true);
     setTop(false);
     setEclipseView(false);
     setCameraPose(null);
     setPlanetEventView(null);
     // Permission APIs must be called during this tap, before any location await.
-    if (!ground && window.matchMedia('(pointer: coarse)').matches)
-      void sensor.start();
-    if (refreshLocation || observerLocationSource !== 'manual') {
-      const pending = ++locationTicket.current;
-      void currentLocation(navigator.geolocation, window.isSecureContext, {
-        maximumAge: refreshLocation ? 0 : 60000,
-      })
-        .then((fix) => {
-          if (pending !== locationTicket.current) return;
-          updateObserverLocation(
-            locateTimeZone(
-              { ...observerLocation, ...fix },
-              sandboxRun
-                ? sandboxRun.scenario.epoch + sandboxRun.shownDays * DAY_MS
-                : (time ?? Date.now()),
-            ),
-            'device',
-          );
-        })
-        .catch((error: unknown) => {
-          if (pending === locationTicket.current)
-            setNotice(
-              error instanceof Error
-                ? error.message
-                : '定位失败，请手动填写经纬度。',
-            );
-        });
-    }
+    if (window.matchMedia('(pointer: coarse)').matches) void sensor.start();
+    if (observerLocationSource !== 'manual') requestObserverLocation();
   }
   // A share link arrives with its moment and framing in the query string, and
   // is applied after the hash has selected the body. The query stays in the
@@ -765,6 +780,7 @@ export default function Home() {
       setView(shared.view);
     }
     setPlanetEventView(null);
+    setObserverView(null);
     setCameraPose(shared.camera);
     // A shared run reopens the sandbox on the fork it was shared from and
     // replays the recipe, so the recipient watches the same path form. It
@@ -862,6 +878,7 @@ export default function Home() {
   }
   function goRegion(id: string) {
     setGround(false);
+    setObserverView(null);
     setSandboxScenario(null);
     locationTicket.current++;
     const r = regions.find((r) => r.id === id)!;
@@ -1203,6 +1220,7 @@ export default function Home() {
           realTerrain,
           systemView,
           observerLocation,
+          observerView,
           observerLocationReady:
             observerLocationSource !== 'pending' &&
             observerLocationSource !== 'fallback',
@@ -1267,6 +1285,7 @@ export default function Home() {
             else if (v === 'explore') home();
             else {
               setGround(false);
+              setObserverView(null);
               locationTicket.current++;
             }
           }}
@@ -1533,14 +1552,14 @@ export default function Home() {
         <div className="view-tools glass">
           <button
             className="icon-button"
-            aria-label={t('定位并进入地表视角')}
+            aria-label={t('定位并查看地球')}
             title={t(
               sandboxEarthAvailable
-                ? '定位并进入地表视角'
-                : '沙盘中没有地球，无法进入地表视角。',
+                ? '定位并查看地球'
+                : '沙盘中没有地球，无法查看定位。',
             )}
             disabled={!sandboxEarthAvailable}
-            onClick={() => enterGround(true)}
+            onClick={locateEarth}
           >
             <LocateFixed />
           </button>
@@ -1550,6 +1569,7 @@ export default function Home() {
             title={t('俯视轨道')}
             onClick={() => {
               setGround(false);
+              setObserverView(null);
               locationTicket.current++;
               setTop((v) => !v);
             }}
