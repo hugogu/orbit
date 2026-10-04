@@ -49,6 +49,8 @@ import {
   profileProperties,
   propertyUnits,
   profileRotationFact,
+  profileAxialTilt,
+  axialTiltNote,
 } from '../lib/profile-properties';
 import { bodies } from '../lib/solar';
 import {
@@ -485,6 +487,55 @@ void test('profile rotation distinguishes sidereal days with matching localized 
     )!.label,
     '自转周期',
   );
+});
+
+void test('profile axial tilt is distinct from orbital inclination and localized in JSON-LD', () => {
+  for (const [id, tilt, inclination] of [
+    ['earth', 23.44, 0],
+    ['mercury', 0.034, 7],
+    ['venus', 177.36, 3.39],
+    ['uranus', 97.77, 0.77],
+    ['pluto', 119.51, 17.16],
+  ] as const) {
+    const entry = catalogEntry(id)!;
+    for (const locale of seoLocales) {
+      const t = translator(locale);
+      const node = profileGraph(entry, locale).nodes.find(
+        (node) => node['@type'] === 'Place' && node.identifier === id,
+      )!;
+      const properties = node.additionalProperty as Node[];
+      for (const [key, label, value] of [
+        ['axialTilt', '轴倾角（约）', tilt],
+        ['orbitalInclination', '轨道倾角（约）', inclination],
+      ] as const) {
+        const property = properties.find((item) => item.propertyID === key)!;
+        assert.equal(property.name, t(label));
+        assert.equal(property.value, value);
+        assert.equal(property.unitCode, 'DD');
+        assert.equal(property.unitText, '°');
+        assert.ok(Object.hasOwn(languages[locale].messages, label));
+      }
+      assert.ok(Object.hasOwn(languages[locale].messages, axialTiltNote));
+    }
+  }
+  const earth = catalogEntry('earth')!;
+  assert.equal(earth.kind, 'body');
+  if (earth.kind !== 'body') return;
+  for (const tilt of [NaN, Infinity, -1, 181, undefined]) {
+    const entry = { ...earth, data: { ...earth.data, tilt } } as CatalogEntry;
+    assert.ok(
+      !profileProperties(entry).some((item) => item.id === 'axialTilt'),
+    );
+  }
+  assert.equal(profileAxialTilt({ ...earth.data, id: 'unknown' }), undefined);
+  for (const entry of catalogEntries().filter((entry) => entry.kind !== 'body'))
+    assert.ok(
+      !profileProperties(entry).some((item) => item.id === 'axialTilt'),
+    );
+  const venus = catalogEntry('venus')!;
+  if (venus.kind === 'body') assert.equal(venus.data.tilt, 2.64);
+  const pluto = catalogEntry('pluto')!;
+  if (pluto.kind === 'body') assert.equal(pluto.data.tilt, 60.4);
 });
 
 void test('profile breadcrumbs climb through the body index, a moon through its planet', () => {

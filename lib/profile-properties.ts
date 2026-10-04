@@ -35,6 +35,36 @@ export type ProfileProperty = {
   unit?: PropertyUnit;
 };
 
+// NASA/NSSDC obliquity-to-orbit figures, checked 2026-10-04. These are
+// fixed educational values, not obliquity computed at the simulation epoch.
+// Venus's rendering tilt is the complement; Pluto's rendering tilt is not
+// the published obliquity. Keep those presentation parameters unchanged.
+export const axialTiltSource =
+  'https://nssdc.gsfc.nasa.gov/planetary/factsheet/';
+export const axialTiltNote =
+  '轴倾角是自转轴与自身轨道平面法线的夹角（0–180°）；轨道倾角是轨道平面与黄道面的夹角。轴倾角采用 NASA/NSSDC 的固定科普近似值，不随模拟日期更新；金星与冥王星使用资料值，不直接使用场景的姿态参数。';
+
+export function profileAxialTilt(body: Body): number | undefined {
+  if (body.id === 'venus') return 177.36;
+  if (body.id === 'pluto') return 119.51;
+  if (
+    [
+      'mercury',
+      'earth',
+      'mars',
+      'jupiter',
+      'saturn',
+      'uranus',
+      'neptune',
+    ].includes(body.id) &&
+    Number.isFinite(body.tilt) &&
+    body.tilt >= 0 &&
+    body.tilt <= 180
+  )
+    return body.tilt;
+  return undefined;
+}
+
 /** Derived figures lose the floating-point noise the page never prints. */
 const rounded = (value: number) => Number(value.toPrecision(6));
 
@@ -65,6 +95,7 @@ export function profileProperties(entry: CatalogEntry): ProfileProperty[] {
   if (entry.kind === 'body') {
     const body = entry.data;
     const physical = physicalParameters[body.id];
+    const axialTilt = profileAxialTilt(body);
     return [
       { id: 'meanRadius', label: '平均半径', value: body.radius, unit: 'km' },
       ...(body.au
@@ -88,6 +119,16 @@ export function profileProperties(entry: CatalogEntry): ProfileProperty[] {
           ]
         : []),
       profileRotationProperty(body),
+      ...(axialTilt !== undefined
+        ? [
+            {
+              id: 'axialTilt',
+              label: '轴倾角（约）',
+              value: axialTilt,
+              unit: 'degree' as const,
+            },
+          ]
+        : []),
       ...(physical
         ? [
             {

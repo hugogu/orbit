@@ -20,6 +20,7 @@ import {
 } from '../lib/seo';
 import { squareImagePath, portraitCredit } from '../lib/profile-images';
 import { profileContent } from '../lib/profile-content';
+import { axialTiltNote } from '../lib/profile-properties';
 import { languages, translator } from '../lib/i18n';
 import { wikidataEntity, wikidataUrl } from '../lib/wikidata';
 import { htmlTagAttributes } from './lib/html-tags';
@@ -270,6 +271,26 @@ for (const entry of entries) {
             ),
           ),
           path,
+        );
+      }
+      const axialTilt = body.additionalProperty.find(
+        (property: Record<string, unknown>) =>
+          property.propertyID === 'axialTilt',
+      );
+      if (axialTilt) {
+        assert.ok(
+          html.includes(
+            '<dt>' +
+              escapeHtml(String(axialTilt.name)) +
+              '</dt><dd>' +
+              String(axialTilt.value) +
+              '°</dd>',
+          ),
+          path + ': visible axial tilt matches structured data',
+        );
+        assert.ok(
+          html.includes(escapeHtml(t(axialTiltNote))),
+          path + ': reference plane definition',
         );
       }
     }

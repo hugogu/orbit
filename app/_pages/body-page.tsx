@@ -15,7 +15,12 @@ import {
 import { curiosities, type Curiosity } from '../../lib/curiosities';
 import { extraFacts } from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
-import { profileRotationFact } from '../../lib/profile-properties';
+import {
+  profileRotationFact,
+  profileProperties,
+  axialTiltNote,
+  axialTiltSource,
+} from '../../lib/profile-properties';
 import { comets, cometModelNote, cometVisualNote } from '../../lib/comets';
 import {
   asteroids,
@@ -137,6 +142,9 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
       [t('平均日距'), body.au ? `${body.au} AU` : '—'],
       [t('公转周期'), body.period ? orbitalPeriod : '—'],
       profileRotationFact(body, locale),
+      ...profileProperties(entry)
+        .filter((property) => property.id === 'axialTilt')
+        .map((property) => [t(property.label), String(property.value) + '°']),
     ];
   }
   if (entry.kind === 'moon') {
@@ -543,6 +551,21 @@ export default async function BodyPage({ params }: PageProps) {
                         : '半径采用平均值；轨道数据用于介绍天体的尺度与运动。',
                   )}
                 </p>
+                {entry.kind === 'body' &&
+                  profileProperties(entry).some(
+                    (property) => property.id === 'axialTilt',
+                  ) && (
+                    <p>
+                      {t(axialTiltNote)}{' '}
+                      <a
+                        href={axialTiltSource}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t('NASA/NSSDC 行星资料表')}
+                      </a>
+                    </p>
+                  )}
               </details>
             </section>
             <CuriosityList entry={entry} locale={locale} />
