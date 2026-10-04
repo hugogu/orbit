@@ -470,7 +470,11 @@ export default function LunarPanel({
           onValueChange={(value) => setTab(String(value) as Tab)}
           className="settings-tabs"
         >
-          <TabsList className="settings-tabs-list" aria-label={t('月相分类')}>
+          <TabsList
+            variant="line"
+            className="settings-tabs-list"
+            aria-label={t('月相分类')}
+          >
             <TabsTrigger value="now">{t('当前月相')}</TabsTrigger>
             <TabsTrigger value="quarters">{t('四相时刻')}</TabsTrigger>
             <TabsTrigger value="calendar">{t('每日月历')}</TabsTrigger>

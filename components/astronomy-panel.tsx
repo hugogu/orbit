@@ -460,7 +460,11 @@ export default function AstronomyPanel({
           onValueChange={(value) => onTabChange(String(value) as PlannerTab)}
           className="settings-tabs"
         >
-          <TabsList className="settings-tabs-list" aria-label={t('天象分类')}>
+          <TabsList
+            variant="line"
+            className="settings-tabs-list"
+            aria-label={t('天象分类')}
+          >
             <TabsTrigger value="solar">{t('日食')}</TabsTrigger>
             <TabsTrigger value="lunar">{t('月食')}</TabsTrigger>
             <TabsTrigger value="opposition">{t('行星冲日')}</TabsTrigger>
