@@ -714,7 +714,7 @@ void test('guide routes render their own static params, metadata and structured 
   assert.match(eventPage, /dynamicParams = false/);
   // The topic page must climb back to its own collection page.
   assert.match(eventPage, /href=\{eventsIndexPath\(locale\)\}/);
-  // The explorer offers the guide beside the eclipse planner.
+  // The explorer offers both the sky planner and the event guide.
   assert.match(homePage, /className="astronomy-actions"/);
   assert.match(homePage, /href=\{eventsIndexPath\(locale\)\}/);
 });

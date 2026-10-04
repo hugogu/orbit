@@ -211,7 +211,7 @@ for (const locale of seoLocales) {
     assert.ok(page.html.includes(escapeHtml(t(topic.intro))), path);
     assert.ok(page.html.includes(escapeHtml(t(topic.observing[0]))), path);
     const dataNote = eventPlanetPlannerTab(topic)
-      ? '周期是长期平均值，具体事件日期由天象推演按模拟时间独立计算；几何时刻与当地最佳观测时段并不相同。'
+      ? '周期是长期平均值，具体事件日期由近期天象按模拟时间独立计算；几何时刻与当地最佳观测时段并不相同。'
       : '活跃期、极大日期与出现率为多年平均值，实际情况每年略有差别；计划观测时请以当年的预报为准。';
     assert.ok(
       page.html.includes(escapeHtml(t(dataNote))),

@@ -1439,32 +1439,32 @@ export default function Home() {
                 : t('距离单位 AU ≈ 1.496 亿公里')}
           </div>
         </section>
+        {tab !== 'sandbox' && (
+          <a
+            className="astronomy-button event-guide-button"
+            href={eventsIndexPath(locale)}
+            title={t('天象百科')}
+          >
+            <Sparkles size={18} />
+            <span className={actionLabel}>{t('天象百科')}</span>
+          </a>
+        )}
       </div>
-      {/* Both tools answer questions about the real sky on a real date, which
-          a run has left behind, so they step aside for the duration rather
-          than offering an answer that no longer describes what is on screen. */}
+      {/* A sandbox run leaves the ephemeris behind, so its sky planner steps aside. */}
       {tab !== 'sandbox' && (
         <div className="astronomy-actions">
           <button
             className="astronomy-button"
-            aria-label={t('天象推演')}
-            title={t('天象推演')}
+            aria-label={t('近期天象')}
+            title={t('近期天象')}
             onClick={() => {
               setPlannerStart(null);
               setAstronomy(true);
             }}
           >
             <CalendarDays size={18} />
-            <span className={actionLabel}>{t('天象推演')}</span>
+            <span className={actionLabel}>{t('近期天象')}</span>
           </button>
-          <a
-            className="astronomy-button"
-            href={eventsIndexPath(locale)}
-            title={t('天象事件')}
-          >
-            <Sparkles size={18} />
-            <span className={actionLabel}>{t('天象事件')}</span>
-          </a>
         </div>
       )}
       {showMoonCard && (
@@ -1508,11 +1508,11 @@ export default function Home() {
       <div className="side-rail rail-end">
         <button
           className="mobile-info glass"
-          title={t('天体百科')}
+          title={t('天体信息')}
           onClick={() => setDetails(true)}
         >
           <Info size={16} />
-          <span className={actionLabel}>{t('天体百科')}</span>
+          <span className={actionLabel}>{t('天体信息')}</span>
         </button>
         <div className="view-tools glass">
           <button
@@ -1919,7 +1919,7 @@ export default function Home() {
               </div>
               <p className="model-note">
                 {t(
-                  '按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“天象推演”跳到食甚，再以 1 分钟/秒慢放。没有遮挡时不会出现食影。',
+                  '按物理距离和半径计算表面食影；蓝色为本影边界，金色为半影，紫色为伪本影。可从“近期天象”跳到食甚，再以 1 分钟/秒慢放。没有遮挡时不会出现食影。',
                 )}
               </p>
               <div className="shadow-legend" aria-label={t('食影图例')}>

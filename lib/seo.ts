@@ -164,7 +164,7 @@ export function bodiesIndexDescription(locale: Locale) {
 }
 
 export function eventsIndexTitle(locale: Locale) {
-  return translator(locale)('天象事件：常见天文现象指南');
+  return translator(locale)('天象百科：常见天文现象指南');
 }
 
 export function eventTitle(topic: EventTopic, locale: Locale) {
@@ -678,7 +678,7 @@ export function eventsIndexJsonLd({
       websiteNode(locale),
       breadcrumbNode(breadcrumbId, [
         { name: 'ORBIT', item: absoluteSiteUrl('/') },
-        { name: t('天象事件'), item: canonical },
+        { name: t('天象百科'), item: canonical },
       ]),
       {
         ...termSet,
@@ -734,7 +734,7 @@ export function eventJsonLd({
       eventTermNode(topic, locale, termId),
       breadcrumbNode(breadcrumbId, [
         { name: 'ORBIT', item: absoluteSiteUrl('/') },
-        { name: t('天象事件'), item: absoluteSiteUrl(eventsIndexPath(locale)) },
+        { name: t('天象百科'), item: absoluteSiteUrl(eventsIndexPath(locale)) },
         { name: t(topic.name), item: canonical },
       ]),
       {
@@ -783,7 +783,7 @@ export function occurrenceJsonLd(event: EventOccurrence, locale: Locale) {
       websiteNode(locale),
       breadcrumbNode(`${canonical}#breadcrumb`, [
         { name: 'ORBIT', item: absoluteSiteUrl('/') },
-        { name: t('天象事件'), item: absoluteSiteUrl(eventsIndexPath(locale)) },
+        { name: t('天象百科'), item: absoluteSiteUrl(eventsIndexPath(locale)) },
         { name: t('冲'), item: concept },
         { name: occurrenceName(event, locale), item: canonical },
       ]),

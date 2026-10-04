@@ -67,7 +67,7 @@ export default function LayoutSettings({
       </div>
       <p className="model-note layout-note">
         {t(
-          '关闭后，天象推演、天象事件与天体百科按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。',
+          '关闭后，近期天象、天象百科与天体信息按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。',
         )}
       </p>
     </>

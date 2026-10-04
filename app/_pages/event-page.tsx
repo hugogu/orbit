@@ -187,7 +187,7 @@ export default async function EventPage({ params }: PageProps) {
         <nav className="seo-breadcrumb" aria-label={t('面包屑')}>
           <a href={explorerPath(locale)}>{t('返回总览')}</a>
           <span aria-hidden="true">/</span>
-          <a href={eventsIndexPath(locale)}>{t('天象事件')}</a>
+          <a href={eventsIndexPath(locale)}>{t('天象百科')}</a>
           <span aria-hidden="true">/</span>
           <span>{name}</span>
         </nav>
@@ -273,7 +273,7 @@ export default async function EventPage({ params }: PageProps) {
                 <p>
                   {t(
                     eventPlanetPlannerTab(topic)
-                      ? '周期是长期平均值，具体事件日期由天象推演按模拟时间独立计算；几何时刻与当地最佳观测时段并不相同。'
+                      ? '周期是长期平均值，具体事件日期由近期天象按模拟时间独立计算；几何时刻与当地最佳观测时段并不相同。'
                       : dataNote,
                   )}
                 </p>
@@ -359,7 +359,7 @@ export default async function EventPage({ params }: PageProps) {
         )}
       </article>
       <footer className="seo-page-footer">
-        <a href={eventsIndexPath(locale)}>{t('返回天象事件列表')}</a>
+        <a href={eventsIndexPath(locale)}>{t('返回天象百科列表')}</a>
         <span className="seo-page-byline">
           ORBIT / orbits.observer
           <a href={privacyPath(locale)}>{t('隐私政策')}</a>

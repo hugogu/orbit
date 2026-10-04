@@ -134,7 +134,7 @@ void test('an unlabelled action button keeps its name for assistive technology',
   );
   // These are fixed snippets of JSX rather than patterns, and a brace only
   // reads as a literal in a regular expression by legacy allowance.
-  for (const label of ['天象推演', '天象事件', '天体百科']) {
+  for (const label of ['近期天象', '天象百科', '天体信息']) {
     assert.ok(
       page.includes(`<span className={actionLabel}>{t('${label}')}</span>`),
       label,

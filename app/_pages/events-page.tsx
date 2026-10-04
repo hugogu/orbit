@@ -83,7 +83,7 @@ export async function generateMetadata({
           width: 1672,
           height: 941,
           type: 'image/png',
-          alt: t('天象事件'),
+          alt: t('天象百科'),
         },
       ],
     },
@@ -126,13 +126,13 @@ export default async function EventsPage({ params }: PageProps) {
         <nav className="seo-breadcrumb" aria-label={t('面包屑')}>
           <a href={explorerPath(locale)}>{t('返回总览')}</a>
           <span aria-hidden="true">/</span>
-          <span>{t('天象事件')}</span>
+          <span>{t('天象百科')}</span>
         </nav>
         <div className="event-cover">
           <p className="seo-eyebrow">
             {t('天象指南')} <span>Sky Events</span>
           </p>
-          <h1>{t('天象事件')}</h1>
+          <h1>{t('天象百科')}</h1>
           <p className="profile-headline">
             {t('天上按时发生的事，大多可以提前知道。')}
           </p>

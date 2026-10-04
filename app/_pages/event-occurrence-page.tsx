@@ -148,7 +148,7 @@ export default function EventOccurrencePage({
         <nav className="seo-breadcrumb" aria-label={t('面包屑')}>
           <a href={explorerPath(locale)}>{t('返回总览')}</a>
           <span aria-hidden="true">/</span>
-          <a href={eventsIndexPath(locale)}>{t('天象事件')}</a>
+          <a href={eventsIndexPath(locale)}>{t('天象百科')}</a>
           <span aria-hidden="true">/</span>
           <a href={eventDetailsPath(locale, event.concept)}>{t('冲')}</a>
           <span aria-hidden="true">/</span>
@@ -386,7 +386,7 @@ export default function EventOccurrencePage({
         </section>
       </article>
       <footer className="seo-page-footer">
-        <a href={eventsIndexPath(locale)}>{t('返回天象事件列表')}</a>
+        <a href={eventsIndexPath(locale)}>{t('返回天象百科列表')}</a>
         <span className="seo-page-byline">
           ORBIT / orbits.observer
           <a href={privacyPath(locale)}>{t('隐私政策')}</a>

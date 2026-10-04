@@ -454,7 +454,7 @@ export default function AstronomyPanel({
         closeLabel={t('Close')}
         className="orbit-dialog astronomy-dialog"
       >
-        <DialogTitle>{t('天象推演')}</DialogTitle>
+        <DialogTitle>{t('近期天象')}</DialogTitle>
         <DialogDescription>
           {loaded
             ? t('从 {{date}} 起的天象，均为观测地点的当地时间。', {
