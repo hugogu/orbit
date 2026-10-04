@@ -324,36 +324,38 @@ export default function LunarPanel({
   );
 
   const eclipses = calendar?.days.filter((day) => day.eclipse) ?? [];
+  const calendarNav = calendar && (
+    <div className="calendar-nav">
+      <button
+        className="icon-button"
+        aria-label={t('上一个月')}
+        title={t('上一个月')}
+        disabled={!calendar.previous}
+        onClick={() => setMonth(shiftMonth(calendar.month, -1))}
+      >
+        <ChevronLeft size={16} />
+      </button>
+      {/* The heading names the month key itself, not an instant, so it is
+            read from the middle of the month and left unshifted. */}
+      <strong>
+        {format(Date.parse(`${calendar.month}-15T00:00:00Z`), {
+          year: 'numeric',
+          month: 'long',
+        })}
+      </strong>
+      <button
+        className="icon-button"
+        aria-label={t('下一个月')}
+        title={t('下一个月')}
+        disabled={!calendar.next}
+        onClick={() => setMonth(shiftMonth(calendar.month, 1))}
+      >
+        <ChevronRight size={16} />
+      </button>
+    </div>
+  );
   const calendarTable = calendar && (
     <>
-      <div className="calendar-nav">
-        <button
-          className="icon-button"
-          aria-label={t('上一个月')}
-          title={t('上一个月')}
-          disabled={!calendar.previous}
-          onClick={() => setMonth(shiftMonth(calendar.month, -1))}
-        >
-          <ChevronLeft size={16} />
-        </button>
-        {/* The heading names the month key itself, not an instant, so it is
-            read from the middle of the month and left unshifted. */}
-        <strong>
-          {format(Date.parse(`${calendar.month}-15T00:00:00Z`), {
-            year: 'numeric',
-            month: 'long',
-          })}
-        </strong>
-        <button
-          className="icon-button"
-          aria-label={t('下一个月')}
-          title={t('下一个月')}
-          disabled={!calendar.next}
-          onClick={() => setMonth(shiftMonth(calendar.month, 1))}
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
       <div className="sky-table-scroll">
         <table className="sky-table calendar-table">
           <caption className="sr-only">
@@ -470,11 +472,18 @@ export default function LunarPanel({
           onValueChange={(value) => setTab(String(value) as Tab)}
           className="settings-tabs"
         >
-          <TabsList className="settings-tabs-list" aria-label={t('月相分类')}>
-            <TabsTrigger value="now">{t('当前月相')}</TabsTrigger>
-            <TabsTrigger value="quarters">{t('四相时刻')}</TabsTrigger>
-            <TabsTrigger value="calendar">{t('每日月历')}</TabsTrigger>
-          </TabsList>
+          <div className="lunar-navigation">
+            <TabsList
+              variant="line"
+              className="settings-tabs-list"
+              aria-label={t('月相分类')}
+            >
+              <TabsTrigger value="now">{t('当前月相')}</TabsTrigger>
+              <TabsTrigger value="quarters">{t('四相时刻')}</TabsTrigger>
+              <TabsTrigger value="calendar">{t('每日月历')}</TabsTrigger>
+            </TabsList>
+            {tab === 'calendar' && calendarNav}
+          </div>
           <TabsContent value="now" className="settings-tab-panel">
             {nowTab ?? (
               <p className="little-note">{t('正在从当前模拟时间计算月相。')}</p>

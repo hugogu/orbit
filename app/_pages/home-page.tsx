@@ -1806,7 +1806,8 @@ export default function Home() {
             className="settings-tabs"
           >
             <TabsList
-              className="settings-tabs-list segmented-tabs"
+              variant="line"
+              className="settings-tabs-list"
               aria-label={t('设置分类')}
             >
               <TabsTrigger value="layout">{t('布局')}</TabsTrigger>

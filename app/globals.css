@@ -2692,12 +2692,6 @@ button:disabled {
   flex: 1;
   min-height: 0;
 }
-@media (max-width: 600px) {
-  .astronomy-dialog .settings-tabs-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 .astro-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3111,12 +3105,19 @@ button:disabled {
   width: min(920px, calc(100vw - 24px)) !important;
   max-width: 920px !important;
 }
+.lunar-navigation {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
 .calendar-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin: 2px 0 12px;
+  flex-shrink: 0;
 }
 .calendar-nav strong {
   min-width: 10ch;
@@ -3124,10 +3125,26 @@ button:disabled {
   font-size: 15px;
   font-weight: 400;
   color: #ead5ad;
+  white-space: nowrap;
+}
+.calendar-nav .icon-button {
+  width: 44px;
+  height: 44px;
 }
 .calendar-nav .icon-button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+@media (orientation: landscape) and (min-width: 600px) {
+  .lunar-navigation {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+  .lunar-navigation .settings-tabs-list {
+    flex: 1;
+    min-width: 0;
+  }
 }
 /* Both axes scroll inside the panel, so the header row and the date column can
    stay put while a month of readings moves under them. The tab panel is a
@@ -3601,29 +3618,49 @@ button:disabled {
 }
 .settings-tabs-list {
   display: flex;
+  flex-wrap: nowrap;
   justify-content: flex-start;
   flex-shrink: 0;
   overflow-x: auto;
   scrollbar-width: none;
   height: auto !important;
   width: 100%;
+  gap: 4px;
+  padding: 0;
+  border-bottom: 1px solid #ffffff15;
+  border-radius: 0;
+  background: transparent;
 }
 .settings-tabs-list::-webkit-scrollbar,
 .settings-tab-panel::-webkit-scrollbar {
   display: none;
 }
 .settings-tabs-list [data-slot='tabs-trigger'] {
-  flex: 1 0 auto;
+  flex: 0 0 auto;
+  height: auto;
   min-width: 48px;
   min-height: 44px;
   padding: 5px 10px;
   font-size: 13px;
   color: #8e9aac;
-  border-color: #ffffff0d;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .settings-tabs-list [data-slot='tabs-trigger'][data-active] {
   color: #f0d9a8;
-  background: #202633;
+  background: transparent;
+}
+.settings-tabs-list [data-slot='tabs-trigger']::after {
+  inset: auto 10px 0;
+  height: 2px;
+  background: #f0d9a8;
+}
+.settings-tabs-list [data-slot='tabs-trigger']:focus-visible {
+  outline: 2px solid #f0d9a8;
+  outline-offset: -3px;
+  box-shadow: none;
 }
 .settings-tab-panel {
   min-width: 0;
@@ -4274,12 +4311,7 @@ button:disabled {
   .settings-tabs {
     gap: 12px;
   }
-  .settings-tabs-list {
-    gap: 3px;
-  }
   .settings-tabs-list [data-slot='tabs-trigger'] {
-    min-height: 44px;
-    padding-inline: 4px;
     font-size: 12px;
   }
   .settings-tab-panel .setting-row {
@@ -4868,9 +4900,6 @@ html:lang(en) .moon-children button > span:last-child {
   }
   .settings-tabs {
     gap: 9px;
-  }
-  .settings-tabs-list [data-slot='tabs-trigger'] {
-    min-height: 44px;
   }
   .settings-tab-panel .setting-row {
     padding-block: 8px;
