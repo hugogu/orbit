@@ -4700,7 +4700,7 @@ button:disabled {
   }
 }
 
-@media (max-width: 600px) and (orientation: portrait) {
+@media (max-width: 600px) {
   .observatory .rail-end {
     top: 56px;
     gap: 6px;
