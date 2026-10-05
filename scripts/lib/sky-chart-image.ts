@@ -46,18 +46,36 @@ export async function renderSkyChartImage(svg: string) {
       })
         .png()
         .toBuffer({ resolveWithObject: true });
+      const maxWidth = 1360;
+      let finalData = data;
+      let finalWidth = info.width;
+      if (finalWidth > maxWidth) {
+        finalData = await sharp(data)
+          .resize({ width: maxWidth })
+          .png()
+          .toBuffer();
+        finalWidth = maxWidth;
+      }
       const anchor = attrs.get('text-anchor');
       const left =
         Number(attrs.get('x')) -
         (anchor === 'end'
-          ? info.width
+          ? finalWidth
           : anchor === 'middle'
-            ? info.width / 2
+            ? finalWidth / 2
             : 0);
+      const clampLeft = Math.max(
+        0,
+        Math.min(1400 - finalWidth, Math.round(left)),
+      );
+      const clampTop = Math.max(
+        0,
+        Math.min(820 - info.height, Math.round(Number(attrs.get('y')) - size)),
+      );
       return {
-        input: data,
-        left: Math.round(left),
-        top: Math.round(Number(attrs.get('y')) - size),
+        input: finalData,
+        left: clampLeft,
+        top: clampTop,
       };
     }),
   );

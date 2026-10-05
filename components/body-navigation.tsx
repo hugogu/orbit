@@ -11,6 +11,9 @@ import { bodyDetailsPath } from '../lib/seo';
 import { portraitPath } from '../lib/profile-images';
 import Image from 'next/image';
 
+const BodyImage =
+  (Image as unknown as { default?: typeof Image }).default ?? Image;
+
 const smallBodyGroups = [
   { id: 'asteroids', name: '小行星', entries: asteroids },
   { id: 'comets', name: '彗星', entries: comets },
@@ -72,7 +75,7 @@ function BodyTree({
               <span className="body-number">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <Image
+              <BodyImage
                 className="body-portrait"
                 src={portraitPath(body.id)}
                 alt=""
@@ -120,7 +123,7 @@ function BodyTree({
                     aria-current={selected === moon.id ? 'true' : undefined}
                     onClick={(event) => handleProfileClick(event, moon.id)}
                   >
-                    <Image
+                    <BodyImage
                       className="body-portrait"
                       src={portraitPath(moon.id)}
                       alt=""
