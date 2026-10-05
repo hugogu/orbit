@@ -14,6 +14,16 @@ export function observerSurfacePoint(latitude: number, longitude: number) {
   );
 }
 
+/** The camera approaches the same rotating surface normal as the marker. */
+export function observerViewDirection(
+  location: { latitude: number; longitude: number },
+  orientation: THREE.Quaternion,
+) {
+  return observerSurfacePoint(location.latitude, location.longitude)
+    .applyQuaternion(orientation)
+    .normalize();
+}
+
 export function createObserverMarker(parent: THREE.Group) {
   const root = new THREE.Group();
   root.name = 'earth-observer-marker';

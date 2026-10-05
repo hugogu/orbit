@@ -42,7 +42,7 @@ import { createEclipseSystem } from './eclipse-system';
 import { daysFromEpoch } from '@/lib/sandbox/scenario';
 import type { SandboxView } from '@/lib/sandbox/view';
 import { createSunEffects } from './sun-effects';
-import { createObserverMarker } from './observer-marker';
+import { createObserverMarker, observerViewDirection } from './observer-marker';
 import { createSceneLabel, createSceneLabelOcclusion } from './scene-label';
 import { createStarField } from './star-field';
 import { createGroundSky } from './ground-sky';
@@ -94,6 +94,7 @@ export type SceneState = {
   realTerrain: boolean;
   systemView: boolean;
   observerLocation: SkyLocation;
+  observerView: SkyLocation | null;
   observerLocationReady: boolean;
   /** A shared pose to adopt instead of the next automatic framing. */
   cameraPose: CameraPose | null;
@@ -644,7 +645,8 @@ export default function SolarScene({
     });
     // A shared pose replaces automatic framing until the viewer takes over.
     let adoptedPose: CameraPose | null | undefined,
-      sharedPose: CameraPose | null = null;
+      sharedPose: CameraPose | null = null,
+      lastObserverView: SkyLocation | null = null;
     const projected = new THREE.Vector3(),
       newTarget = new THREE.Vector3(),
       desired = new THREE.Vector3(),
@@ -984,6 +986,14 @@ export default function SolarScene({
           ? s.planetEventView
           : null;
       const eventKey = eventView ? `${eventView.kind}/${eventView.body}` : '';
+      const observerView =
+        s.selected === 'earth' &&
+        !s.ground &&
+        !s.top &&
+        !s.eclipseView &&
+        !eventView
+          ? s.observerView
+          : null;
       if (s.cameraPose !== adoptedPose) {
         adoptedPose = s.cameraPose;
         sharedPose = s.cameraPose;
@@ -999,6 +1009,7 @@ export default function SolarScene({
         camera.aspect !== lastCameraAspect ||
         framingChanged ||
         eventKey !== lastPlanetEventView ||
+        observerView !== lastObserverView ||
         cometKey !== lastComet
       ) {
         const body = bodies.find((b) => b.id === s.selected);
@@ -1088,6 +1099,7 @@ export default function SolarScene({
         lastCameraAspect = camera.aspect;
         lastComet = cometKey;
         lastPlanetEventView = eventKey;
+        lastObserverView = observerView;
       }
       newTarget.copy(
         comet
@@ -1130,23 +1142,29 @@ export default function SolarScene({
         desired
           .copy(newTarget)
           .add(
-            s.eclipseView && s.selected
-              ? eclipseSystem
-                  .focusDirection(s.selected)
-                  .multiplyScalar(targetDistance)
-              : eventFrame
-                ? eventFrame.offset
-                : s.top
-                  ? new THREE.Vector3(
-                      targetDistance * 0.0001,
-                      targetDistance,
-                      targetDistance * 0.0001,
-                    )
-                  : new THREE.Vector3(
-                      0,
-                      targetDistance * 0.52,
-                      targetDistance * 0.85,
-                    ),
+            observerView && earthPivot
+              ? observerViewDirection(
+                  observerView,
+                  (sandbox ? sandboxSystem.meshOf('earth')?.parent : earthPivot)
+                    ?.quaternion ?? earthPivot.quaternion,
+                ).multiplyScalar(targetDistance)
+              : s.eclipseView && s.selected
+                ? eclipseSystem
+                    .focusDirection(s.selected)
+                    .multiplyScalar(targetDistance)
+                : eventFrame
+                  ? eventFrame.offset
+                  : s.top
+                    ? new THREE.Vector3(
+                        targetDistance * 0.0001,
+                        targetDistance,
+                        targetDistance * 0.0001,
+                      )
+                    : new THREE.Vector3(
+                        0,
+                        targetDistance * 0.52,
+                        targetDistance * 0.85,
+                      ),
           );
         camera.position.lerp(desired, 0.055);
         transition -= dt * 0.5;

@@ -13,8 +13,13 @@ const source = ts.createSourceFile(
 );
 let handler = '';
 function findHandler(node: ts.Node) {
-  if (ts.isFunctionDeclaration(node) && node.name?.text === 'enterGround')
-    handler = node.getText(source);
+  if (
+    ts.isFunctionDeclaration(node) &&
+    ['enterGround', 'locateEarth', 'requestObserverLocation'].includes(
+      node.name?.text ?? '',
+    )
+  )
+    handler += node.getText(source) + '\n';
   ts.forEachChild(node, findHandler);
 }
 findHandler(source);
@@ -27,6 +32,8 @@ function modeContext(paused: boolean, observerLocationSource = 'manual') {
   const context = {
     Error,
     ground: false,
+    selected: null as string | null,
+    observerView: null as { latitude: number; longitude: number } | null,
     time: Date.parse('2024-04-08T18:17:15Z'),
     paused,
     speed: 4,
@@ -40,6 +47,17 @@ function modeContext(paused: boolean, observerLocationSource = 'manual') {
     sensor: { start: () => assert.fail('desktop does not request sensors') },
     setGround: (value: boolean) => {
       context.ground = value;
+    },
+    setObserverView: (
+      value: { latitude: number; longitude: number } | null,
+    ) => {
+      context.observerView = value;
+    },
+    select: (id: string) => {
+      context.selected = id;
+      context.ground = false;
+      context.observerView = null;
+      context.locationTicket.current++;
     },
     setTop: () => {},
     setEclipseView: () => {},
@@ -72,10 +90,11 @@ function modeContext(paused: boolean, observerLocationSource = 'manual') {
     },
     updateObserverLocation: () => {},
   };
-  const toggle = runInNewContext(`${compiled}\nenterGround`, context) as (
-    refreshLocation?: boolean,
-  ) => void;
-  return { context, toggle };
+  const { toggle, locate } = runInNewContext(
+    `${compiled}\n({ toggle: enterGround, locate: locateEarth })`,
+    context,
+  ) as { toggle: () => void; locate: () => void };
+  return { context, toggle, locate };
 }
 
 for (const paused of [true, false]) {
@@ -110,8 +129,8 @@ void test('device location uses the eclipse instant without changing playback', 
   assert.equal(context.paused, true);
 });
 
-void test('locate action refreshes a manual site and stays in ground view on repeated clicks', async () => {
-  const { context, toggle } = modeContext(true);
+void test('locate action refreshes a manual site and selects Earth without entering ground sky', async () => {
+  const { context, locate } = modeContext(true);
   let requests = 0;
   let updates = 0;
   context.currentLocation = async (_geo, secure, options) => {
@@ -123,51 +142,66 @@ void test('locate action refreshes a manual site and stays in ground view on rep
   context.updateObserverLocation = () => {
     updates++;
   };
-  toggle(true);
+  locate();
   await new Promise<void>((resolve) => setImmediate(resolve));
-  toggle(true);
+  locate();
   await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(context.selected, 'earth');
+  assert.equal(context.observerView?.latitude, 31);
+  assert.equal(context.observerView?.longitude, 121);
   assert.equal(requests, 2);
   assert.equal(updates, 2);
-  assert.equal(context.ground, true);
+  assert.equal(context.ground, false);
   assert.equal(context.paused, true);
 });
 
 void test('a location failure preserves the observing site and reports the reason', async () => {
-  const { context, toggle } = modeContext(true);
+  const { context, locate } = modeContext(true);
   const before = context.observerLocation;
   context.currentLocation = async () => {
     throw new Error('定位超时，请重试或手动填写经纬度。');
   };
   context.updateObserverLocation = () =>
     assert.fail('failed fix must not change the site');
-  toggle(true);
+  locate();
   await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(context.observerLocation, before);
   assert.equal(context.notice, '定位超时，请重试或手动填写经纬度。');
-  assert.equal(context.ground, true);
+  assert.equal(context.ground, false);
 });
 
-void test('leaving ground view ignores an outstanding location reply', async () => {
-  const { context, toggle } = modeContext(true);
+void test('selecting another body ignores an outstanding location reply', async () => {
+  const { context, locate } = modeContext(true);
   let reply!: (fix: { latitude: number; longitude: number }) => void;
   context.currentLocation = () =>
     new Promise((resolve) => {
       reply = resolve;
     });
   context.updateObserverLocation = () => assert.fail('stale location reply');
-  toggle(true);
-  toggle();
+  locate();
+  context.select('mars');
   reply({ latitude: 31, longitude: 121 });
   await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(context.ground, false);
 });
 
 void test('locate action cannot enter a sandbox with no Earth', () => {
-  const { context, toggle } = modeContext(true);
+  const { context, locate } = modeContext(true);
   context.sandboxEarthAvailable = false;
   context.currentLocation = async () =>
     assert.fail('no location request without Earth');
-  toggle(true);
+  locate();
   assert.equal(context.ground, false);
+});
+
+void test('locate action exits ground sky without asking for device orientation', async () => {
+  const { context, locate } = modeContext(false);
+  context.ground = true;
+  context.window.matchMedia = () => ({ matches: true });
+  locate();
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(context.ground, false);
+  assert.equal(context.selected, 'earth');
+  assert.equal(context.paused, false);
+  assert.equal(context.speed, 4);
 });
