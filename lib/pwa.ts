@@ -33,15 +33,21 @@ export function isPwaRequest(request: RequestInfo, url: URL, origin: string) {
   );
 }
 
+import { languages, type Locale } from './i18n';
+
 export function isExplorerPath(pathname: string) {
   return pathname === '/' || pathname === '/index.html';
 }
 
+const profileRoutePattern = new RegExp(
+  `^\\/(${Object.values(languages)
+    .map((l) => l.route)
+    .join('|')})\\/(bodies|events)(\\/[a-z0-9-]+)?\\/?$`,
+);
+
 /** A statically exported content page: a body profile, their index, or the sky-event guide. */
 export function isProfilePath(pathname: string) {
-  return /^\/(zh-CN|en-US|ja-JP)\/(bodies|events)(\/[a-z0-9-]+)?\/?$/.test(
-    pathname,
-  );
+  return profileRoutePattern.test(pathname);
 }
 
 export function isPwaAssetPath(pathname: string) {
@@ -54,10 +60,11 @@ export function isPwaAssetPath(pathname: string) {
 }
 
 export function offlinePagePath(pathname: string) {
-  const locale = pathname.startsWith('/en-US/')
-    ? 'en'
-    : pathname.startsWith('/ja-JP/')
-      ? 'ja'
-      : 'zh-CN';
+  const match = pathname.match(/^\/([a-z0-9-]+)\//i);
+  const route = match?.[1]?.toLowerCase();
+  const entry = (Object.entries(languages) as [Locale, (typeof languages)[Locale]][]).find(
+    ([, lang]) => lang.route.toLowerCase() === route,
+  );
+  const locale = entry ? entry[0] : 'zh-CN';
   return `/offline/${locale}.html`;
 }

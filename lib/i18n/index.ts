@@ -2,6 +2,15 @@ import { createInstance, type TOptions } from 'i18next';
 import zh from './messages/zh-CN.json';
 import en from './messages/en.json';
 import ja from './messages/ja.json';
+import nl from './messages/nl.json';
+import pt from './messages/pt.json';
+import de from './messages/de.json';
+import ko from './messages/ko.json';
+import es from './messages/es.json';
+import fr from './messages/fr.json';
+import it from './messages/it.json';
+import ru from './messages/ru.json';
+import tr from './messages/tr.json';
 
 // Add a catalog here to expose another language throughout the application.
 export const languages = {
@@ -25,6 +34,69 @@ export const languages = {
     route: 'ja-JP',
     intl: 'ja-JP',
     messages: ja,
+  },
+  nl: {
+    name: 'Nederlands',
+    short: 'NL',
+    route: 'nl-NL',
+    intl: 'nl-NL',
+    messages: nl,
+  },
+  pt: {
+    name: 'Português',
+    short: 'PT',
+    route: 'pt-BR',
+    intl: 'pt-BR',
+    messages: pt,
+  },
+  de: {
+    name: 'Deutsch',
+    short: 'DE',
+    route: 'de-DE',
+    intl: 'de-DE',
+    messages: de,
+  },
+  ko: {
+    name: '한국어',
+    short: '한',
+    route: 'ko-KR',
+    intl: 'ko-KR',
+    messages: ko,
+  },
+  es: {
+    name: 'Español',
+    short: 'ES',
+    route: 'es-ES',
+    intl: 'es-ES',
+    messages: es,
+  },
+  fr: {
+    name: 'Français',
+    short: 'FR',
+    route: 'fr-FR',
+    intl: 'fr-FR',
+    messages: fr,
+  },
+  it: {
+    name: 'Italiano',
+    short: 'IT',
+    route: 'it-IT',
+    intl: 'it-IT',
+    messages: it,
+  },
+  ru: {
+    name: 'Русский',
+    short: 'RU',
+    route: 'ru-RU',
+    intl: 'ru-RU',
+    messages: ru,
+  },
+  tr: {
+    name: 'Türkçe',
+    short: 'TR',
+    route: 'tr-TR',
+    intl: 'tr-TR',
+    messages: tr,
   },
 } as const;
 export type Locale = keyof typeof languages;

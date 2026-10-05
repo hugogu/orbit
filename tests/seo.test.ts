@@ -445,15 +445,10 @@ void test('structured body properties restate the figures a profile prints', () 
 });
 
 void test('profile rotation distinguishes sidereal days with matching localized structured values', () => {
-  const labels = {
-    en: 'Sidereal rotation period',
-    'zh-CN': '恒星自转周期',
-    ja: '恒星自転周期',
-  };
   for (const locale of seoLocales) {
-    for (const [id, value, printed] of [
-      ['earth', 0.99727, '0.99727'],
-      ['mercury', 58.65, '58.65'],
+    for (const [id, value] of [
+      ['earth', 0.99727],
+      ['mercury', 58.65],
     ] as const) {
       const entry = catalogEntry(id)!;
       const fact = profileRotationFact(
@@ -461,8 +456,8 @@ void test('profile rotation distinguishes sidereal days with matching localized 
         locale,
       );
       assert.deepEqual(fact, [
-        labels[locale],
-        `${printed} ${translator(locale)('天')}`,
+        translator(locale)('恒星自转周期'),
+        `${value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 5 })} ${translator(locale)('天')}`,
       ]);
       const node = profileGraph(entry, locale).nodes.find(
         (node) => node['@type'] === 'Place' && node.additionalProperty,
@@ -664,16 +659,20 @@ void test('sitemap repeats reciprocal hreflang links for every localized page', 
         entry.alternates!.map((link) => link.hreflang),
       ),
     ).size,
-    4,
+    seoLocales.length + 1,
   );
-  assert.ok(localized.every((entry) => entry.alternates!.length === 4));
+  assert.ok(
+    localized.every(
+      (entry) => entry.alternates!.length === seoLocales.length + 1,
+    ),
+  );
   assert.match(
     renderSitemap(),
     /xmlns:xhtml="http:\/\/www\.w3\.org\/1999\/xhtml"/,
   );
   assert.equal(
     (renderSitemap().match(/<xhtml:link /g) ?? []).length,
-    localized.length * 4,
+    localized.length * (seoLocales.length + 1),
   );
 });
 
