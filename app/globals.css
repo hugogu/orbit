@@ -4963,6 +4963,27 @@ html:lang(en) .moon-children button > span:last-child {
   }
 }
 @media (max-width: 600px), (orientation: landscape) and (max-height: 600px) {
+  .quarter-table {
+    table-layout: fixed;
+  }
+  .quarter-table th,
+  .quarter-table td {
+    padding-inline: 5px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+  }
+  .quarter-table tr > :first-child {
+    width: 31%;
+  }
+  .quarter-table tr > :nth-child(2),
+  .quarter-table tr > :nth-child(3) {
+    width: 34.5%;
+  }
+  .quarter-table .quarter-name {
+    white-space: normal;
+    gap: 5px;
+  }
   .language-picker {
     width: 38px;
     height: 38px;

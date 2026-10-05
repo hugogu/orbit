@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { Body, Observer, SearchRiseSet } from 'astronomy-engine';
 import {
   lunarMonth,
@@ -32,6 +33,39 @@ const fairbanks: SkyLocation = {
   utcOffset: -9,
 };
 const iso = (ms: number) => new Date(ms).toISOString();
+const quarterTable = readFileSync(
+  new URL('../components/lunar-panel.tsx', import.meta.url),
+  'utf8',
+);
+const styles = readFileSync(
+  new URL('../app/globals.css', import.meta.url),
+  'utf8',
+).replace(/\s+/g, ' ');
+
+void test('the phase-time table wraps all readings on phones and keeps its accessible headers', () => {
+  assert.match(quarterTable, /<table className="sky-table quarter-table">/);
+  assert.match(quarterTable, /<caption className="sr-only">/);
+  assert.match(quarterTable, /<th scope="col">\{t\('月相名称'\)\}<\/th>/);
+  assert.match(quarterTable, /<th scope="row">[\s\S]*?quarter-name/);
+  assert.match(quarterTable, /localStamp\(event\.time\)/);
+  assert.match(quarterTable, /utcStamp\(event\.time\)/);
+
+  const phone = styles.slice(
+    styles.indexOf(
+      '@media (max-width: 600px), (orientation: landscape) and (max-height: 600px) {',
+    ),
+  );
+  assert.match(phone, /\.quarter-table \{ table-layout: fixed;/);
+  assert.match(
+    phone,
+    /\.quarter-table th, \.quarter-table td \{[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;/,
+  );
+  assert.match(phone, /\.quarter-table tr > :first-child \{ width: 31%;/);
+  assert.match(
+    phone,
+    /\.quarter-table tr > :nth-child\(2\), \.quarter-table tr > :nth-child\(3\) \{ width: 34\.5%;/,
+  );
+});
 
 void test('a phase name never contradicts the illuminated fraction beside it', () => {
   // The principal phases keep their names for the days around the instant.
