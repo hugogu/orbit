@@ -21,7 +21,12 @@ import {
   axialTiltNote,
   axialTiltSource,
 } from '../../lib/profile-properties';
-import { comets, cometModelNote, cometVisualNote } from '../../lib/comets';
+import {
+  comets,
+  cometElements,
+  cometModelNote,
+  cometVisualNote,
+} from '../../lib/comets';
 import {
   asteroids,
   asteroidFacts,
@@ -542,6 +547,11 @@ export default async function BodyPage({ params }: PageProps) {
               )}
               <details className="profile-data-note">
                 <summary>{t('数据与计算说明')}</summary>
+                {entry.kind === 'comet' && (
+                  <p>
+                    {`${t('轨道元素历元')}: JD(TDB) ${cometElements(entry.data).epoch}`}
+                  </p>
+                )}
                 <p>
                   {t(
                     entry.kind === 'asteroid'

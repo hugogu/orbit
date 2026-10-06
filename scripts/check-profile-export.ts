@@ -20,6 +20,7 @@ import {
 } from '../lib/seo';
 import { squareImagePath, portraitCredit } from '../lib/profile-images';
 import { profileContent } from '../lib/profile-content';
+import { cometElements } from '../lib/comets';
 import { axialTiltNote } from '../lib/profile-properties';
 import { languages, translator } from '../lib/i18n';
 import { wikidataEntity, wikidataUrl } from '../lib/wikidata';
@@ -87,6 +88,14 @@ for (const entry of entries) {
       `PWA theme color: ${path}`,
     );
     const t = translator(locale);
+    if (entry.kind === 'comet') {
+      assert.ok(
+        html.includes(
+          `${escapeHtml(t('轨道元素历元'))}: JD(TDB) ${cometElements(entry.data).epoch}`,
+        ),
+        `Comet element epoch: ${path}`,
+      );
+    }
     assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
     if (['jupiter', 'saturn', 'uranus', 'neptune'].includes(entry.data.id)) {
       const credits =

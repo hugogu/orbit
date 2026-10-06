@@ -14,6 +14,24 @@ import { moonSystems } from '../lib/moons.ts';
 import { createCometSystem } from '../components/comet-system.ts';
 import { isOrbitLine } from '../components/orbit-line.ts';
 import { parseAsteroidModel } from '../lib/asteroid-model.ts';
+import { languages, translator } from '../lib/i18n';
+
+void test('comet profiles can label each snapshot epoch in every locale', () => {
+  assert.deepEqual(
+    comets.map((comet) => [comet.id, cometElements(comet).epoch]),
+    [
+      ['halley', 2439875.5],
+      ['encke', 2459897.5],
+      ['67p', 2457305.5],
+      ['hale-bopp', 2459837.5],
+    ],
+  );
+  for (const locale of Object.keys(languages) as (keyof typeof languages)[]) {
+    const label = translator(locale)('轨道元素历元');
+    assert.ok(label.trim(), locale);
+    if (locale !== 'zh-CN') assert.notEqual(label, '轨道元素历元', locale);
+  }
+});
 
 void test('all eight planets have satellite information, including the two without moons', () => {
   for (const body of bodies.filter((b) => b.id !== 'sun' && b.id !== 'pluto')) {
