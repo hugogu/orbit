@@ -89,12 +89,19 @@ for (const entry of entries) {
     );
     const t = translator(locale);
     if (entry.kind === 'comet') {
+      const facts =
+        html.match(/<dl class="seo-facts">[\s\S]*?<\/dl>/)?.[0] ?? '';
       assert.ok(
-        html.includes(
-          `${escapeHtml(t('轨道元素历元'))}: JD(TDB) ${cometElements(entry.data).epoch}`,
+        facts.includes(
+          `<dt>${escapeHtml(t('轨道元素历元'))}</dt><dd>JD(TDB) ${cometElements(entry.data).epoch}</dd>`,
         ),
-        `Comet element epoch: ${path}`,
+        `Comet element epoch in core facts: ${path}`,
       );
+      const note =
+        html.match(
+          /<details class="profile-data-note">[\s\S]*?<\/details>/,
+        )?.[0] ?? '';
+      assert.ok(!note.includes(escapeHtml(t('轨道元素历元'))), path);
     }
     assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
     if (['jupiter', 'saturn', 'uranus', 'neptune'].includes(entry.data.id)) {

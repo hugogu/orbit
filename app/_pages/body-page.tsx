@@ -170,6 +170,7 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
     [t('轨道倾角'), `${comet.inc}°`],
     [t('模型近日点'), `${(comet.au * (1 - comet.e)).toFixed(2)} AU`],
     [t('模型远日点'), `${(comet.au * (1 + comet.e)).toFixed(2)} AU`],
+    [t('轨道元素历元'), `JD(TDB) ${cometElements(comet).epoch}`],
   ];
 }
 
@@ -547,11 +548,6 @@ export default async function BodyPage({ params }: PageProps) {
               )}
               <details className="profile-data-note">
                 <summary>{t('数据与计算说明')}</summary>
-                {entry.kind === 'comet' && (
-                  <p>
-                    {`${t('轨道元素历元')}: JD(TDB) ${cometElements(entry.data).epoch}`}
-                  </p>
-                )}
                 <p>
                   {t(
                     entry.kind === 'asteroid'
