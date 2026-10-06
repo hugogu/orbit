@@ -88,6 +88,20 @@ for (const entry of entries) {
     );
     const t = translator(locale);
     assert.equal(htmlTag?.get('lang'), languages[locale].intl, path);
+    if (['jupiter', 'saturn', 'uranus', 'neptune'].includes(entry.data.id)) {
+      const credits =
+        html.match(/<div id="image-credits"[\s\S]*?<\/div>/)?.[0] ?? '';
+      assert.ok(credits.includes(escapeHtml(t('渲染贴图来源'))), path);
+      assert.ok(credits.includes(`href="${escapeHtml(credit.url)}"`), path);
+      assert.ok(credits.includes(`href="${escapeHtml(credit.license)}"`), path);
+      assert.ok(
+        credits.includes(
+          escapeHtml(t('图像基于已有贴图重新投影与布光，不代表实时观测照片。')),
+        ),
+        path,
+      );
+      assert.ok(!credits.includes(t('表面素材')), path);
+    }
     assert.ok(
       head.includes(
         `<title>${escapeHtml(profileTitle(entry, locale))} | ${seoSiteName}</title>`,

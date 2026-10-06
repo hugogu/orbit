@@ -628,7 +628,7 @@ export default async function BodyPage({ params }: PageProps) {
                   )}
                 </p>
                 <p>
-                  {t('表面素材')}：<a href={credit.url}>{credit.name}</a> ·{' '}
+                  {t('渲染贴图来源')}：<a href={credit.url}>{credit.name}</a> ·{' '}
                   <a href={credit.license}>{t('授权协议')}</a> ·{' '}
                   {t('渲染：ORBIT')}
                 </p>

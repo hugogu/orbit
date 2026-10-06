@@ -97,6 +97,28 @@ const bodyPage = readFileSync(
   new URL('../app/_pages/body-page.tsx', import.meta.url),
   'utf8',
 );
+
+void test('profile texture credits describe a rendering asset in every language', () => {
+  assert.match(bodyPage, /t\('渲染贴图来源'\)/);
+  assert.doesNotMatch(bodyPage, /t\('表面素材'\)/);
+  const labels: Record<Locale, string> = {
+    'zh-CN': '渲染贴图来源',
+    en: 'Texture source',
+    ja: 'レンダリング用テクスチャの出典',
+    nl: 'Textuurbron',
+    pt: 'Origem da textura',
+    de: 'Texturquelle',
+    ko: '텍스처 출처',
+    es: 'Fuente de la textura',
+    fr: 'Source de la texture',
+    it: 'Fonte della texture',
+    ru: 'Источник текстуры',
+    tr: 'Doku kaynağı',
+  };
+  assert.deepEqual(Object.keys(labels).sort(), Object.keys(languages).sort());
+  for (const [locale, label] of Object.entries(labels) as [Locale, string][])
+    assert.equal(translator(locale)('渲染贴图来源'), label, locale);
+});
 const profileShare = readFileSync(
   new URL('../components/profile-share.tsx', import.meta.url),
   'utf8',
