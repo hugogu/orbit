@@ -73,9 +73,10 @@ differently from one run to the next; the audio is identical every time.
 
 `audio/vo/` holds the six lines used in the video. They were synthesized
 locally with Kokoro (Kokoro-82M, Apache-2.0 weights), voice `af_heart`, by
-`audio/voice-over.py`; its docstring lists the model files it needs. Rerun it
-to change the wording or the voice, then update the caption word timings in
-`composite/vertical.html`.
+`audio/voice-over.py`, which needs kokoro-onnx installed. It reads the model
+from the shared cache `~/.cache/kokoro-onnx` (or `$KOKORO_MODELS`) and fills it
+once, about 350 MB, if it is empty. Rerun it to change the wording or the
+voice, then update the caption word timings in `composite/vertical.html`.
 
 ## Rights
 
