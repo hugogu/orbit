@@ -74,7 +74,12 @@ import {
   asteroidSurfaceNote,
 } from '@/lib/asteroids';
 import AsteroidDetails from '@/components/asteroid-details';
-import { DAY_MS, J2000_MS, utcLabel, validTime } from '@/lib/simulation-time';
+import {
+  DAY_MS,
+  J2000_MS,
+  utcMinuteLabel,
+  validTime,
+} from '@/lib/simulation-time';
 import {
   locateTimeZone,
   observerOffset,
@@ -1707,15 +1712,19 @@ export default function Home() {
           {sandboxRun ? (
             <>
               <div
-                className="simulation-clock"
-                aria-label={t('沙盘已运行的模拟时间')}
+                className="simulation-clock sandbox-clock"
+                aria-label={`${t('沙盘已运行的模拟时间')}: ${elapsedLabel(sandboxRun.shownDays, t)}; ${t('自 {{date}} 分叉', { date: utcMinuteLabel(sandboxScenario!.epoch) })}`}
               >
                 <span>{t('已运行')}</span>
                 <strong>{elapsedLabel(sandboxRun.shownDays, t)}</strong>
                 <small>
-                  {t('自 {{date}} 分叉', {
-                    date: utcLabel(sandboxScenario!.epoch).slice(0, 10),
-                  })}
+                  <time
+                    dateTime={new Date(sandboxScenario!.epoch).toISOString()}
+                  >
+                    {t('自 {{date}} 分叉', {
+                      date: utcMinuteLabel(sandboxScenario!.epoch),
+                    })}
+                  </time>
                 </small>
               </div>
               <button
