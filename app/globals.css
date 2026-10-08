@@ -4527,6 +4527,18 @@ button:disabled {
     font-size: 10px;
     white-space: nowrap;
   }
+  .timeline .sandbox-clock {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .timeline .sandbox-clock small {
+    font-size: 11px;
+    white-space: normal;
+    text-align: center;
+  }
   .simulation-clock small::after {
     content: ' ' attr(data-zone);
   }
