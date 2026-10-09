@@ -44,7 +44,7 @@ import {
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
 import { eventOccurrences } from '../lib/event-occurrences';
 import { portraitCredit } from '../lib/profile-images';
-import { physicalParameters } from '../lib/physical-facts';
+import { extraFacts, physicalParameters } from '../lib/physical-facts';
 import { profileContent } from '../lib/profile-content';
 import {
   profileProperties,
@@ -464,6 +464,36 @@ void test('structured body properties restate the figures a profile prints', () 
         assert.ok(Number.isFinite(property.value), property.id);
       else assert.ok(Object.hasOwn(source, property.value), property.value);
     }
+});
+
+void test('Earth profile and structured data use the same equatorial acceleration', () => {
+  const earth = bodies.find((body) => body.id === 'earth')!;
+  const fact = extraFacts(earth).find(
+    (item) => item.label === '赤道引力加速度',
+  )!;
+  assert.equal(physicalParameters.earth.gravity, 9.78);
+  assert.deepEqual(
+    { value: fact.value, unit: fact.unit },
+    { value: '9.78', unit: 'm/s²' },
+  );
+
+  const property = profileProperties(catalogEntry('earth')!).find(
+    (item) => item.id === 'equatorialGravity',
+  )!;
+  assert.equal(property.value, 9.78);
+  assert.equal(property.unit, 'acceleration');
+  for (const locale of seoLocales) {
+    const node = profileGraph(catalogEntry('earth')!, locale).nodes.find(
+      (item) => item['@type'] === 'Place' && item.identifier === 'earth',
+    )!;
+    const structured = (node.additionalProperty as Node[]).find(
+      (item) => item.propertyID === 'equatorialGravity',
+    )!;
+    assert.equal(structured.name, translator(locale)(fact.label));
+    assert.equal(structured.value, 9.78);
+    assert.equal(structured.unitCode, propertyUnits.acceleration.code);
+    assert.equal(structured.unitText, 'm/s²');
+  }
 });
 
 void test('profile rotation distinguishes sidereal days with matching localized structured values', () => {
