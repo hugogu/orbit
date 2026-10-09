@@ -2,13 +2,15 @@ import type { Body } from './solar';
 export type Fact = { label: string; value: string; unit?: string };
 // JPL physical parameters, retrieved 2026-09-08. Mass kg, density g/cm³,
 // equatorial gravity m/s², escape velocity km/s. Pluto's source mass uses 10^18 kg.
+// Earth's effective equatorial acceleration (including rotation) is 9.780 m/s²:
+// https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
 export const physicalParameters: Record<
   string,
   { mass: number; density: number; gravity: number; escape: number }
 > = {
   mercury: { mass: 0.330103e24, density: 5.4289, gravity: 3.7, escape: 4.25 },
   venus: { mass: 4.86731e24, density: 5.243, gravity: 8.87, escape: 10.36 },
-  earth: { mass: 5.97217e24, density: 5.5134, gravity: 9.8, escape: 11.19 },
+  earth: { mass: 5.97217e24, density: 5.5134, gravity: 9.78, escape: 11.19 },
   mars: { mass: 0.641691e24, density: 3.934, gravity: 3.71, escape: 5.03 },
   jupiter: { mass: 1898.125e24, density: 1.3262, gravity: 24.79, escape: 60.2 },
   saturn: { mass: 568.317e24, density: 0.6871, gravity: 10.44, escape: 36.09 },
