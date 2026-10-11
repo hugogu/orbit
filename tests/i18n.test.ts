@@ -45,6 +45,36 @@ import { orbitingMoons } from '../lib/moon-orbits';
 const codes = Object.keys(languages) as Locale[];
 const placeholders = (text: string) =>
   [...text.matchAll(/{{\s*(\w+)\s*}}/g)].map((m) => m[1]).sort();
+void test('Earth seasons stay separate from the sidereal-day explanation', () => {
+  const seasons = profileContent.earth.sections[1].text;
+  assert.match(seasons, /地轴.*南北半球/);
+  assert.match(seasons, /一月初.*北半球.*冬季/);
+  assert.doesNotMatch(seasons, /恒星日|太阳日/);
+
+  const siderealTerms: Record<Locale, RegExp> = {
+    'zh-CN': /恒星日|太阳日/,
+    en: /sidereal day|solar day/i,
+    ja: /恒星日|太陽日/,
+    ko: /항성일|태양일/,
+    de: /siderisch|Sonnentag/i,
+    es: /sideral|solar day|día solar/i,
+    fr: /sidéral|jour solaire/i,
+    it: /siderale|giorno solare/i,
+    nl: /siderisch|zonnedag/i,
+    pt: /sideral|dia solar/i,
+    ru: /сидерическ|солнечн.*сут/i,
+    tr: /yıldızıl gün|güneş günü/i,
+  };
+  for (const locale of codes) {
+    const t = translator(locale);
+    assert.doesNotMatch(t(seasons), siderealTerms[locale], locale);
+    assert.notEqual(
+      t('恒星日以远方恒星为参照；太阳日以太阳再次经过同一子午线为参照。'),
+      '',
+      locale,
+    );
+  }
+});
 void test('locale selection uses URL, saved preference, browser languages, then the default', () => {
   assert.equal(detectLocale('ja-JP', 'en', ['zh-CN']), 'ja');
   assert.equal(detectLocale('unknown', 'en-GB', ['ja-JP']), 'en');
