@@ -162,7 +162,7 @@ void test('moon phase viewing directions are qualified for each hemisphere', () 
 void test('solar eclipse guidance separates direct viewing, filtered optics and local totality', () => {
   const tips = eventTopic('solar-eclipse')?.observing;
   assert.ok(tips);
-  assert.equal(tips.length, 5);
+  assert.equal(tips.length, 6);
   for (const [locale, direct, optics, eyepiece, totality] of [
     [
       'zh-CN',
@@ -189,10 +189,38 @@ void test('solar eclipse guidance separates direct viewing, filtered optics and 
     const t = translator(locale);
     const translated = tips.map((tip) => t(tip));
     assert.match(translated[0], direct, locale);
-    assert.match(translated[1], optics, locale);
-    assert.match(translated[1], eyepiece, locale);
-    assert.match(translated[2], totality, locale);
+    assert.match(translated[2], optics, locale);
+    assert.match(translated[2], eyepiece, locale);
+    assert.match(translated[3], totality, locale);
   }
+});
+
+void test('solar eclipse viewers are checked for damage before every use in every language', () => {
+  const tips = eventTopic('solar-eclipse')?.observing;
+  assert.ok(tips);
+  const inspection = tips[1];
+  assert.match(
+    inspection,
+    /每次使用前.*日食眼镜.*手持太阳观测镜.*撕裂.*划伤.*其他损坏.*停止使用并更换/,
+  );
+  for (const locale of codes) {
+    const translated = translator(locale)(inspection);
+    assert.ok(translated.length > 50, locale);
+    if (locale !== 'zh-CN') assert.notEqual(translated, inspection, locale);
+  }
+  assert.match(
+    translator('en')(inspection),
+    /before every use.*torn.*scratched.*damaged.*replace/,
+  );
+  assert.match(
+    translator('ja')(inspection),
+    /毎回使用前.*破れ.*傷.*損傷.*交換/,
+  );
+  assert.match(translator('ko')(tips[0]), /ISO 12312-2.*일식 안경/);
+  assert.match(
+    translator('ko')(inspection),
+    /사용하기 전에 매번.*찢어짐.*긁힘.*손상.*교체/,
+  );
 });
 
 void test('solar eclipse types include local and event-wide partial eclipses', () => {
