@@ -24,9 +24,31 @@ import { createSceneLabelOcclusion } from '../components/scene-label';
 import BodyNavigation from '../components/body-navigation';
 import AsteroidDetails from '../components/asteroid-details';
 import { I18nProvider } from '../lib/i18n/provider';
-import { translator } from '../lib/i18n';
+import { languages, translator } from '../lib/i18n';
 import { observatoryTools } from '../lib/observatory-tools';
 import { normalizeModel } from '../scripts/convert-asteroid-models';
+import BodyPage from '../app/_pages/body-page';
+
+void test('asteroid profiles show each snapshot epoch in every locale', async () => {
+  for (const asteroid of asteroids) {
+    for (const locale of seoLocales) {
+      const label = translator(locale)('轨道元素历元');
+      const page = await BodyPage({
+        params: Promise.resolve({
+          locale: languages[locale].route,
+          id: asteroid.id,
+        }),
+      });
+      const html = renderToStaticMarkup(page);
+      assert.ok(
+        html.includes(
+          `<dt>${label}</dt><dd>JD(TDB) ${asteroid.orbit.epoch}</dd>`,
+        ),
+        `${asteroid.id} ${locale}`,
+      );
+    }
+  }
+});
 
 void test('asteroid snapshots use their own epochs, preserve orbital planes, and close after one period', () => {
   for (const asteroid of asteroids) {

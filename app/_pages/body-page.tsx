@@ -130,10 +130,13 @@ function relatedEntries(entry: CatalogEntry) {
 function coreFacts(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
   if (entry.kind === 'asteroid')
-    return asteroidFacts(entry.data).map(([label, value, unit]) => [
-      t(label),
-      `${value.toLocaleString(locale, { maximumFractionDigits: value < 1 ? 5 : 3 })} ${t(unit)}`.trim(),
-    ]);
+    return [
+      ...asteroidFacts(entry.data).map(([label, value, unit]) => [
+        t(label),
+        `${value.toLocaleString(locale, { maximumFractionDigits: value < 1 ? 5 : 3 })} ${t(unit)}`.trim(),
+      ]),
+      [t('轨道元素历元'), `JD(TDB) ${entry.data.orbit.epoch}`],
+    ];
   if (entry.kind === 'body') {
     const body = entry.data;
     const orbitalPeriod =
