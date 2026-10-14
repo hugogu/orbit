@@ -367,7 +367,7 @@ export default function LunarPanel({
             <tr>
               <th scope="col">{t('日期')}</th>
               <th scope="col">{t('月相名称')}</th>
-              <th scope="col">{t('月龄')}</th>
+              <th scope="col">{t('月龄（天）')}</th>
               <th scope="col">{t('照明')}</th>
               <th scope="col">{t('月出')}</th>
               <th scope="col">{t('中天')}</th>

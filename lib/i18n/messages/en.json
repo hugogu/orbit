@@ -1537,6 +1537,7 @@
   "日期": "Date",
   "月相名称": "Phase",
   "月龄": "Age",
+  "月龄（天）": "Age (days)",
   "照明": "Illuminated",
   "月出": "Moonrise",
   "中天": "Transit",

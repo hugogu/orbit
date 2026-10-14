@@ -282,3 +282,28 @@ void test('the Moon phase panel is fully translated, including its computed labe
     }
   }
 });
+
+void test('the lunar calendar age heading states its unit in every locale', () => {
+  const panel = fs.readFileSync(
+    new URL('../components/lunar-panel.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(panel, /<th scope="col">\{t\('月龄（天）'\)\}<\/th>/);
+
+  const headings: Record<Locale, string> = {
+    'zh-CN': '月龄（天）',
+    en: 'Age (days)',
+    ja: '月齢（日）',
+    nl: 'Leeftijd (dagen)',
+    pt: 'Idade (dias)',
+    de: 'Mondalter (Tage)',
+    ko: '월령(일)',
+    es: 'Edad (días)',
+    fr: 'Âge (jours)',
+    it: 'Età (giorni)',
+    ru: 'Возраст (дни)',
+    tr: 'Ay yaşı (gün)',
+  };
+  for (const locale of codes)
+    assert.equal(translator(locale)('月龄（天）'), headings[locale], locale);
+});
