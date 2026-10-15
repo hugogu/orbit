@@ -16,6 +16,7 @@ import { curiosities, type Curiosity } from '../../lib/curiosities';
 import { extraFacts } from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
 import {
+  profileOrbitalPeriodLabel,
   profileRotationFact,
   profileProperties,
   axialTiltNote,
@@ -145,7 +146,7 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
     return [
       [t('平均半径'), `${body.radius.toLocaleString(locale)} km`],
       [t('平均日距'), body.au ? `${body.au} AU` : '—'],
-      [t('公转周期'), body.period ? orbitalPeriod : '—'],
+      [t(profileOrbitalPeriodLabel(body)), body.period ? orbitalPeriod : '—'],
       profileRotationFact(body, locale),
       ...profileProperties(entry)
         .filter((property) => property.id === 'axialTilt')

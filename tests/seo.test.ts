@@ -48,6 +48,7 @@ import { physicalParameters } from '../lib/physical-facts';
 import { profileContent } from '../lib/profile-content';
 import {
   profileProperties,
+  profileOrbitalPeriodLabel,
   propertyUnits,
   profileRotationFact,
   profileAxialTilt,
@@ -504,6 +505,30 @@ void test('profile rotation distinguishes sidereal days with matching localized 
       (p) => p.id === 'rotationPeriod',
     )!.label,
     '自转周期',
+  );
+});
+
+void test('Earth sidereal year label matches the profile and structured data in every language', () => {
+  const earth = bodies.find((body) => body.id === 'earth')!;
+  const mars = bodies.find((body) => body.id === 'mars')!;
+  assert.equal(earth.period, 365.256);
+  assert.equal(profileOrbitalPeriodLabel(earth), '恒星公转周期');
+  assert.equal(profileOrbitalPeriodLabel(mars), '公转周期');
+  for (const locale of seoLocales) {
+    const property = (
+      profileGraph(catalogEntry('earth')!, locale).nodes.find(
+        (node) => node['@type'] === 'Place' && node.identifier === 'earth',
+      )!.additionalProperty as Node[]
+    ).find((item) => item.propertyID === 'orbitalPeriod')!;
+    assert.equal(property.name, translator(locale)('恒星公转周期'));
+    assert.equal(property.value, 365.256);
+    assert.equal(property.unitCode, 'DAY');
+  }
+  assert.equal(
+    profileProperties(catalogEntry('mars')!).find(
+      (property) => property.id === 'orbitalPeriod',
+    )!.label,
+    '公转周期',
   );
 });
 
