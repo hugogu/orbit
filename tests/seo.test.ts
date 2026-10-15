@@ -843,6 +843,26 @@ void test('guide routes render their own static params, metadata and structured 
   assert.match(homePage, /href=\{eventsIndexPath\(locale\)\}/);
 });
 
+void test('event fact summaries keep desktop columns and stack on phones', () => {
+  assert.match(eventPage, /<dl className="profile-key-facts">/);
+  assert.match(
+    globalStyles,
+    /\.profile-key-facts\s*\{\s*display: grid;\s*grid-template-columns: repeat\(3, 1fr\)/,
+  );
+  const phoneStyles = globalStyles
+    .split('@media (max-width: 760px) {')[1]
+    ?.split('\n@media ')[0];
+  assert.ok(phoneStyles);
+  assert.match(
+    phoneStyles,
+    /\.profile-key-facts\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/,
+  );
+  assert.match(
+    phoneStyles,
+    /\.profile-key-facts div \+ div\s*\{[^}]*border-top:/,
+  );
+});
+
 void test('the privacy and about pages have unique localized URLs', () => {
   assert.equal(privacyPath('zh-CN'), '/zh-CN/privacy');
   assert.equal(privacyPath('en'), '/en-US/privacy');
