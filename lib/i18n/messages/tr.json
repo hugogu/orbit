@@ -1759,7 +1759,7 @@
   "当前为北京参考位置，请定位或设置实际观测地点。": "Pekin referans koordinatları kullanılıyor. Kendi konumunuzu belirleyin veya gözlem yerinizi ayarlayın.",
   "方位校正（度）": "Yön düzeltmesi (°)",
   "手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。": "Telefonunuzun arkasını gökyüzüne doğru tutun. Bilinen bir yıldıza bakarak yönü ince ayarlayabilirsiniz; pusula hassasiyeti cihaza ve çevredeki manyetik alanlara bağlıdır. Etrafa bakmak için sürükleyin; yakınlaştırmak için parmaklarınızı kıstırın veya kaydırın.",
-  "地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。": "Ufuk çizgisi altındaki nesneleri gizler. Yıldızlar öğrenme amacıyla görünür kalır; hava durumu, ışık kirliliği ve atmosferik kırılma simüle edilmez.",
+  "画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。": "Görünüm ideal geometrik ufku kullanır. Yerel arazi ve binalar çizginin üzerindeki cisimleri engelleyebilir; çizginin üzerinde olmak yerinde görülebileceğini garanti etmez. Yıldızlar eğitim amacıyla görünür kalır; hava durumu, ışık kirliliği ve atmosferik kırılma simüle edilmez.",
   "拖动查看天空": "Gökyüzünü keşfetmek için sürükleyin",
   "朝向感应已开启": "Cihaz yönelimi takip ediliyor",
   "地磁模型已过期，请手动校正方位。": "Manyetik modelin süresi doldu; yönü elle düzeltin.",

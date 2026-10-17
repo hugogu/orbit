@@ -40,6 +40,7 @@ import MoonDetails from '../components/moon-details';
 import BodyNavigation from '../components/body-navigation';
 import { starLoadFailureNotice } from '../components/star-field';
 import LunarPanel from '../components/lunar-panel';
+import GroundControls from '../components/ground-controls';
 import { orbitingMoons } from '../lib/moon-orbits';
 
 const codes = Object.keys(languages) as Locale[];
@@ -74,6 +75,40 @@ void test('Earth seasons stay separate from the sidereal-day explanation', () =>
       locale,
     );
   }
+});
+void test('ground sky explains the geometric horizon and local obstructions in every language', () => {
+  const note =
+    '画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。';
+  for (const locale of codes) {
+    const translated = translator(locale)(note);
+    const html = renderToStaticMarkup(
+      createElement(
+        I18nProvider,
+        { initialLocale: locale },
+        createElement(GroundControls, {
+          time: Date.UTC(2026, 9, 16),
+          location: {
+            latitude: 39.9,
+            longitude: 116.4,
+            height: 43,
+            utcOffset: 8,
+          },
+          source: 'fallback',
+          onChange: () => {},
+          sensor: {
+            enabled: false,
+            status: '拖动查看天空',
+          } as React.ComponentProps<typeof GroundControls>['sensor'],
+          live: false,
+        }),
+      ),
+    );
+    assert.ok(html.includes(translated), locale);
+    if (locale !== defaultLocale) assert.notEqual(translated, note, locale);
+  }
+  assert.match(translator('en')(note), /geometric horizon/);
+  assert.match(translator('en')(note), /terrain and buildings/);
+  assert.match(translator('en')(note), /does not guarantee visibility/);
 });
 void test('locale selection uses URL, saved preference, browser languages, then the default', () => {
   assert.equal(detectLocale('ja-JP', 'en', ['zh-CN']), 'ja');

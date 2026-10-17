@@ -1759,7 +1759,7 @@
   "当前为北京参考位置，请定位或设置实际观测地点。": "Usando coordenadas de referência em Pequim. Localize-se ou defina seu local de observação.",
   "方位校正（度）": "Correção de rumo (°)",
   "手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。": "Aponte a traseira do celular para o céu. Ajuste fino do rumo com base em uma estrela conhecida; a precisão da bússola depende do aparelho e de campos magnéticos próximos. Arraste para olhar ao redor; faça pinça ou role para aplicar zoom.",
-  "地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。": "O horizonte oculta objetos abaixo dele. As estrelas permanecem visíveis para fins educativos; clima, poluição luminosa e refração atmosférica não são simulados.",
+  "画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。": "A vista usa um horizonte geométrico ideal. O relevo e os edifícios locais podem ocultar objetos acima dele; estar acima da linha não garante visibilidade no local. As estrelas continuam visíveis para fins educativos; tempo meteorológico, poluição luminosa e refração atmosférica não são simulados.",
   "拖动查看天空": "Arraste para explorar o céu",
   "朝向感应已开启": "Seguindo orientação do dispositivo",
   "地磁模型已过期，请手动校正方位。": "O modelo magnético expirou; corrija o rumo manualmente.",

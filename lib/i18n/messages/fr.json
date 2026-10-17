@@ -1759,7 +1759,7 @@
   "当前为北京参考位置，请定位或设置实际观测地点。": "Utilisation des coordonnées de référence à Pékin. Localisez-vous ou définissez votre lieu d'observation.",
   "方位校正（度）": "Correction de cap (°)",
   "手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。": "Pointez l'arrière de votre téléphone vers le ciel. Ajustez le cap par rapport à une étoile connue ; la précision de la boussole dépend de l'appareil et des champs magnétiques environnants. Faites glisser pour regarder autour de vous ; pincez ou faites défiler pour zoomer.",
-  "地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。": "L'horizon masque les objets situés en dessous. Les étoiles restent visibles à des fins pédagogiques ; la météo, la pollution lumineuse et la réfraction atmosphérique ne sont pas simulées.",
+  "画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。": "La vue utilise un horizon géométrique idéal. Le relief et les bâtiments locaux peuvent masquer des objets situés au-dessus : être au-dessus de la ligne ne garantit pas leur visibilité sur place. Les étoiles restent affichées à des fins pédagogiques ; la météo, la pollution lumineuse et la réfraction atmosphérique ne sont pas simulées.",
   "拖动查看天空": "Glissez pour explorer le ciel",
   "朝向感应已开启": "Suivi de l'orientation de l'appareil",
   "地磁模型已过期，请手动校正方位。": "Le modèle magnétique a expiré ; corrigez le cap manuellement.",
