@@ -1759,7 +1759,7 @@
   "当前为北京参考位置，请定位或设置实际观测地点。": "Verwendet Referenzkoordinaten in Peking. Bestimmen Sie Ihren Standort oder passen Sie den Beobachtungspunkt an.",
   "方位校正（度）": "Ausrichtungskorrektur (°)",
   "手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。": "Richten Sie die Rückseite Ihres Telefons gegen den Himmel. Passen Sie die Ausrichtung anhand eines bekannten Sterns fein an; die Kompassgenauigkeit hängt vom Gerät und magnetischen Feldern ab. Ziehen Sie zum Umsehen; kneifen oder scrollen Sie zum Zoomen.",
-  "地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。": "Der Horizont verdeckt darunterliegende Objekte. Sterne bleiben zu Bildungszwecken sichtbar; Wetter, Lichtverschmutzung und atmosphärische Brechung werden nicht simuliert.",
+  "画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。": "Die Ansicht verwendet einen idealen geometrischen Horizont. Gelände und Gebäude vor Ort können Objekte darüber verdecken; oberhalb der Linie bedeutet daher nicht unbedingt vor Ort sichtbar. Sterne bleiben zu Lernzwecken sichtbar; Wetter, Lichtverschmutzung und atmosphärische Refraktion werden nicht simuliert.",
   "拖动查看天空": "Ziehen, um den Himmel zu erkunden",
   "朝向感应已开启": "Folgt der Geräteorientierung",
   "地磁模型已过期，请手动校正方位。": "Das Magnetfeldmodell ist abgelaufen; korrigieren Sie die Richtung manuell.",

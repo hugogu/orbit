@@ -1759,7 +1759,7 @@
   "当前为北京参考位置，请定位或设置实际观测地点。": "Using reference coordinates in Beijing. Locate yourself or set your observing site.",
   "方位校正（度）": "Heading correction (°)",
   "手机背面朝向要看的天空。可用已知星体微调方位；指南针精度受设备和周围磁场影响。拖动转向，双指或滚轮缩放。": "Point the back of your phone at the sky. Fine-tune the heading against a known star; compass accuracy depends on the device and nearby magnetic fields. Drag to look around; pinch or scroll to zoom.",
-  "地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。": "The horizon hides objects below it. Stars remain visible for learning; weather, light pollution and atmospheric refraction are not simulated.",
+  "画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。": "The view uses an ideal geometric horizon. Local terrain and buildings may block objects above it, so being above the line does not guarantee visibility on site. Stars remain visible for learning; weather, light pollution and atmospheric refraction are not simulated.",
   "拖动查看天空": "Drag to explore the sky",
   "朝向感应已开启": "Following device orientation",
   "地磁模型已过期，请手动校正方位。": "The magnetic model has expired; correct the heading manually.",
