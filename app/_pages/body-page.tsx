@@ -16,6 +16,7 @@ import { curiosities, type Curiosity } from '../../lib/curiosities';
 import { extraFacts } from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
 import {
+  profileOrbitalPeriodLabel,
   profileRotationFact,
   profileProperties,
   axialTiltNote,
@@ -130,10 +131,13 @@ function relatedEntries(entry: CatalogEntry) {
 function coreFacts(entry: CatalogEntry, locale: Locale) {
   const t = translator(locale);
   if (entry.kind === 'asteroid')
-    return asteroidFacts(entry.data).map(([label, value, unit]) => [
-      t(label),
-      `${value.toLocaleString(locale, { maximumFractionDigits: value < 1 ? 5 : 3 })} ${t(unit)}`.trim(),
-    ]);
+    return [
+      ...asteroidFacts(entry.data).map(([label, value, unit]) => [
+        t(label),
+        `${value.toLocaleString(locale, { maximumFractionDigits: value < 1 ? 5 : 3 })} ${t(unit)}`.trim(),
+      ]),
+      [t('轨道元素历元'), `JD(TDB) ${entry.data.orbit.epoch}`],
+    ];
   if (entry.kind === 'body') {
     const body = entry.data;
     const orbitalPeriod =
@@ -145,7 +149,7 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
     return [
       [t('平均半径'), `${body.radius.toLocaleString(locale)} km`],
       [t('平均日距'), body.au ? `${body.au} AU` : '—'],
-      [t('公转周期'), body.period ? orbitalPeriod : '—'],
+      [t(profileOrbitalPeriodLabel(body)), body.period ? orbitalPeriod : '—'],
       profileRotationFact(body, locale),
       ...profileProperties(entry)
         .filter((property) => property.id === 'axialTilt')

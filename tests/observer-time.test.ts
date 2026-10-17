@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import ObserverLocation from '../components/observer-location';
+import { languages, type Locale } from '../lib/i18n';
+import { I18nProvider } from '../lib/i18n/provider';
 import {
   locateTimeZone,
   observerOffset,
@@ -27,6 +32,36 @@ void test('observer clock resolves coordinates rather than the browser time zone
     assert.equal(place.timeZone, zone);
     assert.equal(place.utcOffset, offset);
     assert.equal(place.height, 42);
+  }
+});
+
+void test('observer readout uses the clock UTC format in every language', () => {
+  for (const locale of Object.keys(languages) as Locale[]) {
+    for (const [offset, expected] of [
+      [5.5, 'UTC+05:30'],
+      [5.75, 'UTC+05:45'],
+      [-3.5, 'UTC−03:30'],
+    ] as const) {
+      const html = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { initialLocale: locale },
+          createElement(ObserverLocation, {
+            time: july,
+            location: {
+              latitude: 19.076,
+              longitude: 72.8777,
+              height: 0,
+              utcOffset: offset,
+            },
+            source: 'manual',
+            onChange: () => {},
+          }),
+        ),
+      );
+      assert.ok(html.includes(`72.8777° · ${expected}`), locale);
+      assert.doesNotMatch(html, /UTC(?:\+5\.5|\+5\.75|−3\.5)/, locale);
+    }
   }
 });
 

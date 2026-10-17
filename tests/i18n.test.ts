@@ -40,11 +40,76 @@ import MoonDetails from '../components/moon-details';
 import BodyNavigation from '../components/body-navigation';
 import { starLoadFailureNotice } from '../components/star-field';
 import LunarPanel from '../components/lunar-panel';
+import GroundControls from '../components/ground-controls';
 import { orbitingMoons } from '../lib/moon-orbits';
 
 const codes = Object.keys(languages) as Locale[];
 const placeholders = (text: string) =>
   [...text.matchAll(/{{\s*(\w+)\s*}}/g)].map((m) => m[1]).sort();
+void test('Earth seasons stay separate from the sidereal-day explanation', () => {
+  const seasons = profileContent.earth.sections[1].text;
+  assert.match(seasons, /地轴.*南北半球/);
+  assert.match(seasons, /一月初.*北半球.*冬季/);
+  assert.doesNotMatch(seasons, /恒星日|太阳日/);
+
+  const siderealTerms: Record<Locale, RegExp> = {
+    'zh-CN': /恒星日|太阳日/,
+    en: /sidereal day|solar day/i,
+    ja: /恒星日|太陽日/,
+    ko: /항성일|태양일/,
+    de: /siderisch|Sonnentag/i,
+    es: /sideral|solar day|día solar/i,
+    fr: /sidéral|jour solaire/i,
+    it: /siderale|giorno solare/i,
+    nl: /siderisch|zonnedag/i,
+    pt: /sideral|dia solar/i,
+    ru: /сидерическ|солнечн.*сут/i,
+    tr: /yıldızıl gün|güneş günü/i,
+  };
+  for (const locale of codes) {
+    const t = translator(locale);
+    assert.doesNotMatch(t(seasons), siderealTerms[locale], locale);
+    assert.notEqual(
+      t('恒星日以远方恒星为参照；太阳日以太阳再次经过同一子午线为参照。'),
+      '',
+      locale,
+    );
+  }
+});
+void test('ground sky explains the geometric horizon and local obstructions in every language', () => {
+  const note =
+    '画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。';
+  for (const locale of codes) {
+    const translated = translator(locale)(note);
+    const html = renderToStaticMarkup(
+      createElement(
+        I18nProvider,
+        { initialLocale: locale },
+        createElement(GroundControls, {
+          time: Date.UTC(2026, 9, 16),
+          location: {
+            latitude: 39.9,
+            longitude: 116.4,
+            height: 43,
+            utcOffset: 8,
+          },
+          source: 'fallback',
+          onChange: () => {},
+          sensor: {
+            enabled: false,
+            status: '拖动查看天空',
+          } as React.ComponentProps<typeof GroundControls>['sensor'],
+          live: false,
+        }),
+      ),
+    );
+    assert.ok(html.includes(translated), locale);
+    if (locale !== defaultLocale) assert.notEqual(translated, note, locale);
+  }
+  assert.match(translator('en')(note), /geometric horizon/);
+  assert.match(translator('en')(note), /terrain and buildings/);
+  assert.match(translator('en')(note), /does not guarantee visibility/);
+});
 void test('locale selection uses URL, saved preference, browser languages, then the default', () => {
   assert.equal(detectLocale('ja-JP', 'en', ['zh-CN']), 'ja');
   assert.equal(detectLocale('unknown', 'en-GB', ['ja-JP']), 'en');
@@ -281,4 +346,29 @@ void test('the Moon phase panel is fully translated, including its computed labe
       }
     }
   }
+});
+
+void test('the lunar calendar age heading states its unit in every locale', () => {
+  const panel = fs.readFileSync(
+    new URL('../components/lunar-panel.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(panel, /<th scope="col">\{t\('月龄（天）'\)\}<\/th>/);
+
+  const headings: Record<Locale, string> = {
+    'zh-CN': '月龄（天）',
+    en: 'Age (days)',
+    ja: '月齢（日）',
+    nl: 'Leeftijd (dagen)',
+    pt: 'Idade (dias)',
+    de: 'Mondalter (Tage)',
+    ko: '월령(일)',
+    es: 'Edad (días)',
+    fr: 'Âge (jours)',
+    it: 'Età (giorni)',
+    ru: 'Возраст (дни)',
+    tr: 'Ay yaşı (gün)',
+  };
+  for (const locale of codes)
+    assert.equal(translator(locale)('月龄（天）'), headings[locale], locale);
 });

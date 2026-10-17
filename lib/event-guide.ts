@@ -722,7 +722,7 @@ export const eventTopics: EventTopic[] = [
     name: '日食',
     en: 'Solar eclipse',
     category: 'eclipse',
-    season: '每年 2 至 5 次',
+    season: '全球每公历年 2 至 5 次',
     summary: '月球挡住太阳，只有本影扫过的窄带上才能看到全食。',
     headline: '一条几百公里宽的影子路径',
     intro:
@@ -745,10 +745,12 @@ export const eventTopics: EventTopic[] = [
     ],
     observing: [
       '直接用眼睛观看日食时，除当地短暂的全食阶段外，始终使用符合 ISO 12312-2 标准的日食眼镜或手持太阳观测镜。',
+      '每次使用前检查日食眼镜或手持太阳观测镜；如有撕裂、划伤或其他损坏，停止使用并更换，同时遵循制造商的使用说明。',
       '用双筒望远镜、望远镜或相机看太阳时，必须在物镜前端牢固安装适配的专用太阳滤镜；不能用日食眼镜或装在目镜处的滤镜代替。',
       '只有当地进入全食、月球完全遮住太阳明亮的光球时，才能短暂摘下护目镜；只要太阳亮面重新露出，立即重新戴上。',
       '普通墨镜和曝光过的胶片都不能用于观测太阳。',
       '观测台的“近期天象”可以列出未来的日食，并跳到食甚时刻。',
+      '全球日食次数不代表当地可见次数；只有食影经过观测地点时，才能在那里看到日食。',
     ],
     bodies: ['sun', 'moon-moon', 'earth'],
     sources: [
@@ -759,6 +761,10 @@ export const eventTopics: EventTopic[] = [
       {
         name: 'NASA — Eclipse Web Site',
         url: 'https://eclipse.gsfc.nasa.gov/eclipse.html',
+      },
+      {
+        name: 'NASA/GSFC — Solar Eclipse Visibility from Major Cities',
+        url: 'https://eclipse.gsfc.nasa.gov/SEcirc/SEcirc.html',
       },
       {
         name: 'NASA Science — Eclipse Viewing Safety',

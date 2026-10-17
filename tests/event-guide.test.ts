@@ -127,6 +127,34 @@ void test('lunar eclipse recurrence counts every type worldwide by calendar year
   );
 });
 
+void test('solar eclipse recurrence distinguishes worldwide events from local visibility', () => {
+  const topic = eventTopic('solar-eclipse');
+  assert.ok(topic);
+  assert.equal(topic.season, '全球每公历年 2 至 5 次');
+  const visibility = topic.observing.at(-1);
+  assert.equal(
+    visibility,
+    '全球日食次数不代表当地可见次数；只有食影经过观测地点时，才能在那里看到日食。',
+  );
+  for (const locale of codes) {
+    const t = translator(locale);
+    if (locale !== 'zh-CN') {
+      assert.notEqual(t(topic.season), topic.season, locale);
+      assert.notEqual(t(visibility), visibility, locale);
+    }
+    assert.ok(t(visibility).trim(), locale);
+  }
+  assert.equal(
+    translator('en')(topic.season),
+    'Worldwide, 2–5 per calendar year',
+  );
+  assert.match(
+    translator('en')(visibility),
+    /only when its shadow reaches your observing site/i,
+  );
+  assert.match(translator('ja')(topic.season), /世界全体.*暦年.*2〜5/);
+});
+
 void test('moon phase viewing directions are qualified for each hemisphere', () => {
   const section = eventTopic('moon-phases')?.sections.find(
     (item) => item.heading === '上弦与下弦怎么分',
@@ -162,7 +190,7 @@ void test('moon phase viewing directions are qualified for each hemisphere', () 
 void test('solar eclipse guidance separates direct viewing, filtered optics and local totality', () => {
   const tips = eventTopic('solar-eclipse')?.observing;
   assert.ok(tips);
-  assert.equal(tips.length, 5);
+  assert.equal(tips.length, 7);
   for (const [locale, direct, optics, eyepiece, totality] of [
     [
       'zh-CN',
@@ -189,10 +217,38 @@ void test('solar eclipse guidance separates direct viewing, filtered optics and 
     const t = translator(locale);
     const translated = tips.map((tip) => t(tip));
     assert.match(translated[0], direct, locale);
-    assert.match(translated[1], optics, locale);
-    assert.match(translated[1], eyepiece, locale);
-    assert.match(translated[2], totality, locale);
+    assert.match(translated[2], optics, locale);
+    assert.match(translated[2], eyepiece, locale);
+    assert.match(translated[3], totality, locale);
   }
+});
+
+void test('solar eclipse viewers are checked for damage before every use in every language', () => {
+  const tips = eventTopic('solar-eclipse')?.observing;
+  assert.ok(tips);
+  const inspection = tips[1];
+  assert.match(
+    inspection,
+    /每次使用前.*日食眼镜.*手持太阳观测镜.*撕裂.*划伤.*其他损坏.*停止使用并更换/,
+  );
+  for (const locale of codes) {
+    const translated = translator(locale)(inspection);
+    assert.ok(translated.length > 50, locale);
+    if (locale !== 'zh-CN') assert.notEqual(translated, inspection, locale);
+  }
+  assert.match(
+    translator('en')(inspection),
+    /before every use.*torn.*scratched.*damaged.*replace/,
+  );
+  assert.match(
+    translator('ja')(inspection),
+    /毎回使用前.*破れ.*傷.*損傷.*交換/,
+  );
+  assert.match(translator('ko')(tips[0]), /ISO 12312-2.*일식 안경/);
+  assert.match(
+    translator('ko')(inspection),
+    /사용하기 전에 매번.*찢어짐.*긁힘.*손상.*교체/,
+  );
 });
 
 void test('solar eclipse types include local and event-wide partial eclipses', () => {

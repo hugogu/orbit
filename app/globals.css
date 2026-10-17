@@ -882,14 +882,20 @@ body {
     margin-top: -8px;
   }
   .profile-key-facts {
+    grid-template-columns: minmax(0, 1fr);
     margin: 28px 0 36px;
-    padding: 22px 0;
+    padding: 12px 0;
   }
   .profile-key-facts div {
-    padding: 0 12px;
+    padding: 12px 0;
+    border-left: 0;
+  }
+  .profile-key-facts div + div {
+    border-top: 1px solid #ffffff18;
   }
   .profile-key-facts dt {
     font-size: 12px;
+    margin-bottom: 6px;
   }
   .profile-key-facts dd {
     font-size: 18px;
@@ -4526,6 +4532,18 @@ button:disabled {
   .simulation-clock small {
     font-size: 10px;
     white-space: nowrap;
+  }
+  .timeline .sandbox-clock {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .timeline .sandbox-clock small {
+    font-size: 11px;
+    white-space: normal;
+    text-align: center;
   }
   .simulation-clock small::after {
     content: ' ' attr(data-zone);

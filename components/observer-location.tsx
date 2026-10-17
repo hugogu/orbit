@@ -10,7 +10,7 @@ import {
 } from './ui/dialog';
 import ConceptHint from './concept-hint';
 import { currentLocation } from '../lib/geolocation';
-import { locateTimeZone } from '../lib/observer-time';
+import { locateTimeZone, utcOffsetLabel } from '../lib/observer-time';
 import { parseObserverLocationDraft } from '../lib/observer-location-draft';
 import type {
   ChosenLocationSource,
@@ -122,7 +122,7 @@ export default function ObserverLocation({
       />
     </label>
   );
-  const offset = `${location.utcOffset >= 0 ? '+' : ''}${location.utcOffset}`;
+  const offset = utcOffsetLabel(location.utcOffset).slice(3);
   return (
     <div className="observer-location">
       <p className="little-note observer-line">

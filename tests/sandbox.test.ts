@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { HelioVector } from 'astronomy-engine';
 import { sceneVector } from '../lib/ephemeris.ts';
-import { J2000_MS } from '../lib/simulation-time.ts';
+import { J2000_MS, utcMinuteLabel } from '../lib/simulation-time.ts';
 import {
   GRAVITY,
   SOLAR_MASS_KG,
@@ -96,6 +96,22 @@ import {
   type Centre,
   type SandboxField,
 } from '../lib/sandbox/edits.ts';
+
+void test('sandbox fork label keeps the UTC minute across midnight', () => {
+  const beforeMidnight = Date.UTC(2026, 9, 7, 23, 59, 42);
+  const afterMidnight = Date.UTC(2026, 9, 8, 0, 0, 5);
+  assert.equal(utcMinuteLabel(beforeMidnight), '2026-10-07 23:59 UTC');
+  assert.equal(utcMinuteLabel(afterMidnight), '2026-10-08 00:00 UTC');
+  const page = readFileSync(
+    new URL('../app/_pages/home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    page,
+    /<time\s+dateTime=\{new Date\(sandboxScenario!\.epoch\)\.toISOString\(\)\}/,
+  );
+  assert.match(page, /date: utcMinuteLabel\(sandboxScenario!\.epoch\)/);
+});
 
 const point = (
   id: string,

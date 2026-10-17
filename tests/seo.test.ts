@@ -44,10 +44,11 @@ import {
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
 import { eventOccurrences } from '../lib/event-occurrences';
 import { portraitCredit } from '../lib/profile-images';
-import { physicalParameters } from '../lib/physical-facts';
+import { extraFacts, physicalParameters } from '../lib/physical-facts';
 import { profileContent } from '../lib/profile-content';
 import {
   profileProperties,
+  profileOrbitalPeriodLabel,
   propertyUnits,
   profileRotationFact,
   profileAxialTilt,
@@ -466,6 +467,36 @@ void test('structured body properties restate the figures a profile prints', () 
     }
 });
 
+void test('Earth profile and structured data use the same equatorial acceleration', () => {
+  const earth = bodies.find((body) => body.id === 'earth')!;
+  const fact = extraFacts(earth).find(
+    (item) => item.label === '赤道引力加速度',
+  )!;
+  assert.equal(physicalParameters.earth.gravity, 9.78);
+  assert.deepEqual(
+    { value: fact.value, unit: fact.unit },
+    { value: '9.78', unit: 'm/s²' },
+  );
+
+  const property = profileProperties(catalogEntry('earth')!).find(
+    (item) => item.id === 'equatorialGravity',
+  )!;
+  assert.equal(property.value, 9.78);
+  assert.equal(property.unit, 'acceleration');
+  for (const locale of seoLocales) {
+    const node = profileGraph(catalogEntry('earth')!, locale).nodes.find(
+      (item) => item['@type'] === 'Place' && item.identifier === 'earth',
+    )!;
+    const structured = (node.additionalProperty as Node[]).find(
+      (item) => item.propertyID === 'equatorialGravity',
+    )!;
+    assert.equal(structured.name, translator(locale)(fact.label));
+    assert.equal(structured.value, 9.78);
+    assert.equal(structured.unitCode, propertyUnits.acceleration.code);
+    assert.equal(structured.unitText, 'm/s²');
+  }
+});
+
 void test('profile rotation distinguishes sidereal days with matching localized structured values', () => {
   for (const locale of seoLocales) {
     for (const [id, value] of [
@@ -504,6 +535,30 @@ void test('profile rotation distinguishes sidereal days with matching localized 
       (p) => p.id === 'rotationPeriod',
     )!.label,
     '自转周期',
+  );
+});
+
+void test('Earth sidereal year label matches the profile and structured data in every language', () => {
+  const earth = bodies.find((body) => body.id === 'earth')!;
+  const mars = bodies.find((body) => body.id === 'mars')!;
+  assert.equal(earth.period, 365.256);
+  assert.equal(profileOrbitalPeriodLabel(earth), '恒星公转周期');
+  assert.equal(profileOrbitalPeriodLabel(mars), '公转周期');
+  for (const locale of seoLocales) {
+    const property = (
+      profileGraph(catalogEntry('earth')!, locale).nodes.find(
+        (node) => node['@type'] === 'Place' && node.identifier === 'earth',
+      )!.additionalProperty as Node[]
+    ).find((item) => item.propertyID === 'orbitalPeriod')!;
+    assert.equal(property.name, translator(locale)('恒星公转周期'));
+    assert.equal(property.value, 365.256);
+    assert.equal(property.unitCode, 'DAY');
+  }
+  assert.equal(
+    profileProperties(catalogEntry('mars')!).find(
+      (property) => property.id === 'orbitalPeriod',
+    )!.label,
+    '公转周期',
   );
 });
 
@@ -841,6 +896,26 @@ void test('guide routes render their own static params, metadata and structured 
   // The explorer offers both the sky planner and the event guide.
   assert.match(homePage, /className="astronomy-actions"/);
   assert.match(homePage, /href=\{eventsIndexPath\(locale\)\}/);
+});
+
+void test('event fact summaries keep desktop columns and stack on phones', () => {
+  assert.match(eventPage, /<dl className="profile-key-facts">/);
+  assert.match(
+    globalStyles,
+    /\.profile-key-facts\s*\{\s*display: grid;\s*grid-template-columns: repeat\(3, 1fr\)/,
+  );
+  const phoneStyles = globalStyles
+    .split('@media (max-width: 760px) {')[1]
+    ?.split('\n@media ')[0];
+  assert.ok(phoneStyles);
+  assert.match(
+    phoneStyles,
+    /\.profile-key-facts\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/,
+  );
+  assert.match(
+    phoneStyles,
+    /\.profile-key-facts div \+ div\s*\{[^}]*border-top:/,
+  );
 });
 
 void test('the privacy and about pages have unique localized URLs', () => {

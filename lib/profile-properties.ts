@@ -91,6 +91,10 @@ export function profileRotationFact(body: Body, locale: Locale) {
   ];
 }
 
+export function profileOrbitalPeriodLabel(body: Body): string {
+  return body.id === 'earth' ? '恒星公转周期' : '公转周期';
+}
+
 export function profileProperties(entry: CatalogEntry): ProfileProperty[] {
   if (entry.kind === 'body') {
     const body = entry.data;
@@ -112,7 +116,7 @@ export function profileProperties(entry: CatalogEntry): ProfileProperty[] {
         ? [
             {
               id: 'orbitalPeriod',
-              label: '公转周期',
+              label: profileOrbitalPeriodLabel(body),
               value: body.period,
               unit: 'day' as const,
             },

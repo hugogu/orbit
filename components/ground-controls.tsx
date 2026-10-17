@@ -118,7 +118,7 @@ export default function GroundControls({
           </p>
           <p className="little-note">
             {t(
-              '地平线以下不可见；星空保留教学显示，不模拟天气、光污染和大气折射。',
+              '画面使用理想几何地平线，不考虑当地地形和建筑遮挡；地平线上方也不保证现场可见。星空保留教学显示，不模拟天气、光污染和大气折射。',
             )}
           </p>
         </details>

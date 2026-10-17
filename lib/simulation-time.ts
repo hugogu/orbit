@@ -21,3 +21,7 @@ export function advanceTime(
 export function utcLabel(ms: number) {
   return new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
 }
+
+export function utcMinuteLabel(ms: number) {
+  return `${utcLabel(ms).slice(0, 16)} UTC`;
+}
