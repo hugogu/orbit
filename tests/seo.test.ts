@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
+import BodyPage from '../app/_pages/body-page';
 import {
   aboutPath,
   aboutDescription,
@@ -98,6 +100,42 @@ const bodyPage = readFileSync(
   new URL('../app/_pages/body-page.tsx', import.meta.url),
   'utf8',
 );
+
+void test('planet profiles link orbital neighbors and every catalogued moon', async () => {
+  const cases = {
+    uranus: [
+      'saturn',
+      'neptune',
+      'moon-miranda',
+      'moon-ariel',
+      'moon-umbriel',
+      'moon-titania',
+      'moon-oberon',
+    ],
+    earth: ['venus', 'mars', 'moon-moon'],
+  };
+
+  for (const locale of ['en', 'zh-CN', 'ja'] as const) {
+    for (const [id, expected] of Object.entries(cases)) {
+      const page = await BodyPage({
+        params: Promise.resolve({ locale: languages[locale].route, id }),
+      });
+      const html = renderToStaticMarkup(page);
+      const related = html.match(
+        /<nav class="seo-related"[\s\S]*?<\/nav>/,
+      )?.[0];
+      assert.ok(related, `${locale} ${id}: related navigation exists`);
+      const links = [...related.matchAll(/<a href="([^"]+)"/g)].map(
+        ([, href]) => href,
+      );
+      assert.deepEqual(
+        links,
+        expected.map((bodyId) => bodyDetailsPath(locale, bodyId)),
+        `${locale} ${id}`,
+      );
+    }
+  }
+});
 
 void test('profile texture credits describe a rendering asset in every language', () => {
   assert.match(bodyPage, /t\('渲染贴图来源'\)/);

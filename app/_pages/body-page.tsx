@@ -111,12 +111,22 @@ function relatedEntries(entry: CatalogEntry) {
     const moons = orbitingMoons.filter(
       (moon) => moon.parentId === entry.data.id,
     );
+    const orbitalNeighbors = bodies
+      .filter((body) => body.id !== 'sun')
+      .sort((a, b) => a.au - b.au);
+    const orbitIndex = orbitalNeighbors.findIndex(
+      (body) => body.id === entry.data.id,
+    );
+    const nearbyBodies =
+      orbitIndex < 0
+        ? orbitalNeighbors.slice(0, 4)
+        : [
+            orbitalNeighbors[orbitIndex - 1],
+            orbitalNeighbors[orbitIndex + 1],
+          ].filter((body) => body !== undefined);
     return [
-      ...bodies
-        .filter((body) => body.id !== entry.data.id)
-        .slice(0, 4)
-        .map((data) => ({ kind: 'body' as const, data })),
-      ...moons.slice(0, 4).map((data) => ({ kind: 'moon' as const, data })),
+      ...nearbyBodies.map((data) => ({ kind: 'body' as const, data })),
+      ...moons.map((data) => ({ kind: 'moon' as const, data })),
     ];
   }
   if (entry.kind === 'moon') {
