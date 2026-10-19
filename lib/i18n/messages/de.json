@@ -260,6 +260,7 @@
   "地平线下方": "unter dem Horizont",
   "°）；其他阶段是否可见需另看月出月落。": "°); Mondauf- und -untergang prüfen, um Sichtbarkeit in anderen Phasen zu ermitteln.",
   "查看": "Ansehen",
+  "查看{{event}}，{{time}}": "{{event}} ansehen, {{time}}",
   "在支持的日期范围内未找到下一次。": "Kein weiteres Ereignis im unterstützten Zeitraum gefunden.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Wählen Sie ein Datum zur Erkundung des Sonnensystems sowie einen Standort für Sonnenaufgang, Sonnenuntergang und kommende Finsternisse.",
   "模拟时间（UTC）": "Simulationszeit (UTC)",

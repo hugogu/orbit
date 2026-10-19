@@ -260,6 +260,7 @@
   "地平线下方": "below the horizon",
   "°）；其他阶段是否可见需另看月出月落。": "°); check moonrise and moonset to determine visibility during other phases.",
   "查看": "View",
+  "查看{{event}}，{{time}}": "View {{event}}, {{time}}",
   "在支持的日期范围内未找到下一次。": "No next event found within the supported dates.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Choose a date to explore the Solar System, and a location for sunrise, sunset, and upcoming eclipses.",
   "模拟时间（UTC）": "Simulation time (UTC)",

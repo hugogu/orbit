@@ -260,6 +260,7 @@
   "地平线下方": "sotto l'orizzonte",
   "°）；其他阶段是否可见需另看月出月落。": "°); controlla il sorgere e il tramontare della Luna per verificare la visibilità nelle altre fasi.",
   "查看": "Visualizza",
+  "查看{{event}}，{{time}}": "Visualizza {{event}}, {{time}}",
   "在支持的日期范围内未找到下一次。": "Nessun prossimo evento trovato entro le date supportate.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Scegli una data per esplorare il Sistema Solare e una posizione per alba, tramonto e prossime eclissi.",
   "模拟时间（UTC）": "Ora di simulazione (UTC)",

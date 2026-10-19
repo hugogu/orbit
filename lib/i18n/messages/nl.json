@@ -260,6 +260,7 @@
   "地平线下方": "onder de horizon",
   "°）；其他阶段是否可见需另看月出月落。": "°); bekijk de maansopkomst en -ondergang voor zichtbaarheid in andere fasen.",
   "查看": "Bekijken",
+  "查看{{event}}，{{time}}": "Bekijk {{event}}, {{time}}",
   "在支持的日期范围内未找到下一次。": "Geen volgende gebeurtenis gevonden binnen de ondersteunde datums.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Kies een datum om het zonnestelsel te verkennen en een locatie voor zonsopkomst, zonsondergang en aankomende verduisteringen.",
   "模拟时间（UTC）": "Simulatietijd (UTC)",

@@ -260,6 +260,7 @@
   "地平线下方": "ufkun altında",
   "°）；其他阶段是否可见需另看月出月落。": "°); diğer evrelerin görülüp görülemeyeceğini belirlemek için Ay'ın doğuş ve batış saatlerine bakın.",
   "查看": "Görüntüle",
+  "查看{{event}}，{{time}}": "{{event}} olayını görüntüle, {{time}}",
   "在支持的日期范围内未找到下一次。": "Desteklenen tarih aralığında bir sonraki olay bulunamadı.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Güneş Sistemi'ni keşfetmek için bir tarih; gün doğumu, gün batımı ve yaklaşan tutulmalar için bir konum seçin.",
   "模拟时间（UTC）": "Simülasyon zamanı (UTC)",

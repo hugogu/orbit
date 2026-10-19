@@ -194,6 +194,10 @@ export default function AstronomyPanel({
         <strong>{format(event.peak)}</strong>
         <button
           className="secondary-action sky-event-view"
+          aria-label={t('查看{{event}}，{{time}}', {
+            event: t(event.kind),
+            time: format(event.peak),
+          })}
           onClick={() => {
             onEclipse(event.peak, kind);
             onOpenChange(false);
@@ -348,25 +352,26 @@ export default function AstronomyPanel({
               event.body,
               event.peak,
             );
+            const title = t(
+              kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日',
+              { name: t(catalogEntry(event.body)!.data.name) },
+            );
             return (
               <article
                 className="sky-event"
                 key={`${event.body}-${event.peak}`}
               >
                 <div className="sky-event-heading">
-                  <h3>
-                    {t(
-                      kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日',
-                      {
-                        name: t(catalogEntry(event.body)!.data.name),
-                      },
-                    )}
-                  </h3>
+                  <h3>{title}</h3>
                 </div>
                 <div className="sky-event-time">
                   <strong>{format(event.peak)}</strong>
                   <button
                     className="secondary-action sky-event-view"
+                    aria-label={t('查看{{event}}，{{time}}', {
+                      event: title,
+                      time: format(event.peak),
+                    })}
                     onClick={() => {
                       onPlanetEvent(event.peak, event.body, kind);
                       onOpenChange(false);
