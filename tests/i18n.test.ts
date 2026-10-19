@@ -110,6 +110,26 @@ void test('ground sky explains the geometric horizon and local obstructions in e
   assert.match(translator('en')(note), /terrain and buildings/);
   assert.match(translator('en')(note), /does not guarantee visibility/);
 });
+void test('planner action names distinguish events and local times in every language', () => {
+  for (const locale of codes) {
+    const t = translator(locale);
+    const names = [
+      t('查看{{event}}，{{time}}', {
+        event: t('日全食'),
+        time: '2030-01-01 12:00',
+      }),
+      t('查看{{event}}，{{time}}', {
+        event: t('{{name}}凌日', { name: t('水星') }),
+        time: '2032-11-13 14:24',
+      }),
+    ];
+    assert.notEqual(names[0], names[1], locale);
+    assert.ok(names[0].includes(t('日全食')), locale);
+    assert.ok(names[1].includes(t('水星')), locale);
+    assert.ok(names[1].includes('2032-11-13 14:24'), locale);
+    assert.notEqual(names[0], t('查看'), locale);
+  }
+});
 void test('locale selection uses URL, saved preference, browser languages, then the default', () => {
   assert.equal(detectLocale('ja-JP', 'en', ['zh-CN']), 'ja');
   assert.equal(detectLocale('unknown', 'en-GB', ['ja-JP']), 'en');

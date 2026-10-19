@@ -260,6 +260,7 @@
   "地平线下方": "sous l'horizon",
   "°）；其他阶段是否可见需另看月出月落。": "°) ; vérifiez le lever et le coucher de la Lune pour connaître la visibilité durant les autres phases.",
   "查看": "Afficher",
+  "查看{{event}}，{{time}}": "Voir {{event}}, {{time}}",
   "在支持的日期范围内未找到下一次。": "Aucun événement ultérieur trouvé dans les dates prises en charge.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Choisissez une date pour explorer le Système solaire et un lieu pour connaître les heures de lever/coucher et les prochaines éclipses.",
   "模拟时间（UTC）": "Date de simulation (UTC)",
