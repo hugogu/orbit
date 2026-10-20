@@ -124,6 +124,16 @@ for (const locale of seoLocales) {
     eventsIndexTitle(locale),
     eventsIndexPath,
   );
+  assert.ok(
+    index.html.includes(
+      escapeHtml(
+        t(
+          '多数天象可用肉眼观测；观测日食或行星凌日前，请阅读对应页面的太阳观测安全说明。',
+        ),
+      ),
+    ),
+    `${indexPath}: solar-viewing exception`,
+  );
   const termSet = index.graph.find(
     (node) => node['@type'] === 'DefinedTermSet',
   )!;
