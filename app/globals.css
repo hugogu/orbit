@@ -313,6 +313,11 @@ body {
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
+.event-overview-facts div:last-child dd {
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: normal;
+}
 .profile-reading-layout {
   display: grid;
   grid-template-columns: 210px minmax(0, 760px);
