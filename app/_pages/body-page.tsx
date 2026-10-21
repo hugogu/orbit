@@ -178,14 +178,16 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
   ];
 }
 
-function localizedCuriosity(fact: Curiosity, locale: Locale) {
+export function localizedCuriosity(fact: Curiosity, locale: Locale) {
   const t = translator(locale);
   return t(
     fact.text,
     Object.fromEntries(
       Object.entries(fact.values ?? {}).map(([key, value]) => [
         key,
-        typeof value === 'string' ? t(value) : value,
+        typeof value === 'string'
+          ? t(value)
+          : value.toLocaleString(locale, { maximumFractionDigits: 20 }),
       ]),
     ),
   );
