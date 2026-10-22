@@ -428,6 +428,12 @@ body {
   color: #8999b0;
   margin-top: 22px;
 }
+.profile-escape-note {
+  color: #aebbd0;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 16px;
+}
 .profile-data-note summary {
   cursor: pointer;
 }

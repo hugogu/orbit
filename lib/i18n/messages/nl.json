@@ -1925,5 +1925,6 @@
   "关闭后，近期天象、天象百科与天体信息按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。": "Wanneer uitgeschakeld tonen de knoppen voor aankomende verschijnselen, de hemelgids en hemellichaaminformatie alleen hun pictogram om ruimte te maken voor de scène; de namen blijven behouden in knoptips en voor schermlezers.",
   "轴倾角（约）": "Ashelling (circa)",
   "轴倾角是自转轴与自身轨道平面法线的夹角（0–180°）；轨道倾角是轨道平面与黄道面的夹角。轴倾角采用 NASA/NSSDC 的固定科普近似值，不随模拟日期更新；金星与冥王星使用资料值，不直接使用场景的姿态参数。": "De ashelling is de hoek tussen de rotatieas en de normaal op het eigen baanvlak (0–180°); de baanhelling is de hoek tussen het baanvlak en het eclipticaal vlak. Ashellingen zijn vaste educatieve benaderingen van NASA/NSSDC en worden niet bijgewerkt met de simulatiedatum. Venus en Pluto gebruiken gepubliceerde waarden in plaats van de oriëntatieparameters van de scène.",
-  "NASA/NSSDC 行星资料表": "NASA/NSSDC-feitenbladen planeten"
+  "NASA/NSSDC 行星资料表": "NASA/NSSDC-feitenbladen planeten",
+  "此逃逸速度采用 JPL 的质量和平均半径计算；NASA 资料表以大气 1 bar 层为参考，数值可能不同。巨行星没有固体表面。": "Deze ontsnappingssnelheid gebruikt de massa en gemiddelde straal van JPL. NASA-factsheets nemen de atmosferische laag van 1 bar als referentie, waardoor waarden kunnen verschillen. Reuzenplaneten hebben geen vast oppervlak."
 }

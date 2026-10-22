@@ -1925,5 +1925,6 @@
   "关闭后，近期天象、天象百科与天体信息按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。": "Quando desativados, os botões de próximos eventos, guia de eventos e informações do corpo mantêm apenas seus ícones para abrir espaço para a cena; seus nomes continuam em dicas de contexto e para leitores de tela.",
   "轴倾角（约）": "Inclinação axial (aprox.)",
   "轴倾角是自转轴与自身轨道平面法线的夹角（0–180°）；轨道倾角是轨道平面与黄道面的夹角。轴倾角采用 NASA/NSSDC 的固定科普近似值，不随模拟日期更新；金星与冥王星使用资料值，不直接使用场景的姿态参数。": "A inclinação axial é o ângulo entre o eixo de rotação e a normal ao plano orbital do corpo (0–180°); a inclinação orbital é o ângulo entre o plano orbital e a eclíptica. As inclinações axiais são aproximações educativas fixas da NASA/NSSDC e não variam com a data da simulação. Vênus e Plutão usam valores publicados em vez dos parâmetros de orientação da cena.",
-  "NASA/NSSDC 行星资料表": "Tabelas de dados planetários NASA/NSSDC"
+  "NASA/NSSDC 行星资料表": "Tabelas de dados planetários NASA/NSSDC",
+  "此逃逸速度采用 JPL 的质量和平均半径计算；NASA 资料表以大气 1 bar 层为参考，数值可能不同。巨行星没有固体表面。": "Esta velocidade de escape usa a massa e o raio médio do JPL. As fichas da NASA usam como referência o nível atmosférico de 1 bar, então os valores podem diferir. Planetas gigantes não têm superfície sólida."
 }

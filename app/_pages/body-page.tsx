@@ -13,7 +13,11 @@ import {
   type Locale,
 } from '../../lib/i18n';
 import { curiosities, type Curiosity } from '../../lib/curiosities';
-import { extraFacts } from '../../lib/physical-facts';
+import {
+  extraFacts,
+  giantEscapeVelocityNote,
+  hasGiantEscapeVelocityNote,
+} from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
 import {
   profileOrbitalPeriodLabel,
@@ -543,6 +547,12 @@ export default async function BodyPage({ params }: PageProps) {
               <p className="seo-section-number">02 / {t('关键数据')}</p>
               <h2 id="profile-data-heading">{t('核心参数')}</h2>
               <BodyFacts entry={entry} locale={locale} />
+              {entry.kind === 'body' &&
+                hasGiantEscapeVelocityNote(entry.data) && (
+                  <p className="profile-escape-note">
+                    {t(giantEscapeVelocityNote)}
+                  </p>
+                )}
               {entry.kind === 'body' && entry.data.id !== 'sun' && (
                 <p>
                   {t(
