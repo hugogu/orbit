@@ -44,7 +44,12 @@ import {
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
 import { eventOccurrences } from '../lib/event-occurrences';
 import { portraitCredit } from '../lib/profile-images';
-import { extraFacts, physicalParameters } from '../lib/physical-facts';
+import {
+  extraFacts,
+  giantEscapeVelocityNote,
+  hasGiantEscapeVelocityNote,
+  physicalParameters,
+} from '../lib/physical-facts';
 import { profileContent } from '../lib/profile-content';
 import {
   profileProperties,
@@ -465,6 +470,35 @@ void test('structured body properties restate the figures a profile prints', () 
         assert.ok(Number.isFinite(property.value), property.id);
       else assert.ok(Object.hasOwn(source, property.value), property.value);
     }
+});
+
+void test('giant planet escape speeds identify their reference level in both views', () => {
+  const giants = ['jupiter', 'saturn', 'uranus', 'neptune'];
+  assert.match(bodyPage, /hasGiantEscapeVelocityNote\(entry\.data\)/);
+  assert.match(physicalFacts, /hasGiantEscapeVelocityNote\(body\)/);
+  for (const body of bodies) {
+    assert.equal(hasGiantEscapeVelocityNote(body), giants.includes(body.id));
+    if (!giants.includes(body.id)) continue;
+    const escape = extraFacts(body).find((fact) => fact.label === '逃逸速度');
+    assert.equal(escape?.value, physicalParameters[body.id].escape.toFixed(2));
+    assert.equal(escape?.unit, 'km/s');
+    const derived =
+      Math.sqrt(
+        (2 * 6.6743e-11 * physicalParameters[body.id].mass) /
+          (body.radius * 1000),
+      ) / 1000;
+    assert.ok(Math.abs(derived - physicalParameters[body.id].escape) < 0.05);
+  }
+  for (const locale of seoLocales) {
+    const note = translator(locale)(giantEscapeVelocityNote);
+    assert.ok(
+      Object.hasOwn(languages[locale].messages, giantEscapeVelocityNote),
+    );
+    if (locale !== 'zh-CN') assert.notEqual(note, giantEscapeVelocityNote);
+    assert.match(note, /JPL/);
+    assert.match(note, /NASA/);
+    assert.match(note, /1[ -]?bar|1バール|1바|1 бар/i);
+  }
 });
 
 void test('Earth profile and structured data use the same equatorial acceleration', () => {
