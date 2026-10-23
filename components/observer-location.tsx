@@ -127,11 +127,16 @@ export default function ObserverLocation({
     <div className="observer-location">
       <p className="little-note observer-line">
         <span className="observer-readout">
-          {t('观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}', {
-            latitude: location.latitude.toFixed(4),
-            longitude: location.longitude.toFixed(4),
-            offset,
-          })}
+          {t(
+            '观测点：纬度 {{latitude}}° {{northSouth}} · 经度 {{longitude}}° {{eastWest}} · UTC{{offset}}',
+            {
+              latitude: Math.abs(location.latitude).toFixed(4),
+              northSouth: location.latitude < 0 ? 'S' : 'N',
+              longitude: Math.abs(location.longitude).toFixed(4),
+              eastWest: location.longitude < 0 ? 'W' : 'E',
+              offset,
+            },
+          )}
           <ConceptHint
             label={t(
               source === 'fallback'
