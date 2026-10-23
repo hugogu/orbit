@@ -41,11 +41,62 @@ import BodyNavigation from '../components/body-navigation';
 import { starLoadFailureNotice } from '../components/star-field';
 import LunarPanel from '../components/lunar-panel';
 import GroundControls from '../components/ground-controls';
+import ObserverLocation from '../components/observer-location';
 import { orbitingMoons } from '../lib/moon-orbits';
 
 const codes = Object.keys(languages) as Locale[];
 const placeholders = (text: string) =>
   [...text.matchAll(/{{\s*(\w+)\s*}}/g)].map((m) => m[1]).sort();
+void test('observer readout identifies coordinate order and hemispheres', () => {
+  const key =
+    '观测点：纬度 {{latitude}}° {{northSouth}} · 经度 {{longitude}}° {{eastWest}} · UTC{{offset}}';
+  const cases = [
+    {
+      latitude: 19.076,
+      longitude: 72.8777,
+      latitudeText: '19.0760° N',
+      longitudeText: '72.8777° E',
+    },
+    {
+      latitude: -33.8688,
+      longitude: -151.2093,
+      latitudeText: '33.8688° S',
+      longitudeText: '151.2093° W',
+    },
+    {
+      latitude: 0,
+      longitude: 0,
+      latitudeText: '0.0000° N',
+      longitudeText: '0.0000° E',
+    },
+  ];
+  for (const locale of codes) {
+    for (const { latitude, longitude, latitudeText, longitudeText } of cases) {
+      const html = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { initialLocale: locale },
+          createElement(ObserverLocation, {
+            time: Date.UTC(2026, 9, 23),
+            location: { latitude, longitude, height: 0, utcOffset: 0 },
+            source: 'manual',
+            onChange: () => {},
+          }),
+        ),
+      );
+      const expected = translator(locale)(key, {
+        latitude: latitudeText.slice(0, -3),
+        northSouth: latitudeText.slice(-1),
+        longitude: longitudeText.slice(0, -3),
+        eastWest: longitudeText.slice(-1),
+        offset: '+00:00',
+      });
+      assert.ok(html.includes(expected), `${locale}: ${expected}`);
+      assert.ok(html.includes(latitudeText), locale);
+      assert.ok(html.includes(longitudeText), locale);
+    }
+  }
+});
 void test('Earth seasons stay separate from the sidereal-day explanation', () => {
   const seasons = profileContent.earth.sections[1].text;
   assert.match(seasons, /地轴.*南北半球/);

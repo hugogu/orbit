@@ -134,6 +134,7 @@
   "日出 / 日落": "Zonsopkomst / zonsondergang",
   "当地时间": "lokale tijd",
   "观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}": "Waarnemer: {{latitude}}°, {{longitude}}° · UTC{{offset}}",
+  "观测点：纬度 {{latitude}}° {{northSouth}} · 经度 {{longitude}}° {{eastWest}} · UTC{{offset}}": "Waarnemer: breedtegraad {{latitude}}° {{northSouth}} · lengtegraad {{longitude}}° {{eastWest}} · UTC{{offset}}",
   "观测地点": "Waarnemingslocatie",
   "正在获取当前位置…": "Huidige locatie ophalen…",
   "正在加载观测点…": "Waarnemingslocatie laden…",

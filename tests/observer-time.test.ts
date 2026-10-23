@@ -59,7 +59,7 @@ void test('observer readout uses the clock UTC format in every language', () => 
           }),
         ),
       );
-      assert.ok(html.includes(`72.8777° · ${expected}`), locale);
+      assert.ok(html.includes(`72.8777° E · ${expected}`), locale);
       assert.doesNotMatch(html, /UTC(?:\+5\.5|\+5\.75|−3\.5)/, locale);
     }
   }
