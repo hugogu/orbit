@@ -46,6 +46,16 @@ import { orbitingMoons } from '../lib/moon-orbits';
 const codes = Object.keys(languages) as Locale[];
 const placeholders = (text: string) =>
   [...text.matchAll(/{{\s*(\w+)\s*}}/g)].map((m) => m[1]).sort();
+void test('Spanish body profiles keep physical property labels beside their values', () => {
+  const t = translator('es');
+  assert.equal(t('平均半径'), 'Radio medio');
+  assert.equal(t('平均日距'), 'Distancia media al Sol');
+  assert.equal(t('公转周期'), 'Período orbital');
+  assert.equal(t('恒星公转周期'), 'Período orbital sidéreo');
+  assert.equal(t('天'), 'd');
+  assert.equal(t('恒星自转周期'), 'Período de rotación sideral');
+  assert.equal(t('自转周期'), 'Período de rotación');
+});
 void test('Earth seasons stay separate from the sidereal-day explanation', () => {
   const seasons = profileContent.earth.sections[1].text;
   assert.match(seasons, /地轴.*南北半球/);
