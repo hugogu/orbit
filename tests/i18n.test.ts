@@ -121,6 +121,16 @@ void test('Korean time and eclipse controls name their actual actions and catego
   assert.match(t('本地可见'), /이 위치.*볼 수/);
   assert.match(t('全球食甚'), /전 지구.*식심/);
 });
+void test('Spanish body profiles keep physical property labels beside their values', () => {
+  const t = translator('es');
+  assert.equal(t('平均半径'), 'Radio medio');
+  assert.equal(t('平均日距'), 'Distancia media al Sol');
+  assert.equal(t('公转周期'), 'Período orbital');
+  assert.equal(t('恒星公转周期'), 'Período orbital sidéreo');
+  assert.equal(t('天'), 'd');
+  assert.equal(t('恒星自转周期'), 'Período de rotación sideral');
+  assert.equal(t('自转周期'), 'Período de rotación');
+});
 void test('Earth seasons stay separate from the sidereal-day explanation', () => {
   const seasons = profileContent.earth.sections[1].text;
   assert.match(seasons, /地轴.*南北半球/);
