@@ -97,6 +97,30 @@ void test('observer readout identifies coordinate order and hemispheres', () => 
     }
   }
 });
+void test('Korean time and eclipse controls name their actual actions and categories', () => {
+  const t = translator('ko');
+  assert.match(t('请手动复制链接'), /링크.*복사/);
+  assert.match(t('跳到指定时间'), /날짜.*시간.*이동/);
+  assert.doesNotMatch(t('跳到指定时间'), /일식|월식/);
+  assert.match(
+    t('所有天体共享此时间；切换目标保留模拟进度。'),
+    /천체.*시간.*대상/,
+  );
+  assert.match(
+    t('支持 1700—2200 年。用播放条上的“现在”可随时回到实时运行。'),
+    /1700.*2200.*현재.*실시간/,
+  );
+  assert.match(t('天象分类'), /천문 현상.*분류/);
+  assert.equal(t('日食'), '일식');
+  assert.equal(t('月食'), '월식');
+  assert.match(t('正在计算未来天象…'), /천문 현상.*계산/);
+  assert.match(
+    t('正在从当前模拟时间查找接下来的食象。'),
+    /시뮬레이션 시간.*일식.*월식/,
+  );
+  assert.match(t('本地可见'), /이 위치.*볼 수/);
+  assert.match(t('全球食甚'), /전 지구.*식심/);
+});
 void test('Earth seasons stay separate from the sidereal-day explanation', () => {
   const seasons = profileContent.earth.sections[1].text;
   assert.match(seasons, /地轴.*南北半球/);
