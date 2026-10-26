@@ -1,5 +1,11 @@
 import type { Body } from './solar';
 export type Fact = { label: string; value: string; unit?: string };
+export const giantEscapeVelocityNote =
+  '此逃逸速度采用 JPL 的质量和平均半径计算；NASA 资料表以大气 1 bar 层为参考，数值可能不同。巨行星没有固体表面。';
+
+export function hasGiantEscapeVelocityNote(body: Body) {
+  return body.type === '气态巨行星' || body.type === '冰巨行星';
+}
 // JPL physical parameters, retrieved 2026-09-08. Mass kg, density g/cm³,
 // equatorial gravity m/s², escape velocity km/s. Pluto's source mass uses 10^18 kg.
 // Earth's effective equatorial acceleration (including rotation) is 9.780 m/s²:

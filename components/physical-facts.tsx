@@ -2,7 +2,11 @@
 import { useI18n } from '../lib/i18n/provider';
 import { ArrowUpRight } from 'lucide-react';
 import type { Body } from '../lib/solar';
-import { extraFacts } from '../lib/physical-facts';
+import {
+  extraFacts,
+  giantEscapeVelocityNote,
+  hasGiantEscapeVelocityNote,
+} from '../lib/physical-facts';
 import ConceptHint from './concept-hint';
 export default function PhysicalFacts({ body }: { body: Body }) {
   const { t, locale } = useI18n();
@@ -42,6 +46,9 @@ export default function PhysicalFacts({ body }: { body: Body }) {
           </div>
         ))}
       </div>
+      {hasGiantEscapeVelocityNote(body) && (
+        <p className="little-note">{t(giantEscapeVelocityNote)}</p>
+      )}
       <a
         className="source"
         href={

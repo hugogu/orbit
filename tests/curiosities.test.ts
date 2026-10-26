@@ -7,6 +7,8 @@ import { bodies } from '../lib/solar';
 import { comets } from '../lib/comets';
 import { orbitingMoons } from '../lib/moon-orbits';
 import CuriosityCard, { CuriositySource } from '../components/curiosity-card';
+import { localizedCuriosity } from '../app/_pages/body-page';
+import { languages, type Locale } from '../lib/i18n';
 
 void test('all selectable bodies have 30 distinct sourced knowledge entries', () => {
   for (const body of [...bodies, ...comets, ...orbitingMoons]) {
@@ -71,4 +73,28 @@ void test('curiosity sources can be rendered after a body satellite guide', () =
   );
   assert.ok(source.includes(fact.source));
   assert.ok(source.includes('8/30'));
+});
+void test('volume comparisons keep three significant digits and render without raw exponent notation', () => {
+  const fact = curiosities.jupiter.find((entry) =>
+    entry.text.includes('体积约为地球的'),
+  );
+  assert.ok(fact);
+  assert.equal(
+    (
+      (bodies.find((body) => body.id === 'jupiter')!.radius / 6371) **
+      3
+    ).toPrecision(3),
+    '1.32e+3',
+  );
+  const expected = 1320;
+  assert.equal(fact.values?.v1, expected);
+  for (const locale of Object.keys(languages) as Locale[]) {
+    const rendered = localizedCuriosity(fact, locale);
+    assert.ok(rendered.includes(expected.toLocaleString(locale)), locale);
+    assert.doesNotMatch(rendered, /\d(?:\.\d+)?e[+-]\d+/i, locale);
+    assert.ok(!rendered.includes('{{v1}}'), locale);
+  }
+  const bennuDiameter = curiosities.bennu[0];
+  assert.equal(bennuDiameter.values?.v1, 0.48444);
+  assert.ok(localizedCuriosity(bennuDiameter, 'en').includes('0.48444'));
 });

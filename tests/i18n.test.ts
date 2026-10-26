@@ -41,11 +41,143 @@ import BodyNavigation from '../components/body-navigation';
 import { starLoadFailureNotice } from '../components/star-field';
 import LunarPanel from '../components/lunar-panel';
 import GroundControls from '../components/ground-controls';
+import ObserverLocation from '../components/observer-location';
 import { orbitingMoons } from '../lib/moon-orbits';
 
 const codes = Object.keys(languages) as Locale[];
 const placeholders = (text: string) =>
   [...text.matchAll(/{{\s*(\w+)\s*}}/g)].map((m) => m[1]).sort();
+void test('observer readout identifies coordinate order and hemispheres', () => {
+  const key =
+    '观测点：纬度 {{latitude}}° {{northSouth}} · 经度 {{longitude}}° {{eastWest}} · UTC{{offset}}';
+  const cases = [
+    {
+      latitude: 19.076,
+      longitude: 72.8777,
+      latitudeText: '19.0760° N',
+      longitudeText: '72.8777° E',
+    },
+    {
+      latitude: -33.8688,
+      longitude: -151.2093,
+      latitudeText: '33.8688° S',
+      longitudeText: '151.2093° W',
+    },
+    {
+      latitude: 0,
+      longitude: 0,
+      latitudeText: '0.0000° N',
+      longitudeText: '0.0000° E',
+    },
+  ];
+  for (const locale of codes) {
+    for (const { latitude, longitude, latitudeText, longitudeText } of cases) {
+      const html = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          { initialLocale: locale },
+          createElement(ObserverLocation, {
+            time: Date.UTC(2026, 9, 23),
+            location: { latitude, longitude, height: 0, utcOffset: 0 },
+            source: 'manual',
+            onChange: () => {},
+          }),
+        ),
+      );
+      const expected = translator(locale)(key, {
+        latitude: latitudeText.slice(0, -3),
+        northSouth: latitudeText.slice(-1),
+        longitude: longitudeText.slice(0, -3),
+        eastWest: longitudeText.slice(-1),
+        offset: '+00:00',
+      });
+      assert.ok(html.includes(expected), `${locale}: ${expected}`);
+      assert.ok(html.includes(latitudeText), locale);
+      assert.ok(html.includes(longitudeText), locale);
+    }
+  }
+});
+void test('Korean time and eclipse controls name their actual actions and categories', () => {
+  const t = translator('ko');
+  assert.match(t('请手动复制链接'), /링크.*복사/);
+  assert.match(t('跳到指定时间'), /날짜.*시간.*이동/);
+  assert.doesNotMatch(t('跳到指定时间'), /일식|월식/);
+  assert.match(
+    t('所有天体共享此时间；切换目标保留模拟进度。'),
+    /천체.*시간.*대상/,
+  );
+  assert.match(
+    t('支持 1700—2200 年。用播放条上的“现在”可随时回到实时运行。'),
+    /1700.*2200.*현재.*실시간/,
+  );
+  assert.match(t('天象分类'), /천문 현상.*분류/);
+  assert.equal(t('日食'), '일식');
+  assert.equal(t('月食'), '월식');
+  assert.match(t('正在计算未来天象…'), /천문 현상.*계산/);
+  assert.match(
+    t('正在从当前模拟时间查找接下来的食象。'),
+    /시뮬레이션 시간.*일식.*월식/,
+  );
+  assert.match(t('本地可见'), /이 위치.*볼 수/);
+  assert.match(t('全球食甚'), /전 지구.*식심/);
+});
+void test('Spanish body profiles keep physical property labels beside their values', () => {
+  const t = translator('es');
+  assert.equal(t('平均半径'), 'Radio medio');
+  assert.equal(t('平均日距'), 'Distancia media al Sol');
+  assert.equal(t('公转周期'), 'Período orbital');
+  assert.equal(t('恒星公转周期'), 'Período orbital sidéreo');
+  assert.equal(t('天'), 'd');
+  assert.equal(t('恒星自转周期'), 'Período de rotación sideral');
+  assert.equal(t('自转周期'), 'Período de rotación');
+});
+void test('Italian and Russian comet labels and nearby actions match their meaning', () => {
+  const expected = {
+    it: {
+      模型公转周期: 'Periodo orbitale del modello',
+      轨道倾角: 'Inclinazione orbitale',
+      模型近日点: 'Distanza al perielio del modello',
+      模型远日点: "Distanza all'afelio del modello",
+      查看完整轨道: "Visualizza l'orbita completa",
+      跟随彗星观察: 'Segui la cometa',
+    },
+    ru: {
+      模型公转周期: 'Орбитальный период модели',
+      轨道倾角: 'Орбитальное наклонение',
+      模型近日点: 'Перигелийное расстояние модели',
+      模型远日点: 'Афелийное расстояние модели',
+      查看完整轨道: 'Посмотреть полную орбиту',
+      跟随彗星观察: 'Следовать за кометой',
+    },
+  } as const;
+  for (const locale of ['it', 'ru'] as const) {
+    const t = translator(locale);
+    for (const [key, value] of Object.entries(expected[locale]))
+      assert.equal(t(key), value, `${locale}: ${key}`);
+    assert.match(t('下一次模型近日点超出 1700—2200 年范围。'), /1700.*2200/);
+    assert.match(t('跳到模型下一次近日点'), /perielio|перигелию/i);
+    assert.match(
+      t(
+        '靠近太阳时，冰升华产生彗发与彗尾。蓝色离子尾近乎笔直地背向太阳，尘埃尾较宽、通常弯曲；远离太阳时，活动逐渐减弱。',
+      ),
+      /chioma|кому/i,
+    );
+    assert.match(
+      t(
+        '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。哈雷和 67P 使用公开观测形状模型，恩克和海尔—波普使用观测尺寸约束的独立近似；彗核表面、旋转与彗尾仍为示意。',
+      ),
+      /JPL.*67P/,
+    );
+    assert.match(
+      t(
+        '彗核形状使用公开观测模型，或在缺少完整全球模型时使用观测尺寸约束的独立近似；没有可用的全球彗核反照率图，因此材质、彗发和彗尾为示意，不代表实时观测。',
+      ),
+      /albedo|альбедо/i,
+    );
+    assert.match(t('在 NASA 继续探索'), /NASA/);
+    assert.match(t('轨道参数：JPL 小天体数据库'), /JPL/);
+  }
+});
 void test('Earth seasons stay separate from the sidereal-day explanation', () => {
   const seasons = profileContent.earth.sections[1].text;
   assert.match(seasons, /地轴.*南北半球/);
@@ -109,6 +241,26 @@ void test('ground sky explains the geometric horizon and local obstructions in e
   assert.match(translator('en')(note), /geometric horizon/);
   assert.match(translator('en')(note), /terrain and buildings/);
   assert.match(translator('en')(note), /does not guarantee visibility/);
+});
+void test('planner action names distinguish events and local times in every language', () => {
+  for (const locale of codes) {
+    const t = translator(locale);
+    const names = [
+      t('查看{{event}}，{{time}}', {
+        event: t('日全食'),
+        time: '2030-01-01 12:00',
+      }),
+      t('查看{{event}}，{{time}}', {
+        event: t('{{name}}凌日', { name: t('水星') }),
+        time: '2032-11-13 14:24',
+      }),
+    ];
+    assert.notEqual(names[0], names[1], locale);
+    assert.ok(names[0].includes(t('日全食')), locale);
+    assert.ok(names[1].includes(t('水星')), locale);
+    assert.ok(names[1].includes('2032-11-13 14:24'), locale);
+    assert.notEqual(names[0], t('查看'), locale);
+  }
 });
 void test('locale selection uses URL, saved preference, browser languages, then the default', () => {
   assert.equal(detectLocale('ja-JP', 'en', ['zh-CN']), 'ja');

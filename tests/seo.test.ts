@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
+import BodyPage from '../app/_pages/body-page';
 import {
   aboutPath,
   aboutDescription,
@@ -44,7 +46,12 @@ import {
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
 import { eventOccurrences } from '../lib/event-occurrences';
 import { portraitCredit } from '../lib/profile-images';
-import { extraFacts, physicalParameters } from '../lib/physical-facts';
+import {
+  extraFacts,
+  giantEscapeVelocityNote,
+  hasGiantEscapeVelocityNote,
+  physicalParameters,
+} from '../lib/physical-facts';
 import { profileContent } from '../lib/profile-content';
 import {
   profileProperties,
@@ -98,6 +105,42 @@ const bodyPage = readFileSync(
   new URL('../app/_pages/body-page.tsx', import.meta.url),
   'utf8',
 );
+
+void test('planet profiles link orbital neighbors and every catalogued moon', async () => {
+  const cases = {
+    uranus: [
+      'saturn',
+      'neptune',
+      'moon-miranda',
+      'moon-ariel',
+      'moon-umbriel',
+      'moon-titania',
+      'moon-oberon',
+    ],
+    earth: ['venus', 'mars', 'moon-moon'],
+  };
+
+  for (const locale of ['en', 'zh-CN', 'ja'] as const) {
+    for (const [id, expected] of Object.entries(cases)) {
+      const page = await BodyPage({
+        params: Promise.resolve({ locale: languages[locale].route, id }),
+      });
+      const html = renderToStaticMarkup(page);
+      const related = html.match(
+        /<nav class="seo-related"[\s\S]*?<\/nav>/,
+      )?.[0];
+      assert.ok(related, `${locale} ${id}: related navigation exists`);
+      const links = [...related.matchAll(/<a href="([^"]+)"/g)].map(
+        ([, href]) => href,
+      );
+      assert.deepEqual(
+        links,
+        expected.map((bodyId) => bodyDetailsPath(locale, bodyId)),
+        `${locale} ${id}`,
+      );
+    }
+  }
+});
 
 void test('profile texture credits describe a rendering asset in every language', () => {
   assert.match(bodyPage, /t\('渲染贴图来源'\)/);
@@ -465,6 +508,53 @@ void test('structured body properties restate the figures a profile prints', () 
         assert.ok(Number.isFinite(property.value), property.id);
       else assert.ok(Object.hasOwn(source, property.value), property.value);
     }
+});
+
+void test('giant planet escape speeds identify their reference level in both views', () => {
+  const giants = ['jupiter', 'saturn', 'uranus', 'neptune'];
+  assert.match(bodyPage, /hasGiantEscapeVelocityNote\(entry\.data\)/);
+  assert.match(physicalFacts, /hasGiantEscapeVelocityNote\(body\)/);
+  for (const body of bodies) {
+    assert.equal(hasGiantEscapeVelocityNote(body), giants.includes(body.id));
+    if (!giants.includes(body.id)) continue;
+    const escape = extraFacts(body).find((fact) => fact.label === '逃逸速度');
+    assert.equal(escape?.value, physicalParameters[body.id].escape.toFixed(2));
+    assert.equal(escape?.unit, 'km/s');
+    const derived =
+      Math.sqrt(
+        (2 * 6.6743e-11 * physicalParameters[body.id].mass) /
+          (body.radius * 1000),
+      ) / 1000;
+    assert.ok(Math.abs(derived - physicalParameters[body.id].escape) < 0.05);
+  }
+  for (const locale of seoLocales) {
+    const note = translator(locale)(giantEscapeVelocityNote);
+    assert.ok(
+      Object.hasOwn(languages[locale].messages, giantEscapeVelocityNote),
+    );
+    if (locale !== 'zh-CN') assert.notEqual(note, giantEscapeVelocityNote);
+    assert.match(note, /JPL/);
+    assert.match(note, /NASA/);
+    assert.match(note, /1[ -]?bar|1バール|1바|1 бар/i);
+  }
+});
+
+void test('Halley and 67P retain their orbital fields with Italian and Russian labels', () => {
+  const labels = ['模型公转周期', '轨道倾角', '模型近日点', '模型远日点'];
+  for (const id of ['halley', '67p']) {
+    const properties = profileProperties(catalogEntry(id)!);
+    assert.deepEqual(
+      properties.map((property) => property.label),
+      labels,
+    );
+    assert.deepEqual(
+      properties.map((property) => property.unit),
+      ['day', 'degree', 'au', 'au'],
+    );
+    for (const locale of ['it', 'ru'] as const)
+      for (const property of properties)
+        assert.notEqual(translator(locale)(property.label), property.label);
+  }
 });
 
 void test('Earth profile and structured data use the same equatorial acceleration', () => {

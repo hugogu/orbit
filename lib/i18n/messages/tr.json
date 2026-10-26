@@ -134,6 +134,7 @@
   "日出 / 日落": "Gün doğumu / gün batımı",
   "当地时间": "yerel saat",
   "观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}": "Gözlem noktası: {{latitude}}°, {{longitude}}° · UTC{{offset}}",
+  "观测点：纬度 {{latitude}}° {{northSouth}} · 经度 {{longitude}}° {{eastWest}} · UTC{{offset}}": "Gözlem noktası: enlem {{latitude}}° {{northSouth}} · boylam {{longitude}}° {{eastWest}} · UTC{{offset}}",
   "观测地点": "Gözlem konumu",
   "正在获取当前位置…": "Mevcut konum alınıyor…",
   "正在加载观测点…": "Gözlem noktası yükleniyor…",
@@ -260,6 +261,7 @@
   "地平线下方": "ufkun altında",
   "°）；其他阶段是否可见需另看月出月落。": "°); diğer evrelerin görülüp görülemeyeceğini belirlemek için Ay'ın doğuş ve batış saatlerine bakın.",
   "查看": "Görüntüle",
+  "查看{{event}}，{{time}}": "{{event}} olayını görüntüle, {{time}}",
   "在支持的日期范围内未找到下一次。": "Desteklenen tarih aralığında bir sonraki olay bulunamadı.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Güneş Sistemi'ni keşfetmek için bir tarih; gün doğumu, gün batımı ve yaklaşan tutulmalar için bir konum seçin.",
   "模拟时间（UTC）": "Simülasyon zamanı (UTC)",
@@ -1504,6 +1506,7 @@
   "{{name}}：成因、周期与观测": "{{name}}: Nasıl gerçekleşir, ne sıklıkla görülür ve nasıl gözlemlenir",
   "流星雨、合相、冲、大距、月相、日食与月食：常见天象的成因、周期与观测要点，一页读完。": "Meteor yağmurları, kavuşumlar, karşıtlıklar, en büyük uzanımlar, ay evreleri ve tutulmalar: Her periyodik gök olayının nedeni, tekrarlanma sıklığı ve gözlem ipuçları.",
   "活跃期、极大日期与出现率为多年平均值，实际情况每年略有差别；计划观测时请以当年的预报为准。": "Etkinlik dönemleri, doruk tarihleri ve saatlik oranlar çok yıllık ortalamalardır; her yıl biraz farklılık gösterir, bu nedenle gözlem planlarken ilgili yılın tahminlerini dikkate alın.",
+  "多数天象可用肉眼观测；观测日食或行星凌日前，请阅读对应页面的太阳观测安全说明。": "Çoğu gök olayı çıplak gözle görülebilir. Güneş tutulmasını veya gezegen geçişini gözlemlemeden önce ilgili sayfadaki güvenli Güneş gözlemi yönergelerini okuyun.",
   "肉眼为主": "Çıplak göz",
   "新月": "Yeni ay",
   "蛾眉月": "Hilal",
@@ -1925,5 +1928,6 @@
   "关闭后，近期天象、天象百科与天体信息按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。": "Kapalı olduğunda; yaklaşan gök olayları, gök olayları rehberi ve gök cismi bilgisi düğmeleri yalnızca simgelerini korur ve sahneye daha fazla yer açar. Adları araç ipuçlarında ve ekran okuyucularda kalır.",
   "轴倾角（约）": "Eksen eğikliği (yaklaşık)",
   "轴倾角是自转轴与自身轨道平面法线的夹角（0–180°）；轨道倾角是轨道平面与黄道面的夹角。轴倾角采用 NASA/NSSDC 的固定科普近似值，不随模拟日期更新；金星与冥王星使用资料值，不直接使用场景的姿态参数。": "Eksen eğikliği, dönme ekseni ile gök cisminin kendi yörünge düzleminin normali arasındaki açıdır (0–180°); yörünge eğikliği ise yörünge düzlemi ile tutulum düzlemi arasındaki açıdır. Eksen eğiklikleri NASA/NSSDC'nin sabit eğitim yaklaşımlarıdır ve simülasyon tarihiyle güncellenmez. Venüs ve Plüton, sahnenin yönelim parametreleri yerine yayımlanmış değerleri kullanır.",
-  "NASA/NSSDC 行星资料表": "NASA/NSSDC gezegen bilgi föyleri"
+  "NASA/NSSDC 行星资料表": "NASA/NSSDC gezegen bilgi föyleri",
+  "此逃逸速度采用 JPL 的质量和平均半径计算；NASA 资料表以大气 1 bar 层为参考，数值可能不同。巨行星没有固体表面。": "Bu kaçış hızı, JPL kütlesi ve ortalama yarıçapı kullanılarak hesaplanır. NASA bilgi tabloları atmosferdeki 1 bar seviyesini esas alır; bu nedenle değerler farklı olabilir. Dev gezegenlerin katı bir yüzeyi yoktur."
 }

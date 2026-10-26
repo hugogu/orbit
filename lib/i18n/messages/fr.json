@@ -134,6 +134,7 @@
   "日出 / 日落": "Lever / coucher du Soleil",
   "当地时间": "heure locale",
   "观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}": "Observateur : {{latitude}}°, {{longitude}}° · UTC{{offset}}",
+  "观测点：纬度 {{latitude}}° {{northSouth}} · 经度 {{longitude}}° {{eastWest}} · UTC{{offset}}": "Observateur : latitude {{latitude}}° {{northSouth}} · longitude {{longitude}}° {{eastWest}} · UTC{{offset}}",
   "观测地点": "Position de l'observateur",
   "正在获取当前位置…": "Détection de votre position en cours…",
   "正在加载观测点…": "Chargement de la position de l'observateur…",
@@ -260,6 +261,7 @@
   "地平线下方": "sous l'horizon",
   "°）；其他阶段是否可见需另看月出月落。": "°) ; vérifiez le lever et le coucher de la Lune pour connaître la visibilité durant les autres phases.",
   "查看": "Afficher",
+  "查看{{event}}，{{time}}": "Voir {{event}}, {{time}}",
   "在支持的日期范围内未找到下一次。": "Aucun événement ultérieur trouvé dans les dates prises en charge.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Choisissez une date pour explorer le Système solaire et un lieu pour connaître les heures de lever/coucher et les prochaines éclipses.",
   "模拟时间（UTC）": "Date de simulation (UTC)",
@@ -1504,6 +1506,7 @@
   "{{name}}：成因、周期与观测": "{{name}} : déroulement, fréquence et conseils d'observation",
   "流星雨、合相、冲、大距、月相、日食与月食：常见天象的成因、周期与观测要点，一页读完。": "Pluies de météores, conjonctions, oppositions, élongations, phases lunaires et éclipses : causes de chaque événement céleste périodique, fréquence et conseils d'observation.",
   "活跃期、极大日期与出现率为多年平均值，实际情况每年略有差别；计划观测时请以当年的预报为准。": "Les périodes d'activité, dates de pic et taux horaires sont des moyennes pluriannuelles ; chaque année varie légèrement, planifiez donc selon les prévisions spécifiques de l'année.",
+  "多数天象可用肉眼观测；观测日食或行星凌日前，请阅读对应页面的太阳观测安全说明。": "La plupart des phénomènes sont visibles à l’œil nu. Avant d’observer une éclipse solaire ou un transit planétaire, lisez les consignes de sécurité pour l’observation du Soleil sur la page correspondante.",
   "肉眼为主": "À l'œil nu",
   "新月": "Nouvelle lune",
   "蛾眉月": "Premier croissant",
@@ -1925,5 +1928,6 @@
   "关闭后，近期天象、天象百科与天体信息按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。": "Lorsqu'ils sont désactivés, les boutons des prochains événements célestes, du guide des événements et des informations sur les corps ne conservent que leurs icônes pour laisser plus de place à la scène. Leurs noms restent disponibles dans les infobulles et pour les lecteurs d'écran.",
   "轴倾角（约）": "Inclinaison axiale (approx.)",
   "轴倾角是自转轴与自身轨道平面法线的夹角（0–180°）；轨道倾角是轨道平面与黄道面的夹角。轴倾角采用 NASA/NSSDC 的固定科普近似值，不随模拟日期更新；金星与冥王星使用资料值，不直接使用场景的姿态参数。": "L'inclinaison axiale est l'angle entre l'axe de rotation et la normale au plan orbital propre du corps (0–180°) ; l'inclinaison orbitale est l'angle entre le plan orbital et l'écliptique. Les inclinaisons axiales sont des approximations pédagogiques fixes de la NASA/NSSDC et ne varient pas avec la date de simulation. Vénus et Pluton utilisent des valeurs publiées plutôt que les paramètres d'orientation de la scène.",
-  "NASA/NSSDC 行星资料表": "Fiches planétaires de la NASA/NSSDC"
+  "NASA/NSSDC 行星资料表": "Fiches planétaires de la NASA/NSSDC",
+  "此逃逸速度采用 JPL 的质量和平均半径计算；NASA 资料表以大气 1 bar 层为参考，数值可能不同。巨行星没有固体表面。": "Cette vitesse de libération repose sur la masse et le rayon moyen du JPL. Les fiches de la NASA utilisent le niveau atmosphérique à 1 bar ; les valeurs peuvent donc différer. Les planètes géantes n’ont pas de surface solide."
 }

@@ -107,7 +107,12 @@ export default async function EventsPage({ params }: PageProps) {
   const overview = [
     [t('收录事件'), `${eventTopics.length}`],
     [t('事件分类'), `${eventCategories.length}`],
-    [t('观测门槛'), t('肉眼为主')],
+    [
+      t('观测门槛'),
+      t(
+        '多数天象可用肉眼观测；观测日食或行星凌日前，请阅读对应页面的太阳观测安全说明。',
+      ),
+    ],
   ];
 
   return (
@@ -143,7 +148,7 @@ export default async function EventsPage({ params }: PageProps) {
             </a>
           </div>
         </div>
-        <dl className="profile-key-facts">
+        <dl className="profile-key-facts event-overview-facts">
           {overview.map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>

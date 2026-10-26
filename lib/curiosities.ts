@@ -451,7 +451,10 @@ for (const body of bodies.filter((b) => b.id !== 'sun')) {
     },
     {
       text: '按平均半径估算，{{v0}}体积约为地球的 {{v1}} 倍。',
-      values: { v0: body.name, v1: ((body.radius / 6371) ** 3).toPrecision(3) },
+      values: {
+        v0: body.name,
+        v1: Number(((body.radius / 6371) ** 3).toPrecision(3)),
+      },
     },
     {
       text: '以平均日距估算，阳光到达{{v0}}约需 {{v1}} 分钟。',

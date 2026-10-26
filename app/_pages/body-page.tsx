@@ -13,7 +13,11 @@ import {
   type Locale,
 } from '../../lib/i18n';
 import { curiosities, type Curiosity } from '../../lib/curiosities';
-import { extraFacts } from '../../lib/physical-facts';
+import {
+  extraFacts,
+  giantEscapeVelocityNote,
+  hasGiantEscapeVelocityNote,
+} from '../../lib/physical-facts';
 import { bodies } from '../../lib/solar';
 import {
   profileOrbitalPeriodLabel,
@@ -111,12 +115,22 @@ function relatedEntries(entry: CatalogEntry) {
     const moons = orbitingMoons.filter(
       (moon) => moon.parentId === entry.data.id,
     );
+    const orbitalNeighbors = bodies
+      .filter((body) => body.id !== 'sun')
+      .sort((a, b) => a.au - b.au);
+    const orbitIndex = orbitalNeighbors.findIndex(
+      (body) => body.id === entry.data.id,
+    );
+    const nearbyBodies =
+      orbitIndex < 0
+        ? orbitalNeighbors.slice(0, 4)
+        : [
+            orbitalNeighbors[orbitIndex - 1],
+            orbitalNeighbors[orbitIndex + 1],
+          ].filter((body) => body !== undefined);
     return [
-      ...bodies
-        .filter((body) => body.id !== entry.data.id)
-        .slice(0, 4)
-        .map((data) => ({ kind: 'body' as const, data })),
-      ...moons.slice(0, 4).map((data) => ({ kind: 'moon' as const, data })),
+      ...nearbyBodies.map((data) => ({ kind: 'body' as const, data })),
+      ...moons.map((data) => ({ kind: 'moon' as const, data })),
     ];
   }
   if (entry.kind === 'moon') {
@@ -178,14 +192,16 @@ function coreFacts(entry: CatalogEntry, locale: Locale) {
   ];
 }
 
-function localizedCuriosity(fact: Curiosity, locale: Locale) {
+export function localizedCuriosity(fact: Curiosity, locale: Locale) {
   const t = translator(locale);
   return t(
     fact.text,
     Object.fromEntries(
       Object.entries(fact.values ?? {}).map(([key, value]) => [
         key,
-        typeof value === 'string' ? t(value) : value,
+        typeof value === 'string'
+          ? t(value)
+          : value.toLocaleString(locale, { maximumFractionDigits: 20 }),
       ]),
     ),
   );
@@ -543,6 +559,12 @@ export default async function BodyPage({ params }: PageProps) {
               <p className="seo-section-number">02 / {t('关键数据')}</p>
               <h2 id="profile-data-heading">{t('核心参数')}</h2>
               <BodyFacts entry={entry} locale={locale} />
+              {entry.kind === 'body' &&
+                hasGiantEscapeVelocityNote(entry.data) && (
+                  <p className="profile-escape-note">
+                    {t(giantEscapeVelocityNote)}
+                  </p>
+                )}
               {entry.kind === 'body' && entry.data.id !== 'sun' && (
                 <p>
                   {t(

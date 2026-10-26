@@ -134,6 +134,7 @@
   "日出 / 日落": "Zonsopkomst / zonsondergang",
   "当地时间": "lokale tijd",
   "观测点：{{latitude}}°，{{longitude}}° · UTC{{offset}}": "Waarnemer: {{latitude}}°, {{longitude}}° · UTC{{offset}}",
+  "观测点：纬度 {{latitude}}° {{northSouth}} · 经度 {{longitude}}° {{eastWest}} · UTC{{offset}}": "Waarnemer: breedtegraad {{latitude}}° {{northSouth}} · lengtegraad {{longitude}}° {{eastWest}} · UTC{{offset}}",
   "观测地点": "Waarnemingslocatie",
   "正在获取当前位置…": "Huidige locatie ophalen…",
   "正在加载观测点…": "Waarnemingslocatie laden…",
@@ -260,6 +261,7 @@
   "地平线下方": "onder de horizon",
   "°）；其他阶段是否可见需另看月出月落。": "°); bekijk de maansopkomst en -ondergang voor zichtbaarheid in andere fasen.",
   "查看": "Bekijken",
+  "查看{{event}}，{{time}}": "Bekijk {{event}}, {{time}}",
   "在支持的日期范围内未找到下一次。": "Geen volgende gebeurtenis gevonden binnen de ondersteunde datums.",
   "选择时间探索太阳系，按观测地点查询日出日落和下一次食象。": "Kies een datum om het zonnestelsel te verkennen en een locatie voor zonsopkomst, zonsondergang en aankomende verduisteringen.",
   "模拟时间（UTC）": "Simulatietijd (UTC)",
@@ -1504,6 +1506,7 @@
   "{{name}}：成因、周期与观测": "{{name}}: hoe het ontstaat, hoe vaak het voorkomt en hoe te kijken",
   "流星雨、合相、冲、大距、月相、日食与月食：常见天象的成因、周期与观测要点，一页读完。": "Meteorenzwermen, conjuncties, opposities, elongaties, schijngestalten en verduisteringen: wat elk terugkerend verschijnsel veroorzaakt, hoe vaak het terugkeert en hoe u het kunt waarnemen.",
   "活跃期、极大日期与出现率为多年平均值，实际情况每年略有差别；计划观测时请以当年的预报为准。": "Actieve perioden, piekmomenten en aantallen zijn meerjarige gemiddelden; elk jaar verschilt iets, dus stem uw plannen af op de verwachting voor het betreffende jaar.",
+  "多数天象可用肉眼观测；观测日食或行星凌日前，请阅读对应页面的太阳观测安全说明。": "De meeste verschijnselen zijn met het blote oog te zien. Lees vóór het bekijken van een zonsverduistering of planeetovergang de veiligheidsinformatie over zonwaarneming op de betreffende pagina.",
   "肉眼为主": "Blote oog",
   "新月": "Nieuwe maan",
   "蛾眉月": "Wassende sikkel",
@@ -1925,5 +1928,6 @@
   "关闭后，近期天象、天象百科与天体信息按钮只保留图标，为场景让出空间；按钮名称仍保留在悬停提示与读屏软件中。": "Wanneer uitgeschakeld tonen de knoppen voor aankomende verschijnselen, de hemelgids en hemellichaaminformatie alleen hun pictogram om ruimte te maken voor de scène; de namen blijven behouden in knoptips en voor schermlezers.",
   "轴倾角（约）": "Ashelling (circa)",
   "轴倾角是自转轴与自身轨道平面法线的夹角（0–180°）；轨道倾角是轨道平面与黄道面的夹角。轴倾角采用 NASA/NSSDC 的固定科普近似值，不随模拟日期更新；金星与冥王星使用资料值，不直接使用场景的姿态参数。": "De ashelling is de hoek tussen de rotatieas en de normaal op het eigen baanvlak (0–180°); de baanhelling is de hoek tussen het baanvlak en het eclipticaal vlak. Ashellingen zijn vaste educatieve benaderingen van NASA/NSSDC en worden niet bijgewerkt met de simulatiedatum. Venus en Pluto gebruiken gepubliceerde waarden in plaats van de oriëntatieparameters van de scène.",
-  "NASA/NSSDC 行星资料表": "NASA/NSSDC-feitenbladen planeten"
+  "NASA/NSSDC 行星资料表": "NASA/NSSDC-feitenbladen planeten",
+  "此逃逸速度采用 JPL 的质量和平均半径计算；NASA 资料表以大气 1 bar 层为参考，数值可能不同。巨行星没有固体表面。": "Deze ontsnappingssnelheid gebruikt de massa en gemiddelde straal van JPL. NASA-factsheets nemen de atmosferische laag van 1 bar als referentie, waardoor waarden kunnen verschillen. Reuzenplaneten hebben geen vast oppervlak."
 }
