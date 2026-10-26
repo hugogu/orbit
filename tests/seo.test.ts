@@ -467,6 +467,24 @@ void test('structured body properties restate the figures a profile prints', () 
     }
 });
 
+void test('Halley and 67P retain their orbital fields with Italian and Russian labels', () => {
+  const labels = ['模型公转周期', '轨道倾角', '模型近日点', '模型远日点'];
+  for (const id of ['halley', '67p']) {
+    const properties = profileProperties(catalogEntry(id)!);
+    assert.deepEqual(
+      properties.map((property) => property.label),
+      labels,
+    );
+    assert.deepEqual(
+      properties.map((property) => property.unit),
+      ['day', 'degree', 'au', 'au'],
+    );
+    for (const locale of ['it', 'ru'] as const)
+      for (const property of properties)
+        assert.notEqual(translator(locale)(property.label), property.label);
+  }
+});
+
 void test('Earth profile and structured data use the same equatorial acceleration', () => {
   const earth = bodies.find((body) => body.id === 'earth')!;
   const fact = extraFacts(earth).find(

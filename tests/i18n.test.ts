@@ -131,6 +131,53 @@ void test('Spanish body profiles keep physical property labels beside their valu
   assert.equal(t('恒星自转周期'), 'Período de rotación sideral');
   assert.equal(t('自转周期'), 'Período de rotación');
 });
+void test('Italian and Russian comet labels and nearby actions match their meaning', () => {
+  const expected = {
+    it: {
+      模型公转周期: 'Periodo orbitale del modello',
+      轨道倾角: 'Inclinazione orbitale',
+      模型近日点: 'Distanza al perielio del modello',
+      模型远日点: "Distanza all'afelio del modello",
+      查看完整轨道: "Visualizza l'orbita completa",
+      跟随彗星观察: 'Segui la cometa',
+    },
+    ru: {
+      模型公转周期: 'Орбитальный период модели',
+      轨道倾角: 'Орбитальное наклонение',
+      模型近日点: 'Перигелийное расстояние модели',
+      模型远日点: 'Афелийное расстояние модели',
+      查看完整轨道: 'Посмотреть полную орбиту',
+      跟随彗星观察: 'Следовать за кометой',
+    },
+  } as const;
+  for (const locale of ['it', 'ru'] as const) {
+    const t = translator(locale);
+    for (const [key, value] of Object.entries(expected[locale]))
+      assert.equal(t(key), value, `${locale}: ${key}`);
+    assert.match(t('下一次模型近日点超出 1700—2200 年范围。'), /1700.*2200/);
+    assert.match(t('跳到模型下一次近日点'), /perielio|перигелию/i);
+    assert.match(
+      t(
+        '靠近太阳时，冰升华产生彗发与彗尾。蓝色离子尾近乎笔直地背向太阳，尘埃尾较宽、通常弯曲；远离太阳时，活动逐渐减弱。',
+      ),
+      /chioma|кому/i,
+    );
+    assert.match(
+      t(
+        '位置由共享日期与 JPL 带历元轨道参数计算。固定二体轨道未计入行星摄动和喷气效应，距历元越远误差越大；不是精确回归预报。哈雷和 67P 使用公开观测形状模型，恩克和海尔—波普使用观测尺寸约束的独立近似；彗核表面、旋转与彗尾仍为示意。',
+      ),
+      /JPL.*67P/,
+    );
+    assert.match(
+      t(
+        '彗核形状使用公开观测模型，或在缺少完整全球模型时使用观测尺寸约束的独立近似；没有可用的全球彗核反照率图，因此材质、彗发和彗尾为示意，不代表实时观测。',
+      ),
+      /albedo|альбедо/i,
+    );
+    assert.match(t('在 NASA 继续探索'), /NASA/);
+    assert.match(t('轨道参数：JPL 小天体数据库'), /JPL/);
+  }
+});
 void test('Earth seasons stay separate from the sidereal-day explanation', () => {
   const seasons = profileContent.earth.sections[1].text;
   assert.match(seasons, /地轴.*南北半球/);
