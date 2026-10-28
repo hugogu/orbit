@@ -311,8 +311,28 @@ export function moonObservingWindow(
           span(dusk),
           DARKNESS_ALTITUDE,
         )?.date.getTime();
-  // The Moon is either already up when the Sun goes down, or it rises later.
-  const upAtDusk = altitude(Body.Moon, nightStart, observer) > 0;
+  // Use the same upper-limb and refraction convention for the opening state
+  // and the rise/set times. The center can still be below zero after moonrise.
+  const lastRise = SearchRiseSet(
+    Body.Moon,
+    observer,
+    1,
+    new Date(nightStart),
+    -40,
+  )?.date.getTime();
+  const lastSet = SearchRiseSet(
+    Body.Moon,
+    observer,
+    -1,
+    new Date(nightStart),
+    -40,
+  )?.date.getTime();
+  const upAtDusk =
+    lastRise !== undefined
+      ? lastSet === undefined || lastRise > lastSet
+      : lastSet !== undefined
+        ? false
+        : altitude(Body.Moon, nightStart, observer) > 0;
   const rising = upAtDusk
     ? nightStart
     : SearchRiseSet(

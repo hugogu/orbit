@@ -253,6 +253,38 @@ void test('the observing window is the Moon above the horizon inside the coming 
   assert.equal(iso(window.nightStart), iso(sunset.date.getTime()));
 });
 
+void test('a moon already risen by its upper limb is visible at Mumbai dusk', () => {
+  const mumbai = {
+    latitude: 19.076,
+    longitude: 72.8777,
+    height: 14,
+    utcOffset: 5.5,
+  };
+  const window = moonObservingWindow(
+    Date.parse('2026-10-26T03:14:00Z'), // 08:44 IST
+    mumbai,
+  );
+  const observer = new Observer(
+    mumbai.latitude,
+    mumbai.longitude,
+    mumbai.height,
+  );
+  const previousRise = SearchRiseSet(
+    Body.Moon,
+    observer,
+    1,
+    new Date(window.nightStart),
+    -1,
+  );
+  assert.ok(previousRise);
+  assert.ok(previousRise.date.getTime() < window.nightStart);
+  assert.ok(altitude(Body.Moon, window.nightStart, observer) < 0);
+  assert.equal(window.start, window.nightStart);
+  assert.ok(window.end !== null && window.end > window.start!);
+  assert.ok(window.best !== null && window.best.altitude > 0);
+  assert.notEqual(window.note, observingNotes.belowHorizon);
+});
+
 void test('a night already under way is the one answered, not the following one', () => {
   const evening = Date.parse('2026-09-20T14:00:00Z'); // 22:00 local, after sunset
   const window = moonObservingWindow(evening, beijing);
