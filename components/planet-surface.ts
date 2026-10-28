@@ -5,7 +5,10 @@ import {
   type HeightField,
   type TerrainParameters,
 } from '../lib/planet-terrain';
-import type { createTextureManager } from './texture-manager';
+import {
+  textureLoadingOptions,
+  type createTextureManager,
+} from './texture-manager';
 
 export function readHeightField(texture: THREE.Texture): HeightField {
   const image = texture.image as HTMLImageElement;
@@ -76,15 +79,19 @@ export function registerPlanetSurface(
   const updateAppearance = () => {
     material.map = colorMap;
     material.color.set(
-      body.texture && body.id !== 'uranus' ? '#ffffff' : body.color,
+      colorMap && body.id !== 'uranus' ? '#ffffff' : body.color,
     );
     material.needsUpdate = true;
   };
   if (body.texture)
-    textures.register(body.texture, (texture) => {
-      colorMap = texture;
-      updateAppearance();
-    });
+    textures.register(
+      body.texture,
+      (texture) => {
+        colorMap = texture;
+        updateAppearance();
+      },
+      { ...textureLoadingOptions(body.texture), retainOnNavigation: true },
+    );
   if (body.surfaceTexture)
     textures.register(
       body.surfaceTexture,
