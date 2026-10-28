@@ -3,7 +3,7 @@
 `orbit-share.otf` is a renamed subset of **Noto Sans CJK SC Regular** by the
 Noto Project Authors, distributed under the SIL Open Font License 1.1 in
 [OFL.txt](OFL.txt). The copyright notice is also retained inside the font.
-The subset covers the Chinese, English and Japanese labels currently used
+The subset covers the labels of all 12 languages currently used
 in share images and dated event sky charts; it is loaded explicitly by Sharp/Pango, without relying
 on installed system fonts or a network request during builds.
 
