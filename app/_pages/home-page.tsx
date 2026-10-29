@@ -1,5 +1,4 @@
 'use client';
-import { track } from '@vercel/analytics';
 import { useI18n } from '../../lib/i18n/provider';
 import {
   useEffect,
@@ -545,13 +544,11 @@ export default function Home() {
     setSelected(null);
     setView(205);
     setReset((v) => v + 1);
-    track('sandbox_enter', {});
   }, [time]);
   const leaveSandbox = useCallback(() => {
     setSandboxScenario(null);
     setSelected(null);
     setReset((v) => v + 1);
-    track('sandbox_leave', {});
   }, []);
   // The timeline's reset only turns the clock back: the same recipe replays
   // from the fork, so the run retraces its own path, changes and all.
@@ -586,7 +583,6 @@ export default function Home() {
     setSandboxScenario((current) =>
       current ? { ...rewoundScenario(current), moons: on } : current,
     );
-    track('sandbox_moons', { on });
   }, []);
   const editSandboxBody = useCallback(
     (id: string, field: SandboxField, value: number) =>
@@ -617,7 +613,6 @@ export default function Home() {
           ),
         };
       });
-      track('sandbox_add_body', {});
     },
     [sandboxRun, applyToRun],
   );
@@ -902,12 +897,6 @@ export default function Home() {
               setSpeed(i);
               setPaused(p);
             });
-            track('speed_change', {
-              source: 'agent_tool',
-              speed_index: i,
-              days_per_second: speeds[i],
-              paused: p,
-            });
           },
         },
         t,
@@ -1092,7 +1081,6 @@ export default function Home() {
         onSelect={(id) => {
           select(id);
           setSystemView(true);
-          track('planet_focus', { source: 'moon_guide', body_id: id });
         }}
       />
       <CuriositySource
@@ -1683,11 +1671,6 @@ export default function Home() {
                 const next = Array.isArray(v) ? v[0] : v;
                 if (sandboxRun) setSandboxSpeed(next);
                 else setSpeed(next);
-                track('speed_change', {
-                  source: 'slider',
-                  speed_index: next,
-                  days_per_second: clockSpeeds[next],
-                });
               }}
             />
             <div className="speed-markers" aria-hidden="true">
@@ -1768,7 +1751,6 @@ export default function Home() {
                 title={t('回到当前时间并实时运行')}
                 onClick={() => {
                   seekTime(Date.now(), true);
-                  track('time_jump', { source: 'now_button' });
                 }}
               >
                 <RotateCcw size={16} />
@@ -1842,7 +1824,6 @@ export default function Home() {
           setShadowGuides(true);
           setEclipseView(true);
           setSpeed(1);
-          track('eclipse_select', { kind });
         }}
       />
       <LunarPanel
