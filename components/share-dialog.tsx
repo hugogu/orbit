@@ -1,5 +1,4 @@
 'use client';
-import { track } from '@vercel/analytics';
 import { useEffect, useState } from 'react';
 import { Check, Copy, Download, ImageDown, Share2 } from 'lucide-react';
 import { useI18n } from '../lib/i18n/provider';
@@ -150,7 +149,6 @@ export default function ShareDialog({
       /* Fall back to the visible link below. */
     }
     setCopied({ view, status: result });
-    track('share', { method: 'copy_link', body_id: view.selected ?? 'system' });
   }
 
   async function shareCurrentView() {
@@ -172,10 +170,6 @@ export default function ShareDialog({
     const payload = withImage ?? link;
     try {
       await navigator.share(payload);
-      track('share', {
-        method: withImage ? 'system_image' : 'system_link',
-        body_id: view.selected ?? 'system',
-      });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       await copyLink();
@@ -188,17 +182,9 @@ export default function ShareDialog({
       // pass the pair along, while the action that files an image in the album
       // is only offered for an image on its own.
       await navigator.share({ files: [file] });
-      track('share', {
-        method: 'save_album',
-        body_id: view.selected ?? 'system',
-      });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       downloadImage(objectUrl, shareFileName(view));
-      track('share', {
-        method: 'download_image',
-        body_id: view.selected ?? 'system',
-      });
     }
   }
 
@@ -277,12 +263,6 @@ export default function ShareDialog({
                   className="secondary-action"
                   href={preview.url}
                   download={shareFileName(view)}
-                  onClick={() =>
-                    track('share', {
-                      method: 'download_image',
-                      body_id: view.selected ?? 'system',
-                    })
-                  }
                 >
                   <Download size={15} />
                   {t('保存图片')}

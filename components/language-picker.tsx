@@ -1,5 +1,4 @@
 'use client';
-import { track } from '@vercel/analytics';
 import { Languages } from 'lucide-react';
 import { languages, resolveLocale, type Locale } from '../lib/i18n';
 import { useI18n } from '../lib/i18n/provider';
@@ -19,7 +18,6 @@ export default function LanguagePicker({
         onChange={(event) => {
           const next = resolveLocale(event.target.value);
           if (next && next !== locale) {
-            track('language_switch', { from: locale, to: next });
             setLocale(next, hrefs?.[next]);
           }
         }}
