@@ -131,6 +131,20 @@ void test('Spanish body profiles keep physical property labels beside their valu
   assert.equal(t('恒星自转周期'), 'Período de rotación sideral');
   assert.equal(t('自转周期'), 'Período de rotación');
 });
+void test('Spanish body navigation names the celestial body directory', () => {
+  const label = translator('es')('天体导航');
+  assert.equal(label, 'Cuerpos celestes');
+  const html = renderToStaticMarkup(
+    createElement(
+      I18nProvider,
+      { initialLocale: 'es' },
+      createElement(BodyNavigation, { selected: null, onSelect() {} }),
+    ),
+  );
+  assert.match(html, /aria-label="Cuerpos celestes"/);
+  assert.match(html, />Cuerpos celestes<\/span>/);
+  assert.doesNotMatch(html, /Brillo solar/);
+});
 void test('Italian and Russian comet labels and nearby actions match their meaning', () => {
   const expected = {
     it: {
