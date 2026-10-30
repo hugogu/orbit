@@ -6,7 +6,6 @@ export default function RootProviders({
   children,
 }: {
   children: React.ReactNode;
-  locale?: string;
 }) {
   return (
     <>

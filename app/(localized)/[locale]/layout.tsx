@@ -34,7 +34,7 @@ export default async function LocalizedLayout({
   return (
     <html lang={languages[locale].intl} className="dark">
       <body>
-        <RootProviders locale={locale}>{children}</RootProviders>
+        <RootProviders>{children}</RootProviders>
       </body>
     </html>
   );

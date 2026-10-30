@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -34,6 +35,11 @@ const defaultContext: I18n = {
 
 const Context = createContext<I18n>(defaultContext);
 
+type CatalogState = {
+  locale: Locale;
+  catalog: Record<string, string>;
+};
+
 export function I18nProvider({
   children,
   initialLocale = defaultLocale,
@@ -44,12 +50,17 @@ export function I18nProvider({
   initialMessages?: Record<string, string>;
 }) {
   const [locale, updateLocale] = useState<Locale>(initialLocale);
-  const [messages, setMessages] = useState<Record<string, string> | undefined>(
-    initialMessages,
+  const [messages, setMessages] = useState<CatalogState | undefined>(
+    initialMessages
+      ? { locale: initialLocale, catalog: initialMessages }
+      : undefined,
   );
 
+  const live = useRef(true);
+  const request = useRef(0);
+
   useEffect(() => {
-    let cancelled = false;
+    live.current = true;
     const restore = () => {
       let saved: string | null = null;
       try {
@@ -65,22 +76,26 @@ export function I18nProvider({
         navigator.languages,
       );
       updateLocale(nextLocale);
+      const ticket = ++request.current;
       void loadLocaleCatalog(nextLocale).then((loaded) => {
-        if (!cancelled) setMessages(loaded);
+        if (!live.current || ticket !== request.current) return;
+        setMessages({ locale: nextLocale, catalog: loaded });
       });
     };
     queueMicrotask(restore);
     window.addEventListener('popstate', restore);
     return () => {
-      cancelled = true;
+      live.current = false;
       window.removeEventListener('popstate', restore);
     };
   }, []);
 
   const setLocale = useCallback((next: Locale, href?: string) => {
     updateLocale(next);
+    const ticket = ++request.current;
     void loadLocaleCatalog(next).then((loaded) => {
-      setMessages(loaded);
+      if (!live.current || ticket !== request.current) return;
+      setMessages({ locale: next, catalog: loaded });
     });
     try {
       localStorage.setItem(localeStorageKey, next);
@@ -102,7 +117,8 @@ export function I18nProvider({
   const t = useMemo(() => {
     const syncT = getSyncTranslator(locale);
     if (syncT) return syncT;
-    return createTranslator(locale, messages);
+    const catalog = messages?.locale === locale ? messages.catalog : undefined;
+    return createTranslator(locale, catalog);
   }, [locale, messages]);
 
   const value = useMemo(

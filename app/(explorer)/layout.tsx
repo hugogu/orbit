@@ -14,7 +14,7 @@ export default function ExplorerLayout({
   return (
     <html lang="en" className="dark">
       <body>
-        <RootProviders locale="en">{children}</RootProviders>
+        <RootProviders>{children}</RootProviders>
       </body>
     </html>
   );

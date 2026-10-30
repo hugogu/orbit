@@ -566,3 +566,19 @@ void test('language metadata and client components do not bundle static dictiona
   const zhCatalog = await loadLocaleCatalog('zh-CN');
   assert.ok(zhCatalog['太阳系']);
 });
+
+void test('i18n provider guards against out-of-order catalog loads and dead props', () => {
+  const providerSrc = fs.readFileSync(
+    new URL('../lib/i18n/provider.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(providerSrc, /ticket !== request\.current/);
+  assert.match(providerSrc, /live\.current/);
+  assert.match(providerSrc, /messages\?\.locale === locale/);
+
+  const rootProvidersSrc = fs.readFileSync(
+    new URL('../app/root-providers.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(rootProvidersSrc, /locale/);
+});
