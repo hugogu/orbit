@@ -26,6 +26,7 @@ import {
   seoLocales,
   seoSiteName,
   serializeJsonLd,
+  xDefaultLocale,
 } from '../../lib/seo';
 
 export function occurrenceMetadata(
@@ -47,7 +48,7 @@ export function occurrenceMetadata(
           languages[item].intl,
           absoluteSiteUrl(eventDetailsPath(item, event.id)),
         ]),
-        ['x-default', absoluteSiteUrl(eventDetailsPath('zh-CN', event.id))],
+        ['x-default', absoluteSiteUrl(eventDetailsPath(xDefaultLocale, event.id))],
       ]),
     },
     openGraph: {

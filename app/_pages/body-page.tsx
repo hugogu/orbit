@@ -64,6 +64,7 @@ import {
   serializeJsonLd,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
   type CatalogEntry,
 } from '../../lib/seo';
 
@@ -236,7 +237,7 @@ export async function generateMetadata({
           languages[item].intl,
           absoluteSiteUrl(bodyDetailsPath(item, entry.data.id)),
         ]),
-        ['x-default', absoluteSiteUrl(bodyDetailsPath('zh-CN', entry.data.id))],
+        ['x-default', absoluteSiteUrl(bodyDetailsPath(xDefaultLocale, entry.data.id))],
       ]),
     },
     openGraph: {

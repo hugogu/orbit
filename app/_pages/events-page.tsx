@@ -25,6 +25,7 @@ import {
   serializeJsonLd,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
 } from '../../lib/seo';
 
 type PageProps = {
@@ -67,7 +68,7 @@ export async function generateMetadata({
           languages[item].intl,
           absoluteSiteUrl(eventsIndexPath(item)),
         ]),
-        ['x-default', absoluteSiteUrl(eventsIndexPath('zh-CN'))],
+        ['x-default', absoluteSiteUrl(eventsIndexPath(xDefaultLocale))],
       ]),
     },
     openGraph: {

@@ -79,6 +79,9 @@ export const siteOrigin = resolveSiteOrigin();
 
 export const seoLocales = Object.keys(languages) as Locale[];
 
+/** The fallback international locale used for x-default hreflang annotations. */
+export const xDefaultLocale: Locale = 'en';
+
 export type CatalogEntry =
   | { kind: 'body'; data: Body }
   | { kind: 'moon'; data: OrbitingMoon }

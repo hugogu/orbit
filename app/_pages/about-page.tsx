@@ -19,6 +19,7 @@ import {
   privacyPath,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
 } from '../../lib/seo';
 
 type PageProps = {
@@ -57,7 +58,7 @@ export async function generateMetadata({
           languages[item].intl,
           absoluteSiteUrl(aboutPath(item)),
         ]),
-        ['x-default', absoluteSiteUrl(aboutPath('zh-CN'))],
+        ['x-default', absoluteSiteUrl(aboutPath(xDefaultLocale))],
       ]),
     },
     openGraph: {

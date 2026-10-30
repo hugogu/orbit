@@ -41,6 +41,7 @@ import {
   siteOrigin,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
   type CatalogEntry,
 } from '../lib/seo';
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
@@ -831,6 +832,13 @@ void test('sitemap repeats reciprocal hreflang links for every localized page', 
   assert.ok(
     localized.every(
       (entry) => entry.alternates!.length === seoLocales.length + 1,
+    ),
+  );
+  assert.equal(xDefaultLocale, 'en');
+  assert.ok(
+    localized.every(
+      (entry) =>
+        entry.alternates!.find((link) => link.hreflang === 'x-default')?.href.includes('/en-US/'),
     ),
   );
   assert.match(

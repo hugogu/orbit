@@ -9,11 +9,12 @@ import {
   eventsIndexPath,
   privacyPath,
   seoLocales,
+  xDefaultLocale,
   type CatalogEntry,
 } from './seo';
 import { eventTopics } from './event-guide';
 import { eventOccurrences, occurrenceImagePath } from './event-occurrences';
-import { defaultLocale, languages, type Locale } from './i18n';
+import { languages, type Locale } from './i18n';
 
 export type SitemapAlternate = {
   hreflang: string;
@@ -47,7 +48,7 @@ function alternateLinks(route: LocalizedRoute): SitemapAlternate[] {
     })),
     {
       hreflang: 'x-default',
-      href: absoluteSiteUrl(route(defaultLocale)),
+      href: absoluteSiteUrl(route(xDefaultLocale)),
     },
   ];
 }
