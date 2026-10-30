@@ -101,6 +101,14 @@ for (const locale of seoLocales) {
       ),
       `Raster icon: ${path}`,
     );
+    assert.ok(
+      metaTags.some(
+        (attributes) =>
+          attributes.get('name')?.toLowerCase() === 'robots' &&
+          attributes.get('content')?.includes('noindex'),
+      ),
+      `Share landing must have noindex: ${path}`,
+    );
     assert.equal((html.match(/<h1\b/g) ?? []).length, 1, path);
     checked++;
   }

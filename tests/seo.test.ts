@@ -1208,6 +1208,15 @@ void test('profile export metadata parsing ignores attribute order and casing', 
   assert.equal(image?.get('content'), 'square.jpg');
 });
 
+void test('share landing pages have noindex robots metadata', () => {
+  const sharePageSource = readFileSync(
+    new URL('../app/_pages/share-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(sharePageSource, /index:\s*false/);
+  assert.match(sharePageSource, /follow:\s*false/);
+});
+
 void test('profile sharing announces copy status changes', () => {
   assert.match(profileShare, /<output aria-live="polite" aria-atomic="true">/);
 });
