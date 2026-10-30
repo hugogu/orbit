@@ -12,6 +12,18 @@ import { languages, translator, type Locale } from '../lib/i18n';
 
 const codes = Object.keys(languages) as Locale[];
 const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const zhrExplanation =
+  'ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。';
+
+void test('meteor shower ZHR explanation is available in every language', () => {
+  for (const locale of codes) {
+    const copy = translator(locale)(zhrExplanation);
+    if (locale !== 'zh-CN') assert.notEqual(copy, zhrExplanation, locale);
+    assert.match(copy, /ZHR/);
+    assert.ok(copy.length > 80, locale);
+  }
+  assert.equal(topicsByCategory('meteor-shower').length, 8);
+});
 
 void test('planet planner support is limited to the topics whose dates it computes', () => {
   for (const topic of topicsByCategory('planet-aspect')) {

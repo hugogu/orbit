@@ -268,6 +268,9 @@ export default async function EventPage({ params }: PageProps) {
                   <dd>{t(topic.season)}</dd>
                 </div>
               </dl>
+              {topic.category === 'meteor-shower' && (
+                <p>{t('ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。')}</p>
+              )}
               <details className="profile-data-note">
                 <summary>{t('数据与计算说明')}</summary>
                 <p>

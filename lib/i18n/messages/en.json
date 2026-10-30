@@ -1133,6 +1133,7 @@
   "通常极大": "Usual maximum",
   "1 月 3 日前后": "Around 3 January",
   "理想条件下的 ZHR": "ZHR under ideal skies",
+  "ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。": "ZHR (Zenithal Hourly Rate) is a standardized peak rate for a clear, dark sky with the radiant directly overhead. It is not the number of meteors you will actually see per hour at your location. Moonlight, light pollution, clouds, or a low radiant usually reduce the visible count.",
   "约 110": "About 110",
   "母天体": "Parent body",
   "小行星 2003 EH₁": "Asteroid 2003 EH₁",
