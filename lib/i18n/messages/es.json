@@ -1133,6 +1133,7 @@
   "通常极大": "Máximo habitual",
   "1 月 3 日前后": "Alrededor del 3 de enero",
   "理想条件下的 ZHR": "THZ en condiciones ideales",
+  "ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。": "La ZHR (tasa horaria cenital) es una tasa máxima estandarizada para un cielo despejado y oscuro, con el radiante justo en el cenit. No es el número de meteoros que verás realmente por hora desde tu ubicación. La luz de la Luna, la contaminación lumínica, las nubes o un radiante bajo suelen reducir la cantidad visible.",
   "约 110": "Aproximadamente 110",
   "母天体": "Cuerpo progenitor",
   "小行星 2003 EH₁": "Asteroide 2003 EH₁",
