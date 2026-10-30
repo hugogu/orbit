@@ -84,6 +84,10 @@ function shareMetadata(locale: Locale, entry: CatalogEntry | null): Metadata {
     // present. Both are dropped so the shared state survives the post; search
     // engines instead follow the redirect below back to the observatory.
     alternates: { canonical: null },
+    robots: {
+      index: false,
+      follow: false,
+    },
     openGraph: {
       type: 'website',
       siteName: seoSiteName,

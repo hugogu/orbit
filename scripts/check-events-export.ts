@@ -93,7 +93,7 @@ function checkShell(
   for (const item of [...seoLocales, 'x-default' as const]) {
     const hreflang = item === 'x-default' ? 'x-default' : languages[item].intl;
     const href = absoluteSiteUrl(
-      alternates(item === 'x-default' ? 'zh-CN' : item),
+      alternates(item === 'x-default' ? 'en' : item),
     );
     assert.ok(
       page.links.some(

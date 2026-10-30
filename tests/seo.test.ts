@@ -24,7 +24,10 @@ import {
   eventsIndexTitle,
   eventTitle,
   explorerPath,
+  homeDescription,
   homeJsonLd,
+  homePath,
+  homeTitle,
   lunarPlannerPath,
   normalizeSiteOrigin,
   ogImagePath,
@@ -41,6 +44,7 @@ import {
   siteOrigin,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
   type CatalogEntry,
 } from '../lib/seo';
 import { eventCategories, eventTopics, eventTopic } from '../lib/event-guide';
@@ -815,11 +819,11 @@ void test('the body index reads as whole sentences in every language', () => {
 void test('sitemap repeats reciprocal hreflang links for every localized page', () => {
   const entries = sitemapEntries();
   const localized = entries.filter((entry) => entry.alternates);
-  // Every profile and sky-event topic, plus the two indexes above them and
+  // Every profile, sky-event topic, localized home, plus the two indexes above them and
   // the two standalone legal pages (privacy, about).
   const routes =
-    catalogEntries().length + eventTopics.length + eventOccurrences.length + 4;
-  assert.equal(localized.length, routes * seoLocales.length);
+    catalogEntries().length + eventTopics.length + eventOccurrences.length + 5;
+  assert.equal(localized.length, routes * seoLocales.length + 1);
   assert.equal(
     new Set(
       localized.flatMap((entry) =>
@@ -831,6 +835,15 @@ void test('sitemap repeats reciprocal hreflang links for every localized page', 
   assert.ok(
     localized.every(
       (entry) => entry.alternates!.length === seoLocales.length + 1,
+    ),
+  );
+  assert.equal(xDefaultLocale, 'en');
+  assert.ok(
+    localized.every(
+      (entry) => {
+        const xDefaultHref = entry.alternates!.find((link) => link.hreflang === 'x-default')?.href;
+        return xDefaultHref === absoluteSiteUrl('/') || xDefaultHref?.includes('/en-US/');
+      },
     ),
   );
   assert.match(
@@ -1094,7 +1107,7 @@ void test('site origins normalize scheme-less hosts and discard paths safely', (
 });
 
 void test('root layouts emit the route locale before client hydration', () => {
-  assert.match(explorerLayout, /<html lang="zh-CN"/);
+  assert.match(explorerLayout, /<html lang="en"/);
   assert.match(localizedLayout, /<html lang=\{languages\[locale\]\.intl\}/);
   assert.match(localizedLayout, /generateStaticParams/);
   assert.match(explorerPage, /homeJsonLd\(\)/);
@@ -1208,6 +1221,15 @@ void test('profile export metadata parsing ignores attribute order and casing', 
   assert.equal(image?.get('content'), 'square.jpg');
 });
 
+void test('share landing pages have noindex robots metadata', () => {
+  const sharePageSource = readFileSync(
+    new URL('../app/_pages/share-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(sharePageSource, /index:\s*false/);
+  assert.match(sharePageSource, /follow:\s*false/);
+});
+
 void test('profile sharing announces copy status changes', () => {
   assert.match(profileShare, /<output aria-live="polite" aria-atomic="true">/);
 });
@@ -1306,5 +1328,22 @@ void test('home and localized profiles share one site name and its alternatives'
     assert.equal(website.name, seoSiteName);
     assert.equal(website.url, absoluteSiteUrl('/'));
     assert.deepEqual(website.alternateName, ['ORBIT', 'orbits.observer']);
+  }
+});
+
+void test('localized home pages provide metadata and canonical URLs for every locale', () => {
+  const localizedHomePage = readFileSync(
+    new URL('../app/_pages/localized-home-page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(localizedHomePage, /generateStaticParams/);
+  assert.match(localizedHomePage, /generateMetadata/);
+  assert.match(localizedHomePage, /homeTitle\(locale\)/);
+  assert.match(localizedHomePage, /homeDescription\(locale\)/);
+  assert.match(localizedHomePage, /homePath\(locale\)/);
+  for (const locale of seoLocales) {
+    assert.equal(homePath(locale), `/${localePath(locale)}`);
+    assert.ok(homeTitle(locale).length > 0);
+    assert.ok(homeDescription(locale).length > 0);
   }
 });

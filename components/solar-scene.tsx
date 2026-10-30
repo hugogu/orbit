@@ -1,5 +1,5 @@
 'use client';
-import { translator, type Locale } from '../lib/i18n';
+import type { Locale } from '../lib/i18n/languages';
 import { useI18n } from '../lib/i18n/provider';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -125,14 +125,14 @@ export default function SolarScene({
 }) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null),
-    latest = useRef({ state, onSelect, onTime, onAssetStatus, sceneRef }),
+    latest = useRef({ state, onSelect, onTime, onAssetStatus, sceneRef, t }),
     wakeScene = useRef<() => void>(() => {});
   const [error, setError] = useState('');
   useEffect(() => {
-    latest.current = { state, onSelect, onTime, onAssetStatus, sceneRef };
+    latest.current = { state, onSelect, onTime, onAssetStatus, sceneRef, t };
     // A change on the page is a change on screen, and the scene may be asleep.
     wakeScene.current();
-  }, [state, onSelect, onTime, onAssetStatus, sceneRef]);
+  }, [state, onSelect, onTime, onAssetStatus, sceneRef, t]);
   useEffect(() => {
     const container = host.current!;
     let renderer: THREE.WebGLRenderer;
@@ -641,7 +641,7 @@ export default function SolarScene({
       labels: state.labels,
       lineWidth: state.orbitLineWidth,
       seconds: view.paused ? 0 : seconds,
-      translate: translator(state.locale),
+      translate: latest.current.t,
     });
     // A shared pose replaces automatic framing until the viewer takes over.
     let adoptedPose: CameraPose | null | undefined,
@@ -701,7 +701,7 @@ export default function SolarScene({
         else camera.clearViewOffset();
         lastEclipseFraming = framingKey;
       }
-      const translate = translator(s.locale);
+      const translate = latest.current.t;
       if (s.locale !== lastLocale || s.ground !== lastGround) {
         renderer.domElement.setAttribute(
           'aria-label',

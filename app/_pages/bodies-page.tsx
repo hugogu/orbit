@@ -24,6 +24,7 @@ import {
   serializeJsonLd,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
   type CatalogEntry,
 } from '../../lib/seo';
 
@@ -64,7 +65,7 @@ export async function generateMetadata({
           languages[item].intl,
           absoluteSiteUrl(bodiesIndexPath(item)),
         ]),
-        ['x-default', absoluteSiteUrl(bodiesIndexPath('zh-CN'))],
+        ['x-default', absoluteSiteUrl(bodiesIndexPath(xDefaultLocale))],
       ]),
     },
     openGraph: {
@@ -161,6 +162,8 @@ export default async function BodiesPage({ params }: PageProps) {
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
         <LanguagePicker
+          locale={locale}
+          label={t('语言')}
           hrefs={Object.fromEntries(
             seoLocales.map((item) => [item, bodiesIndexPath(item)]),
           )}

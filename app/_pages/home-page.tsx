@@ -1,5 +1,6 @@
 'use client';
-import { useI18n } from '../../lib/i18n/provider';
+import { I18nProvider, useI18n } from '../../lib/i18n/provider';
+import type { Locale } from '../../lib/i18n/languages';
 import {
   useEffect,
   useMemo,
@@ -177,7 +178,7 @@ function speedMarkerModifier(value: number, presets: readonly number[]) {
     ? ''
     : ' speed-marker--optional';
 }
-export default function Home() {
+function ObservatoryView() {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState<string | null>(null),
     [paused, setPaused] = useState(false),
@@ -2394,5 +2395,19 @@ export default function Home() {
         </SheetContent>
       </Sheet>
     </main>
+  );
+}
+
+export default function Home({
+  initialLocale,
+  initialMessages,
+}: {
+  initialLocale?: Locale;
+  initialMessages?: Record<string, string>;
+}) {
+  return (
+    <I18nProvider initialLocale={initialLocale} initialMessages={initialMessages}>
+      <ObservatoryView />
+    </I18nProvider>
   );
 }

@@ -64,6 +64,7 @@ import {
   serializeJsonLd,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
   type CatalogEntry,
 } from '../../lib/seo';
 
@@ -236,7 +237,7 @@ export async function generateMetadata({
           languages[item].intl,
           absoluteSiteUrl(bodyDetailsPath(item, entry.data.id)),
         ]),
-        ['x-default', absoluteSiteUrl(bodyDetailsPath('zh-CN', entry.data.id))],
+        ['x-default', absoluteSiteUrl(bodyDetailsPath(xDefaultLocale, entry.data.id))],
       ]),
     },
     openGraph: {
@@ -441,6 +442,8 @@ export default async function BodyPage({ params }: PageProps) {
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
         <LanguagePicker
+          locale={locale}
+          label={t('语言')}
           hrefs={Object.fromEntries(
             seoLocales.map((item) => [
               item,
@@ -488,7 +491,15 @@ export default async function BodyPage({ params }: PageProps) {
                 >
                   {t('在 3D 观测台中观察')}
                 </a>
-                <ProfileShare locale={locale} title={title} url={canonical} />
+                <ProfileShare
+                  locale={locale}
+                  title={title}
+                  url={canonical}
+                  label={t('分享档案')}
+                  copiedLabel={t('链接已复制')}
+                  manualLabel={t('请复制下方链接')}
+                  copyLinkAriaLabel={t('复制链接')}
+                />
               </div>
             </div>
           </div>

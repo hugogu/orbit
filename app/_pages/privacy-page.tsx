@@ -19,6 +19,7 @@ import {
   privacyTitle,
   seoSiteName,
   seoLocales,
+  xDefaultLocale,
 } from '../../lib/seo';
 
 type PageProps = {
@@ -57,7 +58,7 @@ export async function generateMetadata({
           languages[item].intl,
           absoluteSiteUrl(privacyPath(item)),
         ]),
-        ['x-default', absoluteSiteUrl(privacyPath('zh-CN'))],
+        ['x-default', absoluteSiteUrl(privacyPath(xDefaultLocale))],
       ]),
     },
     openGraph: {
@@ -100,6 +101,8 @@ export default async function PrivacyPage({ params }: PageProps) {
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
         <LanguagePicker
+          locale={locale}
+          label={t('语言')}
           hrefs={Object.fromEntries(
             seoLocales.map((item) => [item, privacyPath(item)]),
           )}

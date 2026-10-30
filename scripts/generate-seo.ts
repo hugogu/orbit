@@ -9,6 +9,8 @@ mkdirSync(publicDir, { recursive: true });
 const robots = [
   'User-agent: *',
   'Allow: /',
+  'Disallow: /*/share',
+  'Disallow: /*/share/*',
   `Sitemap: ${absoluteSiteUrl('/sitemap.xml')}`,
   '',
 ].join('\n');
