@@ -162,6 +162,8 @@ export default async function BodiesPage({ params }: PageProps) {
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
         <LanguagePicker
+          locale={locale}
+          label={t('语言')}
           hrefs={Object.fromEntries(
             seoLocales.map((item) => [item, bodiesIndexPath(item)]),
           )}

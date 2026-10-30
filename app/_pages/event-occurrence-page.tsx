@@ -137,6 +137,8 @@ export default function EventOccurrencePage({
           ORBIT <span>{t('太阳系漫游')}</span>
         </a>
         <LanguagePicker
+          locale={locale}
+          label={t('语言')}
           hrefs={Object.fromEntries(
             seoLocales.map((item) => [
               item,
@@ -182,6 +184,9 @@ export default function EventOccurrencePage({
               title={title}
               url={canonical}
               label={t('分享这份介绍')}
+              copiedLabel={t('链接已复制')}
+              manualLabel={t('请复制下方链接')}
+              copyLinkAriaLabel={t('复制链接')}
             />
           </div>
         </div>

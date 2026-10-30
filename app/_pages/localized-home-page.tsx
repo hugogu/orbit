@@ -12,6 +12,7 @@ import {
   seoSiteName,
 } from '../../lib/seo';
 import {
+  getMessages,
   languages,
   localePath,
   resolveLocalePath,
@@ -89,7 +90,7 @@ export default async function LocalizedHomePage({ params }: PageProps) {
   const locale = await resolvePage(params);
   return (
     <>
-      <HomePage />
+      <HomePage initialLocale={locale} initialMessages={getMessages(locale)} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

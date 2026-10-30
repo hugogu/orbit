@@ -538,3 +538,31 @@ void test('the lunar calendar age heading states its unit in every locale', () =
   for (const locale of codes)
     assert.equal(translator(locale)('月龄（天）'), headings[locale], locale);
 });
+
+void test('language metadata and client components do not bundle static dictionary imports', async () => {
+  const languagesSrc = fs.readFileSync(
+    new URL('../lib/i18n/languages.ts', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(languagesSrc, /\.json/);
+
+  const profileShareSrc = fs.readFileSync(
+    new URL('../components/profile-share.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(profileShareSrc, /from ['"].*\/lib\/i18n['"]/);
+  assert.doesNotMatch(profileShareSrc, /translator/);
+
+  const solarSceneSrc = fs.readFileSync(
+    new URL('../components/solar-scene.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(solarSceneSrc, /from ['"].*\/lib\/i18n['"]/);
+  assert.doesNotMatch(solarSceneSrc, /translator\(/);
+
+  const { loadLocaleCatalog } = await import('../lib/i18n/loader');
+  const enCatalog = await loadLocaleCatalog('en');
+  assert.ok(enCatalog['太阳系']);
+  const zhCatalog = await loadLocaleCatalog('zh-CN');
+  assert.ok(zhCatalog['太阳系']);
+});

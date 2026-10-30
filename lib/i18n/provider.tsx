@@ -14,30 +14,42 @@ import {
   languageUrl,
   localeStorageKey,
   resolveLocale,
-  translator,
   type Locale,
   type Translate,
-} from './index';
+} from './languages';
+import { loadLocaleCatalog } from './loader';
+import { createTranslator, getSyncTranslator } from './translator';
 
 type I18n = {
   locale: Locale;
   t: Translate;
   setLocale: (locale: Locale, href?: string) => void;
 };
-const Context = createContext<I18n>({
+
+const defaultContext: I18n = {
   locale: defaultLocale,
-  t: translator(),
+  t: (key: string) => key,
   setLocale: () => {},
-});
+};
+
+const Context = createContext<I18n>(defaultContext);
+
 export function I18nProvider({
   children,
   initialLocale = defaultLocale,
+  initialMessages,
 }: {
   children?: React.ReactNode;
   initialLocale?: Locale;
+  initialMessages?: Record<string, string>;
 }) {
-  const [locale, updateLocale] = useState(initialLocale);
+  const [locale, updateLocale] = useState<Locale>(initialLocale);
+  const [messages, setMessages] = useState<Record<string, string> | undefined>(
+    initialMessages,
+  );
+
   useEffect(() => {
+    let cancelled = false;
     const restore = () => {
       let saved: string | null = null;
       try {
@@ -47,20 +59,29 @@ export function I18nProvider({
       }
       const url = new URL(window.location.href);
       const pathLocale = resolveLocale(url.pathname.split('/')[1]);
-      updateLocale(
-        detectLocale(
-          pathLocale ?? url.searchParams.get('lang'),
-          saved,
-          navigator.languages,
-        ),
+      const nextLocale = detectLocale(
+        pathLocale ?? url.searchParams.get('lang'),
+        saved,
+        navigator.languages,
       );
+      updateLocale(nextLocale);
+      void loadLocaleCatalog(nextLocale).then((loaded) => {
+        if (!cancelled) setMessages(loaded);
+      });
     };
     queueMicrotask(restore);
     window.addEventListener('popstate', restore);
-    return () => window.removeEventListener('popstate', restore);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('popstate', restore);
+    };
   }, []);
+
   const setLocale = useCallback((next: Locale, href?: string) => {
     updateLocale(next);
+    void loadLocaleCatalog(next).then((loaded) => {
+      setMessages(loaded);
+    });
     try {
       localStorage.setItem(localeStorageKey, next);
     } catch {
@@ -77,10 +98,18 @@ export function I18nProvider({
       );
     }
   }, []);
+
+  const t = useMemo(() => {
+    const syncT = getSyncTranslator(locale);
+    if (syncT) return syncT;
+    return createTranslator(locale, messages);
+  }, [locale, messages]);
+
   const value = useMemo(
-    () => ({ locale, setLocale, t: translator(locale) }),
-    [locale, setLocale],
+    () => ({ locale, setLocale, t }),
+    [locale, setLocale, t],
   );
+
   useEffect(() => {
     document.documentElement.lang = languages[locale].intl;
     // Profile routes own their metadata; only the explorer changes it client-side.
@@ -95,6 +124,12 @@ export function I18nProvider({
         ),
       );
   }, [locale, value]);
+
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
+
 export const useI18n = () => useContext(Context);
+export const useOptionalI18n = () => {
+  const context = useContext(Context);
+  return context === defaultContext ? null : context;
+};
