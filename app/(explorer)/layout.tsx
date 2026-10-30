@@ -12,9 +12,9 @@ export default function ExplorerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN" className="dark">
+    <html lang="en" className="dark">
       <body>
-        <RootProviders>{children}</RootProviders>
+        <RootProviders locale="en">{children}</RootProviders>
       </body>
     </html>
   );

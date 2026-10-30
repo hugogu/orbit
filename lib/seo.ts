@@ -8,7 +8,6 @@ import {
   type EventOccurrence,
 } from './event-occurrences';
 import {
-  defaultLocale,
   languages,
   localePath,
   translator,
@@ -95,6 +94,20 @@ export function catalogEntries(): CatalogEntry[] {
     ...comets.map((data) => ({ kind: 'comet' as const, data })),
     ...asteroids.map((data) => ({ kind: 'asteroid' as const, data })),
   ];
+}
+
+export function homePath(locale: Locale) {
+  return `/${localePath(locale)}`;
+}
+
+export function homeTitle(locale: Locale) {
+  return translator(locale)('Orbits Observer：实时三维太阳系探索');
+}
+
+export function homeDescription(locale: Locale) {
+  return translator(locale)(
+    '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
+  );
 }
 
 export function catalogEntry(id: string): CatalogEntry | undefined {
@@ -602,11 +615,14 @@ export function bodiesIndexJsonLd({
 }
 
 /** Structured data for the interactive observatory landing page. */
-export function homeJsonLd() {
+export function homeJsonLd(locale: Locale = 'en', canonicalUrl?: string) {
   const organizationId = `${siteOrigin}#organization`;
   const websiteId = `${siteOrigin}#website`;
-  const description =
-    '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。';
+  const t = translator(locale);
+  const description = t(
+    '从太阳到奥尔特云，探索运行中的三维太阳系。调节时间，走近行星，理解我们的宇宙家园。',
+  );
+  const targetUrl = canonicalUrl ?? absoluteSiteUrl('/');
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -619,19 +635,19 @@ export function homeJsonLd() {
         url: absoluteSiteUrl('/'),
         description,
         publisher: { '@id': organizationId },
-        inLanguage: seoLocales.map((locale) => languages[locale].intl),
+        inLanguage: seoLocales.map((item) => languages[item].intl),
       },
       {
         '@type': 'LearningResource',
-        '@id': `${siteOrigin}#learning-resource`,
+        '@id': `${targetUrl}#learning-resource`,
         name: seoSiteName,
         description,
-        url: absoluteSiteUrl('/'),
+        url: targetUrl,
         learningResourceType: 'interactive astronomy simulation',
         educationalLevel: 'Beginner',
-        inLanguage: seoLocales.map((locale) => languages[locale].intl),
+        inLanguage: seoLocales.map((item) => languages[item].intl),
         provider: { '@id': organizationId },
-        about: solarSystemNode(defaultLocale),
+        about: solarSystemNode(locale),
       },
     ],
   };

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import { translator } from '../lib/i18n';
-import { seoSiteName, siteOrigin } from '../lib/seo';
+import { languages, localePath, translator } from '../lib/i18n';
+import { absoluteSiteUrl, seoLocales, seoSiteName, siteOrigin } from '../lib/seo';
 import { pwaThemeColor } from '../lib/pwa';
 
 export const viewport: Viewport = {
@@ -32,6 +32,13 @@ export const metadata: Metadata = {
   category: 'education',
   alternates: {
     canonical: '/',
+    languages: Object.fromEntries([
+      ...seoLocales.map((item) => [
+        languages[item].intl,
+        absoluteSiteUrl(`/${localePath(item)}`),
+      ]),
+      ['x-default', absoluteSiteUrl('/')],
+    ]),
   },
   openGraph: {
     type: 'website',

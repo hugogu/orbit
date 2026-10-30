@@ -7,6 +7,7 @@ import {
   entryImagePath,
   eventDetailsPath,
   eventsIndexPath,
+  homePath,
   privacyPath,
   seoLocales,
   xDefaultLocale,
@@ -48,13 +49,17 @@ function alternateLinks(route: LocalizedRoute): SitemapAlternate[] {
     })),
     {
       hreflang: 'x-default',
-      href: absoluteSiteUrl(route(xDefaultLocale)),
+      href:
+        route === homePath
+          ? absoluteSiteUrl('/')
+          : absoluteSiteUrl(route(xDefaultLocale)),
     },
   ];
 }
 
 function routeSpecs(entries: CatalogEntry[]): RouteSpec[] {
   return [
+    { route: homePath },
     { route: bodiesIndexPath },
     ...entries.map(
       (entry): RouteSpec => ({
@@ -91,7 +96,7 @@ export function sitemapEntries(
     alternates: alternateLinks(spec.route),
   }));
   return [
-    { loc: absoluteSiteUrl('/') },
+    { loc: absoluteSiteUrl('/'), alternates: alternateLinks(homePath) },
     ...seoLocales.flatMap((locale) =>
       routes.map(({ route, alternates, images }) => ({
         loc: absoluteSiteUrl(route(locale)),
