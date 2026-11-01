@@ -114,6 +114,26 @@ void test('guide copy is translated in every language', () => {
   }
 });
 
+void test('Venus brightness guidance distinguishes approximate peak apparent magnitude from an elongation prediction', () => {
+  const observing = eventTopic('elongation')!.observing;
+  const brightness = observing.find((line) => line.includes('−4.8'))!;
+  assert.ok(brightness);
+  assert.match(brightness, /最亮时视星等约为 −4\.8/);
+  assert.match(brightness, /相位和距离变化/);
+  assert.ok(observing.some((line) => line.includes('绝不要用光学设备搜寻')));
+
+  for (const locale of codes) {
+    const translated = translator(locale)(brightness);
+    if (locale !== 'zh-CN')
+      assert.notEqual(translated, brightness, `${locale}: missing translation`);
+    assert.match(translated, /−4[.,]8/, locale);
+    assert.doesNotMatch(translated, /−4(?:\s|\s*等)/, locale);
+  }
+  assert.match(translator('en')(brightness), /apparent magnitude of about −4\.8/);
+  assert.match(translator('en')(brightness), /varies with phase and distance/);
+  assert.match(translator('ja')(brightness), /視等級は約 −4\.8/);
+});
+
 void test('lunar eclipse recurrence counts every type worldwide by calendar year', () => {
   const recurrence = eventTopic('lunar-eclipse')?.season;
   assert.equal(recurrence, '全球每公历年 2 至 5 次，含半影月食');
