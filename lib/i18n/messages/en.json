@@ -1451,7 +1451,7 @@
   "每年四次": "Four times a year",
   "地轴倾斜造成的四个节点，决定昼夜长短与四季。": "Four turning points set by Earth’s tilt, governing day length and the seasons.",
   "四季来自倾斜，而不是距离": "Seasons come from tilt, not from distance",
-  "地球的自转轴相对轨道面倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。": "Earth’s rotation axis is tilted about 23.4° to its orbital plane, and keeps pointing the same way all the way round the Sun. The subsolar point therefore travels back and forth between the tropics: the two crossings of the equator are the equinoxes, and the northern and southern extremes are the solstices.",
+  "地球的自转轴相对轨道面的垂线倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。": "Earth’s rotation axis is tilted about 23.4° from the perpendicular to its orbital plane, and keeps pointing the same way all the way round the Sun. The subsolar point therefore travels back and forth between the tropics: the two crossings of the equator are the equinoxes, and the northern and southern extremes are the solstices.",
   "分点那天昼夜真的等长吗": "Are day and night really equal at an equinox?",
   "接近等长，但并不精确。大气折射让太阳在几何上还位于地平线之下时就已可见，而日出日落又以日面上缘为准，因此白昼比黑夜长了几分钟。真正昼夜等长的那天叫均时日，通常落在分点前后几天。": "Close, but not exact. Refraction lifts the Sun into view while it is still geometrically below the horizon, and sunrise and sunset are timed from the upper limb, so daylight runs a few minutes longer than night. The date when they truly match is the equilux, usually a few days to either side of the equinox.",
   "至点与最早的日落": "The solstice and the earliest sunset",

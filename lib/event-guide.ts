@@ -824,7 +824,7 @@ export const eventTopics: EventTopic[] = [
     summary: '地轴倾斜造成的四个节点，决定昼夜长短与四季。',
     headline: '四季来自倾斜，而不是距离',
     intro:
-      '地球的自转轴相对轨道面倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。',
+      '地球的自转轴相对轨道面的垂线倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。',
     sections: [
       {
         heading: '分点那天昼夜真的等长吗',
@@ -848,6 +848,10 @@ export const eventTopics: EventTopic[] = [
     ],
     bodies: ['earth', 'sun'],
     sources: [
+      {
+        name: 'NASA Radio JOVE — Views From the Passenger Seat',
+        url: 'https://radiojove.gsfc.nasa.gov/library/sci_briefs/passenger_seat.htm',
+      },
       {
         name: 'NASA Space Place — Why Does Earth Have Seasons?',
         url: 'https://spaceplace.nasa.gov/seasons/en/',

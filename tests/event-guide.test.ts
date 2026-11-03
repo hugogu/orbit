@@ -13,6 +13,30 @@ import { languages, translator, type Locale } from '../lib/i18n';
 const codes = Object.keys(languages) as Locale[];
 const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+void test('equinox guide measures axial tilt from the orbital normal in every language', () => {
+  const overview = eventTopic('equinox-solstice')!.intro;
+  assert.match(overview, /轨道面的垂线倾斜约 23\.4°/);
+  const normals: Record<Locale, RegExp> = {
+    'zh-CN': /轨道面的垂线/,
+    en: /perpendicular to its orbital plane/,
+    ja: /公転面に垂直/,
+    nl: /loodlijn op haar baanvlak/,
+    pt: /perpendicular ao seu plano orbital/,
+    de: /Senkrechte auf ihre Bahnebene/,
+    ko: /공전 궤도면에 수직/,
+    es: /perpendicular a su plano orbital/,
+    fr: /perpendiculaire à son plan orbital/,
+    it: /perpendicolare al piano orbitale/,
+    ru: /перпендикуляру к плоскости/,
+    tr: /yörünge düzlemine dik/,
+  };
+  for (const locale of codes) {
+    const copy = translator(locale)(overview);
+    assert.match(copy, normals[locale], locale);
+    assert.match(copy, /23[.,]4°/, locale);
+  }
+});
+
 void test('planet planner support is limited to the topics whose dates it computes', () => {
   for (const topic of topicsByCategory('planet-aspect')) {
     const tab = eventPlanetPlannerTab(topic);

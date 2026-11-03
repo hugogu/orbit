@@ -1451,7 +1451,7 @@
   "每年四次": "Quatre fois par an",
   "地轴倾斜造成的四个节点，决定昼夜长短与四季。": "Quatre points clés définis par l'inclinaison de la Terre, régissant la durée du jour et les saisons.",
   "四季来自倾斜，而不是距离": "Les saisons viennent de l'inclinaison, pas de la distance",
-  "地球的自转轴相对轨道面倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。": "L'axe de rotation de la Terre est incliné d'environ 23,4° par rapport à son plan orbital et pointe toujours dans la même direction lors de son orbite autour du Soleil. Le point subsolaire oscille ainsi entre les tropiques : les deux passages à l'équateur sont les équinoxes, et les extrêmes nord et sud sont les solstices.",
+  "地球的自转轴相对轨道面的垂线倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。": "L'axe de rotation de la Terre est incliné d'environ 23,4° par rapport à la perpendiculaire à son plan orbital et pointe toujours dans la même direction lors de son orbite autour du Soleil. Le point subsolaire oscille ainsi entre les tropiques : les deux passages à l'équateur sont les équinoxes, et les extrêmes nord et sud sont les solstices.",
   "分点那天昼夜真的等长吗": "Le jour et la nuit sont-ils vraiment égaux lors d'un équinoxe ?",
   "接近等长，但并不精确。大气折射让太阳在几何上还位于地平线之下时就已可见，而日出日落又以日面上缘为准，因此白昼比黑夜长了几分钟。真正昼夜等长的那天叫均时日，通常落在分点前后几天。": "Presque, mais pas exactement. La réfraction atmosphérique élève le Soleil au-dessus de l'horizon alors qu'il est encore géométriquement en dessous, et le lever comme le coucher sont mesurés à partir du limbe supérieur, de sorte que le jour dure quelques minutes de plus que la nuit. La date où ils s'accordent exactement est l'équilux, généralement quelques jours avant ou après l'équinoxe.",
   "至点与最早的日落": "Le solstice et le coucher de soleil le plus précoce",
