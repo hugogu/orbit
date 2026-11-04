@@ -205,7 +205,7 @@ export const eventTopics: EventTopic[] = [
     summary: '北半球条件最好的年度流星雨，出现率稳定，极大期夜里温暖。',
     headline: '北半球最容易看到的一场',
     intro:
-      '英仙座流星雨在 8 月 12 日前后极大，理想条件下每小时可见近百颗。它之所以成为北半球最受欢迎的流星雨，一半因为出现率稳定，另一半因为极大期正值温暖的夏夜，辐射点整夜都在地平线之上。',
+      '英仙座流星雨在 8 月 12 日前后极大，理想条件下每小时可见近百颗。它在北半球广受欢迎，既因为出现率稳定，也因为极大期正值温暖的夏夜。辐射点是否整夜位于地平线之上取决于纬度。',
     sections: [
       {
         heading: '一颗巨大的母彗星',
@@ -223,12 +223,15 @@ export const eventTopics: EventTopic[] = [
       { label: '母天体', value: '109P/斯威夫特—塔特尔彗星' },
     ],
     observing: [
-      '辐射点整夜可见，午夜后升高，出现率随之上升。',
+      '先确认当地辐射点何时位于地平线上方，再选天空较暗、辐射点较高的时段；北半球中纬度通常后半夜更有利，南半球条件因地点而异。辐射点升起不保证能看到流星。',
       '用肉眼看最合适，望远镜的视场反而太小。',
       '到达观测地后，给眼睛 20 分钟适应黑暗。',
     ],
     bodies: [],
-    sources: [nasaShower('perseids', 'Perseids'), imo],
+    sources: [nasaShower('perseids', 'Perseids'), imo, {
+      name: 'IMO 2026 Meteor Shower Calendar',
+      url: 'https://www.imo.net/files/meteor-shower/cal2026.pdf',
+    }],
   },
   {
     id: 'orionids',

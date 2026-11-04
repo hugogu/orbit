@@ -13,6 +13,23 @@ import { languages, translator, type Locale } from '../lib/i18n';
 const codes = Object.keys(languages) as Locale[];
 const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+void test('Perseids guidance qualifies radiant visibility by latitude in every language', () => {
+  const topic = eventTopic('perseids')!;
+  for (const locale of codes) {
+    const t = translator(locale);
+    if (locale !== 'zh-CN') {
+      assert.notEqual(t(topic.intro), topic.intro, locale);
+      assert.notEqual(t(topic.observing[0]), topic.observing[0], locale);
+    }
+    assert.ok(t(topic.intro).length > 0);
+    assert.ok(t(topic.observing[0]).length > 0);
+  }
+  assert.match(topic.intro, /取决于纬度/);
+  assert.match(topic.observing[0], /辐射点升起不保证能看到流星/);
+  assert.match(translator('en')(topic.intro), /depends on latitude/);
+  assert.match(translator('en')(topic.observing[0]), /does not guarantee visible meteors/);
+});
+
 void test('planet planner support is limited to the topics whose dates it computes', () => {
   for (const topic of topicsByCategory('planet-aspect')) {
     const tab = eventPlanetPlannerTab(topic);
