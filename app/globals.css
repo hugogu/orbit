@@ -1533,6 +1533,63 @@ button:disabled {
   border-bottom: 1px solid #ffffff12;
   gap: 20px;
 }
+/* Native macOS toolbar integration: align brand & controls with the system traffic lights */
+html.native-mac .topbar,
+html[data-native-platform='mac'] .topbar {
+  height: 56px;
+  inset: 0 24px auto;
+  padding-left: 80px;
+}
+html.native-mac .brand,
+html[data-native-platform='mac'] .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+html.native-mac .brand > svg,
+html[data-native-platform='mac'] .brand > svg {
+  width: 28px;
+  height: 28px;
+}
+html.native-mac .brand > span,
+html[data-native-platform='mac'] .brand > span {
+  font-size: 20px;
+  line-height: 1;
+}
+html.native-mac .brand i,
+html[data-native-platform='mac'] .brand i {
+  display: inline-block;
+  margin-left: 8px;
+  margin-top: 0;
+  font-size: 12px;
+}
+html.native-mac .view-tabs,
+html[data-native-platform='mac'] .view-tabs {
+  height: 36px !important;
+}
+html.native-mac .view-tabs button,
+html[data-native-platform='mac'] .view-tabs button {
+  padding: 6px 14px;
+}
+html.native-mac .scene-caption,
+html[data-native-platform='mac'] .scene-caption {
+  top: 76px;
+}
+html.native-mac .ground-controls,
+html[data-native-platform='mac'] .ground-controls {
+  top: 60px;
+}
+html.native-mac .side-rail,
+html[data-native-platform='mac'] .side-rail {
+  top: 165px;
+}
+html.native-mac .seo-page-header,
+html[data-native-platform='mac'] .seo-page-header {
+  padding-left: 80px;
+}
+.header-github-link {
+  display: none !important;
+}
 .brand {
   border: 0;
   background: transparent;
