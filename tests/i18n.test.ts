@@ -581,4 +581,11 @@ void test('i18n provider guards against out-of-order catalog loads and dead prop
     'utf8',
   );
   assert.doesNotMatch(rootProvidersSrc, /locale/);
+
+  const pickerSrc = fs.readFileSync(
+    new URL('../components/language-picker.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(pickerSrc, /localStorage\.setItem\(localeStorageKey,\s*next\)/);
+  assert.match(pickerSrc, /window\.location\.assign\(hrefs\[next\]\)/);
 });

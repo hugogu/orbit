@@ -1,6 +1,11 @@
 'use client';
 import { Languages } from 'lucide-react';
-import { languages, resolveLocale, type Locale } from '../lib/i18n/languages';
+import {
+  languages,
+  localeStorageKey,
+  resolveLocale,
+  type Locale,
+} from '../lib/i18n/languages';
 import { useOptionalI18n } from '../lib/i18n/provider';
 
 export default function LanguagePicker({
@@ -24,6 +29,11 @@ export default function LanguagePicker({
         onChange={(event) => {
           const next = resolveLocale(event.target.value);
           if (next && next !== locale) {
+            try {
+              localStorage.setItem(localeStorageKey, next);
+            } catch {
+              /* Still usable with storage disabled. */
+            }
             if (hrefs?.[next]) {
               window.location.assign(hrefs[next]);
             } else if (i18n?.setLocale) {
