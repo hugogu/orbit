@@ -205,7 +205,7 @@ export const eventTopics: EventTopic[] = [
     summary: '北半球条件最好的年度流星雨，出现率稳定，极大期夜里温暖。',
     headline: '北半球最容易看到的一场',
     intro:
-      '英仙座流星雨在 8 月 12 日前后极大，理想条件下每小时可见近百颗。它之所以成为北半球最受欢迎的流星雨，一半因为出现率稳定，另一半因为极大期正值温暖的夏夜，辐射点整夜都在地平线之上。',
+      '英仙座流星雨在 8 月 12 日前后极大，理想条件下每小时可见近百颗。它在北半球广受欢迎，既因为出现率稳定，也因为极大期正值温暖的夏夜。辐射点是否整夜位于地平线之上取决于纬度。',
     sections: [
       {
         heading: '一颗巨大的母彗星',
@@ -223,12 +223,15 @@ export const eventTopics: EventTopic[] = [
       { label: '母天体', value: '109P/斯威夫特—塔特尔彗星' },
     ],
     observing: [
-      '辐射点整夜可见，午夜后升高，出现率随之上升。',
+      '先确认当地辐射点何时位于地平线上方，再选天空较暗、辐射点较高的时段；北半球中纬度通常后半夜更有利，南半球条件因地点而异。辐射点升起不保证能看到流星。',
       '用肉眼看最合适，望远镜的视场反而太小。',
       '到达观测地后，给眼睛 20 分钟适应黑暗。',
     ],
     bodies: [],
-    sources: [nasaShower('perseids', 'Perseids'), imo],
+    sources: [nasaShower('perseids', 'Perseids'), imo, {
+      name: 'IMO 2026 Meteor Shower Calendar',
+      url: 'https://www.imo.net/files/meteor-shower/cal2026.pdf',
+    }],
   },
   {
     id: 'orionids',
@@ -480,7 +483,7 @@ export const eventTopics: EventTopic[] = [
     ],
     observing: [
       '在日落后或日出前约 40 分钟寻找，地平线要开阔。',
-      '金星亮度可达 −4 等，白天用望远镜也能找到。',
+      '金星最亮时视星等约为 −4.8；实际亮度随相位和距离变化。天气晴朗时，白天也可能用望远镜找到。',
       '太阳仍在地平线上时，绝不要用光学设备搜寻。',
     ],
     bodies: ['mercury', 'venus'],
@@ -522,8 +525,8 @@ export const eventTopics: EventTopic[] = [
       { label: '下一次金星凌日', value: '2117 年 12 月' },
     ],
     observing: [
-      '必须使用合格的太阳滤光片，绝不可直视或用无防护的望远镜观看。',
-      '投影法既安全，又适合多人一起观看。',
+      '直视太阳或使用双筒镜、望远镜时，必须在物镜前牢固安装适配的专用太阳滤镜；日食眼镜不能代替光学设备的前置滤镜。',
+      '针孔投影只看投影面，不通过孔直视太阳；望远镜投影须由有经验者全程监管，防止任何人看入未过滤目镜或聚焦光路，并遮盖或移除寻星镜。',
       '水星的视面很小，需要望远镜，单靠日食眼镜看不到。',
     ],
     bodies: ['mercury', 'venus', 'sun'],
@@ -535,6 +538,14 @@ export const eventTopics: EventTopic[] = [
       {
         name: 'NASA Science — Eclipse Eye Safety',
         url: 'https://science.nasa.gov/eclipses/safety/',
+      },
+      {
+        name: 'NASA — Safe Solar Projection',
+        url: 'https://svs.gsfc.nasa.gov/vis/a010000/a014500/a014532/script_35806_00.html',
+      },
+      {
+        name: 'AAS — Solar Eclipse Eye Safety',
+        url: 'https://eclipse.aas.org/sites/eclipse.aas.org/files/AAS-Chou-Tech-Report-Solar-Eclipse-Eye-Safety-2023.pdf',
       },
     ],
   },
@@ -824,7 +835,7 @@ export const eventTopics: EventTopic[] = [
     summary: '地轴倾斜造成的四个节点，决定昼夜长短与四季。',
     headline: '四季来自倾斜，而不是距离',
     intro:
-      '地球的自转轴相对轨道面倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。',
+      '地球的自转轴相对轨道面的垂线倾斜约 23.4°，而且在公转过程中指向基本不变。于是太阳直射点在南北回归线之间往返：两次经过赤道时是春分和秋分，到达最北和最南时是夏至和冬至。',
     sections: [
       {
         heading: '分点那天昼夜真的等长吗',
@@ -848,6 +859,10 @@ export const eventTopics: EventTopic[] = [
     ],
     bodies: ['earth', 'sun'],
     sources: [
+      {
+        name: 'NASA Radio JOVE — Views From the Passenger Seat',
+        url: 'https://radiojove.gsfc.nasa.gov/library/sci_briefs/passenger_seat.htm',
+      },
       {
         name: 'NASA Space Place — Why Does Earth Have Seasons?',
         url: 'https://spaceplace.nasa.gov/seasons/en/',

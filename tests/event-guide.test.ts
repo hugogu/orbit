@@ -12,6 +12,77 @@ import { languages, translator, type Locale } from '../lib/i18n';
 
 const codes = Object.keys(languages) as Locale[];
 const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const zhrExplanation =
+  'ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。';
+
+void test('meteor shower ZHR explanation is available in every language', () => {
+  for (const locale of codes) {
+    const copy = translator(locale)(zhrExplanation);
+    if (locale !== 'zh-CN') assert.notEqual(copy, zhrExplanation, locale);
+    assert.match(copy, /ZHR/);
+    assert.ok(copy.length > 80, locale);
+  }
+  assert.equal(topicsByCategory('meteor-shower').length, 8);
+});
+
+void test('equinox guide measures axial tilt from the orbital normal in every language', () => {
+  const overview = eventTopic('equinox-solstice')!.intro;
+  assert.match(overview, /轨道面的垂线倾斜约 23\.4°/);
+  const normals: Record<Locale, RegExp> = {
+    'zh-CN': /轨道面的垂线/,
+    en: /perpendicular to its orbital plane/,
+    ja: /公転面に垂直/,
+    nl: /loodlijn op haar baanvlak/,
+    pt: /perpendicular ao seu plano orbital/,
+    de: /Senkrechte auf ihre Bahnebene/,
+    ko: /공전 궤도면에 수직/,
+    es: /perpendicular a su plano orbital/,
+    fr: /perpendiculaire à son plan orbital/,
+    it: /perpendicolare al piano orbitale/,
+    ru: /перпендикуляру к плоскости/,
+    tr: /yörünge düzlemine dik/,
+  };
+  for (const locale of codes) {
+    const copy = translator(locale)(overview);
+    assert.match(copy, normals[locale], locale);
+    assert.match(copy, /23[.,]4°/, locale);
+  }
+});
+
+void test('Perseids guidance qualifies radiant visibility by latitude in every language', () => {
+  const topic = eventTopic('perseids')!;
+  for (const locale of codes) {
+    const t = translator(locale);
+    if (locale !== 'zh-CN') {
+      assert.notEqual(t(topic.intro), topic.intro, locale);
+      assert.notEqual(t(topic.observing[0]), topic.observing[0], locale);
+    }
+    assert.ok(t(topic.intro).length > 0);
+    assert.ok(t(topic.observing[0]).length > 0);
+  }
+  assert.match(topic.intro, /取决于纬度/);
+  assert.match(topic.observing[0], /辐射点升起不保证能看到流星/);
+  assert.match(translator('en')(topic.intro), /depends on latitude/);
+  assert.match(translator('en')(topic.observing[0]), /does not guarantee visible meteors/);
+});
+
+void test('transit guidance qualifies solar projection and optical filtering in every language', () => {
+  const topic = eventTopic('transit');
+  assert.ok(topic);
+  assert.match(topic.observing[0], /物镜前.*滤镜.*日食眼镜不能代替/);
+  assert.match(topic.observing[1], /针孔投影.*不通过孔直视.*全程监管.*目镜.*寻星镜/);
+  assert.ok(topic.sources.some((source) => source.url.includes('script_35806_00.html')));
+  assert.ok(topic.sources.some((source) => source.url.includes('AAS-Chou-Tech-Report')));
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const tip of topic.observing.slice(0, 2)) {
+      const translated = t(tip);
+      assert.ok(translated.length > 50, locale);
+      if (locale !== 'zh-CN') assert.notEqual(translated, tip, locale);
+    }
+    assert.doesNotMatch(t(topic.observing[1]), /Projection is safe|投影法既安全|投影法は安全/i);
+  }
+});
 
 void test('planet planner support is limited to the topics whose dates it computes', () => {
   for (const topic of topicsByCategory('planet-aspect')) {
@@ -112,6 +183,26 @@ void test('guide copy is translated in every language', () => {
         assert.doesNotMatch(translated, /\p{Script=Han}/u, key);
     }
   }
+});
+
+void test('Venus brightness guidance distinguishes approximate peak apparent magnitude from an elongation prediction', () => {
+  const observing = eventTopic('elongation')!.observing;
+  const brightness = observing.find((line) => line.includes('−4.8'))!;
+  assert.ok(brightness);
+  assert.match(brightness, /最亮时视星等约为 −4\.8/);
+  assert.match(brightness, /相位和距离变化/);
+  assert.ok(observing.some((line) => line.includes('绝不要用光学设备搜寻')));
+
+  for (const locale of codes) {
+    const translated = translator(locale)(brightness);
+    if (locale !== 'zh-CN')
+      assert.notEqual(translated, brightness, `${locale}: missing translation`);
+    assert.match(translated, /−4[.,]8/, locale);
+    assert.doesNotMatch(translated, /−4(?:\s|\s*等)/, locale);
+  }
+  assert.match(translator('en')(brightness), /apparent magnitude of about −4\.8/);
+  assert.match(translator('en')(brightness), /varies with phase and distance/);
+  assert.match(translator('ja')(brightness), /視等級は約 −4\.8/);
 });
 
 void test('lunar eclipse recurrence counts every type worldwide by calendar year', () => {
