@@ -1,16 +1,97 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as THREE from 'three';
+import { WebGLRenderList } from 'three/src/renderers/webgl/WebGLRenderLists.js';
 import {
   createOrbitLine,
   isOrbitLine,
   ORBIT_PATH_SEGMENTS,
   sampleClosedOrbit,
-  setOrbitLineForeground,
   setOrbitLinePoints,
   setOrbitLineWidth,
 } from '../components/orbit-line';
 import { DEFAULT_ORBIT_LINE_WIDTH } from '../lib/orbit-line-width';
+import { bodies } from '../lib/solar';
+import { orbitingMoons } from '../lib/moon-orbits';
+import { asteroids } from '../lib/asteroids';
+import { displayRadius } from '../lib/display-scale';
+
+void test('the renderer queue preserves near arcs and occludes far arcs at every body scale', () => {
+  // Exercise Three's actual sorting and sphere intersections, rather than only
+  // checking renderOrder's numeric value. This fails when guides are drawn
+  // under bodies or when a focused true-size guide disables depth testing.
+  for (const body of [...bodies, ...orbitingMoons, ...asteroids]) {
+    for (const scale of ['illustrated', 'distance'] as const) {
+      for (const realSizes of [false, true]) {
+        const radius = displayRadius(body.id, scale, realSizes);
+        const mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(radius, 32, 24),
+          new THREE.MeshBasicMaterial(),
+        );
+        const camera = new THREE.PerspectiveCamera(
+          47,
+          1,
+          radius * 0.01,
+          radius * 100,
+        );
+        camera.position.z = radius * 8;
+        camera.updateMatrixWorld();
+        mesh.updateMatrixWorld();
+        const line = createOrbitLine(
+          '#ffffff',
+          0.3,
+          sampleClosedOrbit((phase) => {
+            const angle = phase * Math.PI * 2;
+            return new THREE.Vector3(
+              Math.cos(angle) * radius * 2.5,
+              0,
+              Math.sin(angle) * radius * 2.5,
+            );
+          }),
+        );
+        // A depth buffer only keeps what earlier, depth-writing objects wrote.
+        // Follow the sorted draw calls at a ray crossing the near/far arcs.
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+        const surface = raycaster.intersectObject(mesh)[0].distance;
+        for (const [arc, expected] of [
+          ['near', 'orbit'],
+          ['far', 'body'],
+        ] as const) {
+          const point = new THREE.Vector3(
+            0,
+            0,
+            (arc === 'near' ? 1 : -1) * radius * 2.5,
+          );
+          const pathDistance = point.distanceTo(camera.position);
+          // The type declarations require properties and comparators, while
+          // this renderer API uses its built-in comparators when omitted.
+          const list = new WebGLRenderList(undefined!);
+          list.push(line, line.geometry, line.material, 0, pathDistance, null);
+          list.push(mesh, mesh.geometry, mesh.material, 0, surface, null);
+          list.sort(undefined!, undefined!, false);
+          let depth = Infinity;
+          let visible = '';
+          for (const item of list.opaque) {
+            const distance = item.object === line ? pathDistance : surface;
+            if (item.material.depthTest && distance > depth) continue;
+            visible = item.object === line ? 'orbit' : 'body';
+            if (item.material.depthWrite) depth = distance;
+          }
+          assert.equal(
+            visible,
+            expected,
+            `${body.id} ${scale} realSizes=${realSizes} ${arc}`,
+          );
+        }
+        line.geometry.dispose();
+        line.material.dispose();
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+      }
+    }
+  }
+});
 
 void test('orbit lines use a wide-line material and accept a configured pixel width', () => {
   assert.equal(ORBIT_PATH_SEGMENTS, 2048);
@@ -33,10 +114,6 @@ void test('orbit lines use a wide-line material and accept a configured pixel wi
   // arc alone and leaves the arc passing in front of a body visible.
   assert.equal(line.material.depthTest, true);
   assert.ok(line.renderOrder > 0);
-  setOrbitLineForeground(line, true);
-  assert.equal(line.material.depthTest, false);
-  setOrbitLineForeground(line, false);
-  assert.equal(line.material.depthTest, true);
   line.onBeforeRender({
     getViewport(target: THREE.Vector4) {
       return target.set(0, 0, 1920, 1080);

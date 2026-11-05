@@ -29,6 +29,7 @@ export function createOrbitLine(
   const dimmedColor = new THREE.Color(color).multiplyScalar(brightness);
   const material = new LineMaterial({
     color: dimmedColor,
+    depthTest: true,
     depthWrite: false,
   });
   (material as WideLineMaterial).linewidth = DEFAULT_ORBIT_LINE_WIDTH;
@@ -64,13 +65,6 @@ export function sampleClosedOrbit(
 
 export function setOrbitLineWidth(line: OrbitLine, width: number) {
   (line.material as WideLineMaterial).linewidth = width;
-}
-
-export function setOrbitLineForeground(line: OrbitLine, foreground: boolean) {
-  // A true-size body can swallow most of its own guide path from close up.
-  // Keep the default occlusion for the overview, but let the focused path show
-  // through as a guide.
-  line.material.depthTest = !foreground;
 }
 
 export function isOrbitLine(object: THREE.Object3D): object is OrbitLine {
