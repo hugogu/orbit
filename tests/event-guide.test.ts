@@ -13,6 +13,24 @@ import { languages, translator, type Locale } from '../lib/i18n';
 const codes = Object.keys(languages) as Locale[];
 const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+void test('transit guidance qualifies solar projection and optical filtering in every language', () => {
+  const topic = eventTopic('transit');
+  assert.ok(topic);
+  assert.match(topic.observing[0], /物镜前.*滤镜.*日食眼镜不能代替/);
+  assert.match(topic.observing[1], /针孔投影.*不通过孔直视.*全程监管.*目镜.*寻星镜/);
+  assert.ok(topic.sources.some((source) => source.url.includes('script_35806_00.html')));
+  assert.ok(topic.sources.some((source) => source.url.includes('AAS-Chou-Tech-Report')));
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const tip of topic.observing.slice(0, 2)) {
+      const translated = t(tip);
+      assert.ok(translated.length > 50, locale);
+      if (locale !== 'zh-CN') assert.notEqual(translated, tip, locale);
+    }
+    assert.doesNotMatch(t(topic.observing[1]), /Projection is safe|投影法既安全|投影法は安全/i);
+  }
+});
+
 void test('planet planner support is limited to the topics whose dates it computes', () => {
   for (const topic of topicsByCategory('planet-aspect')) {
     const tab = eventPlanetPlannerTab(topic);

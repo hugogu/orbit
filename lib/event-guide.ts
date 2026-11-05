@@ -522,8 +522,8 @@ export const eventTopics: EventTopic[] = [
       { label: '下一次金星凌日', value: '2117 年 12 月' },
     ],
     observing: [
-      '必须使用合格的太阳滤光片，绝不可直视或用无防护的望远镜观看。',
-      '投影法既安全，又适合多人一起观看。',
+      '直视太阳或使用双筒镜、望远镜时，必须在物镜前牢固安装适配的专用太阳滤镜；日食眼镜不能代替光学设备的前置滤镜。',
+      '针孔投影只看投影面，不通过孔直视太阳；望远镜投影须由有经验者全程监管，防止任何人看入未过滤目镜或聚焦光路，并遮盖或移除寻星镜。',
       '水星的视面很小，需要望远镜，单靠日食眼镜看不到。',
     ],
     bodies: ['mercury', 'venus', 'sun'],
@@ -535,6 +535,14 @@ export const eventTopics: EventTopic[] = [
       {
         name: 'NASA Science — Eclipse Eye Safety',
         url: 'https://science.nasa.gov/eclipses/safety/',
+      },
+      {
+        name: 'NASA — Safe Solar Projection',
+        url: 'https://svs.gsfc.nasa.gov/vis/a010000/a014500/a014532/script_35806_00.html',
+      },
+      {
+        name: 'AAS — Solar Eclipse Eye Safety',
+        url: 'https://eclipse.aas.org/sites/eclipse.aas.org/files/AAS-Chou-Tech-Report-Solar-Eclipse-Eye-Safety-2023.pdf',
       },
     ],
   },
