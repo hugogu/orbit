@@ -33,10 +33,18 @@ export function isPwaRequest(request: RequestInfo, url: URL, origin: string) {
   );
 }
 
-import { languages, type Locale } from './i18n';
+import { languages, type Locale } from './i18n/languages';
+
+const explorerPaths = new Set(
+  Object.values(languages).flatMap(({ route }) => [`/${route}`, `/${route}/`]),
+);
 
 export function isExplorerPath(pathname: string) {
-  return pathname === '/' || pathname === '/index.html';
+  return (
+    pathname === '/' ||
+    pathname === '/index.html' ||
+    explorerPaths.has(pathname)
+  );
 }
 
 const profileRoutePattern = new RegExp(
@@ -62,9 +70,9 @@ export function isPwaAssetPath(pathname: string) {
 export function offlinePagePath(pathname: string) {
   const match = pathname.match(/^\/([a-z0-9-]+)\//i);
   const route = match?.[1]?.toLowerCase();
-  const entry = (Object.entries(languages) as [Locale, (typeof languages)[Locale]][]).find(
-    ([, lang]) => lang.route.toLowerCase() === route,
-  );
+  const entry = (
+    Object.entries(languages) as [Locale, (typeof languages)[Locale]][]
+  ).find(([, lang]) => lang.route.toLowerCase() === route);
   const locale = entry ? entry[0] : 'zh-CN';
   return `/offline/${locale}.html`;
 }

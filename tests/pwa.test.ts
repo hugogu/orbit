@@ -61,6 +61,12 @@ void test('PWA routes exclude APIs, analytics, mutations and RSC responses', () 
     assert.ok(isPwaAssetPath(path), path);
   assert.ok(isExplorerPath('/'));
   assert.ok(isExplorerPath('/index.html'));
+  for (const { route } of Object.values(languages)) {
+    assert.ok(isExplorerPath(`/${route}`));
+    assert.ok(isExplorerPath(`/${route}/`));
+    assert.equal(isExplorerPath(`/${route}/bodies`), false);
+  }
+  assert.equal(isExplorerPath('/xx-YY'), false);
   assert.equal(isExplorerPath('/zh-CN/bodies/earth'), false);
   for (const [prefix, locale] of [
     ['zh-CN', 'zh-CN'],

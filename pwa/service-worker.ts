@@ -11,6 +11,7 @@ import {
 } from 'workbox-precaching';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
 import { CacheFirst, NetworkFirst } from 'workbox-strategies';
+import { explorerDocument } from '../lib/pwa-navigation';
 import {
   isExplorerPath,
   isProfilePath,
@@ -31,14 +32,29 @@ precache(__PRECACHE_MANIFEST__);
 cleanupOutdatedCaches();
 clientsClaim();
 
-// Keep the document paired with its build's chunks. A waiting worker activates
-// only after all old clients close; never reload an active simulation to update.
+const pageCache = `orbit-pages-${__PWA_VERSION__}`;
+const assetCache = `orbit-assets-${__PWA_VERSION__}`;
+
+// Navigation starts a new document: fetch its current HTML and hence its own
+// content-hashed chunks. Cache only as an offline fallback. Serving '/' straight
+// from precache pinned every new tab to the active worker's old release while
+// even one old client remained open. Leave that client's simulation alone: a
+// waiting worker still activates only after all old clients close.
 registerRoute(
   ({ request, url }) =>
     isPwaRequest(request, url, self.location.origin) &&
     request.mode === 'navigate' &&
     isExplorerPath(url.pathname),
-  createHandlerBoundToURL('/'),
+  ({ request, event }) =>
+    explorerDocument(request, {
+      fetch: (input, init) => fetch(input, init),
+      match: async (pathname) => (await caches.open(pageCache)).match(pathname),
+      save: async (pathname, response) => {
+        await (await caches.open(pageCache)).put(pathname, response);
+      },
+      fallback: () => matchPrecache('/'),
+      waitUntil: (work) => event.waitUntil(work),
+    }),
 );
 
 // Do not let a precached HTML document answer a Vinext RSC request. Texture
@@ -50,9 +66,6 @@ registerRoute(
     !!getCacheKeyForURL(url.pathname),
   (options) => createHandlerBoundToURL(options.url.pathname)(options),
 );
-
-const pageCache = `orbit-pages-${__PWA_VERSION__}`;
-const assetCache = `orbit-assets-${__PWA_VERSION__}`;
 
 registerRoute(
   ({ request, url }) =>
