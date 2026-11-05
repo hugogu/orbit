@@ -85,3 +85,49 @@ void test('scene labels accept the occluded state', () => {
   assert.equal(style.display, 'none');
   assert.deepEqual(writes, [['display', 'none']]);
 });
+
+void test('background directions are blocked beyond the sky sphere and follow rendered visibility', () => {
+  const camera = new THREE.PerspectiveCamera();
+  camera.position.set(80, 30, 10);
+  camera.updateMatrixWorld();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1));
+  const parent = new THREE.Group();
+  parent.add(body);
+  body.position.copy(camera.position).add(new THREE.Vector3(0, 0, -5000));
+  body.scale.setScalar(10);
+  const occlusion = createSceneLabelOcclusion(new Map([['earth', body]]));
+  const direction = new THREE.Vector3(0, 0, -1);
+  occlusion.update(camera);
+  assert.equal(occlusion.isDirectionOccluded(direction), true);
+  assert.deepEqual(direction.toArray(), [0, 0, -1], 'preserve the sky anchor');
+  assert.equal(
+    occlusion.isDirectionOccluded(new THREE.Vector3(0, 0, 1)),
+    false,
+  );
+
+  body.position.x += 8;
+  occlusion.update(camera);
+  assert.equal(
+    occlusion.isDirectionOccluded(direction),
+    true,
+    'use the displayed radius',
+  );
+  body.scale.setScalar(1);
+  occlusion.update(camera);
+  assert.equal(occlusion.isDirectionOccluded(direction), false);
+  camera.position.x += 8;
+  occlusion.update(camera);
+  assert.equal(
+    occlusion.isDirectionOccluded(direction),
+    true,
+    'follow camera movement',
+  );
+  parent.visible = false;
+  occlusion.update(camera);
+  assert.equal(
+    occlusion.isDirectionOccluded(direction),
+    false,
+    'ignore hidden bodies',
+  );
+  body.geometry.dispose();
+});

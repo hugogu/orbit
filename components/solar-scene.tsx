@@ -1194,6 +1194,7 @@ export default function SolarScene({
         width,
         height,
         s.stars && s.constellations && s.labels,
+        labelOcclusion.isDirectionOccluded,
       );
       // The populations themselves are hidden during a run, and their labels
       // are DOM nodes that would otherwise keep floating over an empty sky.

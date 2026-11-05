@@ -52,7 +52,7 @@ type LabelOccluder = {
 /**
  * DOM labels do not participate in the WebGL depth buffer. Approximate each
  * rendered body with its world-space bounding sphere so labels disappear when
- * their body is behind another rendered body.
+ * their body or background sky direction is behind a rendered body.
  */
 export function createSceneLabelOcclusion(meshes: Map<string, THREE.Mesh>) {
   const cameraPosition = new THREE.Vector3();
@@ -71,6 +71,31 @@ export function createSceneLabelOcclusion(meshes: Map<string, THREE.Mesh>) {
       visible: false,
     };
   });
+
+  function intersects(targetId: string | null, targetDistance: number) {
+    const tolerance = Number.isFinite(targetDistance)
+      ? Math.max(1e-5, targetDistance * 1e-5)
+      : 0;
+    for (const candidate of occluders) {
+      if (
+        candidate.id === targetId ||
+        !candidate.visible ||
+        candidate.radius <= 0
+      )
+        continue;
+      candidateToCamera.copy(candidate.center).sub(cameraPosition);
+      const alongRay = candidateToCamera.dot(viewDirection);
+      if (alongRay <= 0 || alongRay >= targetDistance) continue;
+      const perpendicularSquared =
+        candidateToCamera.lengthSq() - alongRay * alongRay;
+      const radiusSquared = candidate.radius * candidate.radius;
+      if (perpendicularSquared >= radiusSquared) continue;
+      const entryDistance =
+        alongRay - Math.sqrt(radiusSquared - perpendicularSquared);
+      if (entryDistance < targetDistance - tolerance) return true;
+    }
+    return false;
+  }
 
   return {
     update(camera: THREE.Camera) {
@@ -106,26 +131,12 @@ export function createSceneLabelOcclusion(meshes: Map<string, THREE.Mesh>) {
         .copy(targetCenter)
         .sub(cameraPosition)
         .multiplyScalar(1 / targetDistance);
-      const tolerance = Math.max(1e-5, targetDistance * 1e-5);
-      for (const candidate of occluders) {
-        if (
-          candidate.id === targetId ||
-          !candidate.visible ||
-          candidate.radius <= 0
-        )
-          continue;
-        candidateToCamera.copy(candidate.center).sub(cameraPosition);
-        const alongRay = candidateToCamera.dot(viewDirection);
-        if (alongRay <= 0 || alongRay >= targetDistance) continue;
-        const perpendicularSquared =
-          candidateToCamera.lengthSq() - alongRay * alongRay;
-        const radiusSquared = candidate.radius * candidate.radius;
-        if (perpendicularSquared >= radiusSquared) continue;
-        const entryDistance =
-          alongRay - Math.sqrt(radiusSquared - perpendicularSquared);
-        if (entryDistance < targetDistance - tolerance) return true;
-      }
-      return false;
+      return intersects(targetId, targetDistance);
+    },
+    /** Background sky directions are infinitely far away, beyond every body. */
+    isDirectionOccluded: (direction: THREE.Vector3) => {
+      viewDirection.copy(direction).normalize();
+      return intersects(null, Infinity);
     },
   };
 }

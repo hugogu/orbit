@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import sharp from 'sharp/lib/index.js';
 import { Body, DefineStar, GeoVector } from 'astronomy-engine';
 import { createStarField } from '../components/star-field';
+import { createSceneLabelOcclusion } from '../components/scene-label';
 import { sceneDirection } from '../lib/ephemeris';
 import { constellationNames } from '../lib/constellations';
 import {
@@ -46,6 +47,90 @@ function direction(catalog: StarCatalog, index: number) {
 function separation(a: THREE.Vector3, b: THREE.Vector3) {
   return (Math.acos(Math.min(1, Math.max(-1, a.dot(b)))) * 180) / Math.PI;
 }
+
+void test('constellation labels disappear behind a rendered body and return on clear sky', async (t) => {
+  const labels: HTMLElement[] = [];
+  const previousDocument = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'document',
+  );
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+      createElement: () => ({
+        style: {},
+        classList: { toggle: () => {} },
+        remove: () => {},
+      }),
+    },
+  });
+  t.after(() => {
+    if (previousDocument)
+      Object.defineProperty(globalThis, 'document', previousDocument);
+    else Reflect.deleteProperty(globalThis, 'document');
+  });
+  t.mock.method(globalThis, 'fetch', async (path: string) => {
+    const data = readFileSync(`public${path}`);
+    return new Response(data);
+  });
+  const scene = new THREE.Scene();
+  const field = createStarField(
+    scene,
+    {
+      appendChild: (label: HTMLElement) => labels.push(label),
+    } as unknown as HTMLElement,
+    (message) => assert.fail(message),
+  );
+  t.after(() => field.dispose());
+  field.update(1, { stars: true, figures: true, galaxy: false, years: 0 });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(labels.length, 89);
+
+  const catalog = loadCatalog();
+  const positions = new Float32Array(catalog.positions.length);
+  for (let i = 0; i < positions.length; i += 3)
+    positions.set(
+      sceneDirection(
+        catalog.positions[i],
+        catalog.positions[i + 1],
+        catalog.positions[i + 2],
+      ),
+      i,
+    );
+  const anchor = figureAnchor(
+    positions,
+    loadFigures(catalog).constellations[0].lines,
+    new THREE.Vector3(0, 1, 0),
+  );
+  const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 20000);
+  camera.position.set(-180, 62, 940);
+  camera.lookAt(camera.position.clone().add(anchor));
+  camera.updateMatrixWorld();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(2));
+  body.position.copy(camera.position).addScaledVector(anchor, 10);
+  scene.add(body);
+  const occlusion = createSceneLabelOcclusion(new Map([['earth', body]]));
+  occlusion.update(camera);
+  field.project(camera, 1000, 500, true);
+  assert.equal(labels[0].style.display, 'block', 'the anchor is on screen');
+  field.project(camera, 1000, 500, true, occlusion.isDirectionOccluded);
+  assert.equal(
+    labels[0].style.display,
+    'none',
+    'Earth blocks the background name',
+  );
+  body.position.copy(camera.position).addScaledVector(anchor, -10);
+  occlusion.update(camera);
+  field.project(camera, 1000, 500, true, occlusion.isDirectionOccluded);
+  assert.equal(
+    labels[0].style.display,
+    'block',
+    'the name returns when unblocked',
+  );
+  field.project(camera, 1000, 500, false, occlusion.isDirectionOccluded);
+  assert.equal(labels[0].style.display, 'none', 'respect the labels toggle');
+  body.geometry.dispose();
+});
 
 void test('the shipped catalog holds the published bright stars in EQJ', () => {
   const catalog = loadCatalog();

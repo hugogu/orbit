@@ -338,6 +338,7 @@ export function createStarField(
       width: number,
       height: number,
       enabled: boolean,
+      isOccluded?: (direction: THREE.Vector3) => boolean,
     ) {
       if (figures.length === 0) return;
       camera.getWorldPosition(viewpoint);
@@ -347,7 +348,14 @@ export function createStarField(
           .multiplyScalar(SKY_RADIUS)
           .add(viewpoint)
           .project(camera);
-        figure.place(projected, width, height, enabled);
+        figure.place(
+          projected,
+          width,
+          height,
+          enabled,
+          false,
+          enabled && !!isOccluded?.(figure.anchor),
+        );
       }
     },
     dispose() {
