@@ -1246,15 +1246,14 @@ void test('Vercel serves extensionless paths for exported HTML profiles', () => 
   assert.equal(vercelConfig.cleanUrls, true);
 });
 
-void test('the home heading names the subject and survives the phone layout', () => {
-  assert.match(homePage, /<h1>\{t\('3D太阳系模拟器'\)\}<\/h1>/);
+void test('the home heading keeps the subject in markup without a visible slogan', () => {
+  assert.match(homePage, /<h1 className="sr-only">\{t\('3D太阳系模拟器'\)\}<\/h1>/);
   assert.match(
     homePage,
     /<p>\s*\{tab === 'structure'[\s\S]*?t\('在宇宙中，找到我们。'\)\}\s*<\/p>/,
   );
 
-  // Phones and short landscape screens clear the scene by dropping the tagline;
-  // the heading itself must stay in the layout Google indexes.
+  // The subject remains in the HTML while compact layouts clear the tagline.
   assert.match(
     globalStyles,
     /\.scene-caption > p,\n\s*\.info-panel,\n\s*\.desktop-body-tree,/,

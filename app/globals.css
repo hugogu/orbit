@@ -1637,6 +1637,21 @@ html[data-native-platform='mac'] .seo-page-header {
   align-items: center;
   gap: 13px;
 }
+.header-actions .astronomy-actions {
+  display: flex;
+}
+.header-actions .header-events-button {
+  width: auto;
+  gap: 6px;
+  padding-inline: 8px;
+  white-space: nowrap;
+  color: #dfc99f;
+  font-size: 13px;
+}
+.observatory[data-action-labels='false'] .header-events-button {
+  width: 38px;
+  padding: 0;
+}
 .live {
   font-size: 12px;
   color: #8996a6;
@@ -1674,11 +1689,7 @@ html[data-native-platform='mac'] .seo-page-header {
   width: 19px;
   height: 19px;
 }
-.mobile-share-button {
-  display: none;
-}
-.header-share-button[hidden],
-.mobile-share-button[hidden] {
+.header-share-button[hidden] {
   display: none;
 }
 .scene-caption {
@@ -1686,15 +1697,6 @@ html[data-native-platform='mac'] .seo-page-header {
   left: 32px;
   top: 113px;
   pointer-events: none;
-}
-/* The heading carries the page's subject, so it is the small label above the
-   scene tagline rather than the display line itself. */
-.scene-caption > h1 {
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0.18em;
-  margin: 0;
-  color: #6e7b8e;
 }
 .scene-caption > p {
   font-size: 23px;
@@ -2712,10 +2714,8 @@ html[data-native-platform='mac'] .seo-page-header {
   padding-top: 0;
   border-top: 0;
 }
-/* The planner stands at the head of the body column, above the panel that
-   answers it, instead of trailing the catalogue where it went unnoticed. Each
-   top below is that column's own top, less this button and the rails' gap. */
-.astronomy-actions {
+/* The editorial guide stays above the body column on roomy screens. */
+.desktop-event-guide {
   position: absolute;
   right: 32px;
   top: 152px;
@@ -2735,9 +2735,6 @@ html[data-native-platform='mac'] .seo-page-header {
   background: #d9c49a08;
   white-space: nowrap;
 }
-.event-guide-button {
-  display: none;
-}
 /* Without its label a button is a square the height it already had, so turning
    the text off changes its width alone and the rows it sits in keep their line.
    The label is still in the button, hidden rather than dropped, and an absolute
@@ -2755,9 +2752,24 @@ html[data-native-platform='mac'] .seo-page-header {
 /* The list is long enough to scroll past its own switch, so the dialog holds
    the title and the switch and lets only the list move, as settings does. */
 .orbit-dialog.astronomy-dialog {
-  width: min(680px, calc(100vw - 24px)) !important;
-  max-width: 680px !important;
-  max-height: 88dvh;
+  width: min(
+    800px,
+    calc(
+      100vw - max(12px, env(safe-area-inset-left)) -
+        max(12px, env(safe-area-inset-right))
+    )
+  ) !important;
+  max-width: 800px !important;
+  height: min(
+    620px,
+    calc(
+      100dvh - max(12px, env(safe-area-inset-top)) -
+        max(12px, env(safe-area-inset-bottom))
+    )
+  );
+  max-height: none;
+  padding: 18px !important;
+  gap: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2768,6 +2780,44 @@ html[data-native-platform='mac'] .seo-page-header {
 .astronomy-dialog > .settings-tabs {
   flex: 1;
   min-height: 0;
+  flex-direction: row;
+  gap: 12px;
+  margin-top: 4px;
+}
+.astronomy-dialog [data-slot='dialog-description'] {
+  font-size: 12px;
+  line-height: 1.5;
+  padding-right: 24px;
+}
+.astronomy-dialog .settings-tabs-list {
+  width: 126px;
+  flex-direction: column;
+  border-bottom: 0;
+  border-right: 1px solid #ffffff15;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 8px;
+  align-self: stretch;
+}
+.astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px;
+  justify-content: flex-start;
+  gap: 8px;
+  border-radius: 8px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.35;
+}
+.astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'][data-active] {
+  background: #dfc99f10;
+}
+.astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger']::after {
+  display: none;
+}
+.astronomy-dialog .settings-tab-panel {
+  padding: 0 2px 4px;
 }
 .astro-form {
   display: grid;
@@ -2817,7 +2867,8 @@ html[data-native-platform='mac'] .seo-page-header {
 }
 .sky-results {
   display: grid;
-  gap: 12px;
+  flex-shrink: 0;
+  gap: 6px;
   margin: 4px 0;
   font-size: 13px;
   line-height: 1.7;
@@ -2827,18 +2878,75 @@ html[data-native-platform='mac'] .seo-page-header {
   border: 1px solid #ffffff15;
   background: #09121d;
   border-radius: 10px;
-  padding: 16px;
+  position: relative;
+  min-width: 0;
+}
+.sky-event-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 4px 52px 4px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.sky-event-summary::-webkit-details-marker {
+  display: none;
+}
+.sky-event-summary:focus-visible {
+  outline: 2px solid #dfc99f;
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.sky-event-icon {
+  flex: 0 0 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #eed6a5;
+  background: radial-gradient(circle at 30% 25%, #efd6a52b, #172536 70%);
+  box-shadow: inset 0 0 0 1px #e3cda41c;
+}
+.sky-event-icon-lunar {
+  color: #ced9ed;
+  background: radial-gradient(circle at 30% 25%, #b2c1da3d, #192436 70%);
+}
+.sky-event-label {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.sky-event-label time {
+  color: #c2cfdf;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sky-event-chevron {
+  flex-shrink: 0;
+  color: #8999ae;
+}
+.sky-event details[open] .sky-event-chevron {
+  transform: rotate(180deg);
+}
+.sky-event-details {
+  padding: 0 14px 8px;
+  border-top: 1px solid #ffffff12;
 }
 .sky-event-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
 }
-.sky-event h3 {
-  font-size: 20px;
+.sky-event-name {
+  font-size: 13px;
   color: #ead5ad;
-  margin: 0 0 8px;
+  line-height: 1.4;
 }
 /* The badge marks the one fact the reader scans this list for: whether the
    eclipse reaches their own sky. */
@@ -2878,11 +2986,15 @@ html[data-native-platform='mac'] .seo-page-header {
   gap: 10px;
 }
 .sky-event .sky-event-view {
-  flex: 0 0 auto;
-  min-height: 32px;
-  padding: 5px 9px;
-  gap: 5px;
-  white-space: nowrap;
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
 }
 .sky-event strong {
   color: #e0e8f2;
@@ -3966,7 +4078,7 @@ html[data-native-platform='mac'] .seo-page-header {
     right: 44px;
     width: 302px;
   }
-  .astronomy-actions {
+  .desktop-event-guide {
     right: 44px;
   }
   .scene-caption {
@@ -3995,7 +4107,7 @@ html[data-native-platform='mac'] .seo-page-header {
   .moon-phase-card {
     top: 173px;
   }
-  .astronomy-actions {
+  .desktop-event-guide {
     top: 121px;
   }
   .scene-caption {
@@ -4051,7 +4163,7 @@ html[data-native-platform='mac'] .seo-page-header {
     right: 22px;
     width: 242px;
   }
-  .astronomy-actions {
+  .desktop-event-guide {
     right: 22px;
   }
   .body-option {
@@ -4132,7 +4244,7 @@ html[data-native-platform='mac'] .seo-page-header {
   .mobile-info {
     display: flex;
   }
-  .astronomy-actions {
+  .desktop-event-guide {
     right: 20px;
     top: 134px;
   }
@@ -4506,7 +4618,7 @@ html[data-native-platform='mac'] .seo-page-header {
   }
   /* Every row on a phone is one control height tall, so a row reads as a row
      however its two sides are built. */
-  .astronomy-actions {
+  .desktop-event-guide {
     left: max(12px, env(safe-area-inset-left));
     right: auto;
     top: calc(148px + env(safe-area-inset-top, 0px));
@@ -4637,22 +4749,6 @@ html[data-native-platform='mac'] .seo-page-header {
   }
   .navigation-sheet .body-option small {
     display: block;
-  }
-  .header-share-button {
-    display: none;
-  }
-  .bottom-area > .mobile-share-button {
-    display: flex;
-    width: 38px;
-    height: 38px;
-    margin: 0 0 8px auto;
-    border: 1px solid #ffffff1a;
-    border-radius: 9px;
-    background: #0c111aeb;
-    backdrop-filter: blur(14px);
-  }
-  .bottom-area > .mobile-share-button[hidden] {
-    display: none;
   }
 }
 /* A portrait phone stacks the tabs on their own row and leaves its right half
@@ -4792,18 +4888,12 @@ html[data-native-platform='mac'] .seo-page-header {
     margin-left: auto;
     min-width: 0;
   }
-  .rail-start .event-guide-button {
-    flex-shrink: 1;
-    min-width: 0;
-  }
-  .rail-start .event-guide-button > span:not(.sr-only),
   .phone-body-info > span:not(.sr-only) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .phone-body-info > svg,
-  .event-guide-button > svg {
+  .phone-body-info > svg {
     flex-shrink: 0;
   }
   .rail-end .view-tools {
@@ -4861,6 +4951,8 @@ html[data-native-platform='mac'] .seo-page-header {
   }
   .topbar [data-slot='tabs'] {
     position: static;
+    max-width: none;
+    min-width: 0;
   }
   .view-tabs {
     height: 38px !important;
@@ -4872,7 +4964,33 @@ html[data-native-platform='mac'] .seo-page-header {
   .observatory .side-rail {
     top: 64px;
   }
-  .observatory .astronomy-actions {
+  .observatory .rail-end {
+    margin-top: 0;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .observatory:not([data-sandbox='true']) .rail-end .mobile-info {
+    display: flex;
+  }
+  .observatory:not([data-sandbox='true']) .rail-start .phone-body-info {
+    display: none;
+  }
+  .rail-end .mobile-info {
+    width: 44px;
+    min-height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .rail-end .mobile-info > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .observatory .desktop-event-guide {
     top: 110px;
   }
   .observatory .scene-caption {
@@ -4913,18 +5031,94 @@ html[data-native-platform='mac'] .seo-page-header {
     font-size: 16px;
   }
 }
-/* Phones keep the guide beside body navigation. Tablets and desktop retain
-   the original pair above the information column, including short windows. */
+/* Both phone orientations use one set of header actions and no floating share
+   control. Keep 44px touch targets even when their labels are tucked away. */
+@media (max-width: 600px), (orientation: landscape) and (max-height: 600px) {
+  .observatory .scene-caption,
+  .observatory .desktop-event-guide {
+    display: none;
+  }
+  .header-actions {
+    flex-shrink: 0;
+    gap: 0;
+  }
+  .header-actions .icon-button,
+  .header-actions .language-picker,
+  .observatory[data-action-labels='false'] .header-events-button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+  }
+  .header-events-button > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .orbit-dialog.astronomy-dialog {
+    padding: 12px !important;
+    gap: 4px;
+  }
+  .astronomy-dialog [data-slot='dialog-title'] {
+    font-size: 18px;
+    padding-right: 36px;
+  }
+  .astronomy-dialog > .settings-tabs {
+    gap: 8px;
+  }
+  .astronomy-dialog .settings-tabs-list {
+    width: 108px;
+    padding-right: 6px;
+  }
+  .astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
+    font-size: 12px;
+    padding: 6px;
+    gap: 6px;
+  }
+}
+@media (max-width: 700px) {
+  .sky-event-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .sky-event-summary {
+    min-height: 56px;
+    gap: 6px;
+    padding-left: 6px;
+  }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  .astronomy-dialog .settings-tabs-list {
+    width: 80px;
+  }
+  .astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    min-height: 64px;
+  }
+  .sky-event-summary > .sky-event-icon {
+    display: none;
+  }
+}
+@media (max-width: 360px),
+  (orientation: landscape) and (max-height: 600px) and (max-width: 740px) {
+  .topbar .brand > span {
+    display: none;
+  }
+}
+/* Phone body navigation and its information button share one row. */
 @media (max-width: 600px) {
   .observatory .rail-start {
     right: max(12px, env(safe-area-inset-right));
     flex-direction: row;
     gap: 8px;
     pointer-events: none;
-  }
-  .event-guide-button {
-    display: flex;
-    flex-shrink: 0;
   }
   .desktop-event-guide,
   .observatory .scene-caption {
@@ -5028,7 +5222,7 @@ html:lang(en) .moon-children button > span:last-child {
 }
 @media (max-width: 1250px) {
   .header-actions {
-    gap: 6px;
+    gap: 0;
   }
   .orbit-dialog {
     max-height: calc(100dvh - 20px);
@@ -5083,7 +5277,7 @@ html:lang(en) .moon-children button > span:last-child {
 }
 @media (orientation: landscape) and (max-height: 600px) and (max-width: 760px) {
   .topbar .brand > svg {
-    display: none;
+    display: block;
   }
   .topbar .brand > span {
     font-size: 14px;
@@ -5117,7 +5311,7 @@ html:lang(en) .moon-children button > span:last-child {
 .observatory[data-ground='true'] .rail-start,
 .observatory[data-ground='true'] .scene-caption,
 .observatory[data-ground='true'] .mobile-info,
-.observatory[data-ground='true'] .astronomy-actions,
+.observatory[data-ground='true'] .desktop-event-guide,
 .observatory[data-ground='true'] .moon-phase-card {
   display: none;
 }
