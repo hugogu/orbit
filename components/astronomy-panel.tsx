@@ -1,7 +1,7 @@
 'use client';
 import { useI18n } from '../lib/i18n/provider';
 import { useEffect, useRef, useState } from 'react';
-import { Eye } from 'lucide-react';
+import SkyEventRow, { eventIcons } from './sky-event-row';
 import {
   Dialog,
   DialogContent,
@@ -185,28 +185,22 @@ export default function AstronomyPanel({
       timeZone: 'UTC',
     }).format(ms + answered.utcOffset * 3600000);
   const eventCard = (event: SkyEvent, kind: Kind) => (
-    <article className="sky-event" key={event.peak}>
-      <div className="sky-event-heading">
-        <h3>{t(event.kind)}</h3>
-        {event.local && <span className="sky-event-tag">{t('本地可见')}</span>}
-      </div>
-      <div className="sky-event-time">
-        <strong>{format(event.peak)}</strong>
-        <button
-          className="secondary-action sky-event-view"
-          aria-label={t('查看{{event}}，{{time}}', {
-            event: t(event.kind),
-            time: format(event.peak),
-          })}
-          onClick={() => {
-            onEclipse(event.peak, kind);
-            onOpenChange(false);
-          }}
-        >
-          <Eye size={15} aria-hidden="true" />
-          {t('查看')}
-        </button>
-      </div>
+    <SkyEventRow
+      key={event.peak}
+      kind={kind}
+      title={t(event.kind)}
+      peak={event.peak}
+      timeLabel={format(event.peak)}
+      visibleLabel={event.local ? t('本地可见') : undefined}
+      viewLabel={t('查看{{event}}，{{time}}', {
+        event: t(event.kind),
+        time: format(event.peak),
+      })}
+      onView={() => {
+        onEclipse(event.peak, kind);
+        onOpenChange(false);
+      }}
+    >
       <p>{kind === 'solar' ? t('全球食甚') : t('食甚时间')}</p>
       {event.begin !== undefined && event.end !== undefined && (
         <p>
@@ -259,7 +253,7 @@ export default function AstronomyPanel({
           </p>
         </div>
       )}
-    </article>
+    </SkyEventRow>
   );
   // Both notes belong under either list, so they ride inside the scrolling
   // panel rather than taking permanent height from a phone's viewport.
@@ -335,13 +329,6 @@ export default function AstronomyPanel({
     const events = loaded[kind];
     return (
       <>
-        <p className="little-note">
-          {t(
-            kind === 'opposition'
-              ? '列出火星、木星、土星、天王星和海王星各自接下来的三次冲日。水星和金星没有冲日。'
-              : '从地球只能看到水星和金星凌日，列出各自接下来的两次；外行星不会凌日。',
-          )}
-        </p>
         {events.length === 0 && (
           <p className="little-note">{t('在支持的日期范围内未找到下一次。')}</p>
         )}
@@ -357,30 +344,21 @@ export default function AstronomyPanel({
               { name: t(catalogEntry(event.body)!.data.name) },
             );
             return (
-              <article
-                className="sky-event"
+              <SkyEventRow
                 key={`${event.body}-${event.peak}`}
+                kind={kind}
+                title={title}
+                peak={event.peak}
+                timeLabel={format(event.peak)}
+                viewLabel={t('查看{{event}}，{{time}}', {
+                  event: title,
+                  time: format(event.peak),
+                })}
+                onView={() => {
+                  onPlanetEvent(event.peak, event.body, kind);
+                  onOpenChange(false);
+                }}
               >
-                <div className="sky-event-heading">
-                  <h3>{title}</h3>
-                </div>
-                <div className="sky-event-time">
-                  <strong>{format(event.peak)}</strong>
-                  <button
-                    className="secondary-action sky-event-view"
-                    aria-label={t('查看{{event}}，{{time}}', {
-                      event: title,
-                      time: format(event.peak),
-                    })}
-                    onClick={() => {
-                      onPlanetEvent(event.peak, event.body, kind);
-                      onOpenChange(false);
-                    }}
-                  >
-                    <Eye size={15} aria-hidden="true" />
-                    {t('查看')}
-                  </button>
-                </div>
                 <p>
                   {t(
                     kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻',
@@ -428,10 +406,17 @@ export default function AstronomyPanel({
                     {t('本次事件介绍')}
                   </a>
                 )}
-              </article>
+              </SkyEventRow>
             );
           })}
         </div>
+        <p className="little-note">
+          {t(
+            kind === 'opposition'
+              ? '列出火星、木星、土星、天王星和海王星各自接下来的三次冲日。水星和金星没有冲日。'
+              : '从地球只能看到水星和金星凌日，列出各自接下来的两次；外行星不会凌日。',
+          )}
+        </p>
         <p className="little-note">
           {t(
             kind === 'opposition'
@@ -468,6 +453,7 @@ export default function AstronomyPanel({
             : t('正在从当前模拟时间查找接下来的天象。')}
         </DialogDescription>
         <Tabs
+          orientation="vertical"
           value={tab}
           onValueChange={(value) => onTabChange(String(value) as PlannerTab)}
           className="settings-tabs"
@@ -477,10 +463,22 @@ export default function AstronomyPanel({
             className="settings-tabs-list"
             aria-label={t('天象分类')}
           >
-            <TabsTrigger value="solar">{t('日食')}</TabsTrigger>
-            <TabsTrigger value="lunar">{t('月食')}</TabsTrigger>
-            <TabsTrigger value="opposition">{t('行星冲日')}</TabsTrigger>
-            <TabsTrigger value="transit">{t('行星凌日')}</TabsTrigger>
+            {(
+              [
+                ['solar', '日食'],
+                ['lunar', '月食'],
+                ['opposition', '行星冲日'],
+                ['transit', '行星凌日'],
+              ] as const
+            ).map(([kind, label]) => {
+              const Icon = eventIcons[kind];
+              return (
+                <TabsTrigger key={kind} value={kind} title={t(label)}>
+                  <Icon size={18} aria-hidden="true" />
+                  <span>{t(label)}</span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
           <TabsContent value="solar" className="settings-tab-panel">
             {list('solar')}

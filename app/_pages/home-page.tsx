@@ -1308,6 +1308,22 @@ function ObservatoryView() {
                 ? t('沙盘演算中')
                 : t('按日期演算')}
           </span>
+          {tab !== 'sandbox' && !ground && (
+            <div className="astronomy-actions">
+              <button
+                className="icon-button header-events-button"
+                aria-label={t('近期天象')}
+                title={t('近期天象')}
+                onClick={() => {
+                  setPlannerStart(null);
+                  setAstronomy(true);
+                }}
+              >
+                <CalendarDays size={18} />
+                <span className={actionLabel}>{t('近期天象')}</span>
+              </button>
+            </div>
+          )}
           <button
             className="icon-button header-share-button"
             aria-label={t('分享此刻所见')}
@@ -1344,7 +1360,7 @@ function ObservatoryView() {
         </div>
       </header>
       <div className="scene-caption">
-        <h1>{t('3D太阳系模拟器')}</h1>
+        <h1 className="sr-only">{t('3D太阳系模拟器')}</h1>
         <p>
           {tab === 'structure'
             ? t('从恒星，到星际空间。')
@@ -1452,16 +1468,6 @@ function ObservatoryView() {
                 : t('距离单位 AU ≈ 1.496 亿公里')}
           </div>
         </section>
-        {tab !== 'sandbox' && (
-          <a
-            className="astronomy-button event-guide-button"
-            href={eventsIndexPath(locale)}
-            title={t('天象百科')}
-          >
-            <Sparkles size={18} />
-            <span className={actionLabel}>{t('天象百科')}</span>
-          </a>
-        )}
         <button
           className="mobile-info glass phone-body-info"
           title={t('天体信息')}
@@ -1471,30 +1477,15 @@ function ObservatoryView() {
           <span className={actionLabel}>{t('天体信息')}</span>
         </button>
       </div>
-      {/* Hide real-sky planning in sandbox mode, which has its own controls. */}
       {tab !== 'sandbox' && (
-        <div className="astronomy-actions">
-          <button
-            className="astronomy-button"
-            aria-label={t('近期天象')}
-            title={t('近期天象')}
-            onClick={() => {
-              setPlannerStart(null);
-              setAstronomy(true);
-            }}
-          >
-            <CalendarDays size={18} />
-            <span className={actionLabel}>{t('近期天象')}</span>
-          </button>
-          <a
-            className="astronomy-button desktop-event-guide"
-            href={eventsIndexPath(locale)}
-            title={t('天象百科')}
-          >
-            <Sparkles size={18} />
-            <span className={actionLabel}>{t('天象百科')}</span>
-          </a>
-        </div>
+        <a
+          className="astronomy-button desktop-event-guide"
+          href={eventsIndexPath(locale)}
+          title={t('天象百科')}
+        >
+          <Sparkles size={18} />
+          <span className={actionLabel}>{t('天象百科')}</span>
+        </a>
       )}
       {showMoonCard && (
         <MoonPhaseCard
@@ -1587,15 +1578,6 @@ function ObservatoryView() {
         </div>
       </div>
       <div className="bottom-area">
-        <button
-          className="icon-button glass mobile-share-button"
-          aria-label={t('分享此刻所见')}
-          title={sandboxScenario ? t('分享这个沙盘') : t('分享此刻所见')}
-          hidden={ground}
-          onClick={openShare}
-        >
-          <Share2 />
-        </button>
         <div className="scene-meta">
           <span className="follow-status">
             <i />
