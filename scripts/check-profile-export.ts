@@ -291,7 +291,11 @@ for (const entry of entries) {
       assert.equal(rotation.unitCode, 'DAY', path);
       assert.equal(rotation.unitText, 'd', path);
       if (entry.data.id !== 'sun') {
-        assert.equal(rotation.name, t('恒星自转周期'), path);
+        assert.equal(
+          rotation.name,
+          t(entry.data.id === 'saturn' ? 'System III 自转周期' : '恒星自转周期'),
+          path,
+        );
         assert.ok(
           html.includes(
             escapeHtml(
@@ -302,6 +306,15 @@ for (const entry of entries) {
           ),
           path,
         );
+        if (entry.data.id === 'saturn')
+          assert.ok(
+            html.includes(
+              escapeHtml(
+                t('土星所列约 0.44401 天（10 小时 39 分 23 秒）采用 NASA 的 System III 无线电参考系；卡西尼号环震学估计的内部自转周期约为 10 小时 33 分 38 秒。两者测量方法不同，均非唯一确定的土星日长。'),
+              ),
+            ),
+            path,
+          );
       }
       const axialTilt = body.additionalProperty.find(
         (property: Record<string, unknown>) =>
