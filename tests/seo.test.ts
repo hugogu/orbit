@@ -632,6 +632,31 @@ void test('profile rotation distinguishes sidereal days with matching localized 
   );
 });
 
+void test('Saturn rotation labels its System III reference in every profile locale', () => {
+  const saturn = bodies.find((body) => body.id === 'saturn')!;
+  const entry = catalogEntry('saturn')!;
+  assert.equal(saturn.day, 0.44401);
+  for (const locale of seoLocales) {
+    const fact = profileRotationFact(saturn, locale);
+    assert.equal(fact[0], translator(locale)('System III 自转周期'));
+    assert.match(fact[0], /System III/);
+    assert.match(fact[1], /0[.,]44401/);
+    const node = profileGraph(entry, locale).nodes.find(
+      (node) => node['@type'] === 'Place' && node.additionalProperty,
+    )!;
+    const property = (node.additionalProperty as Node[]).find(
+      (property) => property.propertyID === 'rotationPeriod',
+    )!;
+    assert.equal(property.name, fact[0]);
+    assert.equal(property.value, 0.44401);
+    const note = translator(locale)(
+      '土星所列约 0.44401 天（10 小时 39 分 23 秒）采用 NASA 的 System III 无线电参考系；卡西尼号环震学估计的内部自转周期约为 10 小时 33 分 38 秒。两者测量方法不同，均非唯一确定的土星日长。',
+    );
+    assert.match(note, /System III/);
+    assert.match(note, /Cassini|卡西尼|カッシーニ|카시니|Кассини/i);
+  }
+});
+
 void test('Earth sidereal year label matches the profile and structured data in every language', () => {
   const earth = bodies.find((body) => body.id === 'earth')!;
   const mars = bodies.find((body) => body.id === 'mars')!;

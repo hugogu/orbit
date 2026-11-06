@@ -76,7 +76,7 @@ export function profileRotationProperty(body: Body): ProfileProperty {
   const days = Math.abs(body.day);
   return {
     id: 'rotationPeriod',
-    label: body.id === 'sun' ? '自转周期' : '恒星自转周期',
+    label: body.id === 'sun' ? '自转周期' : body.id === 'saturn' ? 'System III 自转周期' : '恒星自转周期',
     value: Number(days.toFixed(days < 2 ? 5 : 2)),
     unit: 'day',
   };

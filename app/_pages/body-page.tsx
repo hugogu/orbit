@@ -583,6 +583,13 @@ export default async function BodyPage({ params }: PageProps) {
                   )}
                 </p>
               )}
+              {entry.kind === 'body' && entry.data.id === 'saturn' && (
+                <p>
+                  {t('土星所列约 0.44401 天（10 小时 39 分 23 秒）采用 NASA 的 System III 无线电参考系；卡西尼号环震学估计的内部自转周期约为 10 小时 33 分 38 秒。两者测量方法不同，均非唯一确定的土星日长。')}{' '}
+                  <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/saturnfact.html">NASA</a>{' · '}
+                  <a href="https://www.jpl.nasa.gov/news/scientists-finally-know-what-time-it-is-on-saturn/">NASA/JPL</a>
+                </p>
+              )}
               <details className="profile-data-note">
                 <summary>{t('数据与计算说明')}</summary>
                 <p>
