@@ -42,6 +42,39 @@ const styles = readFileSync(
   'utf8',
 ).replace(/\s+/g, ' ');
 
+void test('the lunar dialog does not inherit the sky-event category sidebar', () => {
+  const eventPanel = readFileSync(
+    new URL('../components/astronomy-panel.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    eventPanel,
+    /className="orbit-dialog astronomy-dialog sky-events-dialog"/,
+  );
+  assert.match(
+    quarterTable,
+    /className="orbit-dialog astronomy-dialog lunar-dialog"/,
+  );
+  assert.match(styles, /\.settings-tabs \{[^}]*flex-direction: column;/);
+  assert.match(
+    styles,
+    /\.sky-events-dialog > \.settings-tabs \{ flex-direction: row;/,
+  );
+  // Shared dialog geometry must not turn the lunar navigation into a sidebar,
+  // including the narrow portrait and short landscape overrides.
+  for (const [, selector, declarations] of styles.matchAll(
+    /([^{}]+)\{([^{}]*)\}/g,
+  )) {
+    if (!selector.includes('.astronomy-dialog')) continue;
+    if (selector.includes('.settings-tabs-list')) {
+      assert.fail(`Sidebar selector leaks into lunar dialog: ${selector}`);
+    }
+    if (selector.includes('> .settings-tabs')) {
+      assert.doesNotMatch(declarations, /flex-direction: row/);
+    }
+  }
+});
+
 void test('the phase-time table wraps all readings on phones and keeps its accessible headers', () => {
   assert.match(quarterTable, /<table className="sky-table quarter-table">/);
   assert.match(quarterTable, /<caption className="sr-only">/);
