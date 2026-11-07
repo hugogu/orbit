@@ -28,6 +28,9 @@
       ],
       "next/image": [
         "./node_modules/vinext/dist/shims/image.js"
+      ],
+      "next/navigation": [
+        "./node_modules/vinext/dist/shims/navigation.js"
       ]
     },
     "allowImportingTsExtensions": true
