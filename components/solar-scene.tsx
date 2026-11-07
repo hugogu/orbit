@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { bodies, type ScaleMode } from '@/lib/solar';
 import { planetPosition, bodyOrientation } from '@/lib/ephemeris';
+import { cameraNavigationChanged } from '@/lib/camera-navigation';
 import {
   framePlanetEvent,
   type PlanetEventView,
@@ -609,19 +610,15 @@ export default function SolarScene({
       frame = 0,
       lastReport = 0,
       lastReset = -1,
-      lastView = -1,
       lastSelected: string | null | undefined = undefined,
       lastScale = '',
-      lastCameraScale = '',
-      lastRealSizes = false,
-      lastSystemView = false,
       lastCameraAspect = 0,
       lastEclipseFraming = '',
       lastPlanetEventView = '',
-      lastTop = false,
       lastComet = '',
       highResolutionReadyAt = 0,
       transition = 0;
+    let lastCameraState: SceneState | null = null;
     const navigationTextureGraceMs = 5000;
     let targetDistance = 205,
       framingDistance = 205;
@@ -996,20 +993,12 @@ export default function SolarScene({
         adoptedPose = s.cameraPose;
         sharedPose = s.cameraPose;
       }
-      if (
-        s.selected !== lastSelected ||
-        s.reset !== lastReset ||
-        s.view !== lastView ||
-        s.top !== lastTop ||
-        s.scale !== lastCameraScale ||
-        s.realSizes !== lastRealSizes ||
-        s.systemView !== lastSystemView ||
-        camera.aspect !== lastCameraAspect ||
-        framingChanged ||
+      const navigate =
+        cameraNavigationChanged(lastCameraState, s) ||
         eventKey !== lastPlanetEventView ||
         observerView !== lastObserverView ||
-        cometKey !== lastComet
-      ) {
+        cometKey !== lastComet;
+      if (navigate || camera.aspect !== lastCameraAspect || framingChanged) {
         const body = bodies.find((b) => b.id === s.selected);
         const selectedMoon = orbitingMoons.find((m) => m.id === s.selected);
         targetDistance = comet
@@ -1085,15 +1074,13 @@ export default function SolarScene({
             ? Math.max(1e-10, radius * 0.01)
             : 0.05;
         camera.updateProjectionMatrix();
-        transition = 1;
-        following = null;
+        if (navigate) {
+          transition = 1;
+          following = null;
+        }
+        lastCameraState = s;
         lastSelected = s.selected;
         lastReset = s.reset;
-        lastView = s.view;
-        lastTop = s.top;
-        lastCameraScale = s.scale;
-        lastRealSizes = s.realSizes;
-        lastSystemView = s.systemView;
         lastCameraAspect = camera.aspect;
         lastComet = cometKey;
         lastPlanetEventView = eventKey;
@@ -1120,10 +1107,9 @@ export default function SolarScene({
       );
       if (transition > 0 && sharedPose) {
         // A shared framing is adopted outright rather than flown to, and it is
-        // reapplied on every later reframe — a resize must not drop the
-        // recipient back to the automatic angle. The distance is a ratio of
-        // this body's framing distance, so the body keeps its apparent size
-        // under the recipient's own size and distance settings.
+        // reapplied on later navigation. Resizing keeps the current pose.
+        // The distance is a ratio of this body's framing distance, so the body
+        // keeps its apparent size under the recipient's size and distance settings.
         poseOffset.set(
           targetDistance * sharedPose.zoom,
           sharedPose.polar,
