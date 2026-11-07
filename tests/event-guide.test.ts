@@ -15,6 +15,22 @@ const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const zhrExplanation =
   'ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。';
 
+void test('Geminids guide separates parent association from the unresolved release mechanism', () => {
+  const topic = eventTopic('geminids')!;
+  const explanation = topic.sections[0].text;
+  assert.match(explanation, /3200 法厄同.*0\.14 AU.*仍在研究/);
+  assert.match(explanation, /钠气体.*未检出相应的尘埃.*不能排除/);
+  assert.doesNotMatch(explanation, /至今仍在变浓|受热开裂并抛出尘埃/);
+  assert.ok(topic.sources.some(({ url }) => url.includes('asteroids-comet-like-tail-is-not-made-of-dust')));
+  assert.ok(topic.sources.some(({ url }) => url.includes('jpl.nasa.gov/sb/meteor_streams')));
+  for (const locale of codes) {
+    const copy = translator(locale)(explanation);
+    assert.ok(copy.length > 100, locale);
+    if (locale !== 'zh-CN') assert.notEqual(copy, explanation, locale);
+  }
+  assert.match(translator('en')(explanation), /remains under study.*did not detect corresponding dust/);
+});
+
 void test('meteor shower ZHR explanation is available in every language', () => {
   for (const locale of codes) {
     const copy = translator(locale)(zhrExplanation);

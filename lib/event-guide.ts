@@ -314,7 +314,7 @@ export const eventTopics: EventTopic[] = [
     sections: [
       {
         heading: '来自小行星的流星雨',
-        text: '多数流星雨源自彗星，双子座却来自小行星 3200 法厄同。它的近日点只有 0.14 AU，掠日时表面受热开裂并抛出尘埃，行为介于小行星与彗星之间。这条尘埃带至今仍在变浓，双子座流星雨在近一个世纪里越来越强。',
+        text: '多数流星雨源自彗星，双子座流星雨的母天体则与小行星 3200 法厄同有关。它的近日点约为 0.14 AU；大量流星体如何从它释放出来仍在研究，受热碎裂是候选解释之一。2023 年对其近日点尾部的研究发现钠气体信号，未检出相应的尘埃；这不能排除其他时间或方式释放固体颗粒。',
       },
       {
         heading: '适合初学者的一场',
@@ -333,7 +333,15 @@ export const eventTopics: EventTopic[] = [
       '躺下平视天顶附近，视野比追着辐射点更有效率。',
     ],
     bodies: [],
-    sources: [nasaShower('geminids', 'Geminids'), imo],
+    sources: [
+      nasaShower('geminids', 'Geminids'),
+      {
+        name: 'NASA — Phaethon tail study (2023; accessed 2026-11-07)',
+        url: 'https://www.nasa.gov/solar-system/asteroids-comet-like-tail-is-not-made-of-dust-solar-observatories-reveal/',
+      },
+      { name: 'NASA JPL — Meteor Streams', url: 'https://ssd.jpl.nasa.gov/sb/meteor_streams.html' },
+      imo,
+    ],
   },
   {
     id: 'ursids',
