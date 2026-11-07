@@ -5,7 +5,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import SkyEventRow from '../components/sky-event-row';
 import SkyEventIcon from '../components/sky-event-icon';
 import { calculateEclipseList, fallbackSkyLocation } from '../lib/sky-events';
-import { calculatePlanetEvents, type PlannerTab } from '../lib/planet-events';
+import { calculatePlanetEvents } from '../lib/planet-events';
+import { catalogEntry } from '../lib/seo';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { languages, translator, type Locale } from '../lib/i18n';
 
@@ -31,6 +32,10 @@ void test('calculated events render their subtype or planet icon alongside local
   const query = { ...fallbackSkyLocation, start: Date.UTC(2026, 10, 7) };
   const eclipses = calculateEclipseList(query);
   const planets = calculatePlanetEvents(query);
+  for (const kind of ['solar', 'lunar'] as const)
+    assert.ok(eclipses[kind].events.length > 0, `${kind} events are populated`);
+  for (const kind of ['opposition', 'transit'] as const)
+    assert.ok(planets[kind].length > 0, `${kind} events are populated`);
   const events = [
     ...(['solar', 'lunar'] as const).flatMap((kind) =>
       eclipses[kind].events.map((event) => ({ kind, variant: event.kind })),
@@ -45,10 +50,22 @@ void test('calculated events render their subtype or planet icon alongside local
     );
     assert.doesNotMatch(icon, /lucide-/, `${kind}: ${variant}`);
     for (const locale of Object.keys(languages) as Locale[]) {
-      const title = translator(locale)(variant);
+      const t = translator(locale);
+      const title =
+        kind === 'opposition' || kind === 'transit'
+          ? t(kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日', {
+              name: t(catalogEntry(variant)!.data.name),
+            })
+          : t(variant);
+      if (kind === 'opposition' || kind === 'transit')
+        assert.notEqual(
+          title,
+          variant,
+          `${locale}: ${kind} uses a named title`,
+        );
       const row = renderToStaticMarkup(
         createElement(SkyEventRow, {
-          kind: kind as PlannerTab,
+          kind,
           variant,
           title,
           peak: 0,
@@ -58,7 +75,10 @@ void test('calculated events render their subtype or planet icon alongside local
         }),
       );
       assert.ok(row.includes(icon), `${locale}: ${variant}`);
-      assert.ok(row.includes(title));
+      assert.ok(
+        row.includes(renderToStaticMarkup(title)),
+        `${locale}: ${title}`,
+      );
     }
   }
 });
