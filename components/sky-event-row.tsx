@@ -1,24 +1,13 @@
 import type { ReactNode } from 'react';
-import {
-  ChevronDown,
-  CircleDot,
-  Eclipse,
-  Eye,
-  Moon,
-  Orbit,
-} from 'lucide-react';
+import { ChevronDown, Eye } from 'lucide-react';
 import type { PlannerTab } from '../lib/planet-events';
-
-export const eventIcons = {
-  solar: Eclipse,
-  lunar: Moon,
-  opposition: Orbit,
-  transit: CircleDot,
-};
+import SkyEventIcon from './sky-event-icon';
+export { eventIcons } from './sky-event-icon';
 
 /** Keep the date and the jump action visible while circumstances stay folded. */
 export default function SkyEventRow({
   kind,
+  variant,
   title,
   peak,
   timeLabel,
@@ -28,6 +17,7 @@ export default function SkyEventRow({
   children,
 }: {
   kind: PlannerTab;
+  variant?: string;
   title: string;
   peak: number;
   timeLabel: string;
@@ -36,13 +26,12 @@ export default function SkyEventRow({
   onView: () => void;
   children?: ReactNode;
 }) {
-  const Icon = eventIcons[kind];
   return (
     <article className="sky-event">
       <details>
         <summary className="sky-event-summary">
           <span className={`sky-event-icon sky-event-icon-${kind}`}>
-            <Icon size={19} aria-hidden="true" />
+            <SkyEventIcon kind={kind} variant={variant} />
           </span>
           <span className="sky-event-label">
             <span className="sky-event-heading">

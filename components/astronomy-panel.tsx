@@ -188,6 +188,7 @@ export default function AstronomyPanel({
     <SkyEventRow
       key={event.peak}
       kind={kind}
+      variant={event.kind}
       title={t(event.kind)}
       peak={event.peak}
       timeLabel={format(event.peak)}
@@ -347,6 +348,7 @@ export default function AstronomyPanel({
               <SkyEventRow
                 key={`${event.body}-${event.peak}`}
                 kind={kind}
+                variant={event.body}
                 title={title}
                 peak={event.peak}
                 timeLabel={format(event.peak)}
