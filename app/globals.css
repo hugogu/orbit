@@ -1640,6 +1640,11 @@ html[data-native-platform='mac'] .seo-page-header {
 .header-actions .astronomy-actions {
   display: flex;
 }
+.observation-actions {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+}
 .header-actions .header-events-button {
   width: auto;
   gap: 6px;
@@ -5095,6 +5100,42 @@ html[data-native-platform='mac'] .seo-page-header {
   }
 }
 @media (max-width: 600px) and (orientation: portrait) {
+  .observatory .rail-end {
+    top: calc(56px + env(safe-area-inset-top, 0px));
+  }
+  /* Keep the first row narrow enough for a notched phone. Observation actions
+     join the body picker below the mode tabs, with their own touch targets. */
+  .observatory:not([data-sandbox='true']):not([data-ground='true'])
+    .observation-actions {
+    position: absolute;
+    top: calc(102px + env(safe-area-inset-top, 0px));
+    right: 0;
+    gap: 0;
+    border: 1px solid #ffffff10;
+    border-radius: 8px;
+    background: #090e16d9;
+  }
+  .observatory:not([data-sandbox='true']):not([data-ground='true'])
+    .rail-start
+    .phone-body-info {
+    margin-right: 96px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .phone-body-info > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .topbar .brand {
+    min-height: 44px;
+  }
   .sky-events-dialog .settings-tabs-list {
     width: 80px;
   }
@@ -5105,7 +5146,13 @@ html[data-native-platform='mac'] .seo-page-header {
     min-height: 64px;
   }
   .sky-event-summary > .sky-event-icon {
-    display: none;
+    flex-basis: 26px;
+    height: 26px;
+  }
+  .sky-event-label time,
+  .sky-event-tag {
+    max-width: 100%;
+    white-space: normal;
   }
 }
 @media (max-width: 360px),

@@ -1308,31 +1308,33 @@ function ObservatoryView() {
                 ? t('沙盘演算中')
                 : t('按日期演算')}
           </span>
-          {tab !== 'sandbox' && !ground && (
-            <div className="astronomy-actions">
-              <button
-                className="icon-button header-events-button"
-                aria-label={t('近期天象')}
-                title={t('近期天象')}
-                onClick={() => {
-                  setPlannerStart(null);
-                  setAstronomy(true);
-                }}
-              >
-                <CalendarDays size={18} />
-                <span className={actionLabel}>{t('近期天象')}</span>
-              </button>
-            </div>
-          )}
-          <button
-            className="icon-button header-share-button"
-            aria-label={t('分享此刻所见')}
-            title={sandboxScenario ? t('分享这个沙盘') : t('分享此刻所见')}
-            hidden={ground}
-            onClick={openShare}
-          >
-            <Share2 />
-          </button>
+          <div className="observation-actions">
+            {tab !== 'sandbox' && !ground && (
+              <div className="astronomy-actions">
+                <button
+                  className="icon-button header-events-button"
+                  aria-label={t('近期天象')}
+                  title={t('近期天象')}
+                  onClick={() => {
+                    setPlannerStart(null);
+                    setAstronomy(true);
+                  }}
+                >
+                  <CalendarDays size={18} />
+                  <span className={actionLabel}>{t('近期天象')}</span>
+                </button>
+              </div>
+            )}
+            <button
+              className="icon-button header-share-button"
+              aria-label={t('分享此刻所见')}
+              title={sandboxScenario ? t('分享这个沙盘') : t('分享此刻所见')}
+              hidden={ground}
+              onClick={openShare}
+            >
+              <Share2 />
+            </button>
+          </div>
           <LanguagePicker />
           <button
             className="icon-button"
