@@ -442,7 +442,7 @@ export default function AstronomyPanel({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         closeLabel={t('Close')}
-        className="orbit-dialog astronomy-dialog"
+        className="orbit-dialog astronomy-dialog sky-events-dialog"
       >
         <DialogTitle>{t('近期天象')}</DialogTitle>
         <DialogDescription>

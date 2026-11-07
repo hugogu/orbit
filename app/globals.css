@@ -2780,16 +2780,18 @@ html[data-native-platform='mac'] .seo-page-header {
 .astronomy-dialog > .settings-tabs {
   flex: 1;
   min-height: 0;
-  flex-direction: row;
   gap: 12px;
   margin-top: 4px;
+}
+.sky-events-dialog > .settings-tabs {
+  flex-direction: row;
 }
 .astronomy-dialog [data-slot='dialog-description'] {
   font-size: 12px;
   line-height: 1.5;
   padding-right: 24px;
 }
-.astronomy-dialog .settings-tabs-list {
+.sky-events-dialog .settings-tabs-list {
   width: 126px;
   flex-direction: column;
   border-bottom: 0;
@@ -2799,7 +2801,7 @@ html[data-native-platform='mac'] .seo-page-header {
   padding-right: 8px;
   align-self: stretch;
 }
-.astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
+.sky-events-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
   width: 100%;
   min-height: 48px;
   padding: 8px;
@@ -2810,10 +2812,10 @@ html[data-native-platform='mac'] .seo-page-header {
   white-space: normal;
   line-height: 1.35;
 }
-.astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'][data-active] {
+.sky-events-dialog .settings-tabs-list [data-slot='tabs-trigger'][data-active] {
   background: #dfc99f10;
 }
-.astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger']::after {
+.sky-events-dialog .settings-tabs-list [data-slot='tabs-trigger']::after {
   display: none;
 }
 .astronomy-dialog .settings-tab-panel {
@@ -5069,11 +5071,11 @@ html[data-native-platform='mac'] .seo-page-header {
   .astronomy-dialog > .settings-tabs {
     gap: 8px;
   }
-  .astronomy-dialog .settings-tabs-list {
+  .sky-events-dialog .settings-tabs-list {
     width: 108px;
     padding-right: 6px;
   }
-  .astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
+  .sky-events-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
     font-size: 12px;
     padding: 6px;
     gap: 6px;
@@ -5093,10 +5095,10 @@ html[data-native-platform='mac'] .seo-page-header {
   }
 }
 @media (max-width: 600px) and (orientation: portrait) {
-  .astronomy-dialog .settings-tabs-list {
+  .sky-events-dialog .settings-tabs-list {
     width: 80px;
   }
-  .astronomy-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
+  .sky-events-dialog .settings-tabs-list [data-slot='tabs-trigger'] {
     flex-direction: column;
     justify-content: center;
     text-align: center;
