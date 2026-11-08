@@ -221,6 +221,22 @@ void test('Venus brightness guidance distinguishes approximate peak apparent mag
   assert.match(translator('ja')(brightness), /視等級は約 −4\.8/);
 });
 
+void test('Venus elongation recurrence describes the same direction and unequal intervening intervals', () => {
+  const topic = eventTopic('elongation')!;
+  assert.match(topic.season, /同方向大距约每 19 个月重复.*另一方向.*间隔并不相等/);
+  assert.ok(topic.facts.some((fact) => fact.label === '东大距'));
+  assert.ok(topic.facts.some((fact) => fact.label === '西大距'));
+
+  for (const locale of codes) {
+    const recurrence = translator(locale)(topic.season);
+    assert.match(recurrence, /19/, locale);
+    if (locale !== 'zh-CN') assert.notEqual(recurrence, topic.season, locale);
+    assert.ok(recurrence.length > 25, locale);
+  }
+  assert.match(translator('en')(topic.season), /same direction.*opposite-direction.*unequal intervals/);
+  assert.match(translator('ja')(topic.season), /同じ方向.*反対方向.*等しくない/);
+});
+
 void test('lunar eclipse recurrence counts every type worldwide by calendar year', () => {
   const recurrence = eventTopic('lunar-eclipse')?.season;
   assert.equal(recurrence, '全球每公历年 2 至 5 次，含半影月食');
