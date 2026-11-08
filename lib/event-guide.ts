@@ -468,7 +468,7 @@ export const eventTopics: EventTopic[] = [
     name: '大距',
     en: 'Greatest elongation',
     category: 'planet-aspect',
-    season: '水星每年数次，金星约每 19 个月',
+    season: '水星每年数次；金星同方向大距约每 19 个月重复，另一方向会在其间出现，间隔并不相等',
     summary: '内行星离太阳的视角距最大，也是最容易找到它们的时候。',
     headline: '水星和金星最容易被找到的日子',
     intro:
