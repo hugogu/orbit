@@ -36,6 +36,22 @@ void test('Korean occultation guide maps each field to its own meaning', () => {
   assert.match(t(eventTopic('transit')!.observing[0]), /태양 필터/);
 });
 
+void test('opposition guide qualifies viewing hours and closest approach in every language', () => {
+  const topic = eventTopic('opposition')!;
+  assert.match(topic.intro, /地点、季节.*最近距离与最大视直径不一定/);
+  assert.match(topic.intro, /冲日规划器/);
+  assert.match(topic.facts[1].value, /依地点和季节而异/);
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const copy of [topic.summary, topic.intro, topic.facts[1].value]) {
+      assert.ok(t(copy).length > 0, locale);
+      if (locale !== 'zh-CN') assert.notEqual(t(copy), copy, locale);
+    }
+  }
+  assert.match(translator('en')(topic.intro), /need not coincide exactly with opposition/);
+  assert.doesNotMatch(translator('en')(topic.summary), /visible all night|at its brightest/);
+});
+
 void test('Geminids guide separates parent association from the unresolved release mechanism', () => {
   const topic = eventTopic('geminids')!;
   const explanation = topic.sections[0].text;
