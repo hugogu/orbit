@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
+import AboutPage from '../app/_pages/about-page';
 import BodyPage from '../app/_pages/body-page';
 import {
   aboutPath,
@@ -1094,6 +1095,25 @@ void test('privacy and about routes render their own static params and metadata'
   assert.doesNotMatch(privacyPage, /href=\{privacyPath\(locale\)\}/);
   assert.match(aboutPage, /href=\{privacyPath\(locale\)\}/);
   assert.doesNotMatch(aboutPage, /href=\{aboutPath\(locale\)\}/);
+});
+
+void test('localized About pages link to the Orbits Observer App Store listing', async () => {
+  for (const locale of seoLocales) {
+    const html = renderToStaticMarkup(
+      await AboutPage({
+        params: Promise.resolve({ locale: localePath(locale) }),
+      }),
+    );
+    const link = html.match(
+      /<a\b[^>]*href="https:\/\/apps\.apple\.com\/us\/app\/orbits-observer\/id6832134670"[^>]*>(.*?)<\/a>/,
+    );
+    assert.ok(link, `App Store link missing for ${locale}`);
+    assert.ok(
+      link[1].startsWith(
+        renderToStaticMarkup(translator(locale)('在 App Store 下载')),
+      ),
+    );
+  }
 });
 
 void test('every crawlable page links to the privacy policy', () => {

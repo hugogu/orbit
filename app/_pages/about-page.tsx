@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowUpRight } from 'lucide-react';
+import { appStoreUrl } from '../../lib/app-store';
 import {
   languages,
   localePath,
@@ -126,6 +127,15 @@ export default async function AboutPage({ params }: PageProps) {
           <div className="seo-actions">
             <a className="seo-primary-action" href={explorerPath(locale)}>
               {t('回到三维观测台')}
+            </a>
+            <a
+              className="seo-secondary-action"
+              href={appStoreUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('在 App Store 下载')}
+              <ArrowUpRight size={16} aria-hidden="true" />
             </a>
           </div>
         </div>

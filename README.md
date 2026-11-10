@@ -14,11 +14,11 @@
 
 **[English](README.md) · [简体中文](README.zh-CN.md)**
 
-[Explore Live Demo](https://orbits.observer/) · [Report an Issue](https://github.com/hugogu/orbit/issues) · [Request a Feature](https://github.com/hugogu/orbit/issues/new)
+[Explore Live Demo](https://orbits.observer/) · [Download on the App Store](https://apps.apple.com/us/app/orbits-observer/id6832134670) · [Report an Issue](https://github.com/hugogu/orbit/issues) · [Request a Feature](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
-> The banner is project artwork, not an application screenshot. ORBIT runs entirely in the browser.
+> The banner is project artwork, not an application screenshot. The web observatory runs entirely in the browser.
 
 https://github.com/user-attachments/assets/1777344a-6458-4409-9ae2-0f1cfe1b9c75
 

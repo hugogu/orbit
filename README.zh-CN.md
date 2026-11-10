@@ -14,11 +14,11 @@
 
 **[English](README.md) · [简体中文](README.zh-CN.md)**
 
-[立即在线体验](https://orbits.observer/) · [提交反馈与问题](https://github.com/hugogu/orbit/issues) · [提出新功能建议](https://github.com/hugogu/orbit/issues/new)
+[立即在线体验](https://orbits.observer/) · [在 App Store 下载](https://apps.apple.com/us/app/orbits-observer/id6832134670) · [提交反馈与问题](https://github.com/hugogu/orbit/issues) · [提出新功能建议](https://github.com/hugogu/orbit/issues/new)
 
 </div>
 
-> 上图为项目视觉封面，不是应用界面截图。ORBIT 在浏览器中运行，无需安装客户端。
+> 上图为项目视觉封面，不是应用界面截图。网页版可直接在浏览器中运行。
 
 https://github.com/user-attachments/assets/1777344a-6458-4409-9ae2-0f1cfe1b9c75
 

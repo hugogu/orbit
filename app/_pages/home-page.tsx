@@ -31,6 +31,7 @@ import {
   CalendarClock,
   Sparkles,
   Share2,
+  Download,
   X,
   Telescope,
 } from 'lucide-react';
@@ -60,6 +61,7 @@ import { useDeviceAttitude } from '@/components/use-device-attitude';
 import { currentLocation } from '@/lib/geolocation';
 import ShareDialog from '@/components/share-dialog';
 import GitHubLink from '@/components/github-link';
+import { appStoreUrl } from '@/lib/app-store';
 import {
   decodeShareView,
   hasShareView,
@@ -1335,6 +1337,16 @@ function ObservatoryView() {
               <Share2 />
             </button>
           </div>
+          <a
+            className="icon-button header-app-store-link"
+            href={appStoreUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={t('在 App Store 下载')}
+            title={t('在 App Store 下载')}
+          >
+            <Download aria-hidden="true" />
+          </a>
           <LanguagePicker />
           <button
             className="icon-button"
@@ -1751,6 +1763,15 @@ function ObservatoryView() {
             <span>{t('空格暂停')}</span>
           </div>
           <div className="footer-links">
+            <a
+              className="footer-app-store-link"
+              href={appStoreUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('在 App Store 下载')}
+              <ArrowUpRight size={12} aria-hidden="true" />
+            </a>
             <button onClick={() => setHelp(true)}>
               {t('模型说明与来源')}
               <ArrowUpRight size={12} />

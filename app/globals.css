@@ -1697,6 +1697,9 @@ html[data-native-platform='mac'] .seo-page-header {
 .header-share-button[hidden] {
   display: none;
 }
+.header-app-store-link {
+  display: none;
+}
 .scene-caption {
   position: absolute;
   left: 32px;
@@ -3055,7 +3058,8 @@ html[data-native-platform='mac'] .seo-page-header {
   font-weight: 400;
   color: #323e50;
 }
-.footer button {
+.footer button,
+.footer-app-store-link {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -3063,6 +3067,13 @@ html[data-native-platform='mac'] .seo-page-header {
   background: transparent;
   color: #748092;
   font-size: 12px;
+}
+.footer-app-store-link {
+  min-height: 24px;
+  white-space: nowrap;
+}
+.footer-app-store-link:hover {
+  color: #e7d2a7;
 }
 .github-link {
   display: flex;
@@ -4651,6 +4662,9 @@ html[data-native-platform='mac'] .seo-page-header {
   .scene-meta,
   .footer {
     display: none;
+  }
+  .header-app-store-link {
+    display: inline-flex;
   }
   .mobile-info {
     display: flex;
