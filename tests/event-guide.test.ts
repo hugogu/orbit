@@ -15,6 +15,27 @@ const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const zhrExplanation =
   'ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。';
 
+void test('Korean occultation guide maps each field to its own meaning', () => {
+  const topic = eventTopic('occultation')!;
+  const t = translator('ko');
+  assert.equal(t(topic.name), '엄폐');
+  assert.match(t(topic.summary), /가까운 천체.*먼 천체/);
+  assert.match(t(topic.season), /매달/);
+  assert.match(t(topic.headline), /초 단위/);
+  assert.match(t(topic.intro), /13°.*소행성/);
+  assert.match(t(topic.sections[0].heading), /대기/);
+  assert.match(t(topic.sections[0].text), /쌍성/);
+  assert.match(t(topic.sections[1].heading), /측정/);
+  assert.match(t(topic.sections[1].text), /1977년.*고리/);
+  assert.match(t(topic.facts[0].value), /항성.*행성/);
+  assert.match(t(topic.facts[2].value), /킬로미터/);
+  assert.match(t(topic.facts[3].value), /1977년.*고리/);
+  assert.match(t(topic.observing[0]), /관측 장소/);
+  assert.match(t(topic.observing[1]), /휴대전화/);
+  assert.match(t(topic.observing[2]), /행성.*1~2초/);
+  assert.match(t(eventTopic('transit')!.observing[0]), /태양 필터/);
+});
+
 void test('Geminids guide separates parent association from the unresolved release mechanism', () => {
   const topic = eventTopic('geminids')!;
   const explanation = topic.sections[0].text;
