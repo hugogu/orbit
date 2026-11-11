@@ -15,6 +15,25 @@ const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const zhrExplanation =
   'ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。';
 
+void test('Leonids guide distinguishes comet returns from meteor storms in every language', () => {
+  const topic = eventTopic('leonids')!;
+  assert.match(topic.headline, /33 年.*并非定期/);
+  assert.match(topic.intro, /1833 年.*1966 年.*不保证/);
+  assert.match(topic.sections[0].text, /历次回归.*1999 至 2002 年.*不能据此推断/);
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const source of [topic.headline, topic.intro, topic.sections[0].text]) {
+      const copy = t(source);
+      assert.ok(copy.length > 10, locale);
+      if (locale !== 'zh-CN') assert.notEqual(copy, source, locale);
+    }
+  }
+  const en = translator('en');
+  assert.match(en(topic.headline), /not periodic/);
+  assert.match(en(topic.intro), /does not guarantee/);
+  assert.match(en(topic.sections[0].text), /different returns/);
+});
+
 void test('Korean occultation guide maps each field to its own meaning', () => {
   const topic = eventTopic('occultation')!;
   const t = translator('ko');
