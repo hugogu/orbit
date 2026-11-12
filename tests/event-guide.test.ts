@@ -15,6 +15,18 @@ const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const zhrExplanation =
   'ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。';
 
+void test('Leonids guidance qualifies radiant timing by location in every language', () => {
+  const tip = eventTopic('leonids')!.observing[0];
+  assert.match(tip, /升起时间和高度因地点而异.*多数地点.*月落和晨曦/);
+  for (const locale of codes) {
+    const copy = translator(locale)(tip);
+    assert.ok(copy.length > 30, locale);
+    if (locale !== 'zh-CN') assert.notEqual(copy, tip, locale);
+  }
+  assert.match(translator('en')(tip), /rise time and height vary by location.*later half of the night.*moonset and dawn/i);
+  assert.doesNotMatch(translator('en')(tip), /rises after midnight/i);
+});
+
 void test('Korean occultation guide maps each field to its own meaning', () => {
   const topic = eventTopic('occultation')!;
   const t = translator('ko');
