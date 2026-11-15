@@ -45,11 +45,13 @@ export default function LunarPanel({
   onOpenChange,
   time,
   location,
+  onSeek,
 }: {
   open: boolean;
   onOpenChange: (value: boolean) => void;
   time: number;
   location: SkyLocation;
+  onSeek: (time: number) => void;
 }) {
   const { t, locale } = useI18n();
   const [anchor, setAnchor] = useState<Anchor | null>(null);
@@ -254,6 +256,7 @@ export default function LunarPanel({
             {t('当地时间')} (UTC{offsetLabel})
           </th>
           <th scope="col">UTC</th>
+          <th scope="col">{t('查看')}</th>
         </tr>
       </thead>
       <tbody>
@@ -271,6 +274,22 @@ export default function LunarPanel({
             </th>
             <td>{localStamp(event.time)}</td>
             <td>{utcStamp(event.time)}</td>
+            <td>
+              <button
+                type="button"
+                className="secondary-action quarter-view"
+                aria-label={t('查看{{event}}，{{time}}', {
+                  event: t(event.name),
+                  time: localStamp(event.time),
+                })}
+                onClick={() => {
+                  onSeek(event.time);
+                  onOpenChange(false);
+                }}
+              >
+                {t('查看')}
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>

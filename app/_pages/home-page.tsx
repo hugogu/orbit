@@ -1831,6 +1831,10 @@ function ObservatoryView() {
       <LunarPanel
         open={lunar && tab !== 'sandbox'}
         onOpenChange={setLunar}
+        onSeek={(ms) => {
+          seekTime(ms);
+          select('moon-moon');
+        }}
         time={time ?? J2000_MS}
         location={timedObserverLocation}
       />

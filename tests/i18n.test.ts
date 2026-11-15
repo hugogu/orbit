@@ -473,6 +473,7 @@ void test('the Moon phase panel is fully translated, including its computed labe
         createElement(LunarPanel, {
           open: true,
           onOpenChange() {},
+          onSeek() {},
           time: Date.parse('2026-09-20T12:00:00Z'),
           location: {
             latitude: 39.9042,

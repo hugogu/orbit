@@ -93,11 +93,23 @@ void test('the phase-time table wraps all readings on phones and keeps its acces
     phone,
     /\.quarter-table th, \.quarter-table td \{[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;/,
   );
-  assert.match(phone, /\.quarter-table tr > :first-child \{ width: 31%;/);
+  assert.match(phone, /\.quarter-table tr > :first-child \{ width: 25%;/);
   assert.match(
     phone,
-    /\.quarter-table tr > :nth-child\(2\), \.quarter-table tr > :nth-child\(3\) \{ width: 34\.5%;/,
+    /\.quarter-table tr > :nth-child\(2\), \.quarter-table tr > :nth-child\(3\) \{ width: 27%;/,
   );
+  assert.match(phone, /\.quarter-table tr > :nth-child\(4\) \{ width: 21%;/);
+});
+
+void test('principal phase actions seek the exact computed instant and retain Moon selection', () => {
+  const home = readFileSync(new URL('../app/_pages/home-page.tsx', import.meta.url), 'utf8');
+  assert.match(quarterTable, /onSeek\(event\.time\);\s*onOpenChange\(false\)/);
+  assert.match(home, /onSeek=\{\(ms\) => \{\s*seekTime\(ms\);\s*select\('moon-moon'\)/);
+  assert.match(quarterTable, /aria-label=\{t\('查看\{\{event\}\}，\{\{time\}\}'/);
+  const events = moonQuarters(Date.parse('2026-11-01T00:00:00Z'));
+  assert.ok(events.some(({ time }) => time % 60000 !== 0));
+  assert.ok(events.every(({ time }) => time >= MIN_TIME && time <= MAX_TIME));
+  assert.equal(moonQuarters(MAX_TIME).length, 0);
 });
 
 void test('a phase name never contradicts the illuminated fraction beside it', () => {

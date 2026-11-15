@@ -3386,6 +3386,10 @@ html[data-native-platform='mac'] .seo-page-header {
   background: #09121d;
   overflow: hidden;
 }
+.quarter-view {
+  min-height: 36px;
+  padding: 5px 9px;
+}
 .sky-table th,
 .sky-table td {
   padding: 9px 12px;
@@ -5317,11 +5321,18 @@ html:lang(en) .moon-children button > span:last-child {
     vertical-align: top;
   }
   .quarter-table tr > :first-child {
-    width: 31%;
+    width: 25%;
   }
   .quarter-table tr > :nth-child(2),
   .quarter-table tr > :nth-child(3) {
-    width: 34.5%;
+    width: 27%;
+  }
+  .quarter-table tr > :nth-child(4) {
+    width: 21%;
+  }
+  .quarter-view {
+    min-height: 44px;
+    padding-inline: 4px;
   }
   .quarter-table .quarter-name {
     white-space: normal;
