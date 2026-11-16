@@ -96,6 +96,7 @@ import {
 } from '@/lib/sky-events';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { bodyMotion } from '@/lib/body-motion';
+import { marsObservation } from '@/lib/mars-observation';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -303,6 +304,10 @@ function ObservatoryView() {
         center: t(motion.center),
       })
     : undefined;
+  const marsView =
+    body?.id === 'mars' && time !== null && !sandboxScenario
+      ? marsObservation(time)
+      : null;
   // Topic views choose a distance mode without overwriting the user's layout preference.
   // One set of playback controls drives whichever clock is in charge. A run
   // with moons offers only the rates its step can keep up with; the moon
@@ -1064,6 +1069,37 @@ function ObservatoryView() {
           </strong>
         </div>
       </div>
+      {marsView && (
+        <>
+          <div className="facts">
+            <div>
+              <span>{t('地心距离')}</span>
+              <strong>
+                {marsView.distanceAu.toLocaleString(locale, {
+                  maximumFractionDigits: 3,
+                  minimumFractionDigits: 3,
+                })}{' '}
+                <small>AU</small>
+              </strong>
+            </div>
+            <div>
+              <span>{t('近似视直径')}</span>
+              <strong>
+                {marsView.diameterArcsec.toLocaleString(locale, {
+                  maximumFractionDigits: 1,
+                  minimumFractionDigits: 1,
+                })}{' '}
+                <small>″</small>
+              </strong>
+            </div>
+          </div>
+          <p className="description">
+            {t(
+              '按模拟时刻从地心计算；视直径采用火星平均半径的球形近似，与画面放大比例和上方平均日距无关。',
+            )}
+          </p>
+        </>
+      )}
       {body.id === 'earth' && (
         <SunriseSunset
           time={time ?? J2000_MS}
