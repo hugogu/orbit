@@ -3205,6 +3205,12 @@ html[data-native-platform='mac'] .seo-page-header {
 .daily-sun-facts strong {
   font-variant-numeric: tabular-nums;
 }
+.daily-sun-facts small {
+  display: block;
+  margin-top: 3px;
+  color: #aab7c9;
+  font-variant-numeric: tabular-nums;
+}
 .daily-sun .little-note {
   margin: 14px 0 0;
   line-height: 1.7;
