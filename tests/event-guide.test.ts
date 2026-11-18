@@ -299,6 +299,26 @@ void test('lunar eclipse recurrence counts every type worldwide by calendar year
   );
 });
 
+void test('lunar eclipse guide distinguishes penumbral, partial and total stages', () => {
+  const topic = eventTopic('lunar-eclipse');
+  assert.ok(topic);
+  assert.match(topic.intro, /只有月全食.*完全进入地球本影/);
+  assert.match(topic.intro, /通常需要约一小时/);
+  const stages = topic.sections.find((section) => section.heading === '半影、偏食与全食');
+  assert.ok(stages);
+  assert.match(stages.text, /半影月食.*没有进入本影/);
+  assert.match(stages.text, /月偏食.*只有部分月面进入本影/);
+  assert.match(stages.text, /只有月全食.*完全进入本影/);
+  assert.match(stages.text, /半影食分.*不是本影面积遮掩比例/);
+  for (const locale of codes) {
+    const translate = translator(locale);
+    for (const source of [topic.intro, stages.text]) {
+      assert.ok(translate(source).length > 100, locale);
+      if (locale !== 'zh-CN') assert.notEqual(translate(source), source, locale);
+    }
+  }
+});
+
 void test('solar eclipse recurrence distinguishes worldwide events from local visibility', () => {
   const topic = eventTopic('solar-eclipse');
   assert.ok(topic);
