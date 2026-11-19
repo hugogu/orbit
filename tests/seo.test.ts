@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import AboutPage from '../app/_pages/about-page';
 import BodyPage from '../app/_pages/body-page';
+import EventPage from '../app/_pages/event-page';
 import {
   aboutPath,
   aboutDescription,
@@ -142,6 +143,52 @@ void test('planet profiles link orbital neighbors and every catalogued moon', as
         links,
         expected.map((bodyId) => bodyDetailsPath(locale, bodyId)),
         `${locale} ${id}`,
+      );
+    }
+  }
+});
+
+void test('Halley profile links both meteor guides and each guide links back in every locale', async () => {
+  const ids = ['eta-aquariids', 'orionids'];
+  for (const locale of seoLocales) {
+    const route = languages[locale].route;
+    const profile = renderToStaticMarkup(
+      await BodyPage({
+        params: Promise.resolve({ locale: route, id: 'halley' }),
+      }),
+    );
+    const related = profile.match(
+      /<nav class="seo-related"[\s\S]*?<\/nav>/,
+    )?.[0];
+    assert.ok(related, `${locale}: related navigation exists`);
+    assert.match(related, /<h3>[^<]+<\/h3>/);
+    assert.ok(
+      related.includes(
+        renderToStaticMarkup(
+          translator(locale)(
+            '地球每年穿过哈雷彗星先前留下的碎屑，彗核无需同时靠近地球；下列季节是常年参考，并非精确预报。',
+          ),
+        ),
+      ),
+    );
+    for (const id of ids) {
+      const topic = eventTopic(id)!;
+      const path = eventDetailsPath(locale, id);
+      assert.equal(
+        related.split(`href="${path}"`).length - 1,
+        1,
+        `${locale}: ${id} appears once`,
+      );
+      assert.ok(
+        related.includes(renderToStaticMarkup(translator(locale)(topic.season))),
+        `${locale}: ${id} season`,
+      );
+      const guide = renderToStaticMarkup(
+        await EventPage({ params: Promise.resolve({ locale: route, id }) }),
+      );
+      assert.ok(
+        guide.includes(`href="${bodyDetailsPath(locale, 'halley')}"`),
+        `${locale}: ${id} return link`,
       );
     }
   }

@@ -39,6 +39,7 @@ import {
   asteroidSurfaceNote,
 } from '../../lib/asteroids';
 import { profileContent, type ProfileContent } from '../../lib/profile-content';
+import { eventTopics } from '../../lib/event-guide';
 import {
   squareImagePath,
   isIllustrativePortrait,
@@ -51,6 +52,7 @@ import { orbitingMoons } from '../../lib/moon-orbits';
 import {
   absoluteSiteUrl,
   bodyDetailsPath,
+  eventDetailsPath,
   catalogEntries,
   catalogEntry,
   entryImagePath,
@@ -417,6 +419,10 @@ export default async function BodyPage({ params }: PageProps) {
   const content = profileContent[entry.data.id];
   const credit = portraitCredit(entry);
   const related = relatedEntries(entry);
+  const relatedEvents =
+    entry.data.id === 'halley'
+      ? eventTopics.filter((topic) => topic.bodies.includes(entry.data.id))
+      : [];
   const jsonLd = profileJsonLd({
     entry,
     locale,
@@ -737,6 +743,24 @@ export default async function BodyPage({ params }: PageProps) {
                 </li>
               ))}
             </ul>
+            {relatedEvents.length > 0 && (
+              <div className="event-related">
+                <h3>{t('流星雨')}</h3>
+                <p>
+                  {t('地球每年穿过哈雷彗星先前留下的碎屑，彗核无需同时靠近地球；下列季节是常年参考，并非精确预报。')}
+                </p>
+                <ul>
+                  {relatedEvents.map((topic) => (
+                    <li key={topic.id}>
+                      <a href={eventDetailsPath(locale, topic.id)}>
+                        <strong>{t(topic.name)}</strong>
+                        <small>{t(topic.season)}</small>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </nav>
         )}
       </article>
