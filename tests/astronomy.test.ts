@@ -266,6 +266,14 @@ void test('daily events respect local midnight, opposite UTC date and horizon cr
       altitude(AstroBody.Sun, r.set! - 60000, observer),
   );
   assert.ok(Math.abs(altitude(AstroBody.Sun, r.rise!, observer) + 0.27) < 0.1);
+  assert.ok(r.riseAzimuth! > 70 && r.riseAzimuth! < 110);
+  assert.ok(r.setAzimuth! > 250 && r.setAzimuth! < 290);
+  assert.ok(r.riseAzimuth! >= 0 && r.riseAzimuth! < 360);
+  assert.ok(r.setAzimuth! >= 0 && r.setAzimuth! < 360);
+  // USNO AltAz: Beijing, 2025-03-01, UTC+8; 06:48 99.2°, 18:06 261.0°.
+  // https://aa.usno.navy.mil/calculated/altaz?body=10&date=2025-03-01&intv_mag=1&label=Beijing&lat=39.9042&lon=116.4074&submit=Get+Data&tz=8&tz_sign=1
+  assert.ok(Math.abs(r.riseAzimuth! - 99.2) < 0.5);
+  assert.ok(Math.abs(r.setAzimuth! - 261.0) < 0.5);
 });
 void test('daily sunrise and sunset are projected from the simulation clock for Earth', () => {
   const location = {
@@ -298,8 +306,13 @@ void test('polar day/night and invalid inputs produce explicit outcomes', () => 
     });
     assert.equal(r.rise, null);
     assert.equal(r.set, null);
+    assert.equal(r.riseAzimuth, null);
+    assert.equal(r.setAzimuth, null);
     assert.match(r.daylight, new RegExp(word));
   }
+  const pole = calculateDailySunEvents({ ...dailyQuery, latitude: 90 });
+  assert.equal(pole.riseAzimuth, null);
+  assert.equal(pole.setAzimuth, null);
   for (const patch of [
     { latitude: 91 },
     { longitude: NaN },

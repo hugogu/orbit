@@ -10,6 +10,7 @@ import {
 } from '../lib/sky-events';
 import ConceptHint from './concept-hint';
 import ObserverLocation from './observer-location';
+import { compassPoints } from '../lib/lunar-phase';
 
 export default function SunriseSunset({
   time,
@@ -42,6 +43,10 @@ export default function SunriseSunset({
           hourCycle: 'h23',
           timeZone: 'UTC',
         }).format(ms + location.utcOffset * 3600000);
+  const bearing = (azimuth: number | null) =>
+    azimuth === null
+      ? null
+      : `${t(compassPoints[Math.round(azimuth / 45) % 8])} · ${Math.round(azimuth) % 360}°`;
   return (
     <section className="daily-sun" aria-label={t('当日日出日落')}>
       <div className="daily-sun-heading">
@@ -59,15 +64,18 @@ export default function SunriseSunset({
             <div>
               <span>{t('日出')}</span>
               <strong>{format(result.rise)}</strong>
+              {bearing(result.riseAzimuth) && <small>{bearing(result.riseAzimuth)}</small>}
             </div>
             <div>
               <span>{t('日落')}</span>
               <strong>{format(result.set)}</strong>
+              {bearing(result.setAzimuth) && <small>{bearing(result.setAzimuth)}</small>}
             </div>
           </div>
           {result.daylight !== '按太阳上缘和标准大气折射计算' && (
             <p className="little-note">{t(result.daylight)}。</p>
           )}
+          <p className="little-note">{t('方位角从真北顺时针计；按理想地平线估算。地形、建筑、天气和大气会影响实际观测。不要直视太阳或用无防护光学设备指向太阳。')}</p>
         </>
       ) : (
         <p className="little-note">{t('正在加载观测点…')}</p>

@@ -80,6 +80,24 @@ void test('Geminids guide separates parent association from the unresolved relea
   assert.match(translator('en')(explanation), /remains under study.*did not detect corresponding dust/);
 });
 
+void test('Geminids observing guidance qualifies location and weather in every language', () => {
+  const topic = eventTopic('geminids')!;
+  const copy = [topic.intro, topic.sections[1].text, topic.observing[0]];
+  assert.match(topic.intro, /北半球.*南半球.*较低/);
+  assert.match(topic.sections[1].text, /辐射点高度、天色和月光.*当地天气/);
+  assert.match(topic.observing[0], /北半球.*南半球.*月光/);
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const item of copy) {
+      const translated = t(item);
+      assert.ok(translated.length > 30, locale);
+      if (locale !== 'zh-CN') assert.notEqual(translated, item, locale);
+    }
+  }
+  assert.match(translator('en')(topic.intro), /Northern Hemisphere.*Southern Hemisphere.*later/);
+  assert.match(translator('en')(topic.sections[1].text), /radiant height.*moonlight.*local weather/);
+});
+
 void test('meteor shower ZHR explanation is available in every language', () => {
   for (const locale of codes) {
     const copy = translator(locale)(zhrExplanation);
@@ -297,6 +315,26 @@ void test('lunar eclipse recurrence counts every type worldwide by calendar year
     translator('ja')(recurrence),
     '世界全体で暦年に2〜5回（半影月食を含む）',
   );
+});
+
+void test('lunar eclipse guide distinguishes penumbral, partial and total stages', () => {
+  const topic = eventTopic('lunar-eclipse');
+  assert.ok(topic);
+  assert.match(topic.intro, /只有月全食.*完全进入地球本影/);
+  assert.match(topic.intro, /通常需要约一小时/);
+  const stages = topic.sections.find((section) => section.heading === '半影、偏食与全食');
+  assert.ok(stages);
+  assert.match(stages.text, /半影月食.*没有进入本影/);
+  assert.match(stages.text, /月偏食.*只有部分月面进入本影/);
+  assert.match(stages.text, /只有月全食.*完全进入本影/);
+  assert.match(stages.text, /半影食分.*不是本影面积遮掩比例/);
+  for (const locale of codes) {
+    const translate = translator(locale);
+    for (const source of [topic.intro, stages.text]) {
+      assert.ok(translate(source).length > 100, locale);
+      if (locale !== 'zh-CN') assert.notEqual(translate(source), source, locale);
+    }
+  }
 });
 
 void test('solar eclipse recurrence distinguishes worldwide events from local visibility', () => {

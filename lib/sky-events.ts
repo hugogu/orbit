@@ -37,6 +37,8 @@ export type DailySunQuery = SkyLocation & { day: string };
 export type DailySunResults = {
   rise: number | null;
   set: number | null;
+  riseAzimuth: number | null;
+  setAzimuth: number | null;
   daylight: string;
 };
 
@@ -143,6 +145,13 @@ export function calculateDailySunEvents(q: DailySunQuery): DailySunResults {
   };
   const rise = daily(1),
     set = daily(-1);
+  const azimuth = (ms: number | null) => {
+    if (ms === null || Math.abs(q.latitude) === 90) return null;
+    const date = new Date(ms);
+    const eq = Equator(Body.Sun, date, observer, true, true);
+    const angle = Horizon(date, observer, eq.ra, eq.dec, 'normal').azimuth;
+    return Number.isFinite(angle) ? (angle + 360) % 360 : null;
+  };
   const daylight =
     rise === null && set === null
       ? altitude(Body.Sun, midnight + DAY_MS / 2, observer) > 0
@@ -151,7 +160,7 @@ export function calculateDailySunEvents(q: DailySunQuery): DailySunResults {
       : rise === null || set === null
         ? '当天仅有一次升落事件'
         : '按太阳上缘和标准大气折射计算';
-  return { rise, set, daylight };
+  return { rise, set, riseAzimuth: azimuth(rise), setAzimuth: azimuth(set), daylight };
 }
 export function altitude(body: Body, ms: number, observer: Observer) {
   const date = new Date(ms),
