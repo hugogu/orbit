@@ -138,20 +138,51 @@ void test('comet nucleus meshes are body-specific and loaded shapes stay cached'
   const system = createCometSystem(scene, {
     appendChild() {},
   } as unknown as HTMLElement);
+  const coma = scene.getObjectByName('comet-coma') as THREE.Mesh<
+    THREE.PlaneGeometry,
+    THREE.ShaderMaterial
+  >;
+  const assertComaClearsNucleus = () => {
+    const { geometry, scale } = system.nucleus;
+    const bounds = geometry.boundingSphere!;
+    const depth = coma.material.uniforms.nucleusRadius.value;
+    assert.equal(depth, (bounds.radius + bounds.center.length()) * scale.x);
+    const positions = geometry.getAttribute('position');
+    const vertex = new THREE.Vector3();
+    for (let i = 0; i < positions.count; i++) {
+      vertex.fromBufferAttribute(positions, i);
+      assert.ok(
+        vertex.length() * scale.x <= depth,
+        'the coma clears every vertex at any rotation',
+      );
+    }
+    return depth;
+  };
   system.update('halley', 0, false);
   assert.equal(requests.length, 1);
+  const fallbackDepth = assertComaClearsNucleus();
   requests[0].resolve(new Response(modelBytes.get('halley')));
   await new Promise((resolve) => setTimeout(resolve, 0));
   const halleyGeometry = system.nucleus.geometry;
+  assert.notEqual(assertComaClearsNucleus(), fallbackDepth);
   system.update('67p', 0, false);
   assert.equal(requests.length, 2);
+  assertComaClearsNucleus();
   requests[1].resolve(new Response(modelBytes.get('67p')));
   await new Promise((resolve) => setTimeout(resolve, 0));
   const sixtySevenGeometry = system.nucleus.geometry;
   assert.notEqual(sixtySevenGeometry, halleyGeometry);
+  assertComaClearsNucleus();
   system.update('halley', 0, false);
   assert.equal(system.nucleus.geometry, halleyGeometry);
   assert.equal(requests.length, 2, 'revisit reuses the loaded comet mesh');
+  assertComaClearsNucleus();
+  system.update('encke', 0, false);
+  assert.equal(requests.length, 3);
+  const enckeFallbackDepth = assertComaClearsNucleus();
+  requests[2].resolve(new Response(modelBytes.get('encke')));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.notEqual(assertComaClearsNucleus(), enckeFallbackDepth);
   for (const comet of comets) {
     const model = parseAsteroidModel(modelBytes.get(comet.id)!);
     assert.ok(model.positions.length > 0, comet.id);

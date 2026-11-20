@@ -95,12 +95,16 @@ export function createCometAtmosphere() {
   const coma = new THREE.Mesh(
     new THREE.PlaneGeometry(2, 2),
     new THREE.ShaderMaterial({
-      uniforms: { activity: { value: 0 } },
+      uniforms: { activity: { value: 0 }, nucleusRadius: { value: 0 } },
       vertexShader: `
+        uniform float nucleusRadius;
         varying vec2 cloudUv;
         void main() {
           vec4 center = modelViewMatrix * vec4(0., 0., 0., 1.);
           center.xy += position.xy * 1.3;
+          // Move along each camera ray so the coma stays behind the whole
+          // nucleus without changing its projected position or size.
+          center.xyz *= 1. + nucleusRadius / max(-center.z, .001);
           gl_Position = projectionMatrix * center;
           cloudUv = position.xy;
         }
@@ -129,6 +133,9 @@ export function createCometAtmosphere() {
   const frame = new THREE.Matrix4();
   return {
     group,
+    setNucleusRadius(radius: number) {
+      coma.material.uniforms.nucleusRadius.value = radius;
+    },
     update(
       position: THREE.Vector3,
       orbitNormal: THREE.Vector3,

@@ -135,7 +135,12 @@ export function createCometSystem(
   let modelController: AbortController | null = null;
   let disposed = false;
   const setGeometry = (comet: Comet, geometry: THREE.BufferGeometry) => {
-    if (activeId === comet.id) nucleus.geometry = geometry;
+    if (activeId !== comet.id) return;
+    nucleus.geometry = geometry;
+    const bounds = geometry.boundingSphere!;
+    atmosphere.setNucleusRadius(
+      (bounds.radius + bounds.center.length()) * nucleus.scale.x,
+    );
   };
   const getFallback = (comet: Comet) => {
     let geometry = fallbackCache.get(comet.id);
@@ -205,7 +210,7 @@ export function createCometSystem(
         modelController?.abort();
         if (loadingId) pendingModels.delete(loadingId);
         activeId = comet.id;
-        nucleus.geometry = modelCache.get(comet.id) ?? getFallback(comet);
+        setGeometry(comet, modelCache.get(comet.id) ?? getFallback(comet));
         ensureModel(comet);
       }
       paths.forEach((path, i) => {
