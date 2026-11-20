@@ -80,6 +80,24 @@ void test('Geminids guide separates parent association from the unresolved relea
   assert.match(translator('en')(explanation), /remains under study.*did not detect corresponding dust/);
 });
 
+void test('Geminids observing guidance qualifies location and weather in every language', () => {
+  const topic = eventTopic('geminids')!;
+  const copy = [topic.intro, topic.sections[1].text, topic.observing[0]];
+  assert.match(topic.intro, /北半球.*南半球.*较低/);
+  assert.match(topic.sections[1].text, /辐射点高度、天色和月光.*当地天气/);
+  assert.match(topic.observing[0], /北半球.*南半球.*月光/);
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const item of copy) {
+      const translated = t(item);
+      assert.ok(translated.length > 30, locale);
+      if (locale !== 'zh-CN') assert.notEqual(translated, item, locale);
+    }
+  }
+  assert.match(translator('en')(topic.intro), /Northern Hemisphere.*Southern Hemisphere.*later/);
+  assert.match(translator('en')(topic.sections[1].text), /radiant height.*moonlight.*local weather/);
+});
+
 void test('meteor shower ZHR explanation is available in every language', () => {
   for (const locale of codes) {
     const copy = translator(locale)(zhrExplanation);
