@@ -181,6 +181,8 @@ void test('a location that sees none of the listed solar eclipses still gets its
   // list reads in one frame of reference however far ahead it reaches.
   assert.match(visible.kind, /^日/);
   assert.ok(Math.abs(visible.local!.peak - visible.peak) < DAY_MS / 2);
+  assert.ok(visible.local!.altitude > 0);
+  assert.notEqual(visible.local!.peak, visible.peak);
 });
 void test('following pages continue the sequence without gaps, repeats or a second visible hunt', () => {
   const place = {

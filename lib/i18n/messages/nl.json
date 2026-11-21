@@ -1098,6 +1098,7 @@
   "正在从当前模拟时间查找接下来的食象。": "Volgende verduisteringen zoeken vanaf de huidige simulatietijd.",
   "本地可见": "Hier zichtbaar",
   "全球食甚": "Wereldwijd maximum",
+  "在当地食甚时查看": "Bekijk op het lokale maximum",
   "食甚遮掩月面约 {{percent}}%": "Ongeveer {{percent}}% van het maanoppervlak is verduisterd bij het maximum",
   "此地为{{kind}}，食甚 {{peak}}（太阳高度 {{altitude}}°）": "Hier zichtbaar als: {{kind}} · maximum {{peak}} · Zon op {{altitude}}° hoogte",
   "，可在地球的天体信息中调整。": " · aanpasbaar in de informatie over de Aarde.",

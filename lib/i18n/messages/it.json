@@ -1098,6 +1098,7 @@
   "正在从当前模拟时间查找接下来的食象。": "Ricerca delle prossime eclissi a partire dall'ora di simulazione attuale.",
   "本地可见": "Visibile qui",
   "全球食甚": "Massimo globale",
+  "在当地食甚时查看": "Visualizza al massimo locale",
   "食甚遮掩月面约 {{percent}}%": "Circa il {{percent}}% della Luna è oscurato al massimo",
   "此地为{{kind}}，食甚 {{peak}}（太阳高度 {{altitude}}°）": "Visibile qui come: {{kind}} · massimo {{peak}} · altezza del Sole {{altitude}}°",
   "，可在地球的天体信息中调整。": " · modificabile nelle informazioni corporee della Terra.",

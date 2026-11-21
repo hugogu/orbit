@@ -1098,6 +1098,7 @@
   "正在从当前模拟时间查找接下来的食象。": "Mevcut simülasyon zamanından sonraki tutulmalar aranıyor.",
   "本地可见": "Burada görülebilir",
   "全球食甚": "Küresel maksimum",
+  "在当地食甚时查看": "Yerel maksimumda görüntüle",
   "食甚遮掩月面约 {{percent}}%": "Maksimumda Ay'ın yaklaşık %{{percent}} kadarı örtülür",
   "此地为{{kind}}，食甚 {{peak}}（太阳高度 {{altitude}}°）": "Burada görülen: {{kind}} · maksimum {{peak}} · Güneş yüksekliği {{altitude}}°",
   "，可在地球的天体信息中调整。": " · Dünya'nın gök cismi bilgilerinden değiştirin.",

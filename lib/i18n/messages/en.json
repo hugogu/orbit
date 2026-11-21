@@ -1098,6 +1098,7 @@
   "正在从当前模拟时间查找接下来的食象。": "Looking for the next eclipses from the current simulation time.",
   "本地可见": "Visible here",
   "全球食甚": "Global maximum",
+  "在当地食甚时查看": "View at local maximum",
   "食甚遮掩月面约 {{percent}}%": "About {{percent}}% of the Moon is obscured at maximum",
   "此地为{{kind}}，食甚 {{peak}}（太阳高度 {{altitude}}°）": "Seen here as: {{kind}} · maximum {{peak}} · Sun {{altitude}}° high",
   "，可在地球的天体信息中调整。": " · change it in Earth’s body information.",
