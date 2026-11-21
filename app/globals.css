@@ -3010,6 +3010,10 @@ html[data-native-platform='mac'] .seo-page-header {
   border-top: 1px solid #ffffff12;
   color: #cbd8e6;
 }
+.sky-event-local-view {
+  min-height: 44px;
+  margin-top: 8px;
+}
 .sky-event-time {
   display: flex;
   align-items: center;

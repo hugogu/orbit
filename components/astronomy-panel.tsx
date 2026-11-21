@@ -252,6 +252,17 @@ export default function AstronomyPanel({
               percent: (event.local.obscuration * 100).toFixed(1),
             })}
           </p>
+          {event.local.altitude > 0 && (
+            <button
+              className="secondary-action sky-event-local-view"
+              onClick={() => {
+                onEclipse(event.local!.peak, kind);
+                onOpenChange(false);
+              }}
+            >
+              {t('在当地食甚时查看')}
+            </button>
+          )}
         </div>
       )}
     </SkyEventRow>
