@@ -2030,7 +2030,11 @@ void test('sandbox hides ephemeris-based lunar phase information', () => {
     new URL('../app/_pages/home-page.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(page, /const showMoonCard =\s*tab !== 'sandbox'/);
+  assert.match(page, /const moonCard =\s*tab !== 'sandbox'/);
+  assert.match(
+    page,
+    /usesDetailsSheet && !ground && tab !== 'sandbox' && selected/,
+  );
   assert.match(page, /<LunarPanel\s+open=\{lunar && tab !== 'sandbox'\}/);
 });
 

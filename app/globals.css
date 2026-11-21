@@ -1287,42 +1287,39 @@ button:disabled {
   right: 32px;
   top: 204px;
   width: 278px;
+}
+.body-summary-card {
   border: 1px solid #bba78055;
   border-radius: 12px;
   background: #0b1019f5;
-  padding: 0;
-  overflow: hidden;
-}
-.moon-phase-card-open {
   display: flex;
-  width: 100%;
   align-items: center;
   gap: 12px;
   padding: 12px 12px 12px 14px;
-  border: 0;
-  background: transparent;
-  color: inherit;
   text-align: start;
   font: inherit;
   cursor: pointer;
 }
-.moon-phase-card-open:hover,
-.moon-phase-card-open:focus-visible {
-  background: #ffffff09;
+.body-summary-card:hover {
+  background: #141922;
 }
-.moon-phase-card-text {
+.body-summary-card:focus-visible {
+  outline: 2px solid #dfc89e;
+  outline-offset: 2px;
+}
+.body-summary-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
 }
-.moon-phase-card-text strong {
+.body-summary-text strong {
   font-size: 15px;
   font-weight: 400;
   color: #ead5ad;
 }
-.moon-phase-card-text small {
+.body-summary-text small {
   font-size: 11.5px;
   line-height: 1.5;
   color: #9eafc5;
@@ -1331,14 +1328,45 @@ button:disabled {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.moon-phase-card-chevron {
+.body-summary-chevron {
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
   color: #7d8b9e;
 }
-.moon-phase-card-open:hover .moon-phase-card-chevron {
+.body-summary-card:hover .body-summary-chevron {
   color: #dfc89e;
+}
+.body-preview {
+  position: relative;
+  z-index: 4;
+  width: min(270px, 100%);
+  margin: 0 0 8px auto;
+}
+.body-preview .body-summary-card {
+  width: 100%;
+}
+.body-preview .body-summary-text small {
+  white-space: normal;
+}
+.body-preview.beside-eclipse {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left));
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + 100px);
+  width: min(270px, calc(100vw - 284px));
+  margin: 0;
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .body-preview.beside-eclipse {
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 64px);
+  }
+}
+@media (max-width: 540px) {
+  .body-preview.beside-eclipse {
+    top: calc(156px + env(safe-area-inset-top));
+    bottom: auto;
+    width: min(270px, calc(100vw - 24px));
+  }
 }
 /* A phone has no room for a card beside the scene, so it parks in the corner the
    playback bar already owns and grows upward from there: collapsed it is a strip
@@ -4321,25 +4349,6 @@ html[data-native-platform='mac'] .seo-page-header {
   }
   .reset-speed {
     display: none;
-  }
-}
-/* Wherever the eclipse card leaves the scene's edge for the playback bar's
-   corner, this card does too: either there is no information column left to
-   head, or it is too short to give a hundred pixels to. The block sits after
-   the column rules above because those match this card as well, and the last
-   one wins. */
-@media (max-width: 900px), (max-height: 600px) {
-  .moon-phase-card {
-    top: auto;
-    left: auto;
-    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 100px);
-    right: max(12px, env(safe-area-inset-right));
-    width: min(252px, calc(100vw - 24px));
-  }
-}
-@media (orientation: landscape) and (max-height: 600px) {
-  .moon-phase-card {
-    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 64px);
   }
 }
 @media (min-width: 601px) and (max-width: 900px) {

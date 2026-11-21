@@ -41,6 +41,8 @@ import MoonGuide from '@/components/moon-guide';
 import MoonDetails from '@/components/moon-details';
 import LunarPanel from '@/components/lunar-panel';
 import MoonPhaseCard from '@/components/moon-phase-card';
+import BodyPreviewCard from '@/components/body-preview-card';
+import { useBodyDetailsSheet } from '@/hooks/use-body-details-sheet';
 import BodyNavigation from '@/components/body-navigation';
 import { bodyFromHash } from '@/lib/body-navigation';
 import PhysicalFacts from '@/components/physical-facts';
@@ -163,6 +165,7 @@ import {
 import {
   aboutPath,
   bodyDetailsPath,
+  catalogEntry,
   eventsIndexPath,
   privacyPath,
 } from '@/lib/seo';
@@ -183,6 +186,7 @@ function speedMarkerModifier(value: number, presets: readonly number[]) {
 }
 function ObservatoryView() {
   const { t, locale } = useI18n();
+  const usesDetailsSheet = useBodyDetailsSheet();
   const [selected, setSelected] = useState<string | null>(null),
     [paused, setPaused] = useState(false),
     [speed, setSpeed] = useState(0),
@@ -272,6 +276,13 @@ function ObservatoryView() {
   const activeRegion = regions.find((r) => r.id === region)!;
   const activeComet = comets.find((c) => c.id === cometId)!;
   const isComet = selected === cometId;
+  const previewEntry = useMemo(
+    () =>
+      usesDetailsSheet && !ground && tab !== 'sandbox' && selected
+        ? catalogEntry(selected)
+        : undefined,
+    [usesDetailsSheet, ground, tab, selected],
+  );
   // The followed body names both the status line and the compact mobile picker.
   const followed = isComet
     ? activeComet
@@ -1188,14 +1199,25 @@ function ObservatoryView() {
     </>
   );
   const eclipse = useEclipseProgress(time);
-  // The Moon's own card and the eclipse progress card share the information
-  // column, so only one of them is up at a time; an eclipse in progress is the
-  // more urgent of the two and already answers where the Moon is.
-  const showMoonCard =
+  const moonCard =
     tab !== 'sandbox' &&
+    !ground &&
     selected === 'moon-moon' &&
-    !eclipse.event &&
-    time !== null;
+    time !== null &&
+    (usesDetailsSheet || !eclipse.event) ? (
+      <MoonPhaseCard
+        time={time}
+        location={timedObserverLocation}
+        preview={usesDetailsSheet}
+        onOpen={() => (usesDetailsSheet ? setDetails(true) : setLunar(true))}
+      />
+    ) : null;
+  const bodyPreview =
+    previewEntry &&
+    (moonCard ?? (
+      <BodyPreviewCard entry={previewEntry} onOpen={() => setDetails(true)} />
+    ));
+  const eclipseCard = !!eclipse.event || (eclipse.error && eclipseView);
   // Hiding a label must not take the name away from a screen reader, so the
   // text stays in the button and only leaves the picture.
   const actionLabel = actionLabels ? undefined : 'sr-only';
@@ -1204,7 +1226,7 @@ function ObservatoryView() {
       className="observatory"
       data-eclipse-active={!!eclipse.event}
       data-sandbox={tab === 'sandbox'}
-      data-moon-card={showMoonCard}
+      data-moon-card={!!moonCard && !usesDetailsSheet}
       data-action-labels={actionLabels}
       data-ground={ground}
     >
@@ -1518,14 +1540,16 @@ function ObservatoryView() {
                 : t('距离单位 AU ≈ 1.496 亿公里')}
           </div>
         </section>
-        <button
-          className="mobile-info glass phone-body-info"
-          title={t('天体信息')}
-          onClick={() => setDetails(true)}
-        >
-          <Info size={16} />
-          <span className={actionLabel}>{t('天体信息')}</span>
-        </button>
+        {!bodyPreview && (
+          <button
+            className="mobile-info glass phone-body-info"
+            title={t('天体信息')}
+            onClick={() => setDetails(true)}
+          >
+            <Info size={16} />
+            <span className={actionLabel}>{t('天体信息')}</span>
+          </button>
+        )}
       </div>
       {tab !== 'sandbox' && (
         <a
@@ -1537,12 +1561,9 @@ function ObservatoryView() {
           <span className={actionLabel}>{t('天象百科')}</span>
         </a>
       )}
-      {showMoonCard && (
-        <MoonPhaseCard
-          time={time!}
-          location={timedObserverLocation}
-          onOpen={() => setLunar(true)}
-        />
+      {!usesDetailsSheet && moonCard}
+      {eclipseCard && bodyPreview && (
+        <div className="body-preview beside-eclipse">{bodyPreview}</div>
       )}
       <aside className="info-panel glass">
         {/* While a run is on, this column edits the selected body instead of
@@ -1576,14 +1597,16 @@ function ObservatoryView() {
         )}
       </aside>
       <div className="side-rail rail-end">
-        <button
-          className="mobile-info glass"
-          title={t('天体信息')}
-          onClick={() => setDetails(true)}
-        >
-          <Info size={16} />
-          <span className={actionLabel}>{t('天体信息')}</span>
-        </button>
+        {!bodyPreview && (
+          <button
+            className="mobile-info glass"
+            title={t('天体信息')}
+            onClick={() => setDetails(true)}
+          >
+            <Info size={16} />
+            <span className={actionLabel}>{t('天体信息')}</span>
+          </button>
+        )}
         <div className="view-tools glass">
           <button
             className="icon-button"
@@ -1628,6 +1651,9 @@ function ObservatoryView() {
         </div>
       </div>
       <div className="bottom-area">
+        {!eclipseCard && bodyPreview && (
+          <div className="body-preview">{bodyPreview}</div>
+        )}
         <div className="scene-meta">
           <span className="follow-status">
             <i />
@@ -2413,6 +2439,18 @@ function ObservatoryView() {
                 : '探索天体的特征与运行规律。',
             )}
           </SheetDescription>
+          {selected === 'moon-moon' && tab !== 'sandbox' && (
+            <button
+              className="secondary-action"
+              onClick={() => {
+                setDetails(false);
+                setLunar(true);
+              }}
+            >
+              {t('月相与观月')}
+              <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          )}
           {/* A phone has no information column, so the sandbox editor reaches
               it through the same sheet the catalogue entries use. */}
           {sandboxEditing ? (
