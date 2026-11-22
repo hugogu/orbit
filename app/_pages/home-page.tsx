@@ -99,6 +99,7 @@ import {
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { bodyMotion } from '@/lib/body-motion';
 import { marsObservation } from '@/lib/mars-observation';
+import { saturnRingTilt } from '@/lib/saturn-ring-tilt';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -318,6 +319,10 @@ function ObservatoryView() {
   const marsView =
     body?.id === 'mars' && time !== null && !sandboxScenario
       ? marsObservation(time)
+      : null;
+  const ringTilt =
+    body?.id === 'saturn' && time !== null && !sandboxScenario
+      ? saturnRingTilt(time)
       : null;
   // Topic views choose a distance mode without overwriting the user's layout preference.
   // One set of playback controls drives whichever clock is in charge. A run
@@ -1107,6 +1112,27 @@ function ObservatoryView() {
           <p className="description">
             {t(
               '按模拟时刻从地心计算；视直径采用火星平均半径的球形近似，与画面放大比例和上方平均日距无关。',
+            )}
+          </p>
+        </>
+      )}
+      {ringTilt !== null && (
+        <>
+          <div className="facts">
+            <div>
+              <span>{t('地心星环张开角')}</span>
+              <strong>
+                {ringTilt.toLocaleString(locale, {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}{' '}
+                <small>°</small>
+              </strong>
+            </div>
+          </div>
+          <p className="description">
+            {t(
+              '地心视线与土星环面的夹角；正负表示所见环面的一侧，接近零度时近乎侧向。这是历表近似，与自由相机视角和显示比例无关，也不保证当地可见。',
             )}
           </p>
         </>
@@ -2485,7 +2511,10 @@ export default function Home({
   initialMessages?: Record<string, string>;
 }) {
   return (
-    <I18nProvider initialLocale={initialLocale} initialMessages={initialMessages}>
+    <I18nProvider
+      initialLocale={initialLocale}
+      initialMessages={initialMessages}
+    >
       <ObservatoryView />
     </I18nProvider>
   );
