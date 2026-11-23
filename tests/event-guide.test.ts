@@ -15,6 +15,31 @@ const slug = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const zhrExplanation =
   'ZHR（天顶每小时出现率）是辐射点位于天顶、天空晴朗且足够黑暗时的标准化峰值率，不是你所在地每小时实际可见的流星数。月光、光污染、云层或较低的辐射点通常会减少可见数量。';
 
+void test('perihelion guide separates irradiance from local temperature in every language', () => {
+  const topic = eventTopic('perihelion-aphelion')!;
+  const copy = [topic.intro, topic.sections[0].text, topic.observing[2]];
+  assert.match(topic.sections[0].text, /大气顶.*6\.8%.*不是气温差/);
+  assert.match(topic.sections[0].text, /纬度、大气、海陆分布和热惯性/);
+  assert.ok(
+    topic.sources.some(({ url }) =>
+      url.includes('gml.noaa.gov/grad/about/rad.html'),
+    ),
+  );
+  for (const locale of codes) {
+    const t = translator(locale);
+    for (const item of copy) {
+      assert.ok(t(item).length > 10, locale);
+      if (locale !== 'zh-CN') assert.notEqual(t(item), item, locale);
+    }
+  }
+  const english = translator('en')(topic.sections[0].text);
+  assert.match(
+    english,
+    /6\.8%.*top of the atmosphere.*not a temperature difference/i,
+  );
+  assert.match(english, /latitude.*atmosphere.*thermal inertia/i);
+});
+
 void test('Leonids guidance qualifies radiant timing by location in every language', () => {
   const tip = eventTopic('leonids')!.observing[0];
   assert.match(tip, /升起时间和高度因地点而异.*多数地点.*月落和晨曦/);
