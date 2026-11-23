@@ -890,11 +890,11 @@ export const eventTopics: EventTopic[] = [
     summary: '地球轨道并非正圆，日地距离一年里相差约 500 万公里。',
     headline: '离太阳最近的时候，北半球正是冬天',
     intro:
-      '地球在每年 1 月初经过近日点，约 1.471 亿公里；7 月初到达远日点，约 1.521 亿公里。两者相差约 3.3%，太阳的视直径和地球接收到的辐照度随之变化，但这与四季的成因无关。',
+      '地球在每年 1 月初经过近日点，约 1.471 亿公里；7 月初到达远日点，约 1.521 亿公里。两者相差约 3.3%，太阳的视直径和地球接收到的辐照度随之变化；地轴倾斜仍是南北半球季节相反的主要原因。',
     sections: [
       {
         heading: '距离变化有多大影响',
-        text: '辐照度与距离的平方成反比，近日点比远日点高约 6.8%。相比之下，地轴倾斜造成的季节性差异要大得多：北半球夏至与冬至的正午太阳高度可以相差 47°。这正是四季由倾角而非距离决定的直接证据。',
+        text: '假设太阳输出不变，按距离平方反比计算，近日点的大气顶太阳辐照度约比远日点高 6.8%；这不是气温差。地轴倾斜改变各地日照时长和太阳高度，是南北半球季节相反的主要原因。地表气温还受纬度、大气、海陆分布和热惯性影响，不能从日地距离直接推算当地天气。',
       },
       {
         heading: '北半球的冬半年更短',
@@ -910,7 +910,7 @@ export const eventTopics: EventTopic[] = [
     observing: [
       '用同一套设备在 1 月和 7 月各拍一张日面，可以比较视直径。',
       '观测太阳必须使用专用滤光片，没有例外。',
-      '日地距离的这点变化，不会带来可以察觉的气温差别。',
+      '日地距离会改变入射辐照度，但当地气温变化不能只凭距离判断。',
     ],
     bodies: ['earth', 'sun'],
     sources: [
@@ -921,6 +921,10 @@ export const eventTopics: EventTopic[] = [
       {
         name: 'NOAA National Weather Service — Seasons',
         url: 'https://www.weather.gov/cle/Seasons',
+      },
+      {
+        name: 'NOAA Global Monitoring Laboratory — Solar Radiation',
+        url: 'https://gml.noaa.gov/grad/about/rad.html',
       },
     ],
   },
