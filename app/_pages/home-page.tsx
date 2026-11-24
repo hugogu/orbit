@@ -922,6 +922,27 @@ function ObservatoryView() {
       ),
     [select, t],
   );
+  function jumpToCometPerihelion(
+    direction: 'next' | 'previous',
+    instant: number,
+  ) {
+    const peri = cometPerihelion(
+      activeComet,
+      (instant - J2000_MS) / DAY_MS,
+      direction,
+    );
+    if (!validTime(peri)) {
+      setNotice(
+        direction === 'next'
+          ? '下一次模型近日点超出 1700—2200 年范围。'
+          : '上一次模型近日点超出 1700—2200 年范围。',
+      );
+      return;
+    }
+    seekTime(peri);
+    setCometClose(true);
+    setSpeed(3);
+  }
   const readout = isComet ? (
     <>
       <div className="eyebrow">
@@ -974,19 +995,14 @@ function ObservatoryView() {
         </button>
         <button
           className="secondary-action"
-          onClick={() => {
-            const peri = cometPerihelion(
-              activeComet,
-              ((time ?? Date.now()) - J2000_MS) / DAY_MS,
-            );
-            if (!validTime(peri)) {
-              setNotice('下一次模型近日点超出 1700—2200 年范围。');
-              return;
-            }
-            seekTime(peri);
-            setCometClose(true);
-            setSpeed(3);
-          }}
+          onClick={() => jumpToCometPerihelion('previous', time ?? Date.now())}
+        >
+          {t('跳到模型上一次近日点')}
+          <CalendarDays size={15} />
+        </button>
+        <button
+          className="secondary-action"
+          onClick={() => jumpToCometPerihelion('next', time ?? Date.now())}
         >
           {t('跳到模型下一次近日点')}
           <CalendarDays size={15} />
@@ -2485,7 +2501,10 @@ export default function Home({
   initialMessages?: Record<string, string>;
 }) {
   return (
-    <I18nProvider initialLocale={initialLocale} initialMessages={initialMessages}>
+    <I18nProvider
+      initialLocale={initialLocale}
+      initialMessages={initialMessages}
+    >
       <ObservatoryView />
     </I18nProvider>
   );
