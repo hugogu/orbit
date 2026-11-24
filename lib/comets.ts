@@ -1,5 +1,6 @@
 import { AstroTime } from 'astronomy-engine';
 import { Vector3 } from 'three';
+import { DAY_MS, J2000_MS } from './simulation-time';
 import {
   orbitPosition,
   eccentricPosition,
@@ -183,13 +184,26 @@ export function cometOrbitPoint(comet: Comet, anomaly: number) {
     eccentricPosition({ ...cometElements(comet), inc: 0 }, anomaly, 'distance'),
   );
 }
-export function cometPerihelion(comet: Comet, days: number) {
-  const e = cometElements(comet),
-    tt = new AstroTime(days).tt;
+export function cometPerihelion(
+  comet: Comet,
+  days: number,
+  direction: 'next' | 'previous' = 'next',
+) {
+  const e = cometElements(comet);
+  const tt = new AstroTime(days).tt;
   const first = e.epoch - 2451545 - (e.mean / 360) * e.period;
-  return AstroTime.FromTerrestrialTime(
-    first + Math.ceil((tt - first) / e.period) * e.period,
-  ).date.getTime();
+  const count = (tt - first) / e.period;
+  let orbit = direction === 'next' ? Math.ceil(count) : Math.floor(count);
+  const instant = () =>
+    AstroTime.FromTerrestrialTime(first + orbit * e.period).date.getTime();
+  const current = J2000_MS + days * DAY_MS;
+  let result = instant();
+  // UTC dates round to milliseconds; an exact jump must not return the same event.
+  while (direction === 'next' ? result <= current : result >= current) {
+    orbit += direction === 'next' ? 1 : -1;
+    result = instant();
+  }
+  return result;
 }
 
 export function cometActivity(distanceAU: number) {

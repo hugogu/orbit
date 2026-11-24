@@ -16,6 +16,53 @@ import { isOrbitLine } from '../components/orbit-line.ts';
 import { parseAsteroidModel } from '../lib/asteroid-model.ts';
 import { languages, translator } from '../lib/i18n';
 
+void test('model perihelion navigation moves strictly in both directions', () => {
+  for (const comet of comets) {
+    const now = Date.UTC(2026, 0, 1);
+    const days = (now - J2000_MS) / DAY_MS;
+    const next = cometPerihelion(comet, days);
+    const previous = cometPerihelion(comet, days, 'previous');
+    assert.ok(previous < now && next > now, comet.id);
+    const afterNext = cometPerihelion(comet, (next - J2000_MS) / DAY_MS);
+    const beforeNext = cometPerihelion(
+      comet,
+      (next - J2000_MS) / DAY_MS,
+      'previous',
+    );
+    assert.ok(afterNext > next, `${comet.id} repeated next`);
+    assert.ok(beforeNext < next, `${comet.id} repeated previous`);
+    assert.equal(cometPerihelion(comet, (next - 1 - J2000_MS) / DAY_MS), next);
+    assert.equal(
+      cometPerihelion(comet, (previous + 1 - J2000_MS) / DAY_MS, 'previous'),
+      previous,
+    );
+  }
+  const halley = comets[0];
+  const in1989 = (Date.UTC(1989, 0, 1) - J2000_MS) / DAY_MS;
+  assert.ok(cometPerihelion(halley, in1989, 'previous') < Date.UTC(1989, 0, 1));
+  assert.ok(cometPerihelion(halley, in1989) > Date.UTC(2060, 0, 1));
+  assert.ok(
+    cometPerihelion(
+      halley,
+      (Date.UTC(1700, 0, 1) - J2000_MS) / DAY_MS,
+      'previous',
+    ) < Date.UTC(1700, 0, 1),
+  );
+});
+
+void test('perihelion navigation labels are translated in every locale', () => {
+  for (const locale of Object.keys(languages) as (keyof typeof languages)[]) {
+    const t = translator(locale);
+    for (const key of [
+      '跳到模型上一次近日点',
+      '上一次模型近日点超出 1700—2200 年范围。',
+    ]) {
+      assert.ok(t(key).trim(), locale);
+      if (locale !== 'zh-CN') assert.notEqual(t(key), key, locale);
+    }
+  }
+});
+
 void test('comet profiles can label each snapshot epoch in every locale', () => {
   assert.deepEqual(
     comets.map((comet) => [comet.id, cometElements(comet).epoch]),
