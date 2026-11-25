@@ -1438,3 +1438,22 @@ void test('localized home pages provide metadata and canonical URLs for every lo
     assert.ok(homeDescription(locale).length > 0);
   }
 });
+
+void test('Jupiter profile explains Earth-based observing across locales', async () => {
+  const section = profileContent.jupiter.sections.find(
+    ({ heading }) => heading === '从地球观察木星',
+  );
+  assert.ok(section);
+  for (const locale of seoLocales) {
+    const messages = languages[locale].messages;
+    assert.ok(messages[section.heading]);
+    assert.ok(messages[section.text]);
+    const page = renderToStaticMarkup(
+      await BodyPage({
+        params: Promise.resolve({ locale: languages[locale].route, id: 'jupiter' }),
+      }),
+    );
+    assert.ok(page.includes(renderToStaticMarkup(messages[section.heading])));
+    assert.ok(page.includes(renderToStaticMarkup(messages[section.text])));
+  }
+});
