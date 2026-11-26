@@ -54,6 +54,15 @@ export function planetPosition(
   return v.map((x) => x * factor) as [number, number, number];
 }
 
+/** Physical heliocentric distance in AU, independent of scene display scale. */
+export function heliocentricDistance(
+  id: 'pluto' | 'neptune',
+  days: number,
+): number {
+  const { x, y, z } = HelioVector(astroBodies[id], days);
+  return Math.hypot(x, y, z);
+}
+
 // Local +X is the prime meridian, +Y the IAU pole. EQJ -> fixed J2000 ecliptic.
 export function bodyOrientation(id: string, days: number): Quaternion {
   const axis = RotationAxis(astroBodies[id], days);
