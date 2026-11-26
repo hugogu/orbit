@@ -98,6 +98,7 @@ import {
 } from '@/lib/sky-events';
 import { orbitingMoons } from '@/lib/moon-orbits';
 import { bodyMotion } from '@/lib/body-motion';
+import { heliocentricDistance } from '@/lib/ephemeris';
 import { marsObservation } from '@/lib/mars-observation';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -243,6 +244,8 @@ function ObservatoryView() {
     [actionLabels, setActionLabels] = useState(true),
     [curiosityPicks, setCuriosityPicks] = useState<Record<string, number>>({}),
     [details, setDetails] = useState(false),
+    [plutoCompare, setPlutoCompare] = useState(false),
+    [plutoReturnTime, setPlutoReturnTime] = useState<number | null>(null),
     [share, setShare] = useState(false),
     [shareView, setShareView] = useState<ShareView | null>(null),
     [cameraPose, setCameraPose] = useState<CameraPose | null>(null),
@@ -1080,6 +1083,92 @@ function ObservatoryView() {
           </strong>
         </div>
       </div>
+      {body.id === 'pluto' && !sandboxScenario && (
+        <section aria-label={t('日心距离')}>
+          <button
+            className="secondary-action"
+            aria-expanded={plutoCompare}
+            onClick={() => setPlutoCompare((v) => !v)}
+          >
+            {t('比较冥王星与海王星')}
+          </button>
+          {plutoCompare &&
+            time !== null &&
+            (() => {
+              const days = (time - J2000_MS) / DAY_MS;
+              const plutoAu = heliocentricDistance('pluto', days);
+              const neptuneAu = heliocentricDistance('neptune', days);
+              return (
+                <>
+                  <div className="facts">
+                    <div>
+                      <span>
+                        {t('冥王星')} · {t('日心距离')}
+                      </span>
+                      <strong>
+                        {plutoAu.toLocaleString(locale, {
+                          maximumFractionDigits: 3,
+                        })}{' '}
+                        <small>AU</small>
+                      </strong>
+                    </div>
+                    <div>
+                      <span>
+                        {t('海王星')} · {t('日心距离')}
+                      </span>
+                      <strong>
+                        {neptuneAu.toLocaleString(locale, {
+                          maximumFractionDigits: 3,
+                        })}{' '}
+                        <small>AU</small>
+                      </strong>
+                    </div>
+                  </div>
+                  <p className="description">
+                    {t(
+                      plutoAu < neptuneAu
+                        ? '此刻冥王星更靠近太阳。'
+                        : '此刻海王星更靠近太阳。',
+                    )}
+                  </p>
+                  <p className="description">
+                    {t('同一时刻的物理日距，不受画面比例影响。')}
+                  </p>
+                  <p className="description">
+                    {t(
+                      '冥卫一相对冥王星很大，两者的共同质心位于冥王星之外。它们相互潮汐锁定，始终以大致相同的一面相对。冥王星有时比海王星更靠近太阳，但两者的轨道共振会安排相遇的时机，不能仅凭平面轨道交叠就判断它们会碰撞。',
+                    )}
+                  </p>
+                  <p className="description">
+                    {t('3:2 是长期平均轨道关系，不是单次日距比较的结论。')}
+                  </p>
+                  <div className="comet-actions">
+                    <button
+                      className="secondary-action"
+                      onClick={() => {
+                        setPlutoReturnTime((previous) => previous ?? time);
+                        seekTime(Date.UTC(1989, 6, 1));
+                      }}
+                    >
+                      {t('查看 1989 年')}
+                    </button>
+                    {plutoReturnTime !== null && (
+                      <button
+                        className="secondary-action"
+                        onClick={() => {
+                          seekTime(plutoReturnTime);
+                          setPlutoReturnTime(null);
+                        }}
+                      >
+                        {t('返回先前时刻')}
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+        </section>
+      )}
       {marsView && (
         <>
           <div className="facts">
@@ -2485,7 +2574,10 @@ export default function Home({
   initialMessages?: Record<string, string>;
 }) {
   return (
-    <I18nProvider initialLocale={initialLocale} initialMessages={initialMessages}>
+    <I18nProvider
+      initialLocale={initialLocale}
+      initialMessages={initialMessages}
+    >
       <ObservatoryView />
     </I18nProvider>
   );
