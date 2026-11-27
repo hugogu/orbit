@@ -116,16 +116,15 @@ for (const paused of [true, false]) {
   });
 }
 
-void test('device location uses the eclipse instant without changing playback', async () => {
-  const { context, toggle } = modeContext(true, 'device');
-  let updates = 0;
-  context.updateObserverLocation = () => {
-    updates++;
-  };
+void test('entering ground sky keeps the reference site without requesting device location', () => {
+  const { context, toggle } = modeContext(true, 'fallback');
+  const before = context.observerLocation;
+  context.currentLocation = async () =>
+    assert.fail('entering ground sky must not request device location');
   toggle();
-  await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(context.ground, true);
-  assert.equal(updates, 1);
+  assert.equal(context.observerLocation, before);
+  assert.equal(context.notice, '');
   assert.equal(context.paused, true);
 });
 
