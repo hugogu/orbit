@@ -774,7 +774,6 @@ function ObservatoryView() {
     setPlanetEventView(null);
     // Permission APIs must be called during this tap, before any location await.
     if (window.matchMedia('(pointer: coarse)').matches) void sensor.start();
-    if (observerLocationSource !== 'manual') requestObserverLocation();
   }
   // A share link arrives with its moment and framing in the query string, and
   // is applied after the hash has selected the body. The query stays in the

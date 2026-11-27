@@ -20,7 +20,7 @@ void test('uses Beijing as the default observer reference until location is requ
   });
 });
 
-void test('requests location only from explicit Earth-location and ground-view actions', () => {
+void test('requests location only from the explicit Earth-location action', () => {
   const start = homePage.indexOf('  function requestObserverLocation(');
   const end = homePage.indexOf('  // A share link arrives', start);
   assert.ok(start > 0 && end > start);
@@ -32,6 +32,7 @@ void test('requests location only from explicit Earth-location and ground-view a
   );
   assert.match(homePage, /onClick=\{\(\) => enterGround\(\)\}/);
   assert.match(homePage, /onClick=\{locateEarth\}/);
+  assert.doesNotMatch(action.slice(action.indexOf('  function enterGround()')), /requestObserverLocation\(/);
 });
 
 void test('geolocation uses the granted device coordinates without map offsets or fabricated altitude', async () => {
