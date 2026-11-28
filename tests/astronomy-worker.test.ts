@@ -34,6 +34,7 @@ void test('the worker returns planets on opening and only eclipses on follow-up 
     assert.ok(initial?.result);
     assert.equal(initial.result.opposition.length, 15);
     assert.equal(initial.result.transit.length, 4);
+    assert.equal(initial.result.pastTransit.length, 2);
     assert.ok(initial.result.solar.next);
 
     const start = initial.result.solar.next;
@@ -45,6 +46,7 @@ void test('the worker returns planets on opening and only eclipses on follow-up 
     assert.ok(page?.result);
     assert.deepEqual(page.result.opposition, []);
     assert.deepEqual(page.result.transit, []);
+    assert.deepEqual(page.result.pastTransit, []);
     for (const kind of ['solar', 'lunar'] as const) {
       assert.equal(page.result[kind].events.length, query.count);
       assert.ok(page.result[kind].events.every((event) => event.peak >= start));

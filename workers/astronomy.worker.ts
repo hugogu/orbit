@@ -6,7 +6,7 @@ self.onmessage = (event: MessageEvent<EclipseQuery>) => {
       result: {
         ...calculateEclipseList(event.data),
         ...(event.data.page
-          ? { opposition: [], transit: [] }
+          ? { opposition: [], transit: [], pastTransit: [] }
           : calculatePlanetEvents(event.data)),
       },
     });

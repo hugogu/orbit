@@ -85,6 +85,7 @@ export default function AstronomyPanel({
 }) {
   const { t, locale } = useI18n();
   const [loaded, setLoaded] = useState<Loaded | null>(null),
+    [showPastTransits, setShowPastTransits] = useState(false),
     [busy, setBusy] = useState<'first' | Kind | null>(null),
     [error, setError] = useState('');
   const live = useRef(true),
@@ -149,6 +150,7 @@ export default function AstronomyPanel({
           lunar: list.lunar.events,
           opposition: list.opposition,
           transit: list.transit,
+          pastTransit: list.pastTransit,
           next: { solar: list.solar.next, lunar: list.lunar.next },
         }),
       );
@@ -339,90 +341,82 @@ export default function AstronomyPanel({
       );
     if (!loaded) return <p className="little-note">{t('正在计算未来天象…')}</p>;
     const events = loaded[kind];
+    const renderEvents = (items: PlanetEvent[]) =>
+      items.map((event) => {
+        const edition = occurrenceForPlanetEvent(kind, event.body, event.peak);
+        const title = t(
+          kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日',
+          { name: t(catalogEntry(event.body)!.data.name) },
+        );
+        return (
+          <SkyEventRow
+            key={`${event.body}-${event.peak}`}
+            kind={kind}
+            variant={event.body}
+            title={title}
+            peak={event.peak}
+            timeLabel={format(event.peak)}
+            viewLabel={t('查看{{event}}，{{time}}', {
+              event: title,
+              time: format(event.peak),
+            })}
+            onView={() => {
+              onPlanetEvent(event.peak, event.body, kind);
+              onOpenChange(false);
+            }}
+          >
+            <p>{t(kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻')}</p>
+            {kind === 'opposition' ? (
+              <>
+                <p>{t('地心距离 {{distance}} AU · 视星等 {{magnitude}}', {
+                  distance: event.distance.toFixed(3),
+                  magnitude: event.magnitude.toFixed(1),
+                })}</p>
+                <p>{t('此地冲日时行星高度 {{altitude}}°；请在附近夜晚、行星升高时观测。', {
+                  altitude: event.altitude.toFixed(1),
+                })}</p>
+              </>
+            ) : (
+              <>
+                <p>{t('凌始')} {format(event.begin!)}<br />{t('凌终')} {format(event.end!)}</p>
+                <p>{t('此地凌日中点时太阳高度 {{altitude}}°；完整可见时段还取决于日出日落。', {
+                  altitude: event.altitude.toFixed(1),
+                })}</p>
+              </>
+            )}
+            {edition && (
+              <a className="sky-event-guide-link" href={eventDetailsPath(locale, edition.id)}>
+                {t('本次事件介绍')}
+              </a>
+            )}
+          </SkyEventRow>
+        );
+      });
     return (
       <>
         {events.length === 0 && (
           <p className="little-note">{t('在支持的日期范围内未找到下一次。')}</p>
         )}
-        <div className="sky-results">
-          {events.map((event: PlanetEvent) => {
-            const edition = occurrenceForPlanetEvent(
-              kind,
-              event.body,
-              event.peak,
-            );
-            const title = t(
-              kind === 'opposition' ? '{{name}}冲日' : '{{name}}凌日',
-              { name: t(catalogEntry(event.body)!.data.name) },
-            );
-            return (
-              <SkyEventRow
-                key={`${event.body}-${event.peak}`}
-                kind={kind}
-                variant={event.body}
-                title={title}
-                peak={event.peak}
-                timeLabel={format(event.peak)}
-                viewLabel={t('查看{{event}}，{{time}}', {
-                  event: title,
-                  time: format(event.peak),
-                })}
-                onView={() => {
-                  onPlanetEvent(event.peak, event.body, kind);
-                  onOpenChange(false);
-                }}
-              >
-                <p>
-                  {t(
-                    kind === 'opposition' ? '冲日时刻' : '凌日中心角距最小时刻',
-                  )}
-                </p>
-                {kind === 'opposition' ? (
-                  <>
-                    <p>
-                      {t('地心距离 {{distance}} AU · 视星等 {{magnitude}}', {
-                        distance: event.distance.toFixed(3),
-                        magnitude: event.magnitude.toFixed(1),
-                      })}
-                    </p>
-                    <p>
-                      {t(
-                        '此地冲日时行星高度 {{altitude}}°；请在附近夜晚、行星升高时观测。',
-                        {
-                          altitude: event.altitude.toFixed(1),
-                        },
-                      )}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p>
-                      {t('凌始')} {format(event.begin!)}
-                      <br />
-                      {t('凌终')} {format(event.end!)}
-                    </p>
-                    <p>
-                      {t(
-                        '此地凌日中点时太阳高度 {{altitude}}°；完整可见时段还取决于日出日落。',
-                        {
-                          altitude: event.altitude.toFixed(1),
-                        },
-                      )}
-                    </p>
-                  </>
-                )}
-                {edition && (
-                  <a
-                    className="sky-event-guide-link"
-                    href={eventDetailsPath(locale, edition.id)}
-                  >
-                    {t('本次事件介绍')}
-                  </a>
-                )}
-              </SkyEventRow>
-            );
-          })}
-        </div>
+        <div className="sky-results">{renderEvents(events)}</div>
+        {kind === 'transit' && (
+          <>
+            <button
+              type="button"
+              className="sky-load-more"
+              aria-expanded={showPastTransits}
+              onClick={() => setShowPastTransits((value) => !value)}
+            >
+              {t('最近一次已发生的凌日')}
+            </button>
+            {showPastTransits && (loaded.pastTransit.length ? (
+              <div className="sky-results" aria-label={t('最近一次已发生的凌日')}>
+                {renderEvents(loaded.pastTransit)}
+              </div>
+            ) : (
+              <p className="little-note">{t('在支持的日期范围内没有更早的凌日。')}</p>
+            ))}
+          </>
+        )}
         <p className="little-note">
           {t(
             kind === 'opposition'

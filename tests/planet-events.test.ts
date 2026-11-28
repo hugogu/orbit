@@ -82,6 +82,33 @@ void test('Mercury and Venus transits match the NASA catalog, with ordered conta
   assert.equal(date(later.transit[0].peak), '2039-11-07');
 });
 
+void test('recent past transits use the peak boundary and remain distinct from future events', () => {
+  const result = calculatePlanetEvents(query);
+  assert.deepEqual(result.pastTransit.map((event) => [event.body, date(event.peak)]), [
+    ['venus', '2012-06-06'],
+    ['mercury', '2019-11-11'],
+  ]);
+  // NASA/GSFC geocentric catalog: Venus 2012-06-06 01:29 UT;
+  // Mercury 2019-11-11 15:20 UT. Astronomy Engine uses a different model.
+  for (const [body, nasaPeak] of [
+    ['venus', Date.UTC(2012, 5, 6, 1, 29)],
+    ['mercury', Date.UTC(2019, 10, 11, 15, 20)],
+  ] as const) {
+    const event = result.pastTransit.find((candidate) => candidate.body === body)!;
+    assert.ok(Math.abs(event.peak - nasaPeak) < 5 * 60_000);
+  }
+  for (const event of result.pastTransit) {
+    assert.ok(event.begin! < event.peak && event.peak < event.end!);
+    assert.ok(event.peak < query.start);
+    assert.ok(!result.transit.some((next) => next.peak === event.peak));
+  }
+  const atPeak = calculatePlanetEvents({ ...query, start: result.pastTransit[1].peak });
+  assert.equal(date(atPeak.transit.find((event) => event.body === 'mercury')!.peak), '2019-11-11');
+  assert.equal(date(atPeak.pastTransit.find((event) => event.body === 'mercury')!.peak), '2016-05-09');
+  const afterPeak = calculatePlanetEvents({ ...query, start: result.pastTransit[1].peak + 1 });
+  assert.equal(date(afterPeak.pastTransit.find((event) => event.body === 'mercury')!.peak), '2019-11-11');
+});
+
 void test('geocentric dates are independent of location but local altitudes are not', () => {
   const first = calculatePlanetEvents(query);
   const second = calculatePlanetEvents({
@@ -97,6 +124,10 @@ void test('geocentric dates are independent of location but local altitudes are 
     );
     assert.notEqual(first[kind][0].altitude, second[kind][0].altitude);
   }
+  assert.deepEqual(
+    first.pastTransit.map((event) => event.peak),
+    second.pastTransit.map((event) => event.peak),
+  );
 });
 
 void test('supported range is bounded at both ends and exhausted lists are empty', () => {
@@ -104,7 +135,10 @@ void test('supported range is bounded at both ends and exhausted lists are empty
     calculatePlanetEvents({ ...query, start: MIN_TIME }).opposition.length > 0,
   );
   const last = calculatePlanetEvents({ ...query, start: MAX_TIME });
-  assert.deepEqual(last, { opposition: [], transit: [] });
+  assert.deepEqual(last.opposition, []);
+  assert.deepEqual(last.transit, []);
+  assert.equal(last.pastTransit.length, 2);
+  assert.deepEqual(calculatePlanetEvents({ ...query, start: MIN_TIME }).pastTransit, []);
   for (const start of [MIN_TIME - 1, MAX_TIME + 1, NaN, Infinity])
     assert.throws(() => calculatePlanetEvents({ ...query, start }));
 });
