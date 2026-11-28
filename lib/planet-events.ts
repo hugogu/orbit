@@ -10,7 +10,7 @@ import {
   SearchRelativeLongitude,
   SearchTransit,
 } from 'astronomy-engine';
-import { DAY_MS, MAX_TIME, validTime } from './simulation-time';
+import { DAY_MS, MIN_TIME, MAX_TIME, validTime } from './simulation-time';
 import type { EclipseQuery } from './sky-events';
 
 export type PlannerTab = 'solar' | 'lunar' | 'opposition' | 'transit';
@@ -26,6 +26,7 @@ export type PlanetEvent = {
 export type PlanetEventList = {
   opposition: PlanetEvent[];
   transit: PlanetEvent[];
+  pastTransit: PlanetEvent[];
 };
 const outerPlanets = [
   Body.Mars,
@@ -93,7 +94,7 @@ export function calculatePlanetEvents(query: EclipseQuery): PlanetEventList {
   for (const body of innerPlanets) {
     let start = query.start;
     for (let i = 0; i < 2; i++) {
-      let event = SearchTransit(body, new Date(start));
+      let event = SearchTransit(body, new Date(Math.max(MIN_TIME, start - DAY_MS)));
       // A search begun during a transit can return the same event again.
       if (event.peak.date.getTime() < start)
         event = SearchTransit(body, event.finish.AddDays(1));
@@ -111,6 +112,26 @@ export function calculatePlanetEvents(query: EclipseQuery): PlanetEventList {
       start = event.finish.date.getTime() + DAY_MS;
     }
   }
+  const pastTransit: PlanetEvent[] = [];
+  for (const body of innerPlanets) {
+    let cursor = MIN_TIME;
+    let previous: PlanetEvent | undefined;
+    while (cursor < query.start) {
+      const event = SearchTransit(body, new Date(cursor));
+      const peak = event.peak.date.getTime();
+      if (peak >= query.start || peak > MAX_TIME) break;
+      const card = at(body, peak);
+      const eq = Equator(Body.Sun, event.peak, observer, true, true);
+      previous = {
+        ...card,
+        altitude: Horizon(event.peak, observer, eq.ra, eq.dec, 'normal').altitude,
+        begin: event.start.date.getTime(),
+        end: event.finish.date.getTime(),
+      };
+      cursor = event.finish.date.getTime() + DAY_MS;
+    }
+    if (previous) pastTransit.push(previous);
+  }
   const byTime = (a: PlanetEvent, b: PlanetEvent) => a.peak - b.peak;
-  return { opposition: opposition.sort(byTime), transit: transit.sort(byTime) };
+  return { opposition: opposition.sort(byTime), transit: transit.sort(byTime), pastTransit: pastTransit.sort(byTime) };
 }
